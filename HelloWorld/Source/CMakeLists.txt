@@ -3,8 +3,8 @@ project(lvgl_main C)
 
 set(CMAKE_C_STANDARD 99)
 
-set(LVGL_DIR "../lvgl")
-set(LV_DRIVERS_DIR "../lvgl/src/drivers")
+set(LVGL_DIR "lvgl")
+set(LV_DRIVERS_DIR "lvgl/src/drivers")
 
 include_directories(
     ${LVGL_DIR}
