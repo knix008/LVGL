@@ -1,6 +1,7 @@
 #include "ui_main.h"
 #include "ui_keypad.h"
 #include "ui_korean_keypad.h"
+#include "korean_hangul.h"
 #include <stdio.h>
 
 // UI initialization and setup with tab menu
@@ -17,7 +18,7 @@ void lv_example_tab_menu(void) {
     }
     printf("Tabview created: %p\n", (void*)tabview);
     
-    lv_obj_set_size(tabview, 320, 480);
+    lv_obj_set_size(tabview, 600, 480);
     lv_obj_center(tabview);
     
     // Set tab bar height

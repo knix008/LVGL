@@ -52,6 +52,7 @@ set(APP_SOURCES
     ${SOURCE_DIR}/ui_database.c
     ${SOURCE_DIR}/ui_keypad.c
     ${SOURCE_DIR}/ui_korean_keypad.c
+    ${SOURCE_DIR}/korean_hangul.c
     ${SOURCE_DIR}/ui_callbacks.c
 )
 
