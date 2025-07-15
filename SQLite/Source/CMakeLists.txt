@@ -31,7 +31,7 @@ add_compile_definitions(
     SQLITE_THREADSAFE=1
 )
 
-add_executable(lvgl_main main.c)
+add_executable(lvgl_main main.c sqlite_test.c ui_components.c)
 
 file(GLOB_RECURSE LVGL_SOURCES
     ${LVGL_DIR}/src/*.c
