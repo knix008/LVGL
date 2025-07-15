@@ -1,0 +1,3 @@
+/home/shkwon/Projects/LVGL/MenuBar/build/CMakeFiles/lvgl_main.dir
+/home/shkwon/Projects/LVGL/MenuBar/build/CMakeFiles/edit_cache.dir
+/home/shkwon/Projects/LVGL/MenuBar/build/CMakeFiles/rebuild_cache.dir
