@@ -44,10 +44,6 @@ typedef struct {
     two_set_input_state_t two_set_state;
     char buffer[128];
     int buffer_pos;
-#ifdef LVGL_GUI
-    lv_obj_t * display_label;
-    lv_obj_t * mode_btn;
-#endif
 } korean_keypad_state_t;
 
 // Global variables

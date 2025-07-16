@@ -4,10 +4,6 @@
 #include <wchar.h>
 #include <locale.h>
 
-#ifdef LVGL_GUI
-#include "lvgl.h"
-#endif
-
 // Global variables for Korean keypad
 char korean_keypad_buffer[128] = "";
 korean_keypad_state_t korean_keypad_state;
@@ -145,26 +141,6 @@ static void handle_compound_jongseong(two_set_input_state_t * state, const char*
     }
 }
 
-#ifdef LVGL_GUI
-// Initialize FreeType font for Korean text
-void init_korean_font(void) {
-    if (korean_font == NULL) {
-        lv_freetype_init(256); // cache size
-        
-        korean_font = lv_freetype_font_create("../assets/NanumGothic-Regular.ttf", 
-                                             LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 
-                                             16, // font size in px
-                                             LV_FREETYPE_FONT_STYLE_NORMAL);
-        
-        if (korean_font == NULL) {
-            printf("Warning: Failed to load NanumGothic font, using default font\n");
-        } else {
-            printf("Successfully loaded NanumGothic font\n");
-        }
-    }
-}
-#endif
-
 // Initialize Korean keypad
 void init_korean_keypad(void) {
     memset(&korean_keypad_state, 0, sizeof(korean_keypad_state));
@@ -172,11 +148,6 @@ void init_korean_keypad(void) {
     korean_keypad_buffer[0] = '\0';
     reset_hangul_composition(&korean_keypad_state.composition);
     reset_two_set_state(&korean_keypad_state.two_set_state);
-    
-    // Initialize FreeType font
-#ifdef LVGL_GUI
-    init_korean_font();
-#endif
 }
 
 // Reset Hangul composition
@@ -343,15 +314,6 @@ void process_two_set_input(char key) {
     }
 }
 
-// Update Korean display
-void update_korean_display(void) {
-#ifdef LVGL_GUI
-    if (korean_keypad_state.display_label) {
-        lv_label_set_text(korean_keypad_state.display_label, korean_keypad_buffer);
-    }
-#endif
-}
-
 // Add character to buffer
 void add_char_to_buffer(const char * str) {
     int len = strlen(korean_keypad_buffer);
@@ -359,7 +321,6 @@ void add_char_to_buffer(const char * str) {
     
     if (len + str_len < (int)sizeof(korean_keypad_buffer) - 1) {
         strcat(korean_keypad_buffer, str);
-        update_korean_display();
     }
 }
 
@@ -374,7 +335,6 @@ void remove_char_from_buffer(void) {
         if (len > 0) {
             korean_keypad_buffer[len - 1] = '\0';
         }
-        update_korean_display();
     }
 }
 
