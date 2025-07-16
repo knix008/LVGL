@@ -53,13 +53,18 @@ run: $(TARGET)
 
 # Build and test
 test: $(TARGET)
-	@echo "Running quick test..."
-	@echo "rk" | timeout 5s ./$(TARGET) > /dev/null 2>&1
-	@if [ $$? -eq 0 ]; then \
-		echo "Test passed!"; \
-	else \
-		echo "Test failed or timed out"; \
-	fi
+	@echo "=========================================="
+	@echo "Running Korean Hangul Input System Tests"
+	@echo "=========================================="
+	@echo ""
+	@echo "Building test program..."
+	@echo "Running comprehensive tests..."
+	@echo ""
+	./$(TARGET)
+	@echo ""
+	@echo "=========================================="
+	@echo "Test execution completed!"
+	@echo "=========================================="
 
 # Show help
 help:
@@ -72,14 +77,22 @@ help:
 	@echo "  install     - Install to /usr/local/bin"
 	@echo "  uninstall   - Remove from /usr/local/bin"
 	@echo "  run         - Build and run the program"
-	@echo "  test        - Build and run a quick test"
+	@echo "  test        - Build and run comprehensive tests with full output"
+	@echo "  test-quick  - Build and run a quick test (minimal output)"
 	@echo "  help        - Show this help message"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make        # Build the program"
 	@echo "  make clean  # Clean build artifacts"
 	@echo "  make run    # Build and run"
-	@echo "  make test   # Build and test"
+	@echo "  make test   # Build and run comprehensive tests"
+	@echo "  make test-quick # Build and run quick test"
+
+# Quick test (minimal output)
+test-quick: $(TARGET)
+	@echo "Running quick test..."
+	@./$(TARGET) | grep -E "(합격:|Test completed)" || true
+	@echo "Quick test completed!"
 
 # Phony targets
-.PHONY: all clean install uninstall run test help 
+.PHONY: all clean install uninstall run test test-quick help 

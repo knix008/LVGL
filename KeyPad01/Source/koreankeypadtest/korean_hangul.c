@@ -85,6 +85,7 @@ static const jongseong_compound_t jongseong_compounds[] = {
     {"ㄹ", "ㅎ", 15},  // ㅀ (Unicode: 0x11A8 + 14)
     {"ㅁ", "ㅎ", 16},  // ㅁ (Unicode: 0x11A8 + 15)
     {"ㅂ", "ㅅ", 18},  // ㅄ (Unicode: 0x11A8 + 17)
+    {"ㅂ", "ㅂ", 17},  // ㅂ (Unicode: 0x11A8 + 16) - 추가
     {"ㅅ", "ㅅ", 19},  // ㅆ (Unicode: 0x11A8 + 18)
     {"ㅇ", "ㅅ", 20},  // ㅇ (Unicode: 0x11A8 + 19)
     {"ㅈ", "ㅎ", 21},  // ㅈ (Unicode: 0x11A8 + 20)
