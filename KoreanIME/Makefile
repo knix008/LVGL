@@ -14,7 +14,7 @@ $(TARGET): $(SOURCES) $(HEADER)
 
 # Clean build artifacts
 clean:
-	rm -f $(TARGET) test_korean test_simple demo_test
+	rm -f $(TARGET) test_korean test_simple
 
 # Install to system (optional - requires sudo)
 install: $(TARGET)
@@ -36,7 +36,7 @@ debug: $(TARGET)
 release: CFLAGS += -DNDEBUG
 release: $(TARGET)
 
-# Build and run tests
+# Build and run comprehensive tests
 test: test_korean.c korean.c $(HEADER)
 	$(CC) $(CFLAGS) -o test_korean test_korean.c korean.c
 	./test_korean
@@ -46,19 +46,10 @@ test-simple: test_simple.c korean.c $(HEADER)
 	$(CC) $(CFLAGS) -o test_simple test_simple.c korean.c
 	./test_simple
 
-# Build and run demo
-demo: demo_test.c korean.c $(HEADER)
-	$(CC) $(CFLAGS) -o demo_test demo_test.c korean.c
-	./demo_test
-
 # Run all tests
-test-all: test test-simple demo
+test-all: test test-simple
 	@echo ""
 	@echo "🎉 All tests completed successfully!"
-
-# Build example
-example: example.c korean_lib.c $(HEADER)
-	$(CC) $(CFLAGS) -o example example.c korean_lib.c
 
 # Show help
 help:
@@ -70,11 +61,9 @@ help:
 	@echo "  run      - Build and run the program"
 	@echo "  test     - Build and run comprehensive tests"
 	@echo "  test-simple - Build and run simple tests"
-	@echo "  demo      - Build and run feature demonstration"
-	@echo "  test-all  - Run all tests (comprehensive + simple + demo)"
+	@echo "  test-all  - Run all tests (comprehensive + simple)"
 	@echo "  debug    - Build with debug symbols"
 	@echo "  release  - Build optimized release version"
-	@echo "  example  - Build and run the example"
 	@echo "  help     - Show this help message"
 
-.PHONY: all clean install uninstall run debug release example help 
+.PHONY: all clean install uninstall run debug release test test-simple test-all help 

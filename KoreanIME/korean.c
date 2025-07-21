@@ -11,8 +11,8 @@ KeyMap cho_keymap[] = {
 
 KeyMap jung_keymap[] = {
     {"hk", "ㅘ"}, {"ho", "ㅙ"}, {"hl", "ㅚ"}, {"np", "ㅞ"},
-    {"nj", "ㅝ"}, {"np", "ㅞ"}, {"nj", "ㅝ"}, {"y", "ㅛ"}, 
-    {"n", "ㅜ"}, {"k", "ㅏ"}, {"o", "ㅐ"}, {"i", "ㅑ"}, 
+    {"nj", "ㅝ"}, {"np", "ㅞ"}, {"nj", "ㅝ"}, {"nl", "ㅟ"}, 
+    {"y", "ㅛ"}, {"n", "ㅜ"}, {"k", "ㅏ"}, {"o", "ㅐ"}, {"i", "ㅑ"}, 
     {"O", "ㅒ"}, {"j", "ㅓ"}, {"p", "ㅔ"}, {"u", "ㅕ"}, 
     {"P", "ㅖ"}, {"h", "ㅗ"}, {"y", "ㅛ"}, {"n", "ㅜ"}, 
     {"b", "ㅠ"}, {"l", "ㅣ"}, {"m", "ㅡ"}  
@@ -261,8 +261,7 @@ void compose_korean_characters(const char* input_buffer, size_t input_len, wchar
                         
                         if (after_jung_jamo) {
                             // There's a jungseong after compound jongseong
-                            // Use first character of compound jongseong as jongseong
-                            // Second character will be used as choseong for next syllable
+                            // Split the compound jongseong: first char becomes jongseong, second becomes choseong
                             if (jong_advance == 2) {
                                 // For compound jongseong, get the first character
                                 char first_jong_char = input_buffer[i+1+jung_advance];
@@ -281,12 +280,15 @@ void compose_korean_characters(const char* input_buffer, size_t input_len, wchar
                                 jong_advance = 0;
                             }
                         }
+                        // If there's a choseong after jongseong, don't split the compound jongseong
+                        // The compound jongseong stays intact and the choseong starts a new syllable
                     }
                     
                     // Compose syllable
                     wchar_t syll = 0xAC00 + (cho_idx * 21 * 28) + (jung_idx * 28) + jong_idx;
                     temp_output[temp_len++] = syll;
                     i += 1 + jung_advance + jong_advance;
+                    
                     continue;
                 }
             }
@@ -323,7 +325,9 @@ void compose_korean_characters(const char* input_buffer, size_t input_len, wchar
                         temp_output[temp_len++] = wc;
                     }
                 } else {
-                    // Not a Korean character, ignore it
+                    // Not a Korean character, keep it in the input buffer
+                    // and start a new Korean syllable after it
+                    // For now, we'll just advance past it
                 }
                 i++;
             }
