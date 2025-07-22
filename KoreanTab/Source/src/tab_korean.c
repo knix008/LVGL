@@ -1,50 +1,75 @@
 #include "tab_korean.h"
-#include "nanum_gothic_16.h"
+#include "lv_freetype.h"
+#include <stdio.h>
 
-// Create Korean tab
+// Simple Korean tab with basic FreeType font support
 void create_korean_tab(lv_obj_t * parent) {
-    // Tab 5: Korean Tab
-    lv_obj_t * label5 = lv_label_create(parent);
-    lv_label_set_text(label5, "KOR Tab");
-    lv_obj_align(label5, LV_ALIGN_TOP_MID, 0, 10);
+    printf("Creating Korean tab...\n");
     
-    // Set Korean font for the header
-    lv_obj_set_style_text_font(label5, &nanum_gothic_16, 0);
-
-    lv_obj_t * korean_content = lv_label_create(parent);
-    lv_label_set_text(korean_content, 
-        "Korean Font Test\n\n"
-        "This is the Korean tab.\n"
-        "Testing Korean font support\n"
-        "in LVGL.\n\n"
-        "If Korean fonts work,\n"
-        "you should see Korean text below:");
-    lv_obj_align(korean_content, LV_ALIGN_CENTER, 0, 20);
-    lv_obj_set_width(korean_content, 280);
-    lv_label_set_long_mode(korean_content, LV_LABEL_LONG_WRAP);
+    // Try to load a Korean font
+    lv_font_t * korean_font = lv_freetype_font_create(
+        "../assets/NanumGothic-Regular.ttf",
+        LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+        16,
+        LV_FREETYPE_FONT_STYLE_NORMAL
+    );
     
-    // Korean text test
-    lv_obj_t * korean_test = lv_label_create(parent);
-    lv_label_set_text(korean_test, 
-        "Hello\n"
-        "안녕하세요\n"
-        "한국어");
-    lv_obj_align(korean_test, LV_ALIGN_CENTER, 0, 80);
-    lv_obj_set_width(korean_test, 280);
-    lv_label_set_long_mode(korean_test, LV_LABEL_LONG_WRAP);
+    if (korean_font == NULL) {
+        printf("Failed to load Korean font, using default font\n");
+    } else {
+        printf("Korean font loaded successfully\n");
+    }
     
-    // Set Korean font for the Korean text
-    lv_obj_set_style_text_font(korean_test, &nanum_gothic_16, 0);
-
-    // Korean button
-    lv_obj_t * korean_btn = lv_btn_create(parent);
-    lv_obj_set_size(korean_btn, 120, 40);
-    lv_obj_align(korean_btn, LV_ALIGN_CENTER, 0, 140);
+    // Simple header
+    lv_obj_t * header = lv_label_create(parent);
+    lv_label_set_text(header, "Korean Test");
+    lv_obj_align(header, LV_ALIGN_TOP_MID, 0, 10);
     
-    lv_obj_t * korean_btn_label = lv_label_create(korean_btn);
-    lv_label_set_text(korean_btn_label, "Click Me!");
-    lv_obj_center(korean_btn_label);
+    // Korean text label
+    lv_obj_t * korean_label = lv_label_create(parent);
+    lv_label_set_text(korean_label, "안녕하세요");
+    lv_obj_align(korean_label, LV_ALIGN_CENTER, 0, -30);
+    lv_obj_set_width(korean_label, 200);
     
-    // Set Korean font for the button
-    lv_obj_set_style_text_font(korean_btn, &nanum_gothic_16, 0);
+    if (korean_font != NULL) {
+        lv_obj_set_style_text_font(korean_label, korean_font, 0);
+    }
+    
+    // English text label
+    lv_obj_t * english_label = lv_label_create(parent);
+    lv_label_set_text(english_label, "Hello World");
+    lv_obj_align(english_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_width(english_label, 200);
+    
+    // Mixed text label
+    lv_obj_t * mixed_label = lv_label_create(parent);
+    lv_label_set_text(mixed_label, "한국어 Korean");
+    lv_obj_align(mixed_label, LV_ALIGN_CENTER, 0, 30);
+    lv_obj_set_width(mixed_label, 200);
+    
+    if (korean_font != NULL) {
+        lv_obj_set_style_text_font(mixed_label, korean_font, 0);
+    }
+    
+    // More Korean text
+    lv_obj_t * korean2_label = lv_label_create(parent);
+    lv_label_set_text(korean2_label, "가나다라마바사");
+    lv_obj_align(korean2_label, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_set_width(korean2_label, 200);
+    
+    if (korean_font != NULL) {
+        lv_obj_set_style_text_font(korean2_label, korean_font, 0);
+    }
+    
+    // Korean greeting
+    lv_obj_t * greeting_label = lv_label_create(parent);
+    lv_label_set_text(greeting_label, "반갑습니다");
+    lv_obj_align(greeting_label, LV_ALIGN_CENTER, 0, 90);
+    lv_obj_set_width(greeting_label, 200);
+    
+    if (korean_font != NULL) {
+        lv_obj_set_style_text_font(greeting_label, korean_font, 0);
+    }
+    
+    printf("Korean tab created\n");
 } 

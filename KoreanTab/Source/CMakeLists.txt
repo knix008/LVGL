@@ -10,6 +10,8 @@ set(SQLCIPHER_DIR "sqlcipher")
 include_directories(
     ${LVGL_DIR}
     ${LVGL_DIR}/src
+    ${LVGL_DIR}/src/libs
+    ${LVGL_DIR}/src/libs/freetype
     ${LV_DRIVERS_DIR}
     ${LV_DRIVERS_DIR}/sdl
     ${SQLCIPHER_DIR}/src
@@ -17,6 +19,11 @@ include_directories(
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
+
+# Find FreeType
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FREETYPE REQUIRED freetype2)
+include_directories(${FREETYPE_INCLUDE_DIRS})
 
 add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
 
@@ -41,17 +48,12 @@ add_executable(lvgl_main
     src/main.c
     src/sqlite_test.c
     src/ui_components.c
-    src/nanum_gothic_16.c
     src/tab_db.c
     src/tab_settings.c
     src/tab_info.c
     src/tab_number.c
     src/tab_korean.c
-)
-
-# Set the output directory to the project root
-set_target_properties(lvgl_main PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/..
+    src/ui_callbacks.c
 )
 
 # Add include directories
@@ -70,7 +72,7 @@ set(SQLCIPHER_SOURCES
 )
 
 target_sources(lvgl_main PRIVATE ${LVGL_SOURCES} ${LV_DRIVERS_SOURCES} ${SQLCIPHER_SOURCES})
-target_link_libraries(lvgl_main ${SDL2_LIBRARIES})
+target_link_libraries(lvgl_main ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
 
 if(UNIX)
     target_link_libraries(lvgl_main pthread dl m crypto)

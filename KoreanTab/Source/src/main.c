@@ -4,6 +4,7 @@
 #include "lv_drivers.h"
 #include "ui_components.h"
 #include "sqlite_test.h"
+#include "lv_freetype.h"
 
 // In your main loop, call lv_timer_handler() periodically, e.g., every 5-10 ms
 int main(void)
@@ -24,6 +25,11 @@ int main(void)
     lv_indev_t * mouse = lv_sdl_mouse_create();
     lv_indev_t * mousewheel = lv_sdl_mousewheel_create();
     lv_indev_t * keyboard = lv_sdl_keyboard_create();
+
+    // Initialize FreeType
+    printf("Initializing FreeType...\n");
+    lv_freetype_init(256);
+    printf("FreeType initialized successfully.\n");
 
     // Run SQLCipher demonstration
     printf("Running SQLCipher demonstration...\n");
