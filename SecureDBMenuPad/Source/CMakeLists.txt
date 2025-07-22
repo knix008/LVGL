@@ -9,6 +9,7 @@ set(LV_DRIVERS_DIR "lvgl/src/drivers")
 set(SQLCIPHER_DIR "sqlcipher")
 set(SOURCE_DIR "src")
 set(INCLUDE_DIR "include")
+set(IME_DIR "IME")
 
 # Include directories
 include_directories(
@@ -18,6 +19,7 @@ include_directories(
     ${LV_DRIVERS_DIR}/sdl
     ${SQLCIPHER_DIR}
     ${INCLUDE_DIR}
+    ${IME_DIR}
 )
 
 find_package(SDL2 REQUIRED)
@@ -52,6 +54,8 @@ set(APP_SOURCES
     ${SOURCE_DIR}/ui_database.c
     ${SOURCE_DIR}/ui_keypad.c
     ${SOURCE_DIR}/ui_callbacks.c
+    ${SOURCE_DIR}/ui_korean.c
+    ${IME_DIR}/korean.c
 )
 
 add_executable(lvgl_main ${APP_SOURCES})

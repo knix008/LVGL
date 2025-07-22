@@ -1,4 +1,5 @@
 #include "ui_components.h"
+#include "ui_korean.h"
 #include "sqlite_test.h"
 #include <string.h>
 #include <stdio.h>
@@ -122,6 +123,7 @@ void lv_example_tab_menu(void) {
     lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Settings");
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "Keypad"); // Added Keypad tab
+    lv_obj_t * tab5 = lv_tabview_add_tab(tabview, "한글"); // Added Korean input tab
     
     // Tab 1: Database operations
     lv_obj_t * label1 = lv_label_create(tab1);
@@ -280,6 +282,9 @@ void lv_example_tab_menu(void) {
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, keypad_enter_cb, LV_EVENT_CLICKED, NULL);
+
+    // Tab 5: Korean Input
+    create_korean_input_tab(tab5);
 }
 
 // UI initialization and setup (original simple GUI)
