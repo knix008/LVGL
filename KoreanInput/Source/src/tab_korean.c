@@ -1,24 +1,11 @@
 #include "tab_korean.h"
+#include "korean_input.h"
 #include "lv_freetype.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <wchar.h>
 #include <locale.h>
-
-// Korean choseong (consonants) characters
-static const char* korean_choseong[] = {
-    "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", 
-    "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
-};
-// Korean jungseong (vowels) characters
-static const char* korean_jungseong[] = {
-    "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"
-};
-// Korean jongseong (final consonants) characters
-static const char* korean_jongseong[] = {
-    "", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
-};
 
 // Global variables for Korean input
 static lv_obj_t * choseong_diplay_label = NULL;
@@ -47,85 +34,71 @@ static void load_korean_font(void) {
     }
 }
 
-// Function to convert Korean jamo to UTF-8 syllable
-static int korean_jamo_to_utf8_syllable(int choseong_idx, int jungseong_idx, int jongseong_idx, char* output, size_t output_size) {
-    // Korean Unicode constants
-    const int HANGUL_BASE = 0xAC00;  // 가 (first Korean syllable)
-    const int CHOSEONG_BASE = 0x1100; // ㄱ (first choseong)
-    const int JUNGSEONG_BASE = 0x1161; // ㅏ (first jungseong)
-    const int JONGSEONG_BASE = 0x11A8; // ㄱ (first jongseong)
+// Function to get previous index with wraparound
+static int get_prev_index(int current, int size) {
+    return (current - 1 + size) % size;
+}
+
+// Function to get next index with wraparound
+static int get_next_index(int current, int size) {
+    return (current + 1) % size;
+}
+
+// Function to update choseong label with 3 characters
+static void update_choseong_label() {
+    if (choseong_diplay_label == NULL) return;
     
-    // Choseong mapping (0-18 to Unicode choseong)
-    const int choseong_unicode[] = {
-        0x1100, 0x1101, 0x1102, 0x1103, 0x1104, 0x1105, 0x1106, 0x1107, 0x1108, 0x1109,
-        0x110A, 0x110B, 0x110C, 0x110D, 0x110E, 0x110F, 0x1110, 0x1111, 0x1112
-    };
+    const char** choseong_array = get_korean_choseong();
+    size_t choseong_size = get_korean_choseong_size();
     
-    // Jungseong mapping (0-20 to Unicode jungseong)
-    const int jungseong_unicode[] = {
-        0x1161, 0x1162, 0x1163, 0x1164, 0x1165, 0x1166, 0x1167, 0x1168, 0x1169, 0x116A,
-        0x116B, 0x116C, 0x116D, 0x116E, 0x116F, 0x1170, 0x1171, 0x1172, 0x1173, 0x1174,
-        0x1175
-    };
+    int prev_idx = get_prev_index(current_choseong_index, choseong_size);
+    int next_idx = get_next_index(current_choseong_index, choseong_size);
     
-    // Jongseong mapping (0-27 to Unicode jongseong, 0 = no jongseong)
-    const int jongseong_unicode[] = {
-        0x0000, 0x11A8, 0x11A9, 0x11AA, 0x11AB, 0x11AC, 0x11AD, 0x11AE, 0x11AF, 0x11B0,
-        0x11B1, 0x11B2, 0x11B3, 0x11B4, 0x11B5, 0x11B6, 0x11B7, 0x11B8, 0x11B9, 0x11BA,
-        0x11BB, 0x11BC, 0x11BD, 0x11BE, 0x11BF, 0x11C0, 0x11C1, 0x11C2
-    };
+    char label_text[32];
+    snprintf(label_text, sizeof(label_text), "%s %s %s", 
+             choseong_array[prev_idx], 
+             choseong_array[current_choseong_index], 
+             choseong_array[next_idx]);
     
-    // Validate indices
-    if (choseong_idx < 0 || choseong_idx >= 19 || 
-        jungseong_idx < 0 || jungseong_idx >= 21 ||
-        jongseong_idx < 0 || jongseong_idx >= 28) {
-        printf("Invalid Korean jamo indices: choseong=%d, jungseong=%d, jongseong=%d\n", 
-               choseong_idx, jungseong_idx, jongseong_idx);
-        return -1;
-    }
+    lv_label_set_text(choseong_diplay_label, label_text);
+}
+
+// Function to update jungseong label with 3 characters
+static void update_jungseong_label() {
+    if (jungseong_display_label == NULL) return;
     
-    // Get Unicode values
-    int choseong_uni = choseong_unicode[choseong_idx];
-    int jungseong_uni = jungseong_unicode[jungseong_idx];
-    int jongseong_uni = jongseong_unicode[jongseong_idx];
+    const char** jungseong_array = get_korean_jungseong();
+    size_t jungseong_size = get_korean_jungseong_size();
     
-         // Calculate Korean syllable Unicode (fixed: use jongseong_idx directly)
-     int syllable_uni = HANGUL_BASE + (choseong_idx * 21 + jungseong_idx) * 28 + jongseong_idx;
+    int prev_idx = get_prev_index(current_jungseong_index, jungseong_size);
+    int next_idx = get_next_index(current_jungseong_index, jungseong_size);
     
-    printf("Converting jamo to UTF-8: choseong=%d(%04X), jungseong=%d(%04X), jongseong=%d(%04X) -> syllable=%04X\n",
-           choseong_idx, choseong_uni, jungseong_idx, jungseong_uni, jongseong_idx, jongseong_uni, syllable_uni);
+    char label_text[32];
+    snprintf(label_text, sizeof(label_text), "%s %s %s", 
+             jungseong_array[prev_idx], 
+             jungseong_array[current_jungseong_index], 
+             jungseong_array[next_idx]);
     
-    // Convert Unicode to UTF-8
-    if (syllable_uni <= 0x7F) {
-        // 1-byte UTF-8
-        if (output_size < 2) return -1;
-        output[0] = (char)syllable_uni;
-        output[1] = '\0';
-    } else if (syllable_uni <= 0x7FF) {
-        // 2-byte UTF-8
-        if (output_size < 3) return -1;
-        output[0] = 0xC0 | ((syllable_uni >> 6) & 0x1F);
-        output[1] = 0x80 | (syllable_uni & 0x3F);
-        output[2] = '\0';
-    } else if (syllable_uni <= 0xFFFF) {
-        // 3-byte UTF-8
-        if (output_size < 4) return -1;
-        output[0] = 0xE0 | ((syllable_uni >> 12) & 0x0F);
-        output[1] = 0x80 | ((syllable_uni >> 6) & 0x3F);
-        output[2] = 0x80 | (syllable_uni & 0x3F);
-        output[3] = '\0';
-    } else {
-        // 4-byte UTF-8 (not needed for Korean)
-        if (output_size < 5) return -1;
-        output[0] = 0xF0 | ((syllable_uni >> 18) & 0x07);
-        output[1] = 0x80 | ((syllable_uni >> 12) & 0x3F);
-        output[2] = 0x80 | ((syllable_uni >> 6) & 0x3F);
-        output[3] = 0x80 | (syllable_uni & 0x3F);
-        output[4] = '\0';
-    }
+    lv_label_set_text(jungseong_display_label, label_text);
+}
+
+// Function to update jongseong label with 3 characters
+static void update_jongseong_label() {
+    if (jongseong_display_label == NULL) return;
     
-    printf("Generated UTF-8 syllable: %s (length: %zu)\n", output, strlen(output));
-    return 0;
+    const char** jongseong_array = get_korean_jongseong();
+    size_t jongseong_size = get_korean_jongseong_size();
+    
+    int prev_idx = get_prev_index(current_jongseong_index, jongseong_size);
+    int next_idx = get_next_index(current_jongseong_index, jongseong_size);
+    
+    char label_text[32];
+    snprintf(label_text, sizeof(label_text), "%s %s %s", 
+             jongseong_array[prev_idx], 
+             jongseong_array[current_jongseong_index], 
+             jongseong_array[next_idx]);
+    
+    lv_label_set_text(jongseong_display_label, label_text);
 }
 
 // Callback functions for Korean input
@@ -133,17 +106,12 @@ static void choseong_next_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Next choseong button clicked, current index: %d\n", current_choseong_index);
-        current_choseong_index = (current_choseong_index + 1) % (sizeof(korean_choseong) / sizeof(korean_choseong[0]));
-        printf("New index: %d, array size: %zu\n", current_choseong_index, sizeof(korean_choseong) / sizeof(korean_choseong[0]));
+        size_t choseong_size = get_korean_choseong_size();
+        current_choseong_index = (current_choseong_index + 1) % choseong_size;
+        printf("New index: %d, array size: %zu\n", current_choseong_index, choseong_size);
         
-        // Safety check for array bounds and label
-        if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-            korean_choseong[current_choseong_index] != NULL && choseong_diplay_label != NULL) {
-            printf("Would update label to: %s\n", korean_choseong[current_choseong_index]);
-            lv_label_set_text(choseong_diplay_label, korean_choseong[current_choseong_index]);
-        } else {
-            printf("Error: Invalid index %d or null label\n", current_choseong_index);
-        }
+        // Update label with 3 characters
+        update_choseong_label();
     }
 }
 
@@ -151,17 +119,12 @@ static void choseong_prev_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Previous choseoung button clicked, current index: %d\n", current_choseong_index);
-        current_choseong_index = (current_choseong_index - 1 + sizeof(korean_choseong) / sizeof(korean_choseong[0])) % (sizeof(korean_choseong) / sizeof(korean_choseong[0]));
+        size_t choseong_size = get_korean_choseong_size();
+        current_choseong_index = (current_choseong_index - 1 + choseong_size) % choseong_size;
         printf("New index: %d\n", current_choseong_index);
         
-        // Safety check for array bounds and label
-        if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-            korean_choseong[current_choseong_index] != NULL && choseong_diplay_label != NULL) {
-            printf("Would update label to: %s\n", korean_choseong[current_choseong_index]);
-            lv_label_set_text(choseong_diplay_label, korean_choseong[current_choseong_index]);
-        } else {
-            printf("Error: Invalid index %d or null label\n", current_choseong_index);
-        }
+        // Update label with 3 characters
+        update_choseong_label();
     }
 }
 
@@ -169,17 +132,12 @@ static void jungseong_next_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Next jungseong button clicked, current index: %d\n", current_jungseong_index);
-        current_jungseong_index = (current_jungseong_index + 1) % (sizeof(korean_jungseong) / sizeof(korean_jungseong[0]));
-        printf("New jungseong index: %d, array size: %zu\n", current_jungseong_index, sizeof(korean_jungseong) / sizeof(korean_jungseong[0]));
+        size_t jungseong_size = get_korean_jungseong_size();
+        current_jungseong_index = (current_jungseong_index + 1) % jungseong_size;
+        printf("New jungseong index: %d, array size: %zu\n", current_jungseong_index, jungseong_size);
         
-        // Safety check for array bounds and label
-        if (current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-            korean_jungseong[current_jungseong_index] != NULL && jungseong_display_label != NULL) {
-            printf("Would update jungseong label to: %s\n", korean_jungseong[current_jungseong_index]);
-            lv_label_set_text(jungseong_display_label, korean_jungseong[current_jungseong_index]);
-        } else {
-            printf("Error: Invalid jungseong index %d or null label\n", current_jungseong_index);
-        }
+        // Update label with 3 characters
+        update_jungseong_label();
     }
 }
 
@@ -187,17 +145,12 @@ static void jungseong_prev_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Previous jungseong button clicked, current index: %d\n", current_jungseong_index);
-        current_jungseong_index = (current_jungseong_index - 1 + sizeof(korean_jungseong) / sizeof(korean_jungseong[0])) % (sizeof(korean_jungseong) / sizeof(korean_jungseong[0]));
+        size_t jungseong_size = get_korean_jungseong_size();
+        current_jungseong_index = (current_jungseong_index - 1 + jungseong_size) % jungseong_size;
         printf("New jungseong index: %d\n", current_jungseong_index);
         
-        // Safety check for array bounds and label
-        if (current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-            korean_jungseong[current_jungseong_index] != NULL && jungseong_display_label != NULL) {
-            printf("Would update jungseong label to: %s\n", korean_jungseong[current_jungseong_index]);
-            lv_label_set_text(jungseong_display_label, korean_jungseong[current_jungseong_index]);
-        } else {
-            printf("Error: Invalid jungseong index %d or null label\n", current_jungseong_index);
-        }
+        // Update label with 3 characters
+        update_jungseong_label();
     }
 }
 
@@ -205,17 +158,12 @@ static void jongseong_next_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Next jongseong button clicked, current index: %d\n", current_jongseong_index);
-        current_jongseong_index = (current_jongseong_index + 1) % (sizeof(korean_jongseong) / sizeof(korean_jongseong[0]));
-        printf("New jongseong index: %d, array size: %zu\n", current_jongseong_index, sizeof(korean_jongseong) / sizeof(korean_jongseong[0]));
+        size_t jongseong_size = get_korean_jongseong_size();
+        current_jongseong_index = (current_jongseong_index + 1) % jongseong_size;
+        printf("New jongseong index: %d, array size: %zu\n", current_jongseong_index, jongseong_size);
         
-        // Safety check for array bounds and label
-        if (current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-            korean_jongseong[current_jongseong_index] != NULL && jongseong_display_label != NULL) {
-            printf("Would update jongseong label to: %s\n", korean_jongseong[current_jongseong_index]);
-            lv_label_set_text(jongseong_display_label, korean_jongseong[current_jongseong_index]);
-        } else {
-            printf("Error: Invalid jongseong index %d or null label\n", current_jongseong_index);
-        }
+        // Update label with 3 characters
+        update_jongseong_label();
     }
 }
 
@@ -223,17 +171,12 @@ static void jongseong_prev_korean_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("Previous jongseong button clicked, current index: %d\n", current_jongseong_index);
-        current_jongseong_index = (current_jongseong_index - 1 + sizeof(korean_jongseong) / sizeof(korean_jongseong[0])) % (sizeof(korean_jongseong) / sizeof(korean_jongseong[0]));
+        size_t jongseong_size = get_korean_jongseong_size();
+        current_jongseong_index = (current_jongseong_index - 1 + jongseong_size) % jongseong_size;
         printf("New jongseong index: %d\n", current_jongseong_index);
         
-        // Safety check for array bounds and label
-        if (current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-            korean_jongseong[current_jongseong_index] != NULL && jongseong_display_label != NULL) {
-            printf("Would update jongseong label to: %s\n", korean_jongseong[current_jongseong_index]);
-            lv_label_set_text(jongseong_display_label, korean_jongseong[current_jongseong_index]);
-        } else {
-            printf("Error: Invalid jongseong index %d or null label\n", current_jongseong_index);
-        }
+        // Update label with 3 characters
+        update_jongseong_label();
     }
 }
 
@@ -263,18 +206,9 @@ static void backspace_korean_cb(lv_event_t * e) {
             }
         }
         // Keep displaying the current characters in all center labels regardless of buffer
-        if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-            korean_choseong[current_choseong_index] != NULL && choseong_diplay_label != NULL) {
-            lv_label_set_text(choseong_diplay_label, korean_choseong[current_choseong_index]);
-        }
-        if (current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-            korean_jungseong[current_jungseong_index] != NULL && jungseong_display_label != NULL) {
-            lv_label_set_text(jungseong_display_label, korean_jungseong[current_jungseong_index]);
-        }
-        if (current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-            korean_jongseong[current_jongseong_index] != NULL && jongseong_display_label != NULL) {
-            lv_label_set_text(jongseong_display_label, korean_jongseong[current_jongseong_index]);
-        }
+        update_choseong_label();
+        update_jungseong_label();
+        update_jongseong_label();
     }
 }
 
@@ -285,12 +219,19 @@ static void enter_korean_cb(lv_event_t * e) {
                current_choseong_index, current_jungseong_index, current_jongseong_index);
         
                  // Safety check for all array bounds
-         if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-             korean_choseong[current_choseong_index] != NULL &&
-             current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-             korean_jungseong[current_jungseong_index] != NULL &&
-             current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-             korean_jongseong[current_jongseong_index] != NULL) {
+        const char** choseong_array = get_korean_choseong();
+        const char** jungseong_array = get_korean_jungseong();
+        const char** jongseong_array = get_korean_jongseong();
+        size_t choseong_size = get_korean_choseong_size();
+        size_t jungseong_size = get_korean_jungseong_size();
+        size_t jongseong_size = get_korean_jongseong_size();
+        
+        if (current_choseong_index >= 0 && current_choseong_index < choseong_size && 
+            choseong_array[current_choseong_index] != NULL &&
+            current_jungseong_index >= 0 && current_jungseong_index < jungseong_size && 
+            jungseong_array[current_jungseong_index] != NULL &&
+            current_jongseong_index >= 0 && current_jongseong_index < jongseong_size && 
+            jongseong_array[current_jongseong_index] != NULL) {
              
              // Create a complete Korean syllable using UTF-8 conversion
              char syllable[16] = "";
@@ -319,18 +260,9 @@ static void enter_korean_cb(lv_event_t * e) {
         }
         
         // Keep all center labels showing the current characters
-        if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-            korean_choseong[current_choseong_index] != NULL && choseong_diplay_label != NULL) {
-            lv_label_set_text(choseong_diplay_label, korean_choseong[current_choseong_index]);
-        }
-        if (current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-            korean_jungseong[current_jungseong_index] != NULL && jungseong_display_label != NULL) {
-            lv_label_set_text(jungseong_display_label, korean_jungseong[current_jungseong_index]);
-        }
-        if (current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-            korean_jongseong[current_jongseong_index] != NULL && jongseong_display_label != NULL) {
-            lv_label_set_text(jongseong_display_label, korean_jongseong[current_jongseong_index]);
-        }
+        update_choseong_label();
+        update_jungseong_label();
+        update_jongseong_label();
     }
 }
 
@@ -341,18 +273,9 @@ static void clear_korean_cb(lv_event_t * e) {
         // Clear the buffer
         korean_buffer[0] = '\0';
         // Reset display to show current characters instead of buffer
-        if (current_choseong_index >= 0 && current_choseong_index < sizeof(korean_choseong) / sizeof(korean_choseong[0]) && 
-            korean_choseong[current_choseong_index] != NULL && choseong_diplay_label != NULL) {
-            lv_label_set_text(choseong_diplay_label, korean_choseong[current_choseong_index]);
-        }
-        if (current_jungseong_index >= 0 && current_jungseong_index < sizeof(korean_jungseong) / sizeof(korean_jungseong[0]) && 
-            korean_jungseong[current_jungseong_index] != NULL && jungseong_display_label != NULL) {
-            lv_label_set_text(jungseong_display_label, korean_jungseong[current_jungseong_index]);
-        }
-        if (current_jongseong_index >= 0 && current_jongseong_index < sizeof(korean_jongseong) / sizeof(korean_jongseong[0]) && 
-            korean_jongseong[current_jongseong_index] != NULL && jongseong_display_label != NULL) {
-            lv_label_set_text(jongseong_display_label, korean_jongseong[current_jongseong_index]);
-        }
+        update_choseong_label();
+        update_jungseong_label();
+        update_jongseong_label();
         // Clear the result label
         if (result_label != NULL) {
             lv_label_set_text(result_label, "Result: ");
@@ -386,25 +309,24 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Previous button
     lv_obj_t * prev_btn = lv_btn_create(nav_container);
-    lv_obj_set_size(prev_btn, 70, 40);
+    lv_obj_set_size(prev_btn, 30, 30);
     lv_obj_t * prev_label = lv_label_create(prev_btn);
     lv_label_set_text(prev_label, "<");
     lv_obj_add_event_cb(prev_btn, choseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean character display (center label)
     choseong_diplay_label = lv_label_create(nav_container);
-    lv_label_set_text(choseong_diplay_label, korean_choseong[0]); // Start with first character
     lv_obj_set_style_text_font(choseong_diplay_label, korean_font, 0);
     lv_obj_set_style_bg_color(choseong_diplay_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(choseong_diplay_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(choseong_diplay_label, 2, 0);
     lv_obj_set_style_border_color(choseong_diplay_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(choseong_diplay_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(choseong_diplay_label, 80, 40);
+    lv_obj_set_size(choseong_diplay_label, 120, 40);
     
     // Next button
     lv_obj_t * next_btn = lv_btn_create(nav_container);
-    lv_obj_set_size(next_btn, 70, 40);
+    lv_obj_set_size(next_btn, 30, 30);
     lv_obj_t * next_label = lv_label_create(next_btn);
     lv_label_set_text(next_label, ">");
     lv_obj_add_event_cb(next_btn, choseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
@@ -419,25 +341,24 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Previous jungseong button
     lv_obj_t * jungseong_prev_btn = lv_btn_create(jungseong_container);
-    lv_obj_set_size(jungseong_prev_btn, 70, 40);
+    lv_obj_set_size(jungseong_prev_btn, 30, 30);
     lv_obj_t * jungseong_prev_label = lv_label_create(jungseong_prev_btn);
     lv_label_set_text(jungseong_prev_label, "<");
     lv_obj_add_event_cb(jungseong_prev_btn, jungseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean jungseong display (center label)
     jungseong_display_label = lv_label_create(jungseong_container);
-    lv_label_set_text(jungseong_display_label, korean_jungseong[0]); // Start with first jungseong character
     lv_obj_set_style_text_font(jungseong_display_label, korean_font, 0);
     lv_obj_set_style_bg_color(jungseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jungseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jungseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jungseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jungseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(jungseong_display_label, 80, 40);
+    lv_obj_set_size(jungseong_display_label, 120, 40);
     
     // Next jungseong button
     lv_obj_t * jungseong_next_btn = lv_btn_create(jungseong_container);
-    lv_obj_set_size(jungseong_next_btn, 70, 40);
+    lv_obj_set_size(jungseong_next_btn, 30, 30);
     lv_obj_t * jungseong_next_label = lv_label_create(jungseong_next_btn);
     lv_label_set_text(jungseong_next_label, ">");
     lv_obj_add_event_cb(jungseong_next_btn, jungseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
@@ -452,25 +373,24 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Previous jongseong button
     lv_obj_t * jongseong_prev_btn = lv_btn_create(jongseong_container);
-    lv_obj_set_size(jongseong_prev_btn, 70, 40);
+    lv_obj_set_size(jongseong_prev_btn, 30, 30);
     lv_obj_t * jongseong_prev_label = lv_label_create(jongseong_prev_btn);
     lv_label_set_text(jongseong_prev_label, "<");
     lv_obj_add_event_cb(jongseong_prev_btn, jongseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean jongseong display (center label)
     jongseong_display_label = lv_label_create(jongseong_container);
-    lv_label_set_text(jongseong_display_label, korean_jongseong[0]); // Start with first jongseong character
     lv_obj_set_style_text_font(jongseong_display_label, korean_font, 0);
     lv_obj_set_style_bg_color(jongseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jongseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jongseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jongseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jongseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(jongseong_display_label, 80, 40);
+    lv_obj_set_size(jongseong_display_label, 120, 40);
     
     // Next jongseong button
     lv_obj_t * jongseong_next_btn = lv_btn_create(jongseong_container);
-    lv_obj_set_size(jongseong_next_btn, 70, 40);
+    lv_obj_set_size(jongseong_next_btn, 30, 30);
     lv_obj_t * jongseong_next_label = lv_label_create(jongseong_next_btn);
     lv_label_set_text(jongseong_next_label, ">");
     lv_obj_add_event_cb(jongseong_next_btn, jongseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
@@ -512,6 +432,11 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_set_style_bg_opa(result_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(result_label, 1, 0);
     lv_obj_set_size(result_label, 200, 60);
+    
+    // Initialize labels with 3-character display
+    update_choseong_label();
+    update_jungseong_label();
+    update_jongseong_label();
     
     printf("Korean tab created successfully\n");
 }
