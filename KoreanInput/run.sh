@@ -1,4 +1,5 @@
 #!/bin/bash
+mkdir -p Source/build
 
 # Run the LVGL Korean Tab application
 cd Source/build
