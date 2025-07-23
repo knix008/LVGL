@@ -1,6 +1,0 @@
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/lvgl_lib.dir
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/lvgl_main.dir
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/clean-all.dir
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/clean-main.dir
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/edit_cache.dir
-/home/shkwon/Projects/LVGL/KoreanInput/Source/CMakeFiles/rebuild_cache.dir
