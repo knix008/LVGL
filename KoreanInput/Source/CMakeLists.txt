@@ -10,6 +10,10 @@ set(LVGL_DIR "lvgl")
 set(LV_DRIVERS_DIR "lvgl/src/drivers")
 set(SQLCIPHER_DIR "sqlcipher")
 
+# Create lib directory
+set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
+file(MAKE_DIRECTORY ${LIB_DIR})
+
 include_directories(
     ${LVGL_DIR}
     ${LVGL_DIR}/src
@@ -47,6 +51,32 @@ add_compile_definitions(
     SQLCIPHER_OMIT_LOG=1
 )
 
+# Create LVGL static library
+file(GLOB_RECURSE LVGL_SOURCES
+    ${LVGL_DIR}/src/*.c
+)
+file(GLOB LV_DRIVERS_SOURCES
+    ${LV_DRIVERS_DIR}/sdl/*.c
+)
+
+# Create LVGL library
+add_library(lvgl_lib STATIC ${LVGL_SOURCES} ${LV_DRIVERS_SOURCES})
+target_include_directories(lvgl_lib PUBLIC 
+    ${LVGL_DIR}
+    ${LVGL_DIR}/src
+    ${LVGL_DIR}/src/libs
+    ${LVGL_DIR}/src/libs/freetype
+    ${LV_DRIVERS_DIR}
+    ${LV_DRIVERS_DIR}/sdl
+)
+
+# Set output directory for LVGL library
+set_target_properties(lvgl_lib PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${LIB_DIR}
+)
+
 # Explicitly list all source files to ensure proper dependency tracking
 set(MAIN_SOURCES
     src/main.c
@@ -57,20 +87,8 @@ set(MAIN_SOURCES
     src/tab_info.c
     src/tab_number.c
     src/tab_korean.c
+    src/korean_input.c
     src/ui_callbacks.c
-)
-
-add_executable(lvgl_main ${MAIN_SOURCES})
-
-# Add include directories
-target_include_directories(lvgl_main PRIVATE include sqlcipher sqlite lvgl)
-
-# Use file globbing for LVGL sources but with proper dependency tracking
-file(GLOB_RECURSE LVGL_SOURCES
-    ${LVGL_DIR}/src/*.c
-)
-file(GLOB LV_DRIVERS_SOURCES
-    ${LV_DRIVERS_DIR}/sdl/*.c
 )
 
 # SQLCipher amalgamation files
@@ -78,8 +96,14 @@ set(SQLCIPHER_SOURCES
     ${SQLCIPHER_DIR}/sqlite3.c
 )
 
-target_sources(lvgl_main PRIVATE ${LVGL_SOURCES} ${LV_DRIVERS_SOURCES} ${SQLCIPHER_SOURCES})
-target_link_libraries(lvgl_main ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+# Create main executable
+add_executable(lvgl_main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
+
+# Add include directories
+target_include_directories(lvgl_main PRIVATE include sqlcipher sqlite lvgl)
+
+# Link against LVGL library and other dependencies
+target_link_libraries(lvgl_main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
 
 if(UNIX)
     target_link_libraries(lvgl_main pthread dl m crypto)
@@ -98,6 +122,16 @@ add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/lvgl_main
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.o
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.d
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${LIB_DIR}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Cleaning all build files"
+)
+
+# Add custom target to clean only main sources (keep LVGL library)
+add_custom_target(clean-main
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/lvgl_main
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.o
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.d
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Cleaning main application files (keeping LVGL library)"
 )

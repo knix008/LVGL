@@ -13,12 +13,12 @@ void create_info_tab(lv_obj_t * parent) {
         "Version: 1.0.0\n"
         "Built with LVGL\n\n"
         "Features:\n"
-        "• Number keypad interface\n"
-        "• Database operations\n"
-        "• Tabbed interface\n"
-        "• Settings panel\n"
-        "• Modern UI design\n"
-        "• Korean font support");
+        "- Number keypad interface\n"
+        "- Database operations\n"
+        "- Tabbed interface\n"
+        "- Settings panel\n"
+        "- Modern UI design\n"
+        "- Korean font support");
     lv_obj_align(info_label, LV_ALIGN_CENTER, 0, 20);
     lv_obj_set_width(info_label, 280);
     lv_label_set_long_mode(info_label, LV_LABEL_LONG_WRAP);

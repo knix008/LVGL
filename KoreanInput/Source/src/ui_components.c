@@ -5,10 +5,48 @@
 #include "tab_number.h"
 #include "tab_korean.h"
 #include "ui_callbacks.h"
+#include "lv_freetype.h"
 #include <stdio.h>
+
+// Global Korean font variable
+lv_font_t * korean_font = NULL;
+
+// Function to initialize FreeType and load Korean font
+static void init_freetype_and_fonts(void) {
+    if (korean_font == NULL) {
+        printf("Loading Korean TrueType font with enhanced memory settings...\n");
+        printf("FreeType cache size: %d glyphs, LVGL memory: %d KB, Cache: %d KB\n", 
+               LV_FREETYPE_CACHE_FT_GLYPH_CNT, 
+               LV_MEM_SIZE / 1024, 
+               LV_CACHE_DEF_SIZE / 1024);
+        
+        korean_font = lv_freetype_font_create("/home/shkwon/Projects/LVGL/KoreanInput/Source/assets/NanumGothic-Regular.ttf", 
+                                             LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 
+                                             24, 
+                                             LV_FREETYPE_FONT_STYLE_NORMAL);
+        
+        if (korean_font != NULL) {
+            printf("Korean TrueType font loaded successfully with enhanced memory allocation\n");
+            printf("- Glyph cache: %d entries\n", LV_FREETYPE_CACHE_FT_GLYPH_CNT);
+            printf("- Font size: 24px\n");
+            printf("- Render mode: Bitmap\n");
+        } else {
+            printf("Failed to load Korean font, falling back to built-in font\n");
+            korean_font = (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
+        }
+    }
+}
+
+// Function to get the Korean font
+lv_font_t * get_korean_font(void) {
+    return korean_font;
+}
 
 // UI initialization and setup with tab menu
 void lv_example_tab_menu(void) {
+    // Initialize FreeType and fonts first
+    init_freetype_and_fonts();
+    
     // Create a screen
     lv_obj_t * scr = lv_scr_act();
     

@@ -7,6 +7,9 @@
 
 void lv_example_tab_menu(void);
 
+// Font management
+lv_font_t * get_korean_font(void);
+
 // Button event callbacks
 void btn_event_cb(lv_event_t * e);
 void btn2_event_cb(lv_event_t * e);

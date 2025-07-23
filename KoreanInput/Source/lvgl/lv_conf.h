@@ -69,7 +69,7 @@
 
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /** Size of memory available for `lv_malloc()` in bytes (>= 2kB) */
-    #define LV_MEM_SIZE (64 * 1024U)          /**< [bytes] */
+    #define LV_MEM_SIZE (256 * 1024U)          /**< [bytes] Increased for better TrueType font handling */
 
     /** Size of the memory expand for `lv_malloc()` in bytes */
     #define LV_MEM_POOL_EXPAND_SIZE 0
@@ -457,8 +457,9 @@
  *  Used by image decoders such as `lv_lodepng` to keep the decoded image in memory.
  *  If size is not set to 0, the decoder will fail to decode when the cache is full.
  *  If size is 0, the cache function is not enabled and the decoded memory will be
- *  released immediately after use. */
-#define LV_CACHE_DEF_SIZE       0
+ *  released immediately after use. 
+ *  Increased for better TrueType font caching performance. */
+#define LV_CACHE_DEF_SIZE       (1024 * 1024U)  /* 1MB cache for better font performance */
 
 /** Default number of image header cache entries. The cache is used to store the headers of images
  *  The main logic is like `LV_CACHE_DEF_SIZE` but for image headers. */
