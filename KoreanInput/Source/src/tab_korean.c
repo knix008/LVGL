@@ -405,21 +405,21 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Clear button
     lv_obj_t * clear_btn = lv_btn_create(action_container);
-    lv_obj_set_size(clear_btn, 70, 40);
+    lv_obj_set_size(clear_btn, 60, 40);
     lv_obj_t * clear_label = lv_label_create(clear_btn);
     lv_label_set_text(clear_label, "Clear");
     lv_obj_add_event_cb(clear_btn, clear_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Enter button
     lv_obj_t * enter_btn = lv_btn_create(action_container);
-    lv_obj_set_size(enter_btn, 70, 40);
+    lv_obj_set_size(enter_btn, 60, 40);
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_add_event_cb(enter_btn, enter_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Backspace button
     lv_obj_t * back_btn = lv_btn_create(action_container);
-    lv_obj_set_size(back_btn, 70, 40);
+    lv_obj_set_size(back_btn, 60, 40);
     lv_obj_t * back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");
     lv_obj_add_event_cb(back_btn, backspace_korean_cb, LV_EVENT_CLICKED, NULL);
@@ -431,7 +431,7 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_set_style_bg_color(result_label, lv_color_hex(0xf0f0f0), 0);
     lv_obj_set_style_bg_opa(result_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(result_label, 1, 0);
-    lv_obj_set_size(result_label, 200, 60);
+    lv_obj_set_size(result_label, 150, 60);
     
     // Initialize labels with 3-character display
     update_choseong_label();
