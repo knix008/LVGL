@@ -47,9 +47,20 @@ make -f Makefile.linux-generic sqlite3.h
 echo "Generating sqlite3.c..."
 make -f Makefile.linux-generic sqlite3.c
 
+# Patch sqlite3.c to include stdint.h for uint64_t support
+echo "Patching sqlite3.c to include stdint.h..."
+if grep -q "#include <sys/resource.h>" sqlite3.c; then
+    # Insert stdint.h include after sys/resource.h
+    sed -i '/^#include <sys\/resource.h>/a #include <stdint.h> /* needed for uint64_t */' sqlite3.c
+    echo "Successfully patched sqlite3.c to include stdint.h"
+else
+    echo "Warning: Could not find sys/resource.h include in sqlite3.c for patching"
+    echo "You may need to manually add '#include <stdint.h>' to sqlite3.c"
+fi
+
 echo "SQLCipher amalgamation files generated successfully!"
 echo "Files created:"
 echo "  - sqlite3.h"
-echo "  - sqlite3.c"
+echo "  - sqlite3.c (patched with stdint.h)"
 
 cd .. 
