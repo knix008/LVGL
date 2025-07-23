@@ -49,6 +49,7 @@ add_compile_definitions(
     SQLITE_ENABLE_LOAD_EXTENSION=1
     SQLCIPHER_CRYPTO_OPENSSL=1
     SQLCIPHER_OMIT_LOG=1
+    #_GNU_SOURCE=1
 )
 
 # Create LVGL static library
