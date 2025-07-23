@@ -5,6 +5,7 @@
 #include "tab_number.h"
 #include "tab_korean.h"
 #include "ui_callbacks.h"
+#include "font_config.h"
 #include "lv_freetype.h"
 #include <stdio.h>
 
@@ -20,10 +21,13 @@ static void init_freetype_and_fonts(void) {
                LV_MEM_SIZE / 1024, 
                LV_CACHE_DEF_SIZE / 1024);
         
-        korean_font = lv_freetype_font_create("/home/shkwon/Projects/LVGL/KoreanInput/Source/assets/NanumGothic-Regular.ttf", 
-                                             LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 
-                                             24, 
-                                             LV_FREETYPE_FONT_STYLE_NORMAL);
+        const char* font_path = FONT_PATH(KOREAN_FONT_REGULAR);
+        printf("Font path: %s\n", font_path);
+        
+        korean_font = lv_freetype_font_create(font_path, 
+                                             KOREAN_FONT_RENDER_MODE, 
+                                             DEFAULT_FONT_SIZE, 
+                                             KOREAN_FONT_STYLE);
         
         if (korean_font != NULL) {
             printf("Korean TrueType font loaded successfully with enhanced memory allocation\n");

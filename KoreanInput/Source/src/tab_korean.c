@@ -1,6 +1,6 @@
 #include "tab_korean.h"
 #include "korean_input.h"
-#include "lv_freetype.h"
+#include "ui_components.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,23 +16,6 @@ static char korean_buffer[64] = "";
 static int current_choseong_index = 0;
 static int current_jungseong_index = 0;
 static int current_jongseong_index = 0;
-static lv_font_t * korean_font = NULL;
-
-// Function to load TrueType font
-static void load_korean_font(void) {
-    if (korean_font == NULL) {
-        korean_font = lv_freetype_font_create("/home/shkwon/Projects/LVGL/KoreanInput/Source/assets/NanumGothic-Regular.ttf", 
-                                             LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 
-                                             24, 
-                                             LV_FREETYPE_FONT_STYLE_NORMAL);
-        if (korean_font == NULL) {
-            printf("Failed to load Korean font, falling back to built-in font\n");
-            korean_font = (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
-        } else {
-            printf("Korean TrueType font loaded successfully\n");
-        }
-    }
-}
 
 // Function to get previous index with wraparound
 static int get_prev_index(int current, int size) {
@@ -285,8 +268,8 @@ static void clear_korean_cb(lv_event_t * e) {
 
 // Create Korean tab
 void create_korean_tab(lv_obj_t * parent) {
-    // Load Korean font first
-    load_korean_font();
+    // Get the shared Korean font from ui_components
+    lv_font_t * korean_font = get_korean_font();
     
     // Create a container for the Korean input interface
     lv_obj_t * container = lv_obj_create(parent);
