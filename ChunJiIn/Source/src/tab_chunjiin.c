@@ -108,25 +108,23 @@ static void chunjiin_vbar_cb(lv_event_t * e) {
     }
 }
 
-// 기능 버튼 콜백 함수들
+// 완성된 음절 처리 (Enter 키)
 static void complete_syllable_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("천지인: Enter 버튼 클릭\n");
-        
-        // 현재 조합 중인 문자를 먼저 완성하여 출력 버퍼에 추가
         chunjiin_enter();
-        
-        // 출력 버퍼의 완성된 결과를 가져와서 터미널에 출력
-        const char* output_result = chunjiin_get_current_text();
-        printf("=== 천지인 입력 결과 ===\n");
-        printf("출력 버퍼: %s\n", output_result);
-        printf("====================\n");
-        
         update_chunjiin_display();
+        
+        // 결과 출력
+        const char* result = chunjiin_get_current_text();
+        printf("=== 천지인 입력 결과 ===\n");
+        printf("출력 버퍼: %s\n", result);
+        printf("====================\n");
     }
 }
 
+// 백스페이스 처리
 static void backspace_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
@@ -136,70 +134,13 @@ static void backspace_cb(lv_event_t * e) {
     }
 }
 
-static void space_cb(lv_event_t * e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        printf("천지인: 스페이스 버튼 클릭\n");
-        chunjiin_enter();  // 현재 문자 완성
-        chunjiin_input_keyboard(' ');  // 스페이스 추가
-        update_chunjiin_display();
-    }
-}
-
-static void clear_cb(lv_event_t * e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        printf("천지인: 클리어 버튼 클릭\n");
-        chunjiin_clear_all_buffers();
-        update_chunjiin_display();
-    }
-}
-
-// 기호 버튼 콜백
-static void symbol_cb(lv_event_t * e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        char* symbol = (char*)lv_event_get_user_data(e);
-        printf("천지인: 기호 버튼 클릭 - %s\n", symbol);
-        chunjiin_input_keyboard(symbol[0]);
-        update_chunjiin_display();
-    }
-}
-
-// 모드 전환 버튼 콜백
-static void mode_toggle_cb(lv_event_t * e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        printf("천지인: 모드 전환 버튼 클릭\n");
-        chunjiin_toggle_input_mode();
-        
-        // 버튼 텍스트 업데이트
-        lv_obj_t * btn = lv_event_get_target(e);
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
-        if (label) {
-            input_mode_t current_mode = chunjiin_get_input_mode();
-            if (current_mode == INPUT_MODE_KOREAN) {
-                lv_label_set_text(label, "한글");
-            } else {
-                lv_label_set_text(label, "숫자");
-            }
-        }
-        
-        update_chunjiin_display();
-    }
-}
-
-// 키보드 이벤트 핸들러
+// 키보드 이벤트 콜백
 static void keyboard_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_KEY) {
         uint32_t key = lv_event_get_key(e);
-        
-        // 소문자로 변환
-        char key_char = tolower(key);
-        
-        // 천지인 키보드 입력 처리
-        chunjiin_input_keyboard(key_char);
+        printf("키보드 입력: %c (0x%02x)\n", (char)key, key);
+        chunjiin_input_keyboard((char)key);
         update_chunjiin_display();
     }
 }
@@ -323,10 +264,10 @@ void create_chunjiin_tab(lv_obj_t * parent) {
         lv_obj_add_event_cb(btn, chunjiin_consonant_group_cb, LV_EVENT_CLICKED, &group_indices2[i]);
     }
     
-    // 네 번째 줄: 기능 버튼들 (backspace, ㅇㅁ, enter)
+    // 네 번째 줄: 백스페이스, ㅇㅁ, Enter 키
     start_y += btn_height + btn_spacing;
     
-    // Backspace 버튼
+    // 백스페이스 버튼
     lv_obj_t * backspace_btn = lv_btn_create(parent);
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
     lv_obj_align(backspace_btn, LV_ALIGN_CENTER, -(btn_width + btn_spacing), start_y);
@@ -354,69 +295,6 @@ void create_chunjiin_tab(lv_obj_t * parent) {
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, complete_syllable_cb, LV_EVENT_CLICKED, NULL);
-    
-    // 다섯 번째 줄: 추가 기능 버튼들 (Space, 모드 전환, Clear)
-    start_y += btn_height + btn_spacing;
-    
-    // Space 버튼
-    lv_obj_t * space_btn = lv_btn_create(parent);
-    lv_obj_set_size(space_btn, btn_width, btn_height);
-    lv_obj_align(space_btn, LV_ALIGN_CENTER, -(btn_width + btn_spacing), start_y);
-    lv_obj_t * space_label = lv_label_create(space_btn);
-    lv_label_set_text(space_label, "Space");
-    lv_obj_center(space_label);
-    lv_obj_add_event_cb(space_btn, space_cb, LV_EVENT_CLICKED, NULL);
-    
-    // 모드 전환 버튼
-    lv_obj_t * mode_btn = lv_btn_create(parent);
-    lv_obj_set_size(mode_btn, btn_width, btn_height);
-    lv_obj_align(mode_btn, LV_ALIGN_CENTER, 0, start_y);
-    lv_obj_t * mode_label = lv_label_create(mode_btn);
-    lv_label_set_text(mode_label, "한글");
-    lv_obj_center(mode_label);
-    lv_obj_add_event_cb(mode_btn, mode_toggle_cb, LV_EVENT_CLICKED, NULL);
-    
-    // Clear 버튼
-    lv_obj_t * clear_btn = lv_btn_create(parent);
-    lv_obj_set_size(clear_btn, btn_width, btn_height);
-    lv_obj_align(clear_btn, LV_ALIGN_CENTER, btn_width + btn_spacing, start_y);
-    lv_obj_t * clear_label = lv_label_create(clear_btn);
-    lv_label_set_text(clear_label, "Clear");
-    lv_obj_center(clear_label);
-    lv_obj_add_event_cb(clear_btn, clear_cb, LV_EVENT_CLICKED, NULL);
-    
-    // 여섯 번째 줄: 기호 버튼들
-    start_y += btn_height + btn_spacing;
-    
-    // 쉼표 버튼
-    static char comma = ',';
-    lv_obj_t * comma_btn = lv_btn_create(parent);
-    lv_obj_set_size(comma_btn, btn_width, btn_height);
-    lv_obj_align(comma_btn, LV_ALIGN_CENTER, -(btn_width + btn_spacing), start_y);
-    lv_obj_t * comma_label = lv_label_create(comma_btn);
-    lv_label_set_text(comma_label, ",");
-    lv_obj_center(comma_label);
-    lv_obj_add_event_cb(comma_btn, symbol_cb, LV_EVENT_CLICKED, &comma);
-    
-    // 마침표 버튼
-    static char period = '.';
-    lv_obj_t * period_btn = lv_btn_create(parent);
-    lv_obj_set_size(period_btn, btn_width, btn_height);
-    lv_obj_align(period_btn, LV_ALIGN_CENTER, 0, start_y);
-    lv_obj_t * period_label = lv_label_create(period_btn);
-    lv_label_set_text(period_label, ".");
-    lv_obj_center(period_label);
-    lv_obj_add_event_cb(period_btn, symbol_cb, LV_EVENT_CLICKED, &period);
-    
-    // 느낌표 버튼
-    static char exclamation = '!';
-    lv_obj_t * exclamation_btn = lv_btn_create(parent);
-    lv_obj_set_size(exclamation_btn, btn_width, btn_height);
-    lv_obj_align(exclamation_btn, LV_ALIGN_CENTER, btn_width + btn_spacing, start_y);
-    lv_obj_t * exclamation_label = lv_label_create(exclamation_btn);
-    lv_label_set_text(exclamation_label, "!");
-    lv_obj_center(exclamation_label);
-    lv_obj_add_event_cb(exclamation_btn, symbol_cb, LV_EVENT_CLICKED, &exclamation);
     
     // 키보드 이벤트 핸들러 추가
     lv_obj_add_event_cb(parent, keyboard_event_cb, LV_EVENT_KEY, NULL);
