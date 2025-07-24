@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(lvgl_main C)
+project(main C)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -99,16 +99,16 @@ set(SQLCIPHER_SOURCES
 )
 
 # Create main executable
-add_executable(lvgl_main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
+add_executable(main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
 
 # Add include directories
-target_include_directories(lvgl_main PRIVATE include sqlcipher sqlite lvgl)
+target_include_directories(main PRIVATE include sqlcipher sqlite lvgl)
 
 # Link against LVGL library and other dependencies
-target_link_libraries(lvgl_main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
 
 if(UNIX)
-    target_link_libraries(lvgl_main pthread dl m crypto)
+    target_link_libraries(main pthread dl m crypto)
 endif()
 
 # Force rebuild of main sources when any source file changes
@@ -121,9 +121,9 @@ add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/CMakeFiles
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeCache.txt
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/cmake_install.cmake
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/lvgl_main
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.o
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.d
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/main
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.o
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.d
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${LIB_DIR}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Cleaning all build files"
@@ -131,9 +131,9 @@ add_custom_target(clean-all
 
 # Add custom target to clean only main sources (keep LVGL library)
 add_custom_target(clean-main
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/lvgl_main
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.o
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/lvgl_main.dir/src/*.d
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/main
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.o
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.d
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Cleaning main application files (keeping LVGL library)"
 )

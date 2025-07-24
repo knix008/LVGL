@@ -76,7 +76,7 @@ void lv_example_tab_menu(void) {
     // Create tabview (크기 원래대로)
     lv_obj_t * tabview = lv_tabview_create(scr);
     lv_obj_set_size(tabview, 300, 400);  // 전체 탭뷰 크기 유지
-    lv_obj_center(tabview);
+    lv_obj_align(tabview, LV_ALIGN_TOP_MID, 0, 20);  // Move tab view higher on screen
     
     // 탭 바(탭 버튼 영역) 높이만 줄임
     lv_tabview_set_tab_bar_size(tabview, 32); // 예시: 32픽셀로 설정
@@ -86,11 +86,11 @@ void lv_example_tab_menu(void) {
     
     // Create tabs
     lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "DB");
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Settings");
+    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Setting");
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "NUM"); // Changed from Keypad to Number
     lv_obj_t * tab5 = lv_tabview_add_tab(tabview, "KOR"); // Added new tab
-    lv_obj_t * tab6 = lv_tabview_add_tab(tabview, "ChungJiIn"); // Added ChunJiIn tab
+    lv_obj_t * tab6 = lv_tabview_add_tab(tabview, "CJI"); // Added ChunJiIn tab
     
     // Create tab contents using separate functions
     create_db_tab(tab1);

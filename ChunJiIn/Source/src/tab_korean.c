@@ -271,150 +271,154 @@ void create_korean_tab(lv_obj_t * parent) {
     // Get the shared Korean font from ui_components
     lv_font_t * korean_font = get_korean_font();
     
-    // Create a container for the Korean input interface
-    lv_obj_t * container = lv_obj_create(parent);
-    lv_obj_set_size(container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    
     // Create title label
-    lv_obj_t * title = lv_label_create(container);
+    lv_obj_t * title = lv_label_create(parent);
     lv_label_set_text(title, "Korean Input");
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 5);
     
-    // Create first row container for navigation (Prev | Character | Next)
-    lv_obj_t * nav_container = lv_obj_create(container);
-    lv_obj_set_size(nav_container, LV_PCT(90), 50);
-    lv_obj_set_flex_flow(nav_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(nav_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_border_width(nav_container, 0, 0);
-    lv_obj_set_style_bg_opa(nav_container, LV_OPA_TRANSP, 0);
+    // Button and label sizes
+    int btn_width = 50;
+    int btn_height = 30;
+    int label_width = 120;
+    int label_height = 40;
+    int spacing = 10;
+    int start_y = 30;  // Start position for first row
     
+    // First row: Choseong navigation (Prev | Character | Next)
     // Previous button
-    lv_obj_t * prev_btn = lv_btn_create(nav_container);
-    lv_obj_set_size(prev_btn, 30, 30);
+    lv_obj_t * prev_btn = lv_btn_create(parent);
+    lv_obj_set_size(prev_btn, btn_width, btn_height);
+    lv_obj_align(prev_btn, LV_ALIGN_TOP_MID, -(label_width/2 + btn_width/2 + spacing), start_y);
     lv_obj_t * prev_label = lv_label_create(prev_btn);
     lv_label_set_text(prev_label, "<");
+    lv_obj_center(prev_label);
     lv_obj_add_event_cb(prev_btn, choseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean character display (center label)
-    choseong_diplay_label = lv_label_create(nav_container);
+    choseong_diplay_label = lv_label_create(parent);
     lv_obj_set_style_text_font(choseong_diplay_label, korean_font, 0);
     lv_obj_set_style_bg_color(choseong_diplay_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(choseong_diplay_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(choseong_diplay_label, 2, 0);
     lv_obj_set_style_border_color(choseong_diplay_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(choseong_diplay_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(choseong_diplay_label, 120, 40);
+    lv_obj_set_size(choseong_diplay_label, label_width, label_height);
+    lv_obj_align(choseong_diplay_label, LV_ALIGN_TOP_MID, 0, start_y);
     
     // Next button
-    lv_obj_t * next_btn = lv_btn_create(nav_container);
-    lv_obj_set_size(next_btn, 30, 30);
+    lv_obj_t * next_btn = lv_btn_create(parent);
+    lv_obj_set_size(next_btn, btn_width, btn_height);
+    lv_obj_align(next_btn, LV_ALIGN_TOP_MID, label_width/2 + btn_width/2 + spacing, start_y);
     lv_obj_t * next_label = lv_label_create(next_btn);
     lv_label_set_text(next_label, ">");
+    lv_obj_center(next_label);
     lv_obj_add_event_cb(next_btn, choseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
 
-    // Create second row container for jungseong navigation (Prev | Jungseong | Next)
-    lv_obj_t * jungseong_container = lv_obj_create(container);
-    lv_obj_set_size(jungseong_container, LV_PCT(90), 50);
-    lv_obj_set_flex_flow(jungseong_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(jungseong_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_border_width(jungseong_container, 0, 0);
-    lv_obj_set_style_bg_opa(jungseong_container, LV_OPA_TRANSP, 0);
+    // Second row: Jungseong navigation (Prev | Jungseong | Next)
+    start_y += label_height + spacing;
     
     // Previous jungseong button
-    lv_obj_t * jungseong_prev_btn = lv_btn_create(jungseong_container);
-    lv_obj_set_size(jungseong_prev_btn, 30, 30);
+    lv_obj_t * jungseong_prev_btn = lv_btn_create(parent);
+    lv_obj_set_size(jungseong_prev_btn, btn_width, btn_height);
+    lv_obj_align(jungseong_prev_btn, LV_ALIGN_TOP_MID, -(label_width/2 + btn_width/2 + spacing), start_y);
     lv_obj_t * jungseong_prev_label = lv_label_create(jungseong_prev_btn);
     lv_label_set_text(jungseong_prev_label, "<");
+    lv_obj_center(jungseong_prev_label);
     lv_obj_add_event_cb(jungseong_prev_btn, jungseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean jungseong display (center label)
-    jungseong_display_label = lv_label_create(jungseong_container);
+    jungseong_display_label = lv_label_create(parent);
     lv_obj_set_style_text_font(jungseong_display_label, korean_font, 0);
     lv_obj_set_style_bg_color(jungseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jungseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jungseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jungseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jungseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(jungseong_display_label, 120, 40);
+    lv_obj_set_size(jungseong_display_label, label_width, label_height);
+    lv_obj_align(jungseong_display_label, LV_ALIGN_TOP_MID, 0, start_y);
     
     // Next jungseong button
-    lv_obj_t * jungseong_next_btn = lv_btn_create(jungseong_container);
-    lv_obj_set_size(jungseong_next_btn, 30, 30);
+    lv_obj_t * jungseong_next_btn = lv_btn_create(parent);
+    lv_obj_set_size(jungseong_next_btn, btn_width, btn_height);
+    lv_obj_align(jungseong_next_btn, LV_ALIGN_TOP_MID, label_width/2 + btn_width/2 + spacing, start_y);
     lv_obj_t * jungseong_next_label = lv_label_create(jungseong_next_btn);
     lv_label_set_text(jungseong_next_label, ">");
+    lv_obj_center(jungseong_next_label);
     lv_obj_add_event_cb(jungseong_next_btn, jungseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
 
-    // Create third row container for jongseong navigation (Prev | Jongseong | Next)
-    lv_obj_t * jongseong_container = lv_obj_create(container);
-    lv_obj_set_size(jongseong_container, LV_PCT(90), 50);
-    lv_obj_set_flex_flow(jongseong_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(jongseong_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_border_width(jongseong_container, 0, 0);
-    lv_obj_set_style_bg_opa(jongseong_container, LV_OPA_TRANSP, 0);
+    // Third row: Jongseong navigation (Prev | Jongseong | Next)
+    start_y += label_height + spacing;
     
     // Previous jongseong button
-    lv_obj_t * jongseong_prev_btn = lv_btn_create(jongseong_container);
-    lv_obj_set_size(jongseong_prev_btn, 30, 30);
+    lv_obj_t * jongseong_prev_btn = lv_btn_create(parent);
+    lv_obj_set_size(jongseong_prev_btn, btn_width, btn_height);
+    lv_obj_align(jongseong_prev_btn, LV_ALIGN_TOP_MID, -(label_width/2 + btn_width/2 + spacing), start_y);
     lv_obj_t * jongseong_prev_label = lv_label_create(jongseong_prev_btn);
     lv_label_set_text(jongseong_prev_label, "<");
+    lv_obj_center(jongseong_prev_label);
     lv_obj_add_event_cb(jongseong_prev_btn, jongseong_prev_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Current Korean jongseong display (center label)
-    jongseong_display_label = lv_label_create(jongseong_container);
+    jongseong_display_label = lv_label_create(parent);
     lv_obj_set_style_text_font(jongseong_display_label, korean_font, 0);
     lv_obj_set_style_bg_color(jongseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jongseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jongseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jongseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jongseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_size(jongseong_display_label, 120, 40);
+    lv_obj_set_size(jongseong_display_label, label_width, label_height);
+    lv_obj_align(jongseong_display_label, LV_ALIGN_TOP_MID, 0, start_y);
     
     // Next jongseong button
-    lv_obj_t * jongseong_next_btn = lv_btn_create(jongseong_container);
-    lv_obj_set_size(jongseong_next_btn, 30, 30);
+    lv_obj_t * jongseong_next_btn = lv_btn_create(parent);
+    lv_obj_set_size(jongseong_next_btn, btn_width, btn_height);
+    lv_obj_align(jongseong_next_btn, LV_ALIGN_TOP_MID, label_width/2 + btn_width/2 + spacing, start_y);
     lv_obj_t * jongseong_next_label = lv_label_create(jongseong_next_btn);
     lv_label_set_text(jongseong_next_label, ">");
+    lv_obj_center(jongseong_next_label);
     lv_obj_add_event_cb(jongseong_next_btn, jongseong_next_korean_cb, LV_EVENT_CLICKED, NULL);
 
-    // Create fourth row container for actions (Clear | Enter | Backspace)
-    lv_obj_t * action_container = lv_obj_create(container);
-    lv_obj_set_size(action_container, LV_PCT(90), 50);
-    lv_obj_set_flex_flow(action_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(action_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_border_width(action_container, 0, 0);
-    lv_obj_set_style_bg_opa(action_container, LV_OPA_TRANSP, 0);
+    // Fourth row: Actions (Clear | Enter | Backspace)
+    start_y += label_height + spacing;
     
     // Clear button
-    lv_obj_t * clear_btn = lv_btn_create(action_container);
-    lv_obj_set_size(clear_btn, 60, 40);
+    lv_obj_t * clear_btn = lv_btn_create(parent);
+    lv_obj_set_size(clear_btn, btn_width, btn_height);
+    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(btn_width + spacing), start_y);
     lv_obj_t * clear_label = lv_label_create(clear_btn);
-    lv_label_set_text(clear_label, "Clear");
+    lv_label_set_text(clear_label, "C");
+    lv_obj_center(clear_label);
     lv_obj_add_event_cb(clear_btn, clear_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Enter button
-    lv_obj_t * enter_btn = lv_btn_create(action_container);
-    lv_obj_set_size(enter_btn, 60, 40);
+    lv_obj_t * enter_btn = lv_btn_create(parent);
+    lv_obj_set_size(enter_btn, btn_width, btn_height);
+    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, 0, start_y);
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
+    lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, enter_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Backspace button
-    lv_obj_t * back_btn = lv_btn_create(action_container);
-    lv_obj_set_size(back_btn, 60, 40);
+    lv_obj_t * back_btn = lv_btn_create(parent);
+    lv_obj_set_size(back_btn, btn_width, btn_height);
+    lv_obj_align(back_btn, LV_ALIGN_TOP_MID, btn_width + spacing, start_y);
     lv_obj_t * back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "Back");
+    lv_label_set_text(back_label, "⌫");
+    lv_obj_center(back_label);
     lv_obj_add_event_cb(back_btn, backspace_korean_cb, LV_EVENT_CLICKED, NULL);
     
-    // Create result display area
-    result_label = lv_label_create(container);
+    // Result display area
+    start_y += btn_height + spacing;
+    result_label = lv_label_create(parent);
     lv_label_set_text(result_label, "Result: ");
     lv_obj_set_style_text_font(result_label, korean_font, 0);
     lv_obj_set_style_bg_color(result_label, lv_color_hex(0xf0f0f0), 0);
     lv_obj_set_style_bg_opa(result_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(result_label, 1, 0);
-    lv_obj_set_size(result_label, 150, 60);
+    lv_obj_set_size(result_label, 240, 60);
+    lv_obj_align(result_label, LV_ALIGN_TOP_MID, 0, start_y);
     
     // Initialize labels with 3-character display
     update_choseong_label();

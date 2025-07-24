@@ -44,7 +44,7 @@ fi
 
 if [ $? -eq 0 ]; then
     echo "Build successful! Running application..."
-    ./lvgl_main
+    ./main
 else
     echo "Build failed!"
     exit 1

@@ -7,7 +7,7 @@
 // Font directory options (uncomment the one you want to use):
 // #define FONT_DIR ""                           // Current directory (default)
 // #define FONT_DIR "../assets/"              // Relative to assets folder
-#define FONT_DIR "/home/shkwon/Projects/LVGL/HangulChunJiIn/Source/assets/"  // Absolute path
+#define FONT_DIR "../assets/"  // Absolute path
 // #define FONT_DIR "/usr/share/fonts/korean/" // System font directory
 // #define FONT_DIR "./fonts/"                // Local fonts subdirectory
 // #define FONT_DIR "/opt/korean-input/fonts/" // Custom installation directory
