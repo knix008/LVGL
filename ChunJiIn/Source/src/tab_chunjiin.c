@@ -114,6 +114,7 @@ static void complete_syllable_cb(lv_event_t * e) {
     if (code == LV_EVENT_CLICKED) {
         printf("천지인: Enter 버튼 클릭\n");
         chunjiin_enter();
+        chunjiin_clear_all_buffers(); // Enter 시 모든 버퍼 초기화
         update_chunjiin_display();
         
         // 결과 출력
@@ -140,7 +141,14 @@ static void keyboard_event_cb(lv_event_t * e) {
     if (code == LV_EVENT_KEY) {
         uint32_t key = lv_event_get_key(e);
         printf("키보드 입력: %c (0x%02x)\n", (char)key, key);
-        chunjiin_input_keyboard((char)key);
+        
+        // 백스페이스 키 처리
+        if (key == LV_KEY_BACKSPACE) {
+            printf("천지인: 키보드 백스페이스 키 입력\n");
+            chunjiin_backspace();
+        } else {
+            chunjiin_input_keyboard((char)key);
+        }
         update_chunjiin_display();
     }
 }
@@ -183,10 +191,10 @@ void create_chunjiin_tab(lv_obj_t * parent) {
     lv_label_set_long_mode(output_label, LV_LABEL_LONG_WRAP);
     
     // 버튼 크기와 간격 설정
-    int btn_width = 45;
-    int btn_height = 25;
-    int btn_spacing = 3;
-    int start_y = 5; // 시작 Y 위치
+    int btn_width = 80;  // 45에서 80으로 증가
+    int btn_height = 40; // 25에서 40으로 증가
+    int btn_spacing = 8; // 3에서 8로 증가
+    int start_y = 5;   // 5에서 20으로 조정 (라벨 아래로)
     
     // 첫 번째 줄: 천지인 기본 요소들 (ㅣ, ㆍ, ㅡ)
     // ㅣ (인) 버튼
@@ -272,7 +280,7 @@ void create_chunjiin_tab(lv_obj_t * parent) {
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
     lv_obj_align(backspace_btn, LV_ALIGN_CENTER, -(btn_width + btn_spacing), start_y);
     lv_obj_t * backspace_label = lv_label_create(backspace_btn);
-    lv_label_set_text(backspace_label, "←");
+    lv_label_set_text(backspace_label, "Back");
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, backspace_cb, LV_EVENT_CLICKED, NULL);
     

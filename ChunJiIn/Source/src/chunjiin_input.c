@@ -577,10 +577,22 @@ void chunjiin_update_input_buffer(void) {
 
 // Java delete() 함수
 void chunjiin_delete(void) {
-    // 간단한 삭제 구현
+    // UTF-8 문자 단위로 삭제 구현
     if (chunjiin_global_state.output_length > 0) {
-        chunjiin_global_state.output_buffer[chunjiin_global_state.output_length - 1] = '\0';
-        chunjiin_global_state.output_length--;
+        // UTF-8 문자 경계를 찾기 위해 뒤에서부터 검색
+        int i = chunjiin_global_state.output_length - 1;
+        
+        // UTF-8 연속 바이트(0x80-0xBF)를 건너뛰고 문자 시작점 찾기
+        while (i > 0 && (chunjiin_global_state.output_buffer[i] & 0xC0) == 0x80) {
+            i--;
+        }
+        
+        // 문자 시작점에서 종료
+        chunjiin_global_state.output_buffer[i] = '\0';
+        chunjiin_global_state.output_length = i;
+        
+        printf("Backspace: Removed UTF-8 character, buffer now: '%s' (length: %zu)\n", 
+               chunjiin_global_state.output_buffer, chunjiin_global_state.output_length);
     }
 }
 
@@ -626,7 +638,14 @@ void chunjiin_enter(void) {
 
 void chunjiin_backspace(void) {
     chunjiin_delete();
-    chunjiin_update_input_buffer();
+    
+    // If output buffer is empty, also clear the hangul composition state
+    if (chunjiin_global_state.output_length == 0) {
+        hangul_init(&chunjiin_global_state.hangul);
+        printf("Backspace: Cleared hangul composition state\n");
+    } else {
+        chunjiin_update_input_buffer();
+    }
 }
 
 void chunjiin_clear(void) {
