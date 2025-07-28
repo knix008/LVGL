@@ -51,6 +51,7 @@ void reset_current_syllable();
 void display();
 wchar_t get_composing_char();
 wchar_t combine_syllable(int cho, int jung, int jong);
+int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size);
 
 // --- 시스템 초기화 함수 ---
 void initialize() {
@@ -119,6 +120,14 @@ void process_input(char key) {
 
 // --- 자음 입력 처리 함수 ---
 void handle_consonant(int key_code) {
+    // If we have temp_vowel == 200 (ㆍㆍ) and input a consonant,
+    // finalize the vowel to ㅗ (jungseong 8) first
+    if (g_current_syllable.temp_vowel == 200) {
+        g_current_syllable.jung = 8; // ㅗ
+        g_current_syllable.state = STATE_JUNGSEONG;
+        g_current_syllable.temp_vowel = 0;
+    }
+    
     g_current_syllable.temp_vowel = 0; // 자음이 입력되면 모음 조합 상태는 초기화
 
     // 1. 초성이 비어있는 경우 (새 글자 시작)
@@ -200,15 +209,17 @@ void handle_consonant(int key_code) {
                     if (g_current_syllable.jong == 4) g_current_syllable.jong = 8;      // ㄴ -> ㄹ
                     else g_current_syllable.jong = 4;                                   // ㄹ -> ㄴ
                     break;
-                case 3: // d: ㄷ (종성에서는 ㄷ만 가능)
-                    // ㄷ은 종성에서 순환 없음
+                case 3: // d: ㄷ -> ㅌ (ㄸ is not a valid final consonant)
+                    if (g_current_syllable.jong == 7) g_current_syllable.jong = 25;      // ㄷ -> ㅌ
+                    else g_current_syllable.jong = 7;                                    // ㅌ -> ㄷ
                     break;
                 case 4: // b: ㅂ (종성에서는 ㅂ만 가능)
                     // ㅂ은 종성에서 순환 없음
                     break;
-                case 5: // s: ㅅ -> ㅆ
-                    if (g_current_syllable.jong == 19) g_current_syllable.jong = 20;     // ㅅ -> ㅆ
-                    else g_current_syllable.jong = 19;                                   // ㅆ -> ㅅ
+                case 5: // s: ㅅ -> ㅎ -> ㅆ
+                    if (g_current_syllable.jong == 19) g_current_syllable.jong = 27;     // ㅅ -> ㅎ
+                    else if (g_current_syllable.jong == 27) g_current_syllable.jong = 20; // ㅎ -> ㅆ
+                    else g_current_syllable.jong = 19;                                    // ㅆ -> ㅅ
                     break;
                 case 6: // j: ㅈ (종성에서는 ㅈ만 가능)
                     // ㅈ은 종성에서 순환 없음
@@ -221,7 +232,7 @@ void handle_consonant(int key_code) {
             return;
         }
         
-        // 복합 종성 조합 시도
+        // 복합 종성 조합 시도 (only if not cycling)
         if (g_current_syllable.jong == 1 && key_code == 5) new_jong = 3;   // ㄱ + ㅅ = ㄳ
         else if (g_current_syllable.jong == 4 && key_code == 6) new_jong = 5;   // ㄴ + ㅈ = ㄵ
         else if (g_current_syllable.jong == 4 && key_code == 5) new_jong = 6;   // ㄴ + ㅎ = ㄶ
@@ -234,7 +245,7 @@ void handle_consonant(int key_code) {
         else if (g_current_syllable.jong == 8 && key_code == 5) new_jong = 15;  // ㄹ + ㅎ = ㅀ
         else if (g_current_syllable.jong == 17 && key_code == 5) new_jong = 18; // ㅂ + ㅅ = ㅄ
         else if (g_current_syllable.jong == 1 && key_code == 1) new_jong = 2; // ㄱ + ㄱ = ㄲ
-        else if (g_current_syllable.jong == 19 && key_code == 5) new_jong = 20; // ㅅ + ㅅ = ㅆ
+        // Removed the ㅅ + ㅅ = ㅆ rule to ensure cycling takes precedence
 
         if (new_jong != -1) {
             g_current_syllable.jong = new_jong;
@@ -327,8 +338,14 @@ void handle_vowel(int key_code) {
         if (key_code == 3) new_jung = 4;  // ㆍ + ㅣ = ㅓ
     }
     else if (g_current_syllable.temp_vowel == 200) { // prev: ㆍㆍ
+        if (key_code == 1) new_jung = 8;  // ㆍㆍ = ㅗ (when no additional input)
         if (key_code == 2) new_jung = 12; // ㆍㆍ + ㅡ = ㅛ
         if (key_code == 3) new_jung = 6;  // ㆍㆍ + ㅣ = ㅕ
+    }
+    else if (g_current_syllable.temp_vowel == 300) { // prev: ㅡ + ㆍㆍ
+        if (key_code == 1) new_jung = 4;  // ㅡ + ㆍㆍ = ㅓ
+        if (key_code == 2) new_jung = 17; // ㅡ + ㆍㆍ + ㅡ = ㅠ
+        if (key_code == 3) new_jung = 5;  // ㅡ + ㆍㆍ + ㅣ = ㅔ
     }
     else {
         int prev_jung = g_current_syllable.jung;
@@ -341,7 +358,10 @@ void handle_vowel(int key_code) {
         else if (prev_jung == 2 && key_code == 3) new_jung = 3;   // ㅑ + ㅣ = ㅒ
         else if (prev_jung == 6 && key_code == 3) new_jung = 7;   // ㅕ + ㅣ = ㅖ
         else if (prev_jung == 20 && key_code == 1) new_jung = 0;  // ㅣ + ㆍ = ㅏ
-        else if (prev_jung == 18 && key_code == 1) new_jung = 13; // ㅡ + ㆍ = ㅜ
+        else if (prev_jung == 0 && key_code == 1) new_jung = 2;   // ㅏ + ㆍ = ㅑ
+        else if (prev_jung == 18 && key_code == 1 && g_current_syllable.temp_vowel != 200) new_jung = 13; // ㅡ + ㆍ = ㅜ (only if not already ㆍㆍ)
+        else if (prev_jung == 13 && key_code == 1) new_jung = 17; // ㅜ + ㆍ = ㅠ
+        else if (prev_jung == 18 && g_current_syllable.temp_vowel == 200) new_jung = 17; // ㅡ + ㆍㆍ = ㅠ
     }
 
     if (new_jung != -1) {
@@ -349,8 +369,16 @@ void handle_vowel(int key_code) {
         g_current_syllable.state = STATE_JUNGSEONG;
         g_current_syllable.temp_vowel = 1; 
     } else {
-        finalize_syllable();
-        handle_vowel(key_code);
+        // If we have temp_vowel == 200 (ㆍㆍ) and no matching vowel combination,
+        // finalize it to ㅗ (jungseong 8)
+        if (g_current_syllable.temp_vowel == 200) {
+            g_current_syllable.jung = 8; // ㅗ
+            g_current_syllable.state = STATE_JUNGSEONG;
+            g_current_syllable.temp_vowel = 1;
+        } else {
+            finalize_syllable();
+            handle_vowel(key_code);
+        }
     }
 }
 
@@ -479,6 +507,7 @@ void chunjiin_enter_key_handler() {
 
 // UTF-8 conversion function
 int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size) {
+    (void)buffer_size; // Suppress unused parameter warning
     if (wc == 0) {
         utf8_buffer[0] = '\0';
         return 0;
