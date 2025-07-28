@@ -45,8 +45,6 @@ static void chunjiin_consonant_group_cb(lv_event_t * e) {
         int* group_index = (int*)lv_event_get_user_data(e);
         chunjiin_consonant_group_t group = (chunjiin_consonant_group_t)*group_index;
         
-        printf("천지인: 자음 그룹 버튼 클릭 - group: %d\n", group);
-        
         // Map group to character and call process_input
         char input_char;
         switch(group) {
@@ -59,8 +57,6 @@ static void chunjiin_consonant_group_cb(lv_event_t * e) {
             case CHUNJIIN_IEUNG_MIEUM: input_char = 'm'; break;   // m: ㅇ → ㅁ
             default: return;
         }
-        
-        printf("DEBUG: Calling process_input with char: %c\n", input_char);
         process_input(input_char);
         update_display();
         
@@ -80,7 +76,6 @@ static void chunjiin_consonant_group_cb(lv_event_t * e) {
 static void chunjiin_dot_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        printf("천지인: ㆍ(천) 버튼 클릭\n");
         process_input('a'); // ㆍ is 'a' character in process_input
         update_display();
     }
@@ -89,7 +84,6 @@ static void chunjiin_dot_cb(lv_event_t * e) {
 static void chunjiin_hbar_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        printf("천지인: ㅡ(지) 버튼 클릭\n");
         process_input('e'); // ㅡ is 'e' character in process_input
         update_display();
     }
@@ -98,7 +92,6 @@ static void chunjiin_hbar_cb(lv_event_t * e) {
 static void chunjiin_vbar_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        printf("천지인: ㅣ(인) 버튼 클릭\n");
         process_input('i'); // ㅣ is 'i' character in process_input
         update_display();
     }
@@ -109,8 +102,10 @@ static void complete_syllable_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         printf("천지인: Enter 버튼 클릭\n");
-        // Use process_input with Enter key - need to check what character represents Enter
-        process_input('\n'); // Try newline for Enter
+        
+        // Use the dedicated Enter key handler function
+        chunjiin_enter_key_handler();
+        
         update_display();
     }
 }
@@ -119,7 +114,6 @@ static void complete_syllable_cb(lv_event_t * e) {
 static void backspace_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        printf("천지인: 백스페이스 버튼 클릭\n");
         process_input('<'); // Backspace is '<' in process_input
         update_display();
     }
@@ -129,7 +123,6 @@ static void backspace_cb(lv_event_t * e) {
 static void space_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        printf("천지인: 스페이스 버튼 클릭\n");
         process_input(' '); // Space is ' ' in process_input
         update_display();
     }
@@ -140,21 +133,16 @@ static void keyboard_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_KEY) {
         uint32_t key = lv_event_get_key(e);
-        printf("키보드 입력: %c (0x%02x)\n", (char)key, key);
         
         // Map keyboard keys to process_input characters
         if (key == LV_KEY_BACKSPACE) {
-            printf("천지인: 키보드 백스페이스 키 입력\n");
             process_input('<');
         } else if (key == ' ') {
-            printf("천지인: 키보드 스페이스 키 입력\n");
             process_input(' ');
         } else if (key == LV_KEY_ENTER) {
-            printf("천지인: 키보드 Enter 키 입력\n");
             process_input('\n');
         } else {
             // For other keys, try to map them to process_input characters
-            printf("천지인: 키보드 입력을 process_input으로 처리\n");
             process_input((char)key);
         }
         update_display();
@@ -175,11 +163,13 @@ lv_obj_t* create_chunjiin_tab(lv_obj_t* parent) {
     g_current_char_label = lv_label_create(tab);
     lv_obj_set_size(g_current_char_label, 200, 60); // Original size
     lv_obj_align(g_current_char_label, LV_ALIGN_TOP_MID, 0, 10); // Original position
-    lv_obj_set_style_bg_color(g_current_char_label, lv_color_make(255, 255, 0), 0); // Yellow background
-    lv_obj_set_style_border_color(g_current_char_label, lv_color_make(255, 0, 0), 0); // Red border
+    lv_obj_set_style_bg_color(g_current_char_label, lv_color_make(0, 255, 0), 0); // Green background
+    lv_obj_set_style_bg_opa(g_current_char_label, LV_OPA_COVER, 0); // Make background fully opaque
+    lv_obj_set_style_border_color(g_current_char_label, lv_color_make(128, 128, 128), 0); // Gray border
     lv_obj_set_style_border_width(g_current_char_label, 3, 0); // Thicker border
     lv_obj_set_style_pad_all(g_current_char_label, 15, 0); // More padding
     lv_obj_set_style_text_font(g_current_char_label, korean_font, 0); // Apply Korean font
+    lv_obj_set_style_text_color(g_current_char_label, lv_color_make(0, 0, 0), 0); // Black text for better contrast
     lv_label_set_text(g_current_char_label, ""); // Initial empty text
 
     // Button dimensions and spacing

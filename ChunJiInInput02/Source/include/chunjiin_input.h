@@ -118,6 +118,9 @@ wchar_t chunjiin_wrapper_combine_syllable(int cho, int jung, int jong);
 void chunjiin_add_character_to_buffer(wchar_t ch);
 void chunjiin_get_current_text(wchar_t * buffer);
 
+// Enter key handler function
+void chunjiin_enter_key_handler(void);
+
 // UTF-8 conversion function
 int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size);
 

@@ -127,7 +127,6 @@ void handle_consonant(int key_code) {
         g_current_syllable.cho = choseong_map[key_code];
         g_current_syllable.state = STATE_CHOSEONG;
         g_current_syllable.temp_consonant = key_code;
-        printf("DEBUG: handle_consonant - new syllable started, cho = %d\n", g_current_syllable.cho);
         return;
     }
 
@@ -182,7 +181,6 @@ void handle_consonant(int key_code) {
         if (g_current_syllable.jong != -1) {
             g_current_syllable.state = STATE_JONGSEONG;
             g_current_syllable.temp_consonant = key_code;
-            printf("DEBUG: handle_consonant - jongseong added, jong = %d\n", g_current_syllable.jong);
         }
         return;
     }
@@ -311,13 +309,10 @@ void handle_vowel(int key_code) {
     }
 
     int new_jung = -1;
-    printf("DEBUG: handle_vowel - key_code = %d, temp_vowel = %d, state = %d\n", 
-           key_code, g_current_syllable.temp_vowel, g_current_syllable.state);
     
     if (g_current_syllable.temp_vowel == 0) {
         if (key_code == 1) { 
             g_current_syllable.temp_vowel = 100; 
-            printf("DEBUG: handle_vowel - ㆍ entered, temp_vowel = 100\n");
             return; 
         } // ㆍ
         if (key_code == 2) new_jung = 18; // ㅡ
@@ -326,7 +321,6 @@ void handle_vowel(int key_code) {
     else if (g_current_syllable.temp_vowel == 100) { // prev: ㆍ
         if (key_code == 1) { 
             g_current_syllable.temp_vowel = 200; 
-            printf("DEBUG: handle_vowel - ㆍㆍ entered, temp_vowel = 200\n");
             return; 
         } // ㆍ + ㆍ
         if (key_code == 2) new_jung = 8;  // ㆍ + ㅡ = ㅗ
@@ -338,7 +332,6 @@ void handle_vowel(int key_code) {
     }
     else {
         int prev_jung = g_current_syllable.jung;
-        printf("DEBUG: handle_vowel - prev_jung = %d\n", prev_jung);
         
         if (prev_jung == 8 && key_code == 3) new_jung = 11;  // ㅗ + ㅣ = ㅚ
         else if (prev_jung == 13 && key_code == 3) new_jung = 16; // ㅜ + ㅣ = ㅟ
@@ -376,8 +369,12 @@ void handle_special(char key) {
             }
             break;
         case '.': // Enter
+            // Finalize any current syllable first
             finalize_syllable();
-            wcscat(g_output_buffer, L"\n");
+            
+            // Clear all buffers
+            g_output_buffer[0] = L'\0';
+            reset_current_syllable();
             break;
         case '<': // Backspace
             // 조합 중인 글자가 있으면 조합을 취소
@@ -402,17 +399,12 @@ wchar_t combine_syllable(int cho, int jung, int jong) {
 
 // --- 현재 조합 중인 글자를 반환하는 함수 ---
 wchar_t get_composing_char() {
-    printf("DEBUG: get_composing_char() called, state = %d, cho = %d, jung = %d, jong = %d, temp_vowel = %d\n", 
-           g_current_syllable.state, g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong, g_current_syllable.temp_vowel);
-    
     if (g_current_syllable.state == STATE_START) {
-        printf("DEBUG: Returning 0 (no composing character)\n");
         return 0; // 조합 중인 글자 없음
     }
     
     // Handle dot (ㆍ) character when temp_vowel is set but jung is not yet assigned
     if (g_current_syllable.temp_vowel == 100) {
-        printf("DEBUG: Returning dot character: 0x318D (ㆍ)\n");
         return 0x318D; // ㆍ (dot) character
     }
     
@@ -422,19 +414,16 @@ wchar_t get_composing_char() {
     if (g_current_syllable.state == STATE_CHOSEONG) {
         const wchar_t choseong_jamo[] = L"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
         wchar_t result = choseong_jamo[g_current_syllable.cho];
-        printf("DEBUG: Returning choseong jamo: 0x%04x\n", (unsigned int)result);
         return result;
     }
     
     // 중성 또는 종성까지 조합된 경우, 완성형 글자로 조합하여 반환
     wchar_t result = combine_syllable(g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong);
-    printf("DEBUG: Returning combined syllable: 0x%04x\n", (unsigned int)result);
     return result;
 }
 
 void chunjiin_get_current_text(wchar_t * buffer) {
     if (buffer == NULL) {
-        printf("NULL buffer\n");
         return;
     }
     
@@ -444,9 +433,6 @@ void chunjiin_get_current_text(wchar_t * buffer) {
     // Copy the output buffer content (completed text)
     if (wcslen(g_output_buffer) > 0) {
         wcscpy(buffer, g_output_buffer);
-        printf("Completed text: [%ls]\n", g_output_buffer);
-    } else {
-        printf("No completed text\n");
     }
     
     // Add the current composing character if any
@@ -457,13 +443,38 @@ void chunjiin_get_current_text(wchar_t * buffer) {
         temp_str[0] = ch;
         temp_str[1] = L'\0';
         wcscat(buffer, temp_str);
-        printf("Composing character: 0x%04x (%lc)\n", (unsigned int)ch, ch);
-    } else {
-        printf("No composing character\n");
     }
     
-    printf("Final result: [%ls]\n", buffer);
     buffer[wcslen(buffer)] = L'\0';
+}
+
+// Function to handle Enter key - get text and clear buffers
+void chunjiin_enter_key_handler() {
+    // First, finalize any current syllable to include it in the result
+    finalize_syllable();
+    
+    // Get the complete result
+    wchar_t complete_buffer[4096];
+    chunjiin_get_current_text(complete_buffer);
+    
+    // Display the complete result on console
+    printf("\n=== COMPLETE SYLLABLE RESULT ===\n");
+    printf("Completed: [");
+    
+    // Convert wide characters to UTF-8 for proper display
+    for (size_t i = 0; i < wcslen(complete_buffer); i++) {
+        char utf8_char[8];
+        int bytes = wchar_to_utf8(complete_buffer[i], utf8_char, sizeof(utf8_char));
+        if (bytes > 0) {
+            printf("%s", utf8_char);
+        }
+    }
+    printf("]\n");
+    printf("================================\n\n");
+    
+    // Clear all buffers
+    g_output_buffer[0] = L'\0';
+    reset_current_syllable();
 }
 
 // UTF-8 conversion function
