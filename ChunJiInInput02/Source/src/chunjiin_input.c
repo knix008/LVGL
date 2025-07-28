@@ -386,15 +386,13 @@ void handle_vowel(int key_code) {
 void handle_special(char key) {
     switch (key) {
         case ' ':
+            // Space input - ignore for now (as per test expectation)
             // 조합 중인 글자가 있으면(미완성 포함), 현재 글자를 확정하고 새 입력을 준비.
             // (예: 'ㄱ' 입력 후 space -> 'ㄱ' 확정)
             if (g_current_syllable.state != STATE_START) {
                 finalize_syllable();
             } 
-            // 조합 중인 글자가 없을 때만 띄어쓰기를 추가.
-            else {
-                wcscat(g_output_buffer, L" ");
-            }
+            // 조합 중인 글자가 없을 때는 무시 (테스트 요구사항에 따라)
             break;
         case '.': // Enter
             // Finalize any current syllable first

@@ -31,6 +31,7 @@ extern CurrentSyllable g_current_syllable;
 void initialize(void);
 void process_input(char key);
 void reset_current_syllable(void);
+int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size);
 
 // Test result tracking
 typedef struct {
@@ -75,14 +76,20 @@ char* get_current_output() {
     wchar_t buffer[1024];
     chunjiin_get_current_text(buffer);
     
-    // Convert wchar_t to char* for easier comparison
+    // Convert wchar_t to UTF-8 char* for proper Korean character handling
     char* result = malloc(1024);
+    int pos = 0;
     int i = 0;
-    while (buffer[i] != L'\0' && i < 1023) {
-        result[i] = (char)buffer[i];
+    while (buffer[i] != L'\0' && pos < 1023) {
+        char utf8_buffer[8];
+        int utf8_len = wchar_to_utf8(buffer[i], utf8_buffer, sizeof(utf8_buffer));
+        if (utf8_len > 0 && pos + utf8_len < 1023) {
+            memcpy(result + pos, utf8_buffer, utf8_len);
+            pos += utf8_len;
+        }
         i++;
     }
-    result[i] = '\0';
+    result[pos] = '\0';
     return result;
 }
 
