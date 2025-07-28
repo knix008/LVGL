@@ -52,33 +52,6 @@ void display();
 wchar_t get_composing_char();
 wchar_t combine_syllable(int cho, int jung, int jong);
 
-// --- 메인 함수 --- (removed for library use)
-// int main() {
-//     // 시스템 로케일을 설정하여 wprintf가 유니코드 문자를 올바르게 출력하도록 함
-//     setlocale(LC_ALL, "");
-// 
-//     initialize();
-// 
-//     wprintf(L"--- 천지인 키보드 시뮬레이터 ---\n");
-//     wprintf(L"자음: g, n, d, b, s, j, m\n");
-//     wprintf(L"모음: a(ㆍ), e(ㅡ), i(ㅣ)\n");
-//     wprintf(L"특수: space, <(백스페이스), .(엔터)\n");
-//     wprintf(L"----------------------------------\n");
-// 
-//     char input_key;
-//     while (1) {
-//         display();
-//         input_key = getchar();
-//         // getchar()로 인한 개행문자 입력을 무시
-//         if (input_key == '\n' || input_key == '\r') {
-//             continue;
-//         }
-//         process_input(input_key);
-//     }
-// 
-//     return 0;
-// }
-
 // --- 시스템 초기화 함수 ---
 void initialize() {
     wmemset(g_output_buffer, 0, 1024); // 출력 버퍼 초기화
@@ -101,7 +74,11 @@ void finalize_syllable() {
         // 현재 조합 상태에 따라 완성된 글자 또는 자모를 가져옴
         wchar_t ch = get_composing_char();
         if (ch != 0) {
-            wcscat(g_output_buffer, &ch);
+            // Create a temporary string with the character and null terminator
+            wchar_t temp_str[2];
+            temp_str[0] = ch;
+            temp_str[1] = L'\0';
+            wcscat(g_output_buffer, temp_str);
         }
     }
     // 다음 입력을 위해 현재 조합 상태 초기화
@@ -425,13 +402,20 @@ wchar_t combine_syllable(int cho, int jung, int jong) {
 
 // --- 현재 조합 중인 글자를 반환하는 함수 ---
 wchar_t get_composing_char() {
-    printf("DEBUG: get_composing_char() called, state = %d, cho = %d, jung = %d, jong = %d\n", 
-           g_current_syllable.state, g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong);
+    printf("DEBUG: get_composing_char() called, state = %d, cho = %d, jung = %d, jong = %d, temp_vowel = %d\n", 
+           g_current_syllable.state, g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong, g_current_syllable.temp_vowel);
     
     if (g_current_syllable.state == STATE_START) {
         printf("DEBUG: Returning 0 (no composing character)\n");
         return 0; // 조합 중인 글자 없음
     }
+    
+    // Handle dot (ㆍ) character when temp_vowel is set but jung is not yet assigned
+    if (g_current_syllable.temp_vowel == 100) {
+        printf("DEBUG: Returning dot character: 0x318D (ㆍ)\n");
+        return 0x318D; // ㆍ (dot) character
+    }
+    
     // ** 미완성 글자 처리 로직 **
     // 초성만 입력된 상태라면, 완성형 글자로 조합할 수 없으므로
     // 초성 자모를 그대로 반환함.
@@ -441,8 +425,72 @@ wchar_t get_composing_char() {
         printf("DEBUG: Returning choseong jamo: 0x%04x\n", (unsigned int)result);
         return result;
     }
+    
     // 중성 또는 종성까지 조합된 경우, 완성형 글자로 조합하여 반환
     wchar_t result = combine_syllable(g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong);
     printf("DEBUG: Returning combined syllable: 0x%04x\n", (unsigned int)result);
     return result;
+}
+
+void chunjiin_get_current_text(wchar_t * buffer) {
+    if (buffer == NULL) {
+        printf("NULL buffer\n");
+        return;
+    }
+    
+    // Always start with an empty buffer
+    buffer[0] = L'\0';
+    
+    // Copy the output buffer content (completed text)
+    if (wcslen(g_output_buffer) > 0) {
+        wcscpy(buffer, g_output_buffer);
+        printf("Completed text: [%ls]\n", g_output_buffer);
+    } else {
+        printf("No completed text\n");
+    }
+    
+    // Add the current composing character if any
+    wchar_t ch = get_composing_char();
+    if (ch != 0) {
+        // Create a temporary string with the character and null terminator
+        wchar_t temp_str[2];
+        temp_str[0] = ch;
+        temp_str[1] = L'\0';
+        wcscat(buffer, temp_str);
+        printf("Composing character: 0x%04x (%lc)\n", (unsigned int)ch, ch);
+    } else {
+        printf("No composing character\n");
+    }
+    
+    printf("Final result: [%ls]\n", buffer);
+    buffer[wcslen(buffer)] = L'\0';
+}
+
+// UTF-8 conversion function
+int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size) {
+    if (wc == 0) {
+        utf8_buffer[0] = '\0';
+        return 0;
+    }
+    
+    // Simple UTF-8 encoding for Korean characters
+    if (wc < 0x80) {
+        utf8_buffer[0] = (char)wc;
+        utf8_buffer[1] = '\0';
+        return 1;
+    } else if (wc < 0x800) {
+        utf8_buffer[0] = 0xC0 | ((wc >> 6) & 0x1F);
+        utf8_buffer[1] = 0x80 | (wc & 0x3F);
+        utf8_buffer[2] = '\0';
+        return 2;
+    } else if (wc < 0x10000) {
+        utf8_buffer[0] = 0xE0 | ((wc >> 12) & 0x0F);
+        utf8_buffer[1] = 0x80 | ((wc >> 6) & 0x3F);
+        utf8_buffer[2] = 0x80 | (wc & 0x3F);
+        utf8_buffer[3] = '\0';
+        return 3;
+    }
+    
+    utf8_buffer[0] = '\0';
+    return 0;
 }

@@ -15,46 +15,26 @@ extern wchar_t get_composing_char();
 // Static variables for display
 static lv_obj_t * g_current_char_label = NULL;
 
-// UTF-8 conversion function
-static int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size) {
-    if (wc == 0) {
-        utf8_buffer[0] = '\0';
-        return 0;
-    }
-    
-    // Simple UTF-8 encoding for Korean characters
-    if (wc < 0x80) {
-        utf8_buffer[0] = (char)wc;
-        utf8_buffer[1] = '\0';
-        return 1;
-    } else if (wc < 0x800) {
-        utf8_buffer[0] = 0xC0 | ((wc >> 6) & 0x1F);
-        utf8_buffer[1] = 0x80 | (wc & 0x3F);
-        utf8_buffer[2] = '\0';
-        return 2;
-    } else if (wc < 0x10000) {
-        utf8_buffer[0] = 0xE0 | ((wc >> 12) & 0x0F);
-        utf8_buffer[1] = 0x80 | ((wc >> 6) & 0x3F);
-        utf8_buffer[2] = 0x80 | (wc & 0x3F);
-        utf8_buffer[3] = '\0';
-        return 3;
-    }
-    
-    utf8_buffer[0] = '\0';
-    return 0;
-}
-
 // Update display function - show current composing character
 static void update_display() {
     if (g_current_char_label) {
-        wchar_t composing_char = get_composing_char();
-        char composing_utf8[8] = "";
-        if (composing_char != 0) {
-            wchar_to_utf8(composing_char, composing_utf8, sizeof(composing_utf8));
-            lv_label_set_text(g_current_char_label, composing_utf8);
-        } else {
-            lv_label_set_text(g_current_char_label, "");
+        wchar_t buffer[1024];
+        char utf8_buffer[4096]; // UTF-8 needs more space than wchar_t
+        chunjiin_get_current_text(buffer);
+        
+        // Convert wchar_t string to UTF-8
+        size_t len = wcslen(buffer);
+        size_t utf8_pos = 0;
+        
+        for (size_t i = 0; i < len && utf8_pos < sizeof(utf8_buffer) - 4; i++) {
+            int bytes = wchar_to_utf8(buffer[i], &utf8_buffer[utf8_pos], sizeof(utf8_buffer) - utf8_pos);
+            if (bytes > 0) {
+                utf8_pos += bytes;
+            }
         }
+        utf8_buffer[utf8_pos] = '\0';
+        
+        lv_label_set_text(g_current_char_label, utf8_buffer);
     }
 }
 

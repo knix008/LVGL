@@ -94,7 +94,7 @@ void chunjiin_delete(void);
 void chunjiin_input_space(void);
 
 // 현재 텍스트 가져오기 (출력 버퍼 반환)
-const char* chunjiin_get_current_text(void);
+// const char* chunjiin_get_current_text(void);  // Removed conflicting declaration
 
 // 실시간 변환 함수
 void chunjiin_update_input_buffer(void);
@@ -116,5 +116,9 @@ void chunjiin_wrapper_reset_current_syllable(void);
 wchar_t chunjiin_wrapper_get_composing_char(void);
 wchar_t chunjiin_wrapper_combine_syllable(int cho, int jung, int jong);
 void chunjiin_add_character_to_buffer(wchar_t ch);
+void chunjiin_get_current_text(wchar_t * buffer);
+
+// UTF-8 conversion function
+int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size);
 
 #endif // CHUNJIIN_INPUT_H 
