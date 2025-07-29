@@ -75,11 +75,12 @@ void finalize_syllable() {
         // 현재 조합 상태에 따라 완성된 글자 또는 자모를 가져옴
         wchar_t ch = get_composing_char();
         if (ch != 0) {
-            // Create a temporary string with the character and null terminator
-            wchar_t temp_str[2];
-            temp_str[0] = ch;
-            temp_str[1] = L'\0';
-            wcscat(g_output_buffer, temp_str);
+            // Check buffer bounds before appending
+            size_t current_len = wcslen(g_output_buffer);
+            if (current_len < 1023) {
+                g_output_buffer[current_len] = ch;
+                g_output_buffer[current_len + 1] = L'\0';
+            }
         }
     }
     // 다음 입력을 위해 현재 조합 상태 초기화
@@ -271,6 +272,85 @@ void handle_vowel(int key_code) {
             return;
         }
         
+        // If we have temp_vowel == 100 (dot) and input another vowel,
+        // decompose jongseong and start new syllable
+        if (g_current_syllable.temp_vowel == 100) {
+            int prev_cho = g_current_syllable.cho;
+            int prev_jung = g_current_syllable.jung;
+            int prev_jong = g_current_syllable.jong;
+            
+            int remaining_jong = 0; 
+            int new_cho = -1;       
+
+            switch (prev_jong) {
+                case 3:  remaining_jong = 1; new_cho = 9; break;  // ㄳ -> ㄱ, ㅅ
+                case 5:  remaining_jong = 4; new_cho = 12; break; // ㄵ -> ㄴ, ㅈ
+                case 6:  remaining_jong = 4; new_cho = 18; break; // ㄶ -> ㄴ, ㅎ
+                case 9:  remaining_jong = 8; new_cho = 0; break;  // ㄺ -> ㄹ, ㄱ
+                case 10: remaining_jong = 8; new_cho = 6; break;  // ㄻ -> ㄹ, ㅁ
+                case 11: remaining_jong = 8; new_cho = 7; break;  // ㄼ -> ㄹ, ㅂ
+                case 12: remaining_jong = 8; new_cho = 9; break;  // ㄽ -> ㄹ, ㅅ
+                case 13: remaining_jong = 8; new_cho = 16; break; // ㄾ -> ㄹ, ㅌ
+                case 14: remaining_jong = 8; new_cho = 17; break; // ㄿ -> ㄹ, ㅍ
+                case 15: remaining_jong = 8; new_cho = 18; break; // ㅀ -> ㄹ, ㅎ
+                case 18: remaining_jong = 17; new_cho = 9; break; // ㅄ -> ㅂ, ㅅ
+                default: 
+                    remaining_jong = 0; 
+                    switch(prev_jong) {
+                        case 1: new_cho = 0; break;  // ㄱ
+                        case 2: new_cho = 1; break;  // ㄲ
+                        case 4: new_cho = 2; break;  // ㄴ
+                        case 7: new_cho = 3; break;  // ㄷ
+                        case 8: new_cho = 5; break;  // ㄹ
+                        case 16: new_cho = 6; break; // ㅁ
+                        case 17: new_cho = 7; break; // ㅂ
+                        case 19: new_cho = 9; break; // ㅅ
+                        case 20: new_cho = 10; break;// ㅆ
+                        case 21: new_cho = 11; break;// ㅇ
+                        case 22: new_cho = 12; break;// ㅈ
+                        case 23: new_cho = 14; break;// ㅊ
+                        case 24: new_cho = 15; break;// ㅋ
+                        case 25: new_cho = 16; break;// ㅌ
+                        case 26: new_cho = 17; break;// ㅍ
+                        case 27: new_cho = 18; break;// ㅎ
+                    }
+                    break;
+            }
+
+            reset_current_syllable();
+            wchar_t prev_char = combine_syllable(prev_cho, prev_jung, remaining_jong);
+            if (prev_char != 0) {
+                // Check buffer bounds before appending
+                size_t current_len = wcslen(g_output_buffer);
+                if (current_len < 1023) {
+                    g_output_buffer[current_len] = prev_char;
+                    g_output_buffer[current_len + 1] = L'\0';
+                }
+            }
+
+            g_current_syllable.cho = new_cho;
+            g_current_syllable.state = STATE_CHOSEONG;
+            g_current_syllable.temp_vowel = 0; // Reset temp_vowel
+            
+            // Now handle the vowel input for the new syllable
+            if (key_code == 1) { 
+                g_current_syllable.temp_vowel = 100; 
+                return; 
+            } // ㆍ
+            if (key_code == 2) {
+                g_current_syllable.jung = 8; // ㅗ (ㆍ + ㅡ = ㅗ)
+                g_current_syllable.state = STATE_JUNGSEONG;
+                g_current_syllable.temp_vowel = 1;
+                return;
+            }
+            if (key_code == 3) {
+                g_current_syllable.jung = 4; // ㅓ (ㆍ + ㅣ = ㅓ)
+                g_current_syllable.state = STATE_JUNGSEONG;
+                g_current_syllable.temp_vowel = 1;
+                return;
+            }
+        }
+        
         // For other vowels, proceed with normal jongseong decomposition
         int prev_cho = g_current_syllable.cho;
         int prev_jung = g_current_syllable.jung;
@@ -317,7 +397,12 @@ void handle_vowel(int key_code) {
         reset_current_syllable();
         wchar_t prev_char = combine_syllable(prev_cho, prev_jung, remaining_jong);
         if (prev_char != 0) {
-            wcscat(g_output_buffer, &prev_char);
+            // Check buffer bounds before appending
+            size_t current_len = wcslen(g_output_buffer);
+            if (current_len < 1023) {
+                g_output_buffer[current_len] = prev_char;
+                g_output_buffer[current_len + 1] = L'\0';
+            }
         }
 
         g_current_syllable.cho = new_cho;
@@ -441,7 +526,8 @@ wchar_t get_composing_char() {
     }
     
     // Handle dot (ㆍ) character when temp_vowel is set but jung is not yet assigned
-    if (g_current_syllable.temp_vowel == 100) {
+    // But if we're in jongseong or choseong state, show the complete syllable/choseong instead
+    if (g_current_syllable.temp_vowel == 100 && g_current_syllable.state != STATE_JONGSEONG && g_current_syllable.state != STATE_CHOSEONG) {
         return 0x318D; // ㆍ (dot) character
     }
     
@@ -454,9 +540,12 @@ wchar_t get_composing_char() {
     // 초성만 입력된 상태라면, 완성형 글자로 조합할 수 없으므로
     // 초성 자모를 그대로 반환함.
     if (g_current_syllable.state == STATE_CHOSEONG) {
-        // If we have a choseong but temp_vowel is set, show the vowel instead
+        // If we have a choseong but temp_vowel is set, show the choseong
+        // (the dot will be added by the UI function)
         if (g_current_syllable.temp_vowel > 0) {
-            return 0x318D; // ㆍ (dot) character
+            const wchar_t choseong_jamo[] = L"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+            wchar_t result = choseong_jamo[g_current_syllable.cho];
+            return result;
         }
         const wchar_t choseong_jamo[] = L"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
         wchar_t result = choseong_jamo[g_current_syllable.cho];
@@ -495,14 +584,45 @@ void chunjiin_get_current_text(wchar_t * buffer) {
     // Add the current composing character if any
     wchar_t ch = get_composing_char();
     if (ch != 0) {
-        // Create a temporary string with the character and null terminator
-        wchar_t temp_str[2];
-        temp_str[0] = ch;
-        temp_str[1] = L'\0';
-        wcscat(buffer, temp_str);
+        // Check buffer bounds before appending
+        size_t current_len = wcslen(buffer);
+        if (current_len < 1023) {
+            buffer[current_len] = ch;
+            buffer[current_len + 1] = L'\0';
+        }
     }
     
-    buffer[wcslen(buffer)] = L'\0';
+    // Special case: if we're in jongseong state with temp_vowel (dot),
+    // we need to show the syllable + dot
+    if (g_current_syllable.state == STATE_JONGSEONG && g_current_syllable.temp_vowel > 0) {
+        // The syllable is already shown by get_composing_char(), 
+        // but we need to add the dot
+        size_t current_len = wcslen(buffer);
+        if (current_len < 1023) {
+            buffer[current_len] = 0x318D; // ㆍ (dot) character
+            buffer[current_len + 1] = L'\0';
+        }
+    }
+    
+    // Special case: if we're in choseong state with temp_vowel (dot),
+    // we need to show the choseong + dot
+    if (g_current_syllable.state == STATE_CHOSEONG && g_current_syllable.temp_vowel > 0) {
+        // The choseong is already shown by get_composing_char(), 
+        // but we need to add the dot
+        size_t current_len = wcslen(buffer);
+        if (current_len < 1023) {
+            buffer[current_len] = 0x318D; // ㆍ (dot) character
+            buffer[current_len + 1] = L'\0';
+        }
+    }
+    
+    // Ensure proper null termination
+    size_t len = wcslen(buffer);
+    if (len < 1023) {
+        buffer[len] = L'\0';
+    } else {
+        buffer[1023] = L'\0';
+    }
 }
 
 // Function to handle Enter key - get text and clear buffers
@@ -536,7 +656,11 @@ void chunjiin_enter_key_handler() {
 
 // UTF-8 conversion function
 int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size) {
-    (void)buffer_size; // Suppress unused parameter warning
+    if (buffer_size < 4) {
+        utf8_buffer[0] = '\0';
+        return 0;
+    }
+    
     if (wc == 0) {
         utf8_buffer[0] = '\0';
         return 0;
