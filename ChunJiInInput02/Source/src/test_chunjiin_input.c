@@ -6,26 +6,8 @@
 #include <assert.h>
 #include "../include/chunjiin_input.h"
 
-// Type definitions from chunjiin_input.c
-typedef enum {
-    STATE_START,          // 초기 상태
-    STATE_CHOSEONG,       // 초성 입력됨
-    STATE_JUNGSEONG,      // 중성 입력됨
-    STATE_JONGSEONG,      // 종성 입력됨
-} SyllableState;
-
-typedef struct {
-    int cho;              // 초성 인덱스
-    int jung;             // 중성 인덱스
-    int jong;             // 종성 인덱스
-    SyllableState state;  // 현재 조합 상태
-    int temp_vowel;       // 모음 조합을 위해 마지막으로 입력된 모음 키를 임시 저장
-    int temp_consonant;   // 자음 조합(쌍자음 등)을 위해 마지막으로 입력된 자음 키를 임시 저장
-} CurrentSyllable;
-
 // External declarations for global variables from chunjiin_input.c
 extern wchar_t g_output_buffer[1024];
-extern CurrentSyllable g_current_syllable;
 
 // Function declarations from chunjiin_input.c
 void initialize(void);
@@ -672,6 +654,8 @@ void test_advanced_korean_syllables() {
         {"teaei", "퇴", "ㅌ + ㅗ + ㅣ = 퇴"},
         {"teaeia", "퉤", "ㅌ + ㅗ + ㅣ + ㆍ = 퉤"},
         {"gueai", "권", "ㄱ + ㅡ + ㆍ + ㅣ = 권"},
+        {"gean", "권", "ㄱ + ㅡ + ㆍ + ㄴ = 권 (correct input sequence)"},
+        {"geaain", "권", "ㄱ + ㅡ + ㆍ + ㆍ + ㅣ + ㄴ = 권 (dot + dot + ㅣ + ㄴ)"},
         {"ggueai", "꿘", "ㄲ + ㅡ + ㆍ + ㅣ = 꿘"},
         {"taeag", "택", "ㅌ + ㅐ + ㄱ = 택"},
         {"teag", "턱", "ㅌ + ㅓ + ㄱ = 턱"},
@@ -711,10 +695,23 @@ void test_advanced_korean_syllables() {
         {"gaeiaeg", "과ㄱ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㄱ = 과ㄱ"},
         {"dueiaeg", "뒤ㄱ", "ㄷ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㄱ = 뒤ㄱ"},
         {"teaeiaeg", "퇴ㄱ", "ㅌ + ㅗ + ㅣ + ㅣ + ㆍ + ㄱ = 퇴ㄱ"},
-        {"gueiaeg", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 권ㄱ"}
+        {"gueiaeg", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 권ㄱ"},
+        {"maeiai", "왜", "ㅇ + ㆍ + ㅡ + ㅣ + ㆍ + ㅣ = 왜 (오 + ㅣ + ㆍ + ㅣ)"},
+        {"meaaii", "웨", "ㅇ + ㅡ + ㆍ + ㆍ + ㅣ + ㅣ = 웨 (워 + ㅣ)"},
+        
+        // Additional complex Korean characters
+        {"gaig", "걱", "ㄱ + ㅐ + ㄱ = 걱"},
+        {"naeg", "녹", "ㄴ + ㅗ + ㄱ = 녹"},
+        {"ggaeg", "콕", "ㅋ + ㅗ + ㄱ = 콕"},
+        {"gaein", "괸", "ㄱ + ㆍ + ㅡ + ㅣ + ㄴ = 괸"},
+        {"ggeaag", "큑", "ㅋ + ㅠ + ㄱ = 큑"},
+        {"gaeinn", "괼", "ㄱ + ㆍ + ㅡ + ㅣ + ㄹ = 괼"},
+        {"jjaeig", "쵝", "ㅊ + ㆍ + ㅡ + ㅣ + ㄱ = 쵝"},
+        {"jjaein", "쵠", "ㅊ + ㅘ + ㄴ = 쵠"},
+        {"gaeis", "굇", "ㄱ + ㆍ + ㅡ + ㅣ + ㅅ = 굇"}
     };
     
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 43; i++) {
         clear_output();
         
         // Input the sequence for each advanced syllable

@@ -485,6 +485,34 @@ void handle_vowel(int key_code) {
         if (key_code == 2) new_jung = 17; // ㅡ + ㆍㆍ + ㅡ = ㅠ
         if (key_code == 3) new_jung = 5;  // ㅡ + ㆍㆍ + ㅣ = ㅔ
     }
+    else if (g_current_syllable.temp_vowel == 200 && g_current_syllable.jung == 18) { // prev: ㅡ + ㆍㆍ
+        if (key_code == 3) new_jung = 13; // ㅡ + ㆍㆍ + ㅣ = ㅜ (궈: ㄱ + ㅡ + ㆍ + ㆍ + ㅣ)
+    }
+    else if (g_current_syllable.temp_vowel == 100 && g_current_syllable.jung == 18) { // prev: ㅡ + ㆍ
+        if (key_code == 1) new_jung = 17; // ㅡ + ㆍ + ㆍ = ㅜ + ㆍ = ㅠ
+        if (key_code == 3) new_jung = 13; // ㅡ + ㆍ + ㅣ = ㅜ
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 17) { // prev: ㅠ
+        if (key_code == 3) new_jung = 14; // ㅠ + ㅣ = ㅝ (규 + ㅣ = 궈)
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 9) { // prev: ㅘ
+        if (key_code == 3) new_jung = 10; // ㅘ + ㅣ = ㅙ (와 + ㅣ = 왜)
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 14) { // prev: ㅝ
+        if (key_code == 3) new_jung = 15; // ㅝ + ㅣ = ㅞ (워 + ㅣ = 웨)
+    }
+    else if (g_current_syllable.temp_vowel == 200 && g_current_syllable.jung == 13) { // prev: ㅜ + ㆍㆍ
+        if (key_code == 3) new_jung = 14; // ㅜ + ㆍㆍ + ㅣ = ㅝ (궈: ㄱ + ㅡ + ㆍ + ㆍ + ㅣ)
+    }
+    else if (g_current_syllable.temp_vowel == 200 && g_current_syllable.jung == 8) { // prev: ㅗ (from temp_vowel == 200)
+        if (key_code == 3) new_jung = 14; // ㅗ + ㅣ = ㅝ (궈: ㄱ + ㅡ + ㆍ + ㆍ + ㅣ)
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 13) { // prev: ㅜ
+        if (key_code == 1) {
+            new_jung = 17; // ㅜ + ㆍ = ㅠ (구 + ㆍ = 규)
+        }
+        if (key_code == 3) new_jung = 13; // ㅜ + ㅣ = ㅜ
+    }
     else {
         int prev_jung = g_current_syllable.jung;
         
@@ -500,6 +528,7 @@ void handle_vowel(int key_code) {
         else if (prev_jung == 18 && key_code == 1 && g_current_syllable.temp_vowel != 200) new_jung = 13; // ㅡ + ㆍ = ㅜ (only if not already ㆍㆍ)
         else if (prev_jung == 13 && key_code == 1) new_jung = 17; // ㅜ + ㆍ = ㅠ
         else if (prev_jung == 18 && g_current_syllable.temp_vowel == 200) new_jung = 17; // ㅡ + ㆍㆍ = ㅠ
+        else if (prev_jung == 17 && key_code == 3) new_jung = 17; // ㅠ + ㅣ = ㅠ (궈: ㄱ + ㅡ + ㆍ + ㆍ + ㅣ)
         else if (prev_jung == 11 && key_code == 1) new_jung = 9;  // ㅘ + ㆍ = ㅘ (과: ㄱ + ㅗ + ㅏ)
     }
 
