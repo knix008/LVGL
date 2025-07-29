@@ -82,6 +82,26 @@ void finalize_syllable() {
                 g_output_buffer[current_len + 1] = L'\0';
             }
         }
+        
+        // Handle dots after jongseong before resetting
+        if (g_current_syllable.state == STATE_JONGSEONG && g_current_syllable.temp_vowel > 0) {
+            int dot_count = (g_current_syllable.temp_vowel == 200) ? 2 : 1;
+            size_t current_len = wcslen(g_output_buffer);
+            
+            for (int i = 0; i < dot_count && current_len + i < 1023; i++) {
+                g_output_buffer[current_len + i] = 0x318D; // ㆍ (dot) character
+            }
+            g_output_buffer[current_len + dot_count] = L'\0';
+        }
+        
+        // Handle dot after choseong before resetting
+        if (g_current_syllable.state == STATE_CHOSEONG && g_current_syllable.temp_vowel > 0) {
+            size_t current_len = wcslen(g_output_buffer);
+            if (current_len < 1023) {
+                g_output_buffer[current_len] = 0x318D; // ㆍ (dot) character
+                g_output_buffer[current_len + 1] = L'\0';
+            }
+        }
     }
     // 다음 입력을 위해 현재 조합 상태 초기화
     reset_current_syllable();
@@ -268,13 +288,23 @@ void handle_vowel(int key_code) {
     if (g_current_syllable.state == STATE_JONGSEONG) {
         // Special handling for dot (ㆍ) - don't decompose jongseong immediately
         if (key_code == 1) { // dot
-            g_current_syllable.temp_vowel = 100;
+            // Cycle between single dot and double dots
+            if (g_current_syllable.temp_vowel == 100) {
+                g_current_syllable.temp_vowel = 200; // Two dots
+            } else if (g_current_syllable.temp_vowel == 200) {
+                g_current_syllable.temp_vowel = 100; // Back to single dot
+            } else {
+                g_current_syllable.temp_vowel = 100; // First dot
+            }
             return;
         }
         
-        // If we have temp_vowel == 100 (dot) and input another vowel,
+        // If we have temp_vowel == 100 (dot) or 200 (two dots) and input another vowel,
         // decompose jongseong and start new syllable
-        if (g_current_syllable.temp_vowel == 100) {
+        if (g_current_syllable.temp_vowel == 100 || g_current_syllable.temp_vowel == 200) {
+            // Save the temp_vowel value BEFORE resetting
+            int original_temp_vowel = g_current_syllable.temp_vowel;
+            
             int prev_cho = g_current_syllable.cho;
             int prev_jung = g_current_syllable.jung;
             int prev_jong = g_current_syllable.jong;
@@ -330,21 +360,31 @@ void handle_vowel(int key_code) {
 
             g_current_syllable.cho = new_cho;
             g_current_syllable.state = STATE_CHOSEONG;
-            g_current_syllable.temp_vowel = 0; // Reset temp_vowel
             
-            // Now handle the vowel input for the new syllable
+            // Handle the vowel input for the new syllable with proper dot combination
+            
             if (key_code == 1) { 
                 g_current_syllable.temp_vowel = 100; 
                 return; 
             } // ㆍ
             if (key_code == 2) {
-                g_current_syllable.jung = 8; // ㅗ (ㆍ + ㅡ = ㅗ)
+                // ㆍㆍ + ㅡ = ㅛ, ㆍ + ㅡ = ㅗ
+                if (original_temp_vowel == 200) {
+                    g_current_syllable.jung = 12; // ㅛ (ㆍㆍ + ㅡ = ㅛ)
+                } else {
+                    g_current_syllable.jung = 8; // ㅗ (ㆍ + ㅡ = ㅗ)
+                }
                 g_current_syllable.state = STATE_JUNGSEONG;
                 g_current_syllable.temp_vowel = 1;
                 return;
             }
             if (key_code == 3) {
-                g_current_syllable.jung = 4; // ㅓ (ㆍ + ㅣ = ㅓ)
+                // ㆍㆍ + ㅣ = ㅕ, ㆍ + ㅣ = ㅓ
+                if (original_temp_vowel == 200) {
+                    g_current_syllable.jung = 6; // ㅕ (ㆍㆍ + ㅣ = ㅕ)
+                } else {
+                    g_current_syllable.jung = 4; // ㅓ (ㆍ + ㅣ = ㅓ)
+                }
                 g_current_syllable.state = STATE_JUNGSEONG;
                 g_current_syllable.temp_vowel = 1;
                 return;
@@ -433,7 +473,10 @@ void handle_vowel(int key_code) {
         if (key_code == 3) new_jung = 4;  // ㆍ + ㅣ = ㅓ
     }
     else if (g_current_syllable.temp_vowel == 200) { // prev: ㆍㆍ
-        if (key_code == 1) new_jung = 8;  // ㆍㆍ = ㅗ (when no additional input)
+        if (key_code == 1) { 
+            g_current_syllable.temp_vowel = 100; 
+            return; 
+        } // ㆍㆍ + ㆍ = ㆍ (cycle back to single dot)
         if (key_code == 2) new_jung = 12; // ㆍㆍ + ㅡ = ㅛ
         if (key_code == 3) new_jung = 6;  // ㆍㆍ + ㅣ = ㅕ
     }
@@ -532,8 +575,10 @@ wchar_t get_composing_char() {
     }
     
     // Handle double dot (ㆍㆍ) character when temp_vowel is 200
-    if (g_current_syllable.temp_vowel == 200) {
-        return 0x318D; // ㆍ (dot) character - show single dot for now
+    // For jongseong state, show the complete syllable (dots will be added by UI)
+    if (g_current_syllable.temp_vowel == 200 && g_current_syllable.state == STATE_JONGSEONG) {
+        wchar_t result = combine_syllable(g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong);
+        return result;
     }
     
     // ** 미완성 글자 처리 로직 **
@@ -593,27 +638,31 @@ void chunjiin_get_current_text(wchar_t * buffer) {
     }
     
     // Special case: if we're in jongseong state with temp_vowel (dot),
-    // we need to show the syllable + dot
+    // we need to show the syllable + dot(s)
     if (g_current_syllable.state == STATE_JONGSEONG && g_current_syllable.temp_vowel > 0) {
         // The syllable is already shown by get_composing_char(), 
-        // but we need to add the dot
+        // but we need to add the dot(s)
         size_t current_len = wcslen(buffer);
-        if (current_len < 1023) {
-            buffer[current_len] = 0x318D; // ㆍ (dot) character
-            buffer[current_len + 1] = L'\0';
+        int dot_count = (g_current_syllable.temp_vowel == 200) ? 2 : 1;
+        
+        for (int i = 0; i < dot_count && current_len + i < 1023; i++) {
+            buffer[current_len + i] = 0x318D; // ㆍ (dot) character
         }
+        buffer[current_len + dot_count] = L'\0';
     }
     
     // Special case: if we're in choseong state with temp_vowel (dot),
-    // we need to show the choseong + dot
+    // we need to show the choseong + dot(s)
     if (g_current_syllable.state == STATE_CHOSEONG && g_current_syllable.temp_vowel > 0) {
         // The choseong is already shown by get_composing_char(), 
-        // but we need to add the dot
+        // but we need to add the dot(s)
         size_t current_len = wcslen(buffer);
-        if (current_len < 1023) {
-            buffer[current_len] = 0x318D; // ㆍ (dot) character
-            buffer[current_len + 1] = L'\0';
+        int dot_count = (g_current_syllable.temp_vowel == 200) ? 2 : 1;
+        
+        for (int i = 0; i < dot_count && current_len + i < 1023; i++) {
+            buffer[current_len + i] = 0x318D; // ㆍ (dot) character
         }
+        buffer[current_len + dot_count] = L'\0';
     }
     
     // Ensure proper null termination

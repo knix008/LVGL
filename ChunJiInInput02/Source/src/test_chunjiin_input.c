@@ -903,6 +903,253 @@ void test_complete_words() {
     }
 }
 
+// Test dot combinations with choseong and jongseong
+void test_dot_combinations() {
+    printf("\n=== TESTING DOT COMBINATIONS ===\n");
+    
+    // Test choseong + dot combinations
+    printf("--- Testing Choseong + Dot ---\n");
+    struct {
+        char* input;
+        char* description;
+    } choseong_dot_tests[] = {
+        {"ga", "ㄱ + ㆍ (choseong + dot)"},
+        {"na", "ㄴ + ㆍ (choseong + dot)"},
+        {"da", "ㄷ + ㆍ (choseong + dot)"},
+        {"ba", "ㅂ + ㆍ (choseong + dot)"},
+        {"sa", "ㅅ + ㆍ (choseong + dot)"},
+        {"ja", "ㅈ + ㆍ (choseong + dot)"},
+        {"ma", "ㅇ + ㆍ (choseong + dot)"}
+    };
+    
+    for (int i = 0; i < 7; i++) {
+        clear_output();
+        for (int j = 0; choseong_dot_tests[i].input[j] != '\0'; j++) {
+            process_input(choseong_dot_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   choseong_dot_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test jongseong + dot combinations
+    printf("--- Testing Jongseong + Dot ---\n");
+    struct {
+        char* input;
+        char* description;
+    } jongseong_dot_tests[] = {
+        {"giag", "ㄱ + ㅣ + ㆍ + ㄱ (가 + ㄱ + ㆍ)"},
+        {"giagb", "ㄱ + ㅣ + ㆍ + ㄱ + ㅂ (가 + ㄱ + ㆍ)"},
+        {"giags", "ㄱ + ㅣ + ㆍ + ㄱ + ㅅ (가 + ㄱ + ㆍ)"},
+        {"giagj", "ㄱ + ㅣ + ㆍ + ㄱ + ㅈ (가 + ㄱ + ㆍ)"},
+        {"giagm", "ㄱ + ㅣ + ㆍ + ㄱ + ㅁ (가 + ㄱ + ㆍ)"},
+        {"niag", "ㄴ + ㅣ + ㆍ + ㄱ (나 + ㄱ + ㆍ)"},
+        {"diag", "ㄷ + ㅣ + ㆍ + ㄱ (다 + ㄱ + ㆍ)"},
+        {"biag", "ㅂ + ㅣ + ㆍ + ㄱ (바 + ㄱ + ㆍ)"},
+        {"siag", "ㅅ + ㅣ + ㆍ + ㄱ (사 + ㄱ + ㆍ)"},
+        {"jiag", "ㅈ + ㅣ + ㆍ + ㄱ (자 + ㄱ + ㆍ)"},
+        {"miag", "ㅇ + ㅣ + ㆍ + ㄱ (아 + ㄱ + ㆍ)"}
+    };
+    
+    for (int i = 0; i < 11; i++) {
+        clear_output();
+        for (int j = 0; jongseong_dot_tests[i].input[j] != '\0'; j++) {
+            process_input(jongseong_dot_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   jongseong_dot_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test dot + vowel combinations after choseong
+    printf("--- Testing Choseong + Dot + Vowel ---\n");
+    struct {
+        char* input;
+        char* description;
+    } choseong_dot_vowel_tests[] = {
+        {"gae", "ㄱ + ㆍ + ㅡ (ㄱㆍ + ㅡ)"},
+        {"gai", "ㄱ + ㆍ + ㅣ (ㄱㆍ + ㅣ)"},
+        {"nae", "ㄴ + ㆍ + ㅡ (ㄴㆍ + ㅡ)"},
+        {"nai", "ㄴ + ㆍ + ㅣ (ㄴㆍ + ㅣ)"},
+        {"dae", "ㄷ + ㆍ + ㅡ (ㄷㆍ + ㅡ)"},
+        {"dai", "ㄷ + ㆍ + ㅣ (ㄷㆍ + ㅣ)"},
+        {"bae", "ㅂ + ㆍ + ㅡ (ㅂㆍ + ㅡ)"},
+        {"bai", "ㅂ + ㆍ + ㅣ (ㅂㆍ + ㅣ)"},
+        {"sae", "ㅅ + ㆍ + ㅡ (ㅅㆍ + ㅡ)"},
+        {"sai", "ㅅ + ㆍ + ㅣ (ㅅㆍ + ㅣ)"},
+        {"jae", "ㅈ + ㆍ + ㅡ (ㅈㆍ + ㅡ)"},
+        {"jai", "ㅈ + ㆍ + ㅣ (ㅈㆍ + ㅣ)"},
+        {"mae", "ㅇ + ㆍ + ㅡ (ㅇㆍ + ㅡ)"},
+        {"mai", "ㅇ + ㆍ + ㅣ (ㅇㆍ + ㅣ)"}
+    };
+    
+    for (int i = 0; i < 14; i++) {
+        clear_output();
+        for (int j = 0; choseong_dot_vowel_tests[i].input[j] != '\0'; j++) {
+            process_input(choseong_dot_vowel_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   choseong_dot_vowel_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test dot + vowel combinations after jongseong
+    printf("--- Testing Jongseong + Dot + Vowel ---\n");
+    struct {
+        char* input;
+        char* description;
+    } jongseong_dot_vowel_tests[] = {
+        {"giage", "ㄱ + ㅣ + ㆍ + ㄱ + ㅡ (각 + ㆍ + ㅡ = 가고)"},
+        {"giagi", "ㄱ + ㅣ + ㆍ + ㄱ + ㅣ (각 + ㆍ + ㅣ = 가거)"},
+        {"giagae", "ㄱ + ㅣ + ㆍ + ㄱ + ㅡ + ㅣ (각 + ㆍ + ㅡ + ㅣ)"},
+        {"giagai", "ㄱ + ㅣ + ㆍ + ㄱ + ㅣ + ㅣ (각 + ㆍ + ㅣ + ㅣ)"},
+        {"niage", "ㄴ + ㅣ + ㆍ + ㄱ + ㅡ (낙 + ㆍ + ㅡ = 나고)"},
+        {"niagi", "ㄴ + ㅣ + ㆍ + ㄱ + ㅣ (낙 + ㆍ + ㅣ = 나거)"},
+        {"diage", "ㄷ + ㅣ + ㆍ + ㄱ + ㅡ (닥 + ㆍ + ㅡ = 다고)"},
+        {"diagi", "ㄷ + ㅣ + ㆍ + ㄱ + ㅣ (닥 + ㆍ + ㅣ = 다거)"},
+        {"biage", "ㅂ + ㅣ + ㆍ + ㄱ + ㅡ (박 + ㆍ + ㅡ = 바고)"},
+        {"biagi", "ㅂ + ㅣ + ㆍ + ㄱ + ㅣ (박 + ㆍ + ㅣ = 바거)"},
+        {"siage", "ㅅ + ㅣ + ㆍ + ㄱ + ㅡ (삭 + ㆍ + ㅡ = 사고)"},
+        {"siagi", "ㅅ + ㅣ + ㆍ + ㄱ + ㅣ (삭 + ㆍ + ㅣ = 사거)"},
+        {"jiage", "ㅈ + ㅣ + ㆍ + ㄱ + ㅡ (작 + ㆍ + ㅡ = 자고)"},
+        {"jiagi", "ㅈ + ㅣ + ㆍ + ㄱ + ㅣ (작 + ㆍ + ㅣ = 자거)"},
+        {"miage", "ㅇ + ㅣ + ㆍ + ㄱ + ㅡ (악 + ㆍ + ㅡ = 아고)"},
+        {"miagi", "ㅇ + ㅣ + ㆍ + ㄱ + ㅣ (악 + ㆍ + ㅣ = 아거)"}
+    };
+    
+    for (int i = 0; i < 16; i++) {
+        clear_output();
+        for (int j = 0; jongseong_dot_vowel_tests[i].input[j] != '\0'; j++) {
+            process_input(jongseong_dot_vowel_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   jongseong_dot_vowel_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test complex multi-syllable dot combinations
+    printf("--- Testing Complex Multi-Syllable Dot Combinations ---\n");
+    struct {
+        char* input;
+        char* description;
+    } complex_dot_tests[] = {
+        {"giagbsi", "ㄱ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (갑시)"},
+        {"giagbsae", "ㄱ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅡ + ㅣ (갑시 + ㅡ + ㅣ)"},
+        {"giagbsai", "ㄱ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ + ㅣ (갑시 + ㅣ + ㅣ)"},
+        {"niagbsi", "ㄴ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (납시)"},
+        {"diagbsi", "ㄷ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (답시)"},
+        {"biagbsi", "ㅂ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (밥시)"},
+        {"siagbsi", "ㅅ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (삽시)"},
+        {"jiagbsi", "ㅈ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (잡시)"},
+        {"miagbsi", "ㅇ + ㅣ + ㆍ + ㄱ + ㅂ + ㅅ + ㅣ (압시)"},
+        {"giagjsi", "ㄱ + ㅣ + ㆍ + ㄱ + ㅈ + ㅅ + ㅣ (갖시)"},
+        {"giagmsi", "ㄱ + ㅣ + ㆍ + ㄱ + ㅁ + ㅅ + ㅣ (강시)"}
+    };
+    
+    for (int i = 0; i < 11; i++) {
+        clear_output();
+        for (int j = 0; complex_dot_tests[i].input[j] != '\0'; j++) {
+            process_input(complex_dot_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   complex_dot_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test multiple consecutive dots
+    printf("--- Testing Multiple Consecutive Dots ---\n");
+    struct {
+        char* input;
+        char* description;
+    } multiple_dot_tests[] = {
+        {"giaga", "ㄱ + ㅣ + ㆍ + ㄱ + ㆍ (각 + dot)"},
+        {"giagaa", "ㄱ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (각 + dot + dot)"},
+        {"niaga", "ㄴ + ㅣ + ㆍ + ㄱ + ㆍ (낙 + dot)"},
+        {"niagaa", "ㄴ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (낙 + dot + dot)"},
+        {"diaga", "ㄷ + ㅣ + ㆍ + ㄱ + ㆍ (닥 + dot)"},
+        {"diagaa", "ㄷ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (닥 + dot + dot)"},
+        {"biaga", "ㅂ + ㅣ + ㆍ + ㄱ + ㆍ (박 + dot)"},
+        {"biagaa", "ㅂ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (박 + dot + dot)"},
+        {"siaga", "ㅅ + ㅣ + ㆍ + ㄱ + ㆍ (삭 + dot)"},
+        {"siagaa", "ㅅ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (삭 + dot + dot)"},
+        {"jiaga", "ㅈ + ㅣ + ㆍ + ㄱ + ㆍ (작 + dot)"},
+        {"jiagaa", "ㅈ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (작 + dot + dot)"},
+        {"miaga", "ㅇ + ㅣ + ㆍ + ㄱ + ㆍ (악 + dot)"},
+        {"miagaa", "ㅇ + ㅣ + ㆍ + ㄱ + ㆍ + ㆍ (악 + dot + dot)"}
+    };
+    
+    for (int i = 0; i < 14; i++) {
+        clear_output();
+        for (int j = 0; multiple_dot_tests[i].input[j] != '\0'; j++) {
+            process_input(multiple_dot_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   multiple_dot_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test dot cycling behavior
+    printf("--- Testing Dot Cycling Behavior ---\n");
+    struct {
+        char* input;
+        char* description;
+    } dot_cycling_tests[] = {
+        {"ga", "ㄱ + ㆍ (first dot)"},
+        {"gaa", "ㄱ + ㆍㆍ (second dot)"},
+        {"gaaa", "ㄱ + ㆍ (third dot - cycles back)"},
+        {"gaaaa", "ㄱ + ㆍㆍ (fourth dot - cycles again)"},
+        {"giaga", "각 + ㆍ (jongseong + first dot)"},
+        {"giagaa", "각 + ㆍㆍ (jongseong + second dot)"},
+        {"giagaaa", "각 + ㆍ (jongseong + third dot - cycles back)"},
+        {"giagaaaa", "각 + ㆍㆍ (jongseong + fourth dot - cycles again)"}
+    };
+    
+    for (int i = 0; i < 8; i++) {
+        clear_output();
+        for (int j = 0; dot_cycling_tests[i].input[j] != '\0'; j++) {
+            process_input(dot_cycling_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   dot_cycling_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
 // Main test runner
 int main() {
     // Set locale for wide character support
@@ -931,6 +1178,7 @@ int main() {
     test_special_functions();
     test_edge_cases();
     test_complete_words();
+    test_dot_combinations();
     
     // Print final statistics
     test_print_stats();
