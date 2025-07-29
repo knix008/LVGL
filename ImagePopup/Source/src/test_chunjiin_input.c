@@ -15,6 +15,27 @@ void process_input(char key);
 void reset_current_syllable(void);
 int wchar_to_utf8(wchar_t wc, char *utf8_buffer, size_t buffer_size);
 
+// Test function declarations
+void test_all_choseong(void);
+void test_all_jungseong(void);
+void test_compound_vowels(void);
+void test_all_jongseong(void);
+void test_compound_jongseong(void);
+void test_jongseong_cycling(void);
+void test_complex_jongseong_combinations(void);
+void test_choseong_jungseong_jongseong_combinations(void);
+void test_jongseong_limitations(void);
+void test_double_consonants(void);
+void test_complex_syllables(void);
+void test_advanced_korean_syllables(void);
+void test_vowel_combinations(void);
+void test_consonant_group_toggling(void);
+void test_special_functions(void);
+void test_edge_cases(void);
+void test_complete_words(void);
+void test_dot_combinations(void);
+void test_gwon_syllable(void);
+
 // Test result tracking
 typedef struct {
     int total_tests;
@@ -1136,6 +1157,71 @@ void test_dot_combinations() {
     }
 }
 
+// Test specifically for the Korean syllable "권" (gwon)
+void test_gwon_syllable() {
+    printf("\n=== TESTING GWON (권) SYLLABLE ===\n");
+    
+    struct {
+        char* input;
+        char* expected;
+        char* description;
+    } gwon_tests[] = {
+        // Standard input sequences for "권"
+        {"gueai", "권", "ㄱ + ㅡ + ㆍ + ㅣ = 권 (standard sequence)"},
+        {"gean", "권", "ㄱ + ㅡ + ㆍ + ㄴ = 권 (with final consonant ㄴ)"},
+        {"geaain", "권", "ㄱ + ㅡ + ㆍ + ㆍ + ㅣ + ㄴ = 권 (dot + dot + ㅣ + ㄴ)"},
+        
+        // Alternative input sequences
+        {"gueaig", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄱ = 권ㄱ (with final ㄱ)"},
+        {"gueais", "권ㅅ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅅ = 권ㅅ (with final ㅅ)"},
+        {"gueaij", "권ㅈ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅈ = 권ㅈ (with final ㅈ)"},
+        {"gueaib", "권ㅂ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅂ = 권ㅂ (with final ㅂ)"},
+        {"gueaim", "권ㅇ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅇ = 권ㅇ (with final ㅇ)"},
+        
+        // Double consonant variations
+        {"ggueai", "꿘", "ㄲ + ㅡ + ㆍ + ㅣ = 꿘 (double ㄱ)"},
+        {"ggueaig", "꿘ㄱ", "ㄲ + ㅡ + ㆍ + ㅣ + ㄱ = 꿘ㄱ (double ㄱ with final ㄱ)"},
+        
+        // Complex final consonant combinations
+        {"gueaigs", "권ㄶ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄴ + ㅎ = 권ㄶ (with ㄶ)"},
+        {"gueailg", "권ㄺ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄹ + ㄱ = 권ㄺ (with ㄺ)"},
+        {"gueaigj", "권ㄵ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄴ + ㅈ = 권ㄵ (with ㄵ)"},
+        
+        // Cycling final consonants
+        {"gueaiggg", "권ㄲ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 권ㄲ (cycling to ㄲ)"},
+        {"gueaiddd", "권ㄸ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄷ + ㄷ + ㄷ = 권ㄸ (cycling to ㄸ)"},
+        {"gueaibbb", "권ㅃ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅂ + ㅂ + ㅂ = 권ㅃ (cycling to ㅃ)"},
+        {"gueaiss", "권ㅆ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅅ + ㅅ = 권ㅆ (cycling to ㅆ)"},
+        {"gueaijj", "권ㅉ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅈ + ㅈ = 권ㅉ (cycling to ㅉ)"},
+        
+        // Vowel variations
+        {"gueiaeia", "권ㅏ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㅣ + ㆍ = 권ㅏ (with additional vowels)"},
+        {"gueiaeg", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 권ㄱ (with vowel + final consonant)"},
+        
+        // Edge cases
+        {"gueaia", "권", "ㄱ + ㅡ + ㆍ + ㅣ + ㆍ = 권 (with extra dot)"},
+        {"gueaiaa", "권", "ㄱ + ㅡ + ㆍ + ㅣ + ㆍ + ㆍ = 권 (with multiple dots)"},
+        {"gueaiai", "권", "ㄱ + ㅡ + ㆍ + ㅣ + ㆍ + ㅣ = 권 (with dot + ㅣ)"}
+    };
+    
+    for (int i = 0; i < 22; i++) {
+        clear_output();
+        
+        // Input the sequence for each gwon test
+        for (int j = 0; gwon_tests[i].input[j] != '\0'; j++) {
+            process_input(gwon_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   gwon_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
 // Main test runner
 int main() {
     // Set locale for wide character support
@@ -1165,6 +1251,7 @@ int main() {
     test_edge_cases();
     test_complete_words();
     test_dot_combinations();
+    test_gwon_syllable(); // Add the new test function
     
     // Print final statistics
     test_print_stats();

@@ -44,6 +44,7 @@ void create_db_tab(lv_obj_t * parent) {
     
     lv_obj_t * btn1_label = lv_label_create(btn1);
     lv_label_set_text(btn1_label, "Create DB");
+    lv_obj_center(btn1_label);
     
     // Query database button
     lv_obj_t * btn2 = lv_btn_create(parent);
@@ -52,6 +53,7 @@ void create_db_tab(lv_obj_t * parent) {
     
     lv_obj_t * btn2_label = lv_label_create(btn2);
     lv_label_set_text(btn2_label, "Query DB");
+    lv_obj_center(btn2_label);
     
     // Result label for database operations
     lv_obj_t * result_label = lv_label_create(parent);

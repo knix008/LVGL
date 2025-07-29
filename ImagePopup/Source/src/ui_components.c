@@ -87,16 +87,16 @@ void lv_example_tab_menu(void) {
     // Create tabs
     lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "DB");
     lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Setting");
-    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "NUM"); // Changed from Keypad to Number
     lv_obj_t * tab5 = lv_tabview_add_tab(tabview, "KOR"); // Added new tab
     lv_obj_t * tab6 = lv_tabview_add_tab(tabview, "CJI"); // Added ChunJiIn tab
+    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     
     // Create tab contents using separate functions
     create_db_tab(tab1);
     create_settings_tab(tab2);
-    create_info_tab(tab3);
     create_number_tab(tab4);
     create_korean_tab(tab5);
     create_chunjiin_tab(tab6);
+    create_info_tab(tab3);
 }

@@ -19,7 +19,7 @@ int main(void)
     }
     
     // Set window title
-    lv_sdl_window_set_title(disp, "LVGL SQLCipher Demo");
+    lv_sdl_window_set_title(disp, "Image & PopupDemo");
     
     // Create input devices
     lv_indev_t * mouse = lv_sdl_mouse_create();
