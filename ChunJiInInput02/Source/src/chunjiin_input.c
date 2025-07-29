@@ -201,8 +201,9 @@ void handle_consonant(int key_code) {
         // 같은 자음키가 다시 입력된 경우 - 종성 순환
         if (g_current_syllable.temp_consonant == key_code) {
             switch(key_code) {
-                case 1: // g: ㄱ -> ㄲ
-                    if (g_current_syllable.jong == 1) g_current_syllable.jong = 2;      // ㄱ -> ㄲ
+                case 1: // g: ㄱ -> ㅋ -> ㄲ -> ㄱ -> ㅋ -> ㄲ -> ...
+                    if (g_current_syllable.jong == 1) g_current_syllable.jong = 24;     // ㄱ -> ㅋ
+                    else if (g_current_syllable.jong == 24) g_current_syllable.jong = 2; // ㅋ -> ㄲ
                     else g_current_syllable.jong = 1;                                   // ㄲ -> ㄱ
                     break;
                 case 2: // n: ㄴ -> ㄹ
@@ -213,16 +214,18 @@ void handle_consonant(int key_code) {
                     if (g_current_syllable.jong == 7) g_current_syllable.jong = 25;      // ㄷ -> ㅌ
                     else g_current_syllable.jong = 7;                                    // ㅌ -> ㄷ
                     break;
-                case 4: // b: ㅂ (종성에서는 ㅂ만 가능)
-                    // ㅂ은 종성에서 순환 없음
+                case 4: // b: ㅂ -> ㅍ -> ㅂ -> ㅍ -> ...
+                    if (g_current_syllable.jong == 17) g_current_syllable.jong = 26;     // ㅂ -> ㅍ
+                    else g_current_syllable.jong = 17;                                   // ㅍ -> ㅂ
                     break;
                 case 5: // s: ㅅ -> ㅎ -> ㅆ
                     if (g_current_syllable.jong == 19) g_current_syllable.jong = 27;     // ㅅ -> ㅎ
                     else if (g_current_syllable.jong == 27) g_current_syllable.jong = 20; // ㅎ -> ㅆ
                     else g_current_syllable.jong = 19;                                    // ㅆ -> ㅅ
                     break;
-                case 6: // j: ㅈ (종성에서는 ㅈ만 가능)
-                    // ㅈ은 종성에서 순환 없음
+                case 6: // j: ㅈ -> ㅊ -> ㅈ -> ㅊ -> ...
+                    if (g_current_syllable.jong == 22) g_current_syllable.jong = 23;     // ㅈ -> ㅊ
+                    else g_current_syllable.jong = 22;                                   // ㅊ -> ㅈ
                     break;
                 case 7: // m: ㅇ -> ㅁ
                     if (g_current_syllable.jong == 21) g_current_syllable.jong = 16;     // ㅇ -> ㅁ
@@ -262,6 +265,13 @@ void handle_vowel(int key_code) {
     g_current_syllable.temp_consonant = 0; 
 
     if (g_current_syllable.state == STATE_JONGSEONG) {
+        // Special handling for dot (ㆍ) - don't decompose jongseong immediately
+        if (key_code == 1) { // dot
+            g_current_syllable.temp_vowel = 100;
+            return;
+        }
+        
+        // For other vowels, proceed with normal jongseong decomposition
         int prev_cho = g_current_syllable.cho;
         int prev_jung = g_current_syllable.jung;
         int prev_jong = g_current_syllable.jong;
@@ -362,6 +372,7 @@ void handle_vowel(int key_code) {
         else if (prev_jung == 18 && key_code == 1 && g_current_syllable.temp_vowel != 200) new_jung = 13; // ㅡ + ㆍ = ㅜ (only if not already ㆍㆍ)
         else if (prev_jung == 13 && key_code == 1) new_jung = 17; // ㅜ + ㆍ = ㅠ
         else if (prev_jung == 18 && g_current_syllable.temp_vowel == 200) new_jung = 17; // ㅡ + ㆍㆍ = ㅠ
+        else if (prev_jung == 11 && key_code == 1) new_jung = 9;  // ㅘ + ㆍ = ㅘ (과: ㄱ + ㅗ + ㅏ)
     }
 
     if (new_jung != -1) {
@@ -434,12 +445,32 @@ wchar_t get_composing_char() {
         return 0x318D; // ㆍ (dot) character
     }
     
+    // Handle double dot (ㆍㆍ) character when temp_vowel is 200
+    if (g_current_syllable.temp_vowel == 200) {
+        return 0x318D; // ㆍ (dot) character - show single dot for now
+    }
+    
     // ** 미완성 글자 처리 로직 **
     // 초성만 입력된 상태라면, 완성형 글자로 조합할 수 없으므로
     // 초성 자모를 그대로 반환함.
     if (g_current_syllable.state == STATE_CHOSEONG) {
+        // If we have a choseong but temp_vowel is set, show the vowel instead
+        if (g_current_syllable.temp_vowel > 0) {
+            return 0x318D; // ㆍ (dot) character
+        }
         const wchar_t choseong_jamo[] = L"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
         wchar_t result = choseong_jamo[g_current_syllable.cho];
+        return result;
+    }
+    
+
+    
+
+    
+    // If we're in jongseong state but have temp_vowel set (after dot input),
+    // show the complete syllable with jongseong
+    if (g_current_syllable.state == STATE_JONGSEONG && g_current_syllable.temp_vowel > 0) {
+        wchar_t result = combine_syllable(g_current_syllable.cho, g_current_syllable.jung, g_current_syllable.jong);
         return result;
     }
     

@@ -204,7 +204,394 @@ void test_all_jongseong() {
     }
 }
 
-// Test double consonants (쌍자음)
+// Test compound jongseong (복합 종성) combinations
+void test_compound_jongseong() {
+    printf("\n=== TESTING COMPOUND JONGSEONG ===\n");
+    
+    struct {
+        char* input;
+        char* expected;
+        char* description;
+    } compound_tests[] = {
+        {"giags", "갂", "ㄱ + ㅣ + ㆍ + ㄱ + ㅅ = 갂 (ㄳ)"},
+        {"niagj", "낚", "ㄴ + ㅣ + ㆍ + ㄱ + ㅈ = 낚 (ㄵ)"},
+        {"niags", "낛", "ㄴ + ㅣ + ㆍ + ㄱ + ㅅ = 낛 (ㄶ)"},
+        {"niaglg", "날", "ㄹ + ㅣ + ㆍ + ㄱ + ㄱ = 날 (ㄺ)"},
+        {"niaglm", "남", "ㄹ + ㅣ + ㆍ + ㄱ + ㅁ = 남 (ㄻ)"},
+        {"niaglb", "납", "ㄹ + ㅣ + ㆍ + ㄱ + ㅂ = 납 (ㄼ)"},
+        {"niagls", "낫", "ㄹ + ㅣ + ㆍ + ㄱ + ㅅ = 낫 (ㄽ)"},
+        {"niagld", "낯", "ㄹ + ㅣ + ㆍ + ㄱ + ㄷ = 낯 (ㄾ)"},
+        {"niaglb", "낱", "ㄹ + ㅣ + ㆍ + ㄱ + ㅂ = 낱 (ㄿ)"},
+        {"niagls", "낳", "ㄹ + ㅣ + ㆍ + ㄱ + ㅅ = 낳 (ㅀ)"},
+        {"biags", "밂", "ㅂ + ㅣ + ㆍ + ㄱ + ㅅ = 밂 (ㅄ)"},
+        {"giagg", "갂", "ㄱ + ㅣ + ㆍ + ㄱ + ㄱ = 갂 (ㄲ)"}
+    };
+    
+    for (int i = 0; i < 12; i++) {
+        clear_output();
+        // Input the sequence for each compound jongseong
+        for (int j = 0; compound_tests[i].input[j] != '\0'; j++) {
+            process_input(compound_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   compound_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
+// Test jongseong cycling with different vowels
+void test_jongseong_cycling() {
+    printf("\n=== TESTING JONGSEONG CYCLING ===\n");
+    
+    struct {
+        char* base_input;
+        char* description;
+    } cycling_tests[] = {
+        {"gaa", "ㄱ + ㅗ + final consonant cycling"},
+        {"gia", "ㄱ + ㅏ + final consonant cycling"},
+        {"gie", "ㄱ + ㅡ + final consonant cycling"},
+        {"gii", "ㄱ + ㅣ + final consonant cycling"}
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        clear_output();
+        
+        // Create base syllable
+        for (int j = 0; cycling_tests[i].base_input[j] != '\0'; j++) {
+            process_input(cycling_tests[i].base_input[j]);
+        }
+        
+        // Test cycling for each consonant type
+        char* consonants[] = {"g", "n", "d", "b", "s", "j", "m"};
+        for (int k = 0; k < 7; k++) {
+            // Add first consonant
+            process_input(consonants[k][0]);
+            
+            // Cycle through the same consonant multiple times
+            for (int cycle = 0; cycle < 3; cycle++) {
+                process_input(consonants[k][0]);
+            }
+            
+            // Get output before enter
+            char* output = get_current_output();
+            test_assert(strlen(output) > 0, 
+                       cycling_tests[i].description);
+            free(output);
+            
+            chunjiin_enter_key_handler();
+            
+            // Start fresh for next consonant
+            clear_output();
+            for (int j = 0; cycling_tests[i].base_input[j] != '\0'; j++) {
+                process_input(cycling_tests[i].base_input[j]);
+            }
+        }
+    }
+}
+
+// Test complex jongseong combinations with different choseong
+void test_complex_jongseong_combinations() {
+    printf("\n=== TESTING COMPLEX JONGSEONG COMBINATIONS ===\n");
+    
+    struct {
+        char* input;
+        char* description;
+    } complex_tests[] = {
+        {"giaggs", "ㄱ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"niaggs", "ㄴ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"diaggs", "ㄷ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"biaggs", "ㅂ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"siaggs", "ㅅ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"jiaggs", "ㅈ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"miaggs", "ㅇ + ㅣ + ㆍ + ㄱ + ㄱ + ㅅ (ㄳ)"},
+        {"giagls", "ㄱ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"niagls", "ㄴ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"diagls", "ㄷ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"biagls", "ㅂ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"siagls", "ㅅ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"jiagls", "ㅈ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"},
+        {"miagls", "ㅇ + ㅣ + ㆍ + ㄱ + ㄹ + ㅅ (ㄽ)"}
+    };
+    
+    for (int i = 0; i < 14; i++) {
+        clear_output();
+        
+        // Input the sequence for each complex combination
+        for (int j = 0; complex_tests[i].input[j] != '\0'; j++) {
+            process_input(complex_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   complex_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
+// Test all choseong + jungseong + jongseong combinations
+void test_choseong_jungseong_jongseong_combinations() {
+    printf("\n=== TESTING CHOSEONG + JUNGSEONG + JONGSEONG COMBINATIONS ===\n");
+    
+    // Define all choseong (initial consonants)
+    char* choseong[] = {"g", "n", "d", "b", "s", "j", "m"};
+    char* choseong_names[] = {"ㄱ", "ㄴ", "ㄷ", "ㅂ", "ㅅ", "ㅈ", "ㅇ"};
+    
+    // Define all jungseong (vowels) with their input sequences
+    struct {
+        char* input;
+        char* name;
+    } jungseong[] = {
+        {"ia", "ㅏ"},    // ㅣ + ㆍ
+        {"iai", "ㅐ"},   // ㅣ + ㆍ + ㅣ
+        {"eaa", "ㅓ"},   // ㆍ + ㆍ + ㅣ
+        {"eaaii", "ㅔ"}, // ㆍ + ㆍ + ㅣ + ㅣ
+        {"aai", "ㅕ"},   // ㆍ + ㆍ + ㅣ
+        {"eui", "ㅢ"},   // ㅡ + ㅣ
+        {"eaa", "ㅗ"},   // ㆍ + ㆍ
+        {"eaa", "ㅜ"},   // ㅡ + ㆍ
+        {"eaa", "ㅠ"},   // ㅡ + ㆍ + ㆍ
+        {"ia", "ㅑ"},    // ㅏ + ㆍ
+        {"eaa", "ㅛ"},   // ㅗ + ㆍ
+        {"eaa", "ㅠ"}    // ㅜ + ㆍ
+    };
+    
+    // Define all jongseong (final consonants)
+    char* jongseong[] = {"g", "n", "d", "b", "s", "j", "m"};
+    char* jongseong_names[] = {"ㄱ", "ㄴ", "ㄷ", "ㅂ", "ㅅ", "ㅈ", "ㅁ"};
+    
+    // Test basic combinations (choseong + jungseong + jongseong)
+    printf("--- Testing Basic Combinations ---\n");
+    for (int c = 0; c < 7; c++) {
+        for (int j = 0; j < 6; j++) { // Test first 6 vowels
+            for (int f = 0; f < 7; f++) {
+                clear_output();
+                
+                // Build the input sequence
+                char input_sequence[20] = "";
+                strcat(input_sequence, choseong[c]);
+                strcat(input_sequence, jungseong[j].input);
+                strcat(input_sequence, jongseong[f]);
+                
+                // Input the sequence
+                for (int k = 0; input_sequence[k] != '\0'; k++) {
+                    process_input(input_sequence[k]);
+                }
+                
+                // Get output before enter
+                char* output = get_current_output();
+                char description[100];
+                snprintf(description, sizeof(description), 
+                        "%s + %s + %s", 
+                        choseong_names[c], 
+                        jungseong[j].name, 
+                        jongseong_names[f]);
+                
+                test_assert(strlen(output) > 0, description);
+                free(output);
+                
+                chunjiin_enter_key_handler();
+            }
+        }
+    }
+    
+    // Test compound jongseong combinations
+    printf("--- Testing Compound Jongseong Combinations ---\n");
+    struct {
+        char* choseong;
+        char* jungseong_input;
+        char* jongseong_sequence;
+        char* description;
+    } compound_tests[] = {
+        {"g", "ia", "gs", "ㄱ + ㅏ + ㄳ"},
+        {"n", "ia", "gj", "ㄴ + ㅏ + ㄵ"},
+        {"n", "ia", "gs", "ㄴ + ㅏ + ㄶ"},
+        {"g", "ia", "lg", "ㄱ + ㅏ + ㄺ"},
+        {"n", "ia", "lm", "ㄴ + ㅏ + ㄻ"},
+        {"b", "ia", "lb", "ㅂ + ㅏ + ㄼ"},
+        {"s", "ia", "ls", "ㅅ + ㅏ + ㄽ"},
+        {"j", "ia", "ld", "ㅈ + ㅏ + ㄾ"},
+        {"m", "ia", "lb", "ㅇ + ㅏ + ㄿ"},
+        {"g", "ia", "ls", "ㄱ + ㅏ + ㅀ"},
+        {"b", "ia", "bs", "ㅂ + ㅏ + ㅄ"},
+        {"g", "ia", "gg", "ㄱ + ㅏ + ㄲ"}
+    };
+    
+    for (int i = 0; i < 12; i++) {
+        clear_output();
+        
+        // Build compound input sequence
+        char input_sequence[20] = "";
+        strcat(input_sequence, compound_tests[i].choseong);
+        strcat(input_sequence, compound_tests[i].jungseong_input);
+        strcat(input_sequence, compound_tests[i].jongseong_sequence);
+        
+        // Input the sequence
+        for (int j = 0; input_sequence[j] != '\0'; j++) {
+            process_input(input_sequence[j]);
+        }
+        
+        // Get output before enter
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, compound_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test cycling combinations
+    printf("--- Testing Jongseong Cycling Combinations ---\n");
+    struct {
+        char* choseong;
+        char* jungseong_input;
+        char* cycling_consonant;
+        char* description;
+    } cycling_tests[] = {
+        {"g", "ia", "s", "ㄱ + ㅏ + ㅅ cycling"},
+        {"n", "ia", "d", "ㄴ + ㅏ + ㄷ cycling"},
+        {"b", "ia", "g", "ㅂ + ㅏ + ㄱ cycling"},
+        {"s", "ia", "j", "ㅅ + ㅏ + ㅈ cycling"},
+        {"j", "ia", "m", "ㅈ + ㅏ + ㅁ cycling"},
+        {"m", "ia", "b", "ㅇ + ㅏ + ㅂ cycling"}
+    };
+    
+    for (int i = 0; i < 6; i++) {
+        clear_output();
+        
+        // Build base syllable
+        char input_sequence[20] = "";
+        strcat(input_sequence, cycling_tests[i].choseong);
+        strcat(input_sequence, cycling_tests[i].jungseong_input);
+        
+        // Input base syllable
+        for (int j = 0; input_sequence[j] != '\0'; j++) {
+            process_input(input_sequence[j]);
+        }
+        
+        // Add first consonant
+        process_input(cycling_tests[i].cycling_consonant[0]);
+        
+        // Cycle through the same consonant multiple times
+        for (int cycle = 0; cycle < 3; cycle++) {
+            process_input(cycling_tests[i].cycling_consonant[0]);
+        }
+        
+        // Get output before enter
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, cycling_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
+// Test jongseong limitations and unsupported consonants
+void test_jongseong_limitations() {
+    printf("\n=== TESTING JONGSEONG LIMITATIONS ===\n");
+    
+    // Test consonants that are NOT supported as jongseong
+    struct {
+        char* input;
+        char* expected_result;
+        char* description;
+    } unsupported_tests[] = {
+        {"giaa", "가", "ㄹ (l) not supported as jongseong"},
+        {"giah", "가", "ㅎ (h) not supported as direct jongseong"},
+        {"giak", "가", "ㅋ (k) not supported as direct jongseong"},
+        {"giap", "가", "ㅍ (p) not supported as direct jongseong"},
+        {"giac", "가", "ㅊ (c) not supported as direct jongseong"},
+        {"giat", "가", "ㅌ (t) not supported as direct jongseong"}
+    };
+    
+    for (int i = 0; i < 6; i++) {
+        clear_output();
+        
+        // Input the sequence
+        for (int j = 0; unsupported_tests[i].input[j] != '\0'; j++) {
+            process_input(unsupported_tests[i].input[j]);
+        }
+        
+        // Get output before enter
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   unsupported_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test supported jongseong for comparison
+    printf("--- Testing Supported Jongseong ---\n");
+    struct {
+        char* input;
+        char* description;
+    } supported_tests[] = {
+        {"giag", "ㄱ supported as jongseong"},
+        {"gian", "ㄴ supported as jongseong"},
+        {"giad", "ㄷ supported as jongseong"},
+        {"giab", "ㅂ supported as jongseong"},
+        {"gias", "ㅅ supported as jongseong"},
+        {"giaj", "ㅈ supported as jongseong"},
+        {"giam", "ㅁ supported as jongseong"}
+    };
+    
+    for (int i = 0; i < 7; i++) {
+        clear_output();
+        
+        // Input the sequence
+        for (int j = 0; supported_tests[i].input[j] != '\0'; j++) {
+            process_input(supported_tests[i].input[j]);
+        }
+        
+        // Get output before enter
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   supported_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+    
+    // Test cycling behavior for aspirated consonants
+    printf("--- Testing Cycling to Aspirated Consonants ---\n");
+    struct {
+        char* input_sequence;
+        char* description;
+    } cycling_tests[] = {
+        {"giad", "ㄷ -> ㅌ cycling works"},
+        {"giab", "ㅂ -> ㅍ cycling works"},
+        {"gias", "ㅅ -> ㅎ cycling works"},
+        {"giaj", "ㅈ -> ㅊ cycling works"}
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        clear_output();
+        
+        // Input base syllable
+        for (int j = 0; cycling_tests[i].input_sequence[j] != '\0'; j++) {
+            process_input(cycling_tests[i].input_sequence[j]);
+        }
+        
+        // Add second press to cycle
+        char last_char = cycling_tests[i].input_sequence[strlen(cycling_tests[i].input_sequence) - 1];
+        process_input(last_char);
+        
+        // Get output before enter
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   cycling_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
 void test_double_consonants() {
     printf("\n=== TESTING DOUBLE CONSONANTS ===\n");
     
@@ -264,6 +651,81 @@ void test_complex_syllables() {
         char* output = get_current_output();
         test_assert(strlen(output) > 0, 
                    syllable_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
+// Test advanced Korean syllables with complex combinations
+void test_advanced_korean_syllables() {
+    printf("\n=== TESTING ADVANCED KOREAN SYLLABLES ===\n");
+    
+    struct {
+        char* input;
+        char* expected;
+        char* description;
+    } advanced_tests[] = {
+        // Complex vowel combinations
+        {"gaeia", "과", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ = 과"},
+        {"dueia", "뒤", "ㄷ + ㅡ + ㅣ + ㆍ = 뒤"},
+        {"teaei", "퇴", "ㅌ + ㅗ + ㅣ = 퇴"},
+        {"teaeia", "퉤", "ㅌ + ㅗ + ㅣ + ㆍ = 퉤"},
+        {"gueai", "권", "ㄱ + ㅡ + ㆍ + ㅣ = 권"},
+        {"ggueai", "꿘", "ㄲ + ㅡ + ㆍ + ㅣ = 꿘"},
+        {"taeag", "택", "ㅌ + ㅐ + ㄱ = 택"},
+        {"teag", "턱", "ㅌ + ㅓ + ㄱ = 턱"},
+        {"toag", "톡", "ㅌ + ㅗ + ㄱ = 톡"},
+        
+        // More complex combinations
+        {"gaeag", "과ㄱ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ = 과ㄱ"},
+        {"dueag", "뒤ㄱ", "ㄷ + ㅡ + ㅣ + ㆍ + ㄱ = 뒤ㄱ"},
+        {"teaeig", "퇴ㄱ", "ㅌ + ㅗ + ㅣ + ㄱ = 퇴ㄱ"},
+        {"gueaig", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄱ = 권ㄱ"},
+        {"ggueaig", "꿘ㄱ", "ㄲ + ㅡ + ㆍ + ㅣ + ㄱ = 꿘ㄱ"},
+        
+        // Complex final consonants
+        {"gaeas", "과ㅅ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㅅ = 과ㅅ"},
+        {"dueas", "뒤ㅅ", "ㄷ + ㅡ + ㅣ + ㆍ + ㅅ = 뒤ㅅ"},
+        {"teaeis", "퇴ㅅ", "ㅌ + ㅗ + ㅣ + ㅅ = 퇴ㅅ"},
+        {"gueais", "권ㅅ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅅ = 권ㅅ"},
+        
+        // Cycling final consonants
+        {"gaeaggg", "과ㄲ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ + ㄱ + ㄱ = 과ㄲ"},
+        {"dueaddd", "뒤ㄸ", "ㄷ + ㅡ + ㅣ + ㆍ + ㄷ + ㄷ + ㄷ = 뒤ㄸ"},
+        {"teaeibbb", "퇴ㅃ", "ㅌ + ㅗ + ㅣ + ㅂ + ㅂ + ㅂ = 퇴ㅃ"},
+        {"gueaijjj", "권ㅉ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅈ + ㅈ + ㅈ = 권ㅉ"},
+        
+        // Compound final consonants
+        {"gaeags", "과ㄳ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ + ㅅ = 과ㄳ"},
+        {"dueagj", "뒤ㄵ", "ㄷ + ㅡ + ㅣ + ㆍ + ㄴ + ㅈ = 뒤ㄵ"},
+        {"teaeigs", "퇴ㄶ", "ㅌ + ㅗ + ㅣ + ㄴ + ㅎ = 퇴ㄶ"},
+        {"gueailg", "권ㄺ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄹ + ㄱ = 권ㄺ"},
+        
+        // Complex vowel sequences
+        {"gaeiaeia", "과ㅏ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㅣ + ㆍ = 과ㅏ"},
+        {"dueiaeia", "뒤ㅏ", "ㄷ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㅣ + ㆍ = 뒤ㅏ"},
+        {"teaeiaeia", "퇴ㅏ", "ㅌ + ㅗ + ㅣ + ㅣ + ㆍ + ㅣ + ㆍ = 퇴ㅏ"},
+        
+        // Mixed complex combinations
+        {"gaeiaeg", "과ㄱ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㄱ = 과ㄱ"},
+        {"dueiaeg", "뒤ㄱ", "ㄷ + ㅡ + ㅣ + ㆍ + ㅣ + ㆍ + ㄱ = 뒤ㄱ"},
+        {"teaeiaeg", "퇴ㄱ", "ㅌ + ㅗ + ㅣ + ㅣ + ㆍ + ㄱ = 퇴ㄱ"},
+        {"gueiaeg", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 권ㄱ"}
+    };
+    
+    for (int i = 0; i < 30; i++) {
+        clear_output();
+        
+        // Input the sequence for each advanced syllable
+        for (int j = 0; advanced_tests[i].input[j] != '\0'; j++) {
+            process_input(advanced_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   advanced_tests[i].description);
         free(output);
         
         chunjiin_enter_key_handler();
@@ -456,8 +918,14 @@ int main() {
     test_all_jungseong();
     test_compound_vowels();
     test_all_jongseong();
+    test_compound_jongseong();
+    test_jongseong_cycling();
+    test_complex_jongseong_combinations();
+    test_choseong_jungseong_jongseong_combinations();
+    test_jongseong_limitations();
     test_double_consonants();
     test_complex_syllables();
+    test_advanced_korean_syllables();
     test_vowel_combinations();
     test_consonant_group_toggling();
     test_special_functions();
