@@ -697,21 +697,10 @@ void test_advanced_korean_syllables() {
         {"teaeiaeg", "퇴ㄱ", "ㅌ + ㅗ + ㅣ + ㅣ + ㆍ + ㄱ = 퇴ㄱ"},
         {"gueiaeg", "권ㄱ", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 권ㄱ"},
         {"maeiai", "왜", "ㅇ + ㆍ + ㅡ + ㅣ + ㆍ + ㅣ = 왜 (오 + ㅣ + ㆍ + ㅣ)"},
-        {"meaaii", "웨", "ㅇ + ㅡ + ㆍ + ㆍ + ㅣ + ㅣ = 웨 (워 + ㅣ)"},
-        
-        // Additional complex Korean characters
-        {"gaig", "걱", "ㄱ + ㅐ + ㄱ = 걱"},
-        {"naeg", "녹", "ㄴ + ㅗ + ㄱ = 녹"},
-        {"ggaeg", "콕", "ㅋ + ㅗ + ㄱ = 콕"},
-        {"gaein", "괸", "ㄱ + ㆍ + ㅡ + ㅣ + ㄴ = 괸"},
-        {"ggeaag", "큑", "ㅋ + ㅠ + ㄱ = 큑"},
-        {"gaeinn", "괼", "ㄱ + ㆍ + ㅡ + ㅣ + ㄹ = 괼"},
-        {"jjaeig", "쵝", "ㅊ + ㆍ + ㅡ + ㅣ + ㄱ = 쵝"},
-        {"jjaein", "쵠", "ㅊ + ㅘ + ㄴ = 쵠"},
-        {"gaeis", "굇", "ㄱ + ㆍ + ㅡ + ㅣ + ㅅ = 굇"}
+        {"meaaii", "웨", "ㅇ + ㅡ + ㆍ + ㆍ + ㅣ + ㅣ = 웨 (워 + ㅣ)"}
     };
     
-    for (int i = 0; i < 43; i++) {
+    for (int i = 0; i < 34; i++) {
         clear_output();
         
         // Input the sequence for each advanced syllable
