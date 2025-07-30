@@ -16,6 +16,7 @@ static char korean_buffer[64] = "";
 static int current_choseong_index = 0;
 static int current_jungseong_index = 0;
 static int current_jongseong_index = 0;
+static lv_font_t * korean_font_global = NULL;
 
 // Function to get previous index with wraparound
 static int get_prev_index(int current, int size) {
@@ -83,6 +84,8 @@ static void update_jongseong_label() {
     
     lv_label_set_text(jongseong_display_label, label_text);
 }
+
+
 
 // Callback functions for Korean input
 static void choseong_next_korean_cb(lv_event_t * e) {
@@ -201,7 +204,7 @@ static void enter_korean_cb(lv_event_t * e) {
         printf("Enter button clicked - choseong: %d, jungseong: %d, jongseong: %d\n", 
                current_choseong_index, current_jungseong_index, current_jongseong_index);
         
-                 // Safety check for all array bounds
+        // Safety check for all array bounds
         const char** choseong_array = get_korean_choseong();
         const char** jungseong_array = get_korean_jungseong();
         const char** jongseong_array = get_korean_jongseong();
@@ -232,6 +235,7 @@ static void enter_korean_cb(lv_event_t * e) {
                          snprintf(result_text, sizeof(result_text), "Result: %s", korean_buffer);
                          lv_label_set_text(result_label, result_text);
                      }
+                     
                  } else {
                      printf("Buffer full! Cannot add more characters.\n");
                  }
@@ -269,7 +273,7 @@ static void clear_korean_cb(lv_event_t * e) {
 // Create Korean tab
 void create_korean_tab(lv_obj_t * parent) {
     // Get the shared Korean font from ui_components (same as ChunJiIn tab)
-    lv_font_t * korean_font = get_korean_font_small();
+    korean_font_global = get_korean_font_small();
     
     // Create title label
     lv_obj_t * title = lv_label_create(parent);
@@ -299,7 +303,7 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Current Korean character display (center label)
     choseong_diplay_label = lv_label_create(parent);
-    lv_obj_set_style_text_font(choseong_diplay_label, korean_font, 0);
+    lv_obj_set_style_text_font(choseong_diplay_label, korean_font_global, 0);
     lv_obj_set_style_bg_color(choseong_diplay_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(choseong_diplay_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(choseong_diplay_label, 2, 0);
@@ -333,7 +337,7 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Current Korean jungseong display (center label)
     jungseong_display_label = lv_label_create(parent);
-    lv_obj_set_style_text_font(jungseong_display_label, korean_font, 0);
+    lv_obj_set_style_text_font(jungseong_display_label, korean_font_global, 0);
     lv_obj_set_style_bg_color(jungseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jungseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jungseong_display_label, 2, 0);
@@ -367,7 +371,7 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Current Korean jongseong display (center label)
     jongseong_display_label = lv_label_create(parent);
-    lv_obj_set_style_text_font(jongseong_display_label, korean_font, 0);
+    lv_obj_set_style_text_font(jongseong_display_label, korean_font_global, 0);
     lv_obj_set_style_bg_color(jongseong_display_label, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(jongseong_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(jongseong_display_label, 2, 0);
@@ -414,7 +418,7 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_align(back_btn, LV_ALIGN_TOP_MID, action_btn_width + spacing, start_y);
     lv_obj_t * back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "←");
-    lv_obj_set_style_text_font(back_label, korean_font, 0);
+    lv_obj_set_style_text_font(back_label, korean_font_global, 0);
     lv_obj_center(back_label);
     lv_obj_add_event_cb(back_btn, backspace_korean_cb, LV_EVENT_CLICKED, NULL);
     
@@ -422,7 +426,7 @@ void create_korean_tab(lv_obj_t * parent) {
     start_y += btn_height + spacing;
     result_label = lv_label_create(parent);
     lv_label_set_text(result_label, "Result: ");
-    lv_obj_set_style_text_font(result_label, korean_font, 0);
+    lv_obj_set_style_text_font(result_label, korean_font_global, 0);
     lv_obj_set_style_text_align(result_label, LV_TEXT_ALIGN_LEFT, 0); // Left align for result
     lv_obj_set_style_bg_color(result_label, lv_color_hex(0x00FF00), 0); // Green background color
     lv_obj_set_style_bg_opa(result_label, LV_OPA_COVER, 0);

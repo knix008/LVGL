@@ -456,6 +456,8 @@ void handle_vowel(int key_code) {
 
     int new_jung = -1;
     
+
+    
     if (g_current_syllable.temp_vowel == 0) {
         if (key_code == 1) { 
             g_current_syllable.temp_vowel = 100; 
@@ -471,6 +473,15 @@ void handle_vowel(int key_code) {
         } // ㆍ + ㆍ
         if (key_code == 2) new_jung = 8;  // ㆍ + ㅡ = ㅗ
         if (key_code == 3) new_jung = 4;  // ㆍ + ㅣ = ㅓ
+    }
+
+    else if (g_current_syllable.temp_vowel == 100 && g_current_syllable.jung == 9) { // prev: ㅘ + ㆍ (돠 + dot)
+        if (key_code == 1) { 
+            g_current_syllable.temp_vowel = 200; 
+            return; 
+        } // ㅘ + ㆍ + ㆍ
+        if (key_code == 2) new_jung = 9;  // ㅘ + ㆍ + ㅡ = ㅘ (돠 + dot + ㅡ = 돠)
+        if (key_code == 3) new_jung = 10; // ㅘ + ㆍ + ㅣ = ㅙ (돠 + dot + ㅣ = 돼)
     }
     else if (g_current_syllable.temp_vowel == 200) { // prev: ㆍㆍ
         if (key_code == 1) { 
@@ -511,13 +522,41 @@ void handle_vowel(int key_code) {
         if (key_code == 1) {
             new_jung = 17; // ㅜ + ㆍ = ㅠ (구 + ㆍ = 규)
         }
-        if (key_code == 3) new_jung = 13; // ㅜ + ㅣ = ㅜ
+        if (key_code == 3) {
+            new_jung = 16; // ㅜ + ㅣ = ㅟ (두 + ㅣ = 뒤)
+        }
     }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 18) { // prev: ㅡ
+        if (key_code == 1) {
+            new_jung = 13; // ㅡ + ㆍ = ㅜ (드 + dot = 두)
+        }
+        if (key_code == 3) new_jung = 19; // ㅡ + ㅣ = ㅢ
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 8) { // prev: ㅗ
+        if (key_code == 2) new_jung = 9;  // ㅗ + ㅡ = ㅘ (도 + ㅡ = 돠)
+        if (key_code == 3) new_jung = 11; // ㅗ + ㅣ = ㅚ (도 + ㅣ = 되)
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 11) { // prev: ㅚ (되)
+        if (key_code == 1) {
+            new_jung = 9; // ㅚ + ㆍ = ㅘ (되 + dot = 돠)
+        }
+        if (key_code == 3) new_jung = 10; // ㅚ + ㅣ = ㅙ (되 + ㅣ = 돼)
+    }
+    else if (g_current_syllable.temp_vowel == 1 && g_current_syllable.jung == 9) { // prev: ㅘ (돠)
+        if (key_code == 1) {
+            g_current_syllable.temp_vowel = 100; // ㅘ + ㆍ (돠 + dot) - store dot for later
+            return;
+        }
+        if (key_code == 3) new_jung = 10; // ㅘ + ㅣ = ㅙ (돠 + ㅣ = 돼)
+    }
+
     else {
         int prev_jung = g_current_syllable.jung;
         
+
+        
         if (prev_jung == 8 && key_code == 3) new_jung = 11;  // ㅗ + ㅣ = ㅚ
-        else if (prev_jung == 13 && key_code == 3) new_jung = 16; // ㅜ + ㅣ = ㅟ
+        else if (prev_jung == 13 && key_code == 3) new_jung = 16; // ㅜ + ㅣ = ㅟ (두 + ㅣ = 뒤)
         else if (prev_jung == 18 && key_code == 3) new_jung = 19; // ㅡ + ㅣ = ㅢ
         else if (prev_jung == 0 && key_code == 3) new_jung = 1;   // ㅏ + ㅣ = ㅐ
         else if (prev_jung == 4 && key_code == 3) new_jung = 5;   // ㅓ + ㅣ = ㅔ
