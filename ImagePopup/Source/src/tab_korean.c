@@ -268,20 +268,22 @@ static void clear_korean_cb(lv_event_t * e) {
 
 // Create Korean tab
 void create_korean_tab(lv_obj_t * parent) {
-    // Get the shared Korean font from ui_components
-    lv_font_t * korean_font = get_korean_font();
+    // Get the shared Korean font from ui_components (same as ChunJiIn tab)
+    lv_font_t * korean_font = get_korean_font_small();
     
     // Create title label
     lv_obj_t * title = lv_label_create(parent);
     lv_label_set_text(title, "Korean Input");
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 5);
     
-    // Button and label sizes
-    int btn_width = 50;
-    int btn_height = 30;
-    int label_width = 120;
-    int label_height = 40;
+    // Button and label sizes - all buttons same size
+    int btn_width = 50;  // Reduced from 60 to 50 for better alignment
+    int action_btn_width = 60;  // Wider buttons for action row
+    int btn_height = 40;  // Increased from 25 to 40
+    int label_width = 80;  // Reduced from 120 to 80
+    int label_height = 45;  // Increased from 30 to 45
     int spacing = 10;
     int start_y = 30;  // Start position for first row
     
@@ -303,6 +305,8 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_set_style_border_width(choseong_diplay_label, 2, 0);
     lv_obj_set_style_border_color(choseong_diplay_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(choseong_diplay_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_line_space(choseong_diplay_label, 0, 0); // Remove line spacing
+    lv_obj_set_style_pad_top(choseong_diplay_label, 12, 0); // Increased top padding for larger height
     lv_obj_set_size(choseong_diplay_label, label_width, label_height);
     lv_obj_align(choseong_diplay_label, LV_ALIGN_TOP_MID, 0, start_y);
     
@@ -335,6 +339,8 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_set_style_border_width(jungseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jungseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jungseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_line_space(jungseong_display_label, 0, 0); // Remove line spacing
+    lv_obj_set_style_pad_top(jungseong_display_label, 12, 0); // Increased top padding for larger height
     lv_obj_set_size(jungseong_display_label, label_width, label_height);
     lv_obj_align(jungseong_display_label, LV_ALIGN_TOP_MID, 0, start_y);
     
@@ -367,6 +373,8 @@ void create_korean_tab(lv_obj_t * parent) {
     lv_obj_set_style_border_width(jongseong_display_label, 2, 0);
     lv_obj_set_style_border_color(jongseong_display_label, lv_color_hex(0x333333), 0);
     lv_obj_set_style_text_align(jongseong_display_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_line_space(jongseong_display_label, 0, 0); // Remove line spacing
+    lv_obj_set_style_pad_top(jongseong_display_label, 12, 0); // Increased top padding for larger height
     lv_obj_set_size(jongseong_display_label, label_width, label_height);
     lv_obj_align(jongseong_display_label, LV_ALIGN_TOP_MID, 0, start_y);
     
@@ -384,28 +392,29 @@ void create_korean_tab(lv_obj_t * parent) {
     
     // Clear button
     lv_obj_t * clear_btn = lv_btn_create(parent);
-    lv_obj_set_size(clear_btn, btn_width, btn_height);
-    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(btn_width + spacing), start_y);
+    lv_obj_set_size(clear_btn, action_btn_width, btn_height);
+    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(action_btn_width + spacing), start_y);
     lv_obj_t * clear_label = lv_label_create(clear_btn);
-    lv_label_set_text(clear_label, "C");
+    lv_label_set_text(clear_label, "Clear");
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(clear_btn, clear_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Enter button
     lv_obj_t * enter_btn = lv_btn_create(parent);
-    lv_obj_set_size(enter_btn, btn_width, btn_height);
+    lv_obj_set_size(enter_btn, action_btn_width, btn_height);
     lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, 0, start_y);
     lv_obj_t * enter_label = lv_label_create(enter_btn);
-    lv_label_set_text(enter_label, "Enter");
+    lv_label_set_text(enter_label, "OK");
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, enter_korean_cb, LV_EVENT_CLICKED, NULL);
     
     // Backspace button
     lv_obj_t * back_btn = lv_btn_create(parent);
-    lv_obj_set_size(back_btn, btn_width, btn_height);
-    lv_obj_align(back_btn, LV_ALIGN_TOP_MID, btn_width + spacing, start_y);
+    lv_obj_set_size(back_btn, action_btn_width, btn_height);
+    lv_obj_align(back_btn, LV_ALIGN_TOP_MID, action_btn_width + spacing, start_y);
     lv_obj_t * back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "⌫");
+    lv_label_set_text(back_label, "←");
+    lv_obj_set_style_text_font(back_label, korean_font, 0);
     lv_obj_center(back_label);
     lv_obj_add_event_cb(back_btn, backspace_korean_cb, LV_EVENT_CLICKED, NULL);
     
@@ -414,10 +423,12 @@ void create_korean_tab(lv_obj_t * parent) {
     result_label = lv_label_create(parent);
     lv_label_set_text(result_label, "Result: ");
     lv_obj_set_style_text_font(result_label, korean_font, 0);
-    lv_obj_set_style_bg_color(result_label, lv_color_hex(0xf0f0f0), 0);
+    lv_obj_set_style_text_align(result_label, LV_TEXT_ALIGN_LEFT, 0); // Left align for result
+    lv_obj_set_style_bg_color(result_label, lv_color_hex(0x00FF00), 0); // Green background color
     lv_obj_set_style_bg_opa(result_label, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(result_label, 1, 0);
-    lv_obj_set_size(result_label, 240, 60);
+    lv_obj_set_style_border_width(result_label, 3, 0); // Thicker border like ChunJiIn tab
+    lv_obj_set_style_border_color(result_label, lv_color_make(128, 128, 128), 0); // Gray border like ChunJiIn tab
+    lv_obj_set_size(result_label, 200, 60);  // Increased height from 40 to 60
     lv_obj_align(result_label, LV_ALIGN_TOP_MID, 0, start_y);
     
     // Initialize labels with 3-character display
