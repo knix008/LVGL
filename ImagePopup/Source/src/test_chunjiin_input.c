@@ -35,6 +35,8 @@ void test_edge_cases(void);
 void test_complete_words(void);
 void test_dot_combinations(void);
 void test_gwon_syllable(void);
+void test_wi_vowel(void);
+void test_compound_vowels_comprehensive(void);
 
 // Test result tracking
 typedef struct {
@@ -1222,6 +1224,340 @@ void test_gwon_syllable() {
     }
 }
 
+// Test specifically for the Korean vowel "ㅟ" (wi)
+void test_wi_vowel() {
+    printf("\n=== TESTING WI (ㅟ) VOWEL ===\n");
+    
+    struct {
+        char* input;
+        char* expected;
+        char* description;
+    } wi_tests[] = {
+        // Basic ㅟ formation from ㅜ + ㅣ
+        {"duei", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ = 뒤 (ㅜ + ㅣ = ㅟ)"},
+        {"guei", "귀", "ㄱ + ㅡ + ㆍ + ㅣ = 귀 (ㅜ + ㅣ = ㅟ)"},
+        {"nuei", "뉘", "ㄴ + ㅡ + ㆍ + ㅣ = 뉘 (ㅜ + ㅣ = ㅟ)"},
+        {"buei", "뷔", "ㅂ + ㅡ + ㆍ + ㅣ = 뷔 (ㅜ + ㅣ = ㅟ)"},
+        {"suei", "쉬", "ㅅ + ㅡ + ㆍ + ㅣ = 쉬 (ㅜ + ㅣ = ㅟ)"},
+        {"juei", "쥐", "ㅈ + ㅡ + ㆍ + ㅣ = 쥐 (ㅜ + ㅣ = ㅟ)"},
+        {"muei", "위", "ㅇ + ㅡ + ㆍ + ㅣ = 위 (ㅜ + ㅣ = ㅟ)"},
+        
+        // ㅟ with final consonants
+        {"dueig", "뒤ㄱ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄱ = 뒤ㄱ"},
+        {"duein", "뒤ㄴ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ = 뒤ㄴ"},
+        {"dueid", "뒤ㄷ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄷ = 뒤ㄷ"},
+        {"dueib", "뒤ㅂ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅂ = 뒤ㅂ"},
+        {"dueis", "뒤ㅅ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅅ = 뒤ㅅ"},
+        {"dueij", "뒤ㅈ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅈ = 뒤ㅈ"},
+        {"dueim", "뒤ㅁ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅁ = 뒤ㅁ"},
+        
+        // Double consonants with ㅟ
+        {"dduei", "뛰", "ㄸ + ㅡ + ㆍ + ㅣ = 뛰 (double ㄷ + ㅟ)"},
+        {"gguei", "궤", "ㄲ + ㅡ + ㆍ + ㅣ = 궤 (double ㄱ + ㅟ)"},
+        {"bbuei", "뷰", "ㅃ + ㅡ + ㆍ + ㅣ = 뷰 (double ㅂ + ㅟ)"},
+        {"ssuei", "쒸", "ㅆ + ㅡ + ㆍ + ㅣ = 쒸 (double ㅅ + ㅟ)"},
+        {"jjuei", "쮜", "ㅉ + ㅡ + ㆍ + ㅣ = 쮜 (double ㅈ + ㅟ)"},
+        
+        // ㅟ with compound final consonants
+        {"dueigs", "뒤ㄶ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ + ㅎ = 뒤ㄶ"},
+        {"dueigj", "뒤ㄵ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ + ㅈ = 뒤ㄵ"},
+        {"dueilg", "뒤ㄺ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄹ + ㄱ = 뒤ㄺ"},
+        {"dueils", "뒤ㄽ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄹ + ㅅ = 뒤ㄽ"},
+        {"dueilb", "뒤ㄼ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄹ + ㅂ = 뒤ㄼ"},
+        {"dueibs", "뒤ㅄ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅂ + ㅅ = 뒤ㅄ"},
+        
+        // Cycling final consonants with ㅟ
+        {"dueiggg", "뒤ㄲ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 뒤ㄲ"},
+        {"dueiddd", "뒤ㄸ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄷ + ㄷ + ㄷ = 뒤ㄸ"},
+        {"dueibbb", "뒤ㅃ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅂ + ㅂ + ㅂ = 뒤ㅃ"},
+        {"dueiss", "뒤ㅆ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅅ + ㅅ = 뒤ㅆ"},
+        {"dueijj", "뒤ㅉ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅈ + ㅈ = 뒤ㅉ"},
+        
+        // ㅟ with additional vowel combinations
+        {"dueiaeia", "뒤ㅏ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㅣ + ㆍ = 뒤ㅏ"},
+        {"dueiaeg", "뒤ㄱ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㄱ = 뒤ㄱ"},
+        {"dueiaei", "뒤ㅣ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ + ㅣ = 뒤ㅣ"},
+        
+        // Edge cases and variations
+        {"dueia", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㆍ = 뒤 (with extra dot)"},
+        {"dueiaa", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㆍ + ㆍ = 뒤 (with multiple dots)"},
+        {"dueiai", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㆍ + ㅣ = 뒤 (with dot + ㅣ)"},
+        
+        // Test the specific sequence that was problematic: ㄷ + ㅡ + ㆍ + ㅣ
+        {"duei", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ = 뒤 (specific test for the fix)"},
+        
+        // Test ㅜ + ㆍ = ㅠ combinations
+        {"duea", "듀", "ㄷ + ㅡ + ㆍ = 듀 (ㅜ + ㆍ = ㅠ)"},
+        {"dueai", "듀ㅣ", "ㄷ + ㅡ + ㆍ + ㅣ = 듀ㅣ (ㅠ + ㅣ)"},
+        {"dueaig", "듀ㄱ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄱ = 듀ㄱ (ㅠ + ㅣ + ㄱ)"}
+    };
+    
+    for (int i = 0; i < 35; i++) {
+        clear_output();
+        
+        // Input the sequence for each ㅟ test
+        for (int j = 0; wi_tests[i].input[j] != '\0'; j++) {
+            process_input(wi_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   wi_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
+// Test comprehensively for all Korean compound vowels: ㅙ, ㅞ, ㅝ, ㅚ, ㅟ, ㅔ, ㅐ, ㅖ, ㅒ
+void test_compound_vowels_comprehensive() {
+    printf("\n=== TESTING COMPREHENSIVE COMPOUND VOWELS ===\n");
+    
+    struct {
+        char* input;
+        char* expected;
+        char* description;
+        char* vowel_type;
+    } compound_tests[] = {
+        // ㅙ (wa) - ㅗ + ㅐ
+        {"gaeia", "과", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ = 과 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"naeia", "놔", "ㄴ + ㆍ + ㅡ + ㅣ + ㆍ = 놔 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"daeia", "돠", "ㄷ + ㆍ + ㅡ + ㅣ + ㆍ = 돠 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"baeia", "봐", "ㅂ + ㆍ + ㅡ + ㅣ + ㆍ = 봐 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"saeia", "솨", "ㅅ + ㆍ + ㅡ + ㅣ + ㆍ = 솨 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"jaeia", "좌", "ㅈ + ㆍ + ㅡ + ㅣ + ㆍ = 좌 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        {"maeia", "와", "ㅇ + ㆍ + ㅡ + ㅣ + ㆍ = 와 (ㅗ + ㅐ = ㅙ)", "ㅙ"},
+        
+        // ㅞ (we) - ㅜ + ㅔ
+        {"dueaii", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ = 뒤 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"gueaii", "귀", "ㄱ + ㅡ + ㆍ + ㅣ + ㅣ = 귀 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"nueaii", "뉘", "ㄴ + ㅡ + ㆍ + ㅣ + ㅣ = 뉘 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"bueaii", "뷔", "ㅂ + ㅡ + ㆍ + ㅣ + ㅣ = 뷔 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"sueaii", "쉬", "ㅅ + ㅡ + ㆍ + ㅣ + ㅣ = 쉬 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"jueaii", "쥐", "ㅈ + ㅡ + ㆍ + ㅣ + ㅣ = 쥐 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        {"mueaii", "위", "ㅇ + ㅡ + ㆍ + ㅣ + ㅣ = 위 (ㅜ + ㅔ = ㅞ)", "ㅞ"},
+        
+        // ㅝ (wo) - ㅜ + ㅗ
+        {"dueaa", "둬", "ㄷ + ㅡ + ㆍ + ㆍ = 둬 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"gueaa", "궈", "ㄱ + ㅡ + ㆍ + ㆍ = 궈 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"nueaa", "눠", "ㄴ + ㅡ + ㆍ + ㆍ = 눠 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"bueaa", "붜", "ㅂ + ㅡ + ㆍ + ㆍ = 붜 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"sueaa", "숴", "ㅅ + ㅡ + ㆍ + ㆍ = 숴 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"jueaa", "줘", "ㅈ + ㅡ + ㆍ + ㆍ = 줄 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        {"mueaa", "워", "ㅇ + ㅡ + ㆍ + ㆍ = 워 (ㅜ + ㅗ = ㅝ)", "ㅝ"},
+        
+        // ㅚ (oe) - ㅗ + ㅣ
+        {"gaai", "괴", "ㄱ + ㆍ + ㆍ + ㅣ = 괴 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"naai", "뇌", "ㄴ + ㆍ + ㆍ + ㅣ = 뇌 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"daai", "되", "ㄷ + ㆍ + ㆍ + ㅣ = 되 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"baai", "뵈", "ㅂ + ㆍ + ㆍ + ㅣ = 뵈 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"saai", "쇠", "ㅅ + ㆍ + ㆍ + ㅣ = 쇠 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"jaai", "죄", "ㅈ + ㆍ + ㆍ + ㅣ = 죄 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        {"maai", "외", "ㅇ + ㆍ + ㆍ + ㅣ = 외 (ㅗ + ㅣ = ㅚ)", "ㅚ"},
+        
+        // ㅟ (wi) - ㅜ + ㅣ
+        {"duei", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ = 뒤 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"guei", "귀", "ㄱ + ㅡ + ㆍ + ㅣ = 귀 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"nuei", "뉘", "ㄴ + ㅡ + ㆍ + ㅣ = 뉘 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"buei", "뷔", "ㅂ + ㅡ + ㆍ + ㅣ = 뷔 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"suei", "쉬", "ㅅ + ㅡ + ㆍ + ㅣ = 쉬 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"juei", "쥐", "ㅈ + ㅡ + ㆍ + ㅣ = 쥐 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        {"muei", "위", "ㅇ + ㅡ + ㆍ + ㅣ = 위 (ㅜ + ㅣ = ㅟ)", "ㅟ"},
+        
+        // ㅔ (e) - ㅓ + ㅣ
+        {"laai", "레", "ㆍ + ㅣ + ㅣ = 레 (ㅓ + ㅣ = ㅔ)", "ㅔ"},
+        {"gaaii", "개", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ = 개 (ㅔ)", "ㅔ"},
+        {"naaii", "내", "ㄴ + ㆍ + ㆍ + ㅣ + ㅣ = 내 (ㅔ)", "ㅔ"},
+        {"daaii", "대", "ㄷ + ㆍ + ㆍ + ㅣ + ㅣ = 대 (ㅔ)", "ㅔ"},
+        {"baaii", "배", "ㅂ + ㆍ + ㆍ + ㅣ + ㅣ = 배 (ㅔ)", "ㅔ"},
+        {"saaii", "새", "ㅅ + ㆍ + ㆍ + ㅣ + ㅣ = 새 (ㅔ)", "ㅔ"},
+        {"jaaii", "재", "ㅈ + ㆍ + ㆍ + ㅣ + ㅣ = 재 (ㅔ)", "ㅔ"},
+        {"maaii", "애", "ㅇ + ㆍ + ㆍ + ㅣ + ㅣ = 애 (ㅔ)", "ㅔ"},
+        
+        // ㅐ (ae) - ㅏ + ㅣ
+        {"iai", "애", "ㅣ + ㆍ + ㅣ = 애 (ㅏ + ㅣ = ㅐ)", "ㅐ"},
+        {"giai", "개", "ㄱ + ㅣ + ㆍ + ㅣ = 개 (ㅐ)", "ㅐ"},
+        {"niai", "내", "ㄴ + ㅣ + ㆍ + ㅣ = 내 (ㅐ)", "ㅐ"},
+        {"diai", "대", "ㄷ + ㅣ + ㆍ + ㅣ = 대 (ㅐ)", "ㅐ"},
+        {"biai", "배", "ㅂ + ㅣ + ㆍ + ㅣ = 배 (ㅐ)", "ㅐ"},
+        {"siai", "새", "ㅅ + ㅣ + ㆍ + ㅣ = 새 (ㅐ)", "ㅐ"},
+        {"jiai", "재", "ㅈ + ㅣ + ㆍ + ㅣ = 재 (ㅐ)", "ㅐ"},
+        {"miai", "애", "ㅇ + ㅣ + ㆍ + ㅣ = 애 (ㅐ)", "ㅐ"},
+        
+        // ㅖ (ye) - ㅕ + ㅣ
+        {"aaii", "예", "ㆍ + ㆍ + ㅣ + ㅣ = 예 (ㅕ + ㅣ = ㅖ)", "ㅖ"},
+        {"gaaii", "계", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ = 계 (ㅖ)", "ㅖ"},
+        {"naaii", "녜", "ㄴ + ㆍ + ㆍ + ㅣ + ㅣ = 녜 (ㅖ)", "ㅖ"},
+        {"daaii", "뎨", "ㄷ + ㆍ + ㆍ + ㅣ + ㅣ = 뎨 (ㅖ)", "ㅖ"},
+        {"baaii", "볘", "ㅂ + ㆍ + ㆍ + ㅣ + ㅣ = 볼 (ㅖ)", "ㅖ"},
+        {"saaii", "셰", "ㅅ + ㆍ + ㆍ + ㅣ + ㅣ = 셰 (ㅖ)", "ㅖ"},
+        {"jaaii", "졔", "ㅈ + ㆍ + ㆍ + ㅣ + ㅣ = 졔 (ㅖ)", "ㅖ"},
+        {"maaii", "예", "ㅇ + ㆍ + ㆍ + ㅣ + ㅣ = 예 (ㅖ)", "ㅖ"},
+        
+        // ㅒ (yae) - ㅑ + ㅣ
+        {"iaai", "얘", "ㅣ + ㆍ + ㆍ + ㅣ = 얘 (ㅑ + ㅣ = ㅒ)", "ㅒ"},
+        {"giaai", "걔", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ = 걔 (ㅒ)", "ㅒ"},
+        {"niaai", "냬", "ㄴ + ㅣ + ㆍ + ㆍ + ㅣ = 냬 (ㅒ)", "ㅒ"},
+        {"diaai", "댸", "ㄷ + ㅣ + ㆍ + ㆍ + ㅣ = 댸 (ㅒ)", "ㅒ"},
+        {"biaai", "뱨", "ㅂ + ㅣ + ㆍ + ㆍ + ㅣ = 뱨 (ㅒ)", "ㅒ"},
+        {"siaai", "샤", "ㅅ + ㅣ + ㆍ + ㆍ + ㅣ = 샤 (ㅒ)", "ㅒ"},
+        {"jiaai", "쟤", "ㅈ + ㅣ + ㆍ + ㆍ + ㅣ = 쟤 (ㅒ)", "ㅒ"},
+        {"miaai", "얘", "ㅇ + ㅣ + ㆍ + ㆍ + ㅣ = 얘 (ㅒ)", "ㅒ"},
+        
+        // Additional compound vowel combinations with final consonants
+        // ㅙ with final consonants
+        {"gaeiaa", "과", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㆍ = 과 (ㅙ + dot)", "ㅙ"},
+        {"gaeiaig", "과ㄱ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ = 과ㄱ (ㅙ + ㄱ)", "ㅙ"},
+        {"gaeiaig", "과ㄴ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄴ = 과ㄴ (ㅙ + ㄴ)", "ㅙ"},
+        
+        // ㅞ with final consonants
+        {"dueaiig", "뒤ㄱ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㄱ = 뒤ㄱ (ㅞ + ㄱ)", "ㅞ"},
+        {"dueaiin", "뒤ㄴ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㄴ = 뒤ㄴ (ㅞ + ㄴ)", "ㅞ"},
+        {"dueaiid", "뒤ㄷ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㄷ = 뒤ㄷ (ㅞ + ㄷ)", "ㅞ"},
+        
+        // ㅝ with final consonants
+        {"dueaag", "둬ㄱ", "ㄷ + ㅡ + ㆍ + ㆍ + ㄱ = 둬ㄱ (ㅝ + ㄱ)", "ㅝ"},
+        {"dueaan", "둬ㄴ", "ㄷ + ㅡ + ㆍ + ㆍ + ㄴ = 둬ㄴ (ㅝ + ㄴ)", "ㅝ"},
+        {"dueaab", "둬ㅂ", "ㄷ + ㅡ + ㆍ + ㆍ + ㅂ = 둬ㅂ (ㅝ + ㅂ)", "ㅝ"},
+        
+        // ㅚ with final consonants
+        {"gaaig", "괴ㄱ", "ㄱ + ㆍ + ㆍ + ㅣ + ㄱ = 괴ㄱ (ㅚ + ㄱ)", "ㅚ"},
+        {"gaain", "괴ㄴ", "ㄱ + ㆍ + ㆍ + ㅣ + ㄴ = 괴ㄴ (ㅚ + ㄴ)", "ㅚ"},
+        {"gaaib", "괴ㅂ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅂ = 괴ㅂ (ㅚ + ㅂ)", "ㅚ"},
+        
+        // ㅟ with final consonants (additional)
+        {"dueig", "뒤ㄱ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄱ = 뒤ㄱ (ㅟ + ㄱ)", "ㅟ"},
+        {"duein", "뒤ㄴ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ = 뒤ㄴ (ㅟ + ㄴ)", "ㅟ"},
+        {"dueib", "뒤ㅂ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅂ = 뒤ㅂ (ㅟ + ㅂ)", "ㅟ"},
+        
+        // ㅔ with final consonants
+        {"gaaiig", "개ㄱ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄱ = 개ㄱ (ㅔ + ㄱ)", "ㅔ"},
+        {"gaaiin", "개ㄴ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄴ = 개ㄴ (ㅔ + ㄴ)", "ㅔ"},
+        {"gaaiib", "개ㅂ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㅂ = 개ㅂ (ㅔ + ㅂ)", "ㅔ"},
+        
+        // ㅐ with final consonants
+        {"giaig", "개ㄱ", "ㄱ + ㅣ + ㆍ + ㅣ + ㄱ = 개ㄱ (ㅐ + ㄱ)", "ㅐ"},
+        {"giain", "개ㄴ", "ㄱ + ㅣ + ㆍ + ㅣ + ㄴ = 개ㄴ (ㅐ + ㄴ)", "ㅐ"},
+        {"giaib", "개ㅂ", "ㄱ + ㅣ + ㆍ + ㅣ + ㅂ = 개ㅂ (ㅐ + ㅂ)", "ㅐ"},
+        
+        // ㅖ with final consonants
+        {"gaaiig", "계ㄱ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄱ = 계ㄱ (ㅖ + ㄱ)", "ㅖ"},
+        {"gaaiin", "계ㄴ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄴ = 계ㄴ (ㅖ + ㄴ)", "ㅖ"},
+        {"gaaiib", "계ㅂ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㅂ = 계ㅂ (ㅖ + ㅂ)", "ㅖ"},
+        
+        // ㅒ with final consonants
+        {"giaaig", "걔ㄱ", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㄱ = 걔ㄱ (ㅒ + ㄱ)", "ㅒ"},
+        {"giaain", "걔ㄴ", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㄴ = 걔ㄴ (ㅒ + ㄴ)", "ㅒ"},
+        {"giaaib", "걔ㅂ", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㅂ = 걔ㅂ (ㅒ + ㅂ)", "ㅒ"},
+        
+        // Double consonants with compound vowels
+        {"ggaeia", "꽈", "ㄲ + ㆍ + ㅡ + ㅣ + ㆍ = 꽈 (ㄲ + ㅙ)", "ㅙ"},
+        {"ddueaii", "뛰", "ㄸ + ㅡ + ㆍ + ㅣ + ㅣ = 뛰 (ㄸ + ㅞ)", "ㅞ"},
+        {"bbueaa", "뿌", "ㅃ + ㅡ + ㆍ + ㆍ = 뿌 (ㅃ + ㅝ)", "ㅝ"},
+        {"ssaai", "쐬", "ㅆ + ㆍ + ㆍ + ㅣ = 쐬 (ㅆ + ㅚ)", "ㅚ"},
+        {"gguei", "궤", "ㄲ + ㅡ + ㆍ + ㅣ = 궤 (ㄲ + ㅟ)", "ㅟ"},
+        {"ggaaii", "깨", "ㄲ + ㆍ + ㆍ + ㅣ + ㅣ = 깨 (ㄲ + ㅔ)", "ㅔ"},
+        {"ggiai", "깨", "ㄲ + ㅣ + ㆍ + ㅣ = 깨 (ㄲ + ㅐ)", "ㅐ"},
+        {"ggaaii", "꼐", "ㄲ + ㆍ + ㆍ + ㅣ + ㅣ = 꼐 (ㄲ + ㅖ)", "ㅖ"},
+        {"ggiaai", "꺠", "ㄲ + ㅣ + ㆍ + ㆍ + ㅣ = 꺠 (ㄲ + ㅒ)", "ㅒ"},
+        
+        // Compound final consonants with compound vowels
+        {"gaeiaigs", "과ㄶ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄴ + ㅎ = 과ㄶ (ㅙ + ㄶ)", "ㅙ"},
+        {"dueaiigj", "뒤ㄵ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㄴ + ㅈ = 뒤ㄵ (ㅞ + ㄵ)", "ㅞ"},
+        {"dueaags", "둬ㄶ", "ㄷ + ㅡ + ㆍ + ㆍ + ㄴ + ㅎ = 둬ㄶ (ㅝ + ㄶ)", "ㅝ"},
+        {"gaaigs", "괴ㄶ", "ㄱ + ㆍ + ㆍ + ㅣ + ㄴ + ㅎ = 괴ㄶ (ㅚ + ㄶ)", "ㅚ"},
+        {"dueigs", "뒤ㄶ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ + ㅎ = 뒤ㄶ (ㅟ + ㄶ)", "ㅟ"},
+        {"gaaiigs", "개ㄶ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄴ + ㅎ = 개ㄶ (ㅔ + ㄶ)", "ㅔ"},
+        {"giaigs", "개ㄶ", "ㄱ + ㅣ + ㆍ + ㅣ + ㄴ + ㅎ = 개ㄶ (ㅐ + ㄶ)", "ㅐ"},
+        {"gaaiigs", "계ㄶ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄴ + ㅎ = 계ㄶ (ㅖ + ㄶ)", "ㅖ"},
+        {"giaaigs", "걔ㄶ", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㄴ + ㅎ = 걔ㄶ (ㅒ + ㄶ)", "ㅒ"},
+        
+        // Cycling final consonants with compound vowels
+        {"gaeiaiggg", "과ㄲ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ + ㄱ + ㄱ = 과ㄲ (ㅙ + ㄲ)", "ㅙ"},
+        {"dueaiiddd", "뒤ㄸ", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㄷ + ㄷ + ㄷ = 뒤ㄸ (ㅞ + ㄸ)", "ㅞ"},
+        {"dueaabbb", "둬ㅃ", "ㄷ + ㅡ + ㆍ + ㆍ + ㅂ + ㅂ + ㅂ = 둬ㅃ (ㅝ + ㅃ)", "ㅝ"},
+        {"gaaiggg", "괴ㄲ", "ㄱ + ㆍ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 괴ㄲ (ㅚ + ㄲ)", "ㅚ"},
+        {"dueiggg", "뒤ㄲ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 뒤ㄲ (ㅟ + ㄲ)", "ㅟ"},
+        {"gaaiiggg", "개ㄲ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄱ + ㄱ + ㄱ = 개ㄲ (ㅔ + ㄲ)", "ㅔ"},
+        {"giaiggg", "개ㄲ", "ㄱ + ㅣ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 개ㄲ (ㅐ + ㄲ)", "ㅐ"},
+        {"gaaiiggg", "계ㄲ", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㄱ + ㄱ + ㄱ = 계ㄲ (ㅖ + ㄲ)", "ㅖ"},
+        {"giaaiggg", "걔ㄲ", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㄱ + ㄱ + ㄱ = 걔ㄲ (ㅒ + ㄲ)", "ㅒ"},
+        
+        // Edge cases and variations
+        {"gaeiaa", "과", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㆍ = 과 (ㅙ + extra dot)", "ㅙ"},
+        {"dueaiia", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ + ㆍ = 뒤 (ㅞ + extra dot)", "ㅞ"},
+        {"dueaaa", "둬", "ㄷ + ㅡ + ㆍ + ㆍ + ㆍ = 둬 (ㅝ + extra dot)", "ㅝ"},
+        {"gaaia", "괴", "ㄱ + ㆍ + ㆍ + ㅣ + ㆍ = 괴 (ㅚ + extra dot)", "ㅚ"},
+        {"dueia", "뒤", "ㄷ + ㅡ + ㆍ + ㅣ + ㆍ = 뒤 (ㅟ + extra dot)", "ㅟ"},
+        {"gaaiia", "개", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㆍ = 개 (ㅔ + extra dot)", "ㅔ"},
+        {"giaia", "개", "ㄱ + ㅣ + ㆍ + ㅣ + ㆍ = 개 (ㅐ + extra dot)", "ㅐ"},
+        {"gaaiia", "계", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ + ㆍ = 계 (ㅖ + extra dot)", "ㅖ"},
+        {"giaaia", "걔", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ + ㆍ = 걔 (ㅒ + extra dot)", "ㅒ"}
+    };
+    
+    // Group tests by vowel type for better organization
+    char* vowel_types[] = {"ㅙ", "ㅞ", "ㅝ", "ㅚ", "ㅟ", "ㅔ", "ㅐ", "ㅖ", "ㅒ"};
+    int num_vowel_types = 9;
+    
+    for (int v = 0; v < num_vowel_types; v++) {
+        printf("\n--- Testing %s vowel combinations ---\n", vowel_types[v]);
+        
+        for (int i = 0; i < 108; i++) { // Total number of test cases
+            if (strcmp(compound_tests[i].vowel_type, vowel_types[v]) == 0) {
+                clear_output();
+                
+                // Input the sequence for each compound vowel test
+                for (int j = 0; compound_tests[i].input[j] != '\0'; j++) {
+                    process_input(compound_tests[i].input[j]);
+                }
+                
+                // Get output before enter (which clears the buffer)
+                char* output = get_current_output();
+                test_assert(strlen(output) > 0, 
+                           compound_tests[i].description);
+                free(output);
+                
+                chunjiin_enter_key_handler();
+            }
+        }
+    }
+    
+    // Test specific problematic sequences that were mentioned
+    printf("\n--- Testing Specific Problematic Sequences ---\n");
+    struct {
+        char* input;
+        char* description;
+    } specific_tests[] = {
+        {"duei", "ㄷ + ㅡ + ㆍ + ㅣ = 뒤 (specific test for ㅟ fix)"},
+        {"gaai", "ㄱ + ㆍ + ㆍ + ㅣ = 괴 (specific test for ㅚ)"},
+        {"dueaa", "ㄷ + ㅡ + ㆍ + ㆍ = 둬 (specific test for ㅝ)"},
+        {"gaeia", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ = 과 (specific test for ㅙ)"},
+        {"dueaii", "ㄷ + ㅡ + ㆍ + ㅣ + ㅣ = 뒤 (specific test for ㅞ)"},
+        {"gaaii", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ = 개 (specific test for ㅔ)"},
+        {"giai", "ㄱ + ㅣ + ㆍ + ㅣ = 개 (specific test for ㅐ)"},
+        {"gaaii", "ㄱ + ㆍ + ㆍ + ㅣ + ㅣ = 계 (specific test for ㅖ)"},
+        {"giaai", "ㄱ + ㅣ + ㆍ + ㆍ + ㅣ = 걔 (specific test for ㅒ)"}
+    };
+    
+    for (int i = 0; i < 9; i++) {
+        clear_output();
+        
+        // Input the sequence for each specific test
+        for (int j = 0; specific_tests[i].input[j] != '\0'; j++) {
+            process_input(specific_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   specific_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
 // Main test runner
 int main() {
     // Set locale for wide character support
@@ -1252,6 +1588,8 @@ int main() {
     test_complete_words();
     test_dot_combinations();
     test_gwon_syllable(); // Add the new test function
+    test_wi_vowel(); // Add the ㅟ vowel test
+    test_compound_vowels_comprehensive(); // Add comprehensive compound vowel tests
     
     // Print final statistics
     test_print_stats();

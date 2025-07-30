@@ -137,3 +137,22 @@ add_custom_target(clean-main
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Cleaning main application files (keeping LVGL library)"
 )
+
+# Test executable for ChunJiIn input testing
+set(TEST_SOURCES
+    src/test_chunjiin_input.c
+    src/chunjiin_input.c
+)
+
+# Create test executable
+add_executable(test_chunjiin ${TEST_SOURCES})
+
+# Add include directories for test
+target_include_directories(test_chunjiin PRIVATE include)
+
+# Link against LVGL library and other dependencies
+target_link_libraries(test_chunjiin lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+
+if(UNIX)
+    target_link_libraries(test_chunjiin pthread dl m crypto)
+endif()
