@@ -81,9 +81,6 @@ static void qwerty_shift_cb(lv_event_t* e);
 static void qwerty_space_cb(lv_event_t* e);
 static void qwerty_backspace_cb(lv_event_t* e);
 static void qwerty_enter_cb(lv_event_t* e);
-static void popup_close_cb(lv_event_t* e);
-static void popup_click_cb(lv_event_t* e);
-static void qwerty_popup_close_cb(lv_event_t* e);
 
 // Function to update the display using Korean system
 static void update_qwerty_display() {
@@ -173,53 +170,8 @@ static void qwerty_backspace_cb(lv_event_t* e) {
 static void qwerty_enter_cb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
-        // Get current text from the display label BEFORE processing
-        const char* current_text = lv_label_get_text(g_qwerty_display_label);
-        
-        // Create popup dialog to show the result BEFORE clearing
-        lv_obj_t* parent = lv_obj_get_parent(lv_event_get_target(e));
-        lv_obj_t* dialog = lv_obj_create(parent);
-        lv_obj_set_size(dialog, 250, 150);
-        lv_obj_align(dialog, LV_ALIGN_CENTER, 0, 0);
-        lv_obj_set_style_bg_color(dialog, lv_color_white(), 0);
-        lv_obj_set_style_bg_opa(dialog, LV_OPA_COVER, 0);
-        lv_obj_set_style_border_width(dialog, 2, 0);
-        lv_obj_set_style_border_color(dialog, lv_color_hex(0x333333), 0);
-        lv_obj_set_style_radius(dialog, 10, 0);
-        
-        // Title label
-        lv_obj_t* title_label = lv_label_create(dialog);
-        lv_label_set_text(title_label, "QWERTY Korean Input Result");
-        lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
-        lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
-        
-        // Result text label
-        lv_obj_t* popup_result_label = lv_label_create(dialog);
-        lv_obj_set_style_text_font(popup_result_label, get_korean_font_small(), 0);
-        lv_obj_set_style_text_color(popup_result_label, lv_color_hex(0x00AA00), 0); // Green text
-        lv_obj_align(popup_result_label, LV_ALIGN_CENTER, 0, 0);
-        
-        char popup_text[300];
-        if (strlen(current_text) > 0) {
-            snprintf(popup_text, sizeof(popup_text), "Result: %s", current_text);
-        } else {
-            snprintf(popup_text, sizeof(popup_text), "Result: (Empty)");
-        }
-        lv_label_set_text(popup_result_label, popup_text);
-        
-        // Close button
-        lv_obj_t* close_btn = lv_btn_create(dialog);
-        lv_obj_set_size(close_btn, 80, 30);
-        lv_obj_align(close_btn, LV_ALIGN_BOTTOM_MID, 0, -10);
-        lv_obj_t* close_label = lv_label_create(close_btn);
-        lv_label_set_text(close_label, "Close");
-        lv_obj_center(close_label);
-        
-        // Close button callback - clear buffers when dialog closes
-        lv_obj_add_event_cb(close_btn, qwerty_popup_close_cb, LV_EVENT_CLICKED, NULL);
-        
-        // Don't clear the result immediately - keep it visible until Close is clicked
-        // The result will be cleared when the Close button is clicked
+        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len, g_qwerty_output_buffer, '\n');
+        update_qwerty_display();
     }
 }
 
@@ -367,30 +319,4 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     lv_obj_add_event_cb(enter_btn, qwerty_enter_cb, LV_EVENT_CLICKED, NULL);
     
     return tab;
-}
-
-// Popup callback functions
-static void popup_close_cb(lv_event_t* e) {
-    lv_obj_t* btn = lv_event_get_target(e);
-    lv_obj_t* popup = lv_obj_get_parent(btn);
-    lv_obj_del(popup);
-}
-
-static void popup_click_cb(lv_event_t* e) {
-    lv_obj_t* popup = lv_event_get_target(e);
-    lv_obj_del(popup);
-}
-
-static void qwerty_popup_close_cb(lv_event_t* e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_CLICKED) {
-        // Clear the result when Close button is clicked
-        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len, g_qwerty_output_buffer, '\n');
-        update_qwerty_display();
-        
-        // Close the dialog
-        lv_obj_t* btn = lv_event_get_target(e);
-        lv_obj_t* dialog = lv_obj_get_parent(btn);
-        lv_obj_del(dialog);
-    }
 } 
