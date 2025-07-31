@@ -46,7 +46,7 @@ void create_info_tab(lv_obj_t * parent) {
         "- Image(PNG) loading\n"
         "- Popup diaglog box\n"
     );
-    lv_obj_align(info_label, LV_ALIGN_TOP_MID, 20, 100);
+    lv_obj_align(info_label, LV_ALIGN_TOP_MID, 50, 100);
     lv_obj_set_width(info_label, 300);
     lv_label_set_long_mode(info_label, LV_LABEL_LONG_WRAP);
 } 
