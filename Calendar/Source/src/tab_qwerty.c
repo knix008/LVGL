@@ -290,7 +290,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     // Button dimensions and spacing - further reduced size
     int btn_width = 50;
     int btn_height = 30;
-    int btn_spacing = 8;
+    int btn_spacing = 5;
     int start_y = 100;
     
     // Create QWERTY keyboard layout
@@ -338,30 +338,31 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     int special_start_y = start_y + 3 *(btn_height + btn_spacing);
     
     // Calculate center positions for special keys row
-    int shift_width = 50;
-    int space_width = 100;
+    int shift_width = 60;
+    int space_width = 120;
     int backspace_width = 50;
-    int enter_width = 50;
-    int special_spacing = 8;
+    int enter_width = 60;
+    int special_spacing = 20;
+    int x_offset = 30;
     
-    // Calculate total width and center offset (moved 5px to the right)
+    // Calculate total width and center offset
     int total_special_width = shift_width + special_spacing + space_width + special_spacing + backspace_width + special_spacing + enter_width;
-    int special_center_offset = -total_special_width / 2 + 5;
-    
+    int special_center_offset = -total_special_width / 2 + x_offset;
+
     // Shift key
     lv_obj_t* shift_btn = lv_btn_create(tab);
     lv_obj_set_size(shift_btn, shift_width, btn_height);
-    lv_obj_align(shift_btn, LV_ALIGN_TOP_MID, special_center_offset, special_start_y);
+    lv_obj_align(shift_btn, LV_ALIGN_TOP_MID, special_center_offset + special_spacing, special_start_y);
     lv_obj_t* shift_label = lv_label_create(shift_btn);
     lv_label_set_text(shift_label, "Shift");
     lv_obj_set_style_text_font(shift_label, font, 0);
     lv_obj_center(shift_label);
     lv_obj_add_event_cb(shift_btn, qwerty_shift_cb, LV_EVENT_CLICKED, NULL);
     
-    // Space key (same height as other special keys, moved 15px to the right)
+    // Space key
     lv_obj_t* space_btn = lv_btn_create(tab);
     lv_obj_set_size(space_btn, space_width, btn_height);
-    lv_obj_align(space_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + 35, special_start_y);
+    lv_obj_align(space_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + x_offset + 15, special_start_y);
     lv_obj_t* space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
     lv_obj_set_style_text_font(space_label, font, 0);
@@ -371,7 +372,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     // Backspace key
     lv_obj_t* backspace_btn = lv_btn_create(tab);
     lv_obj_set_size(backspace_btn, backspace_width, btn_height);
-    lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + space_width + special_spacing + 15, special_start_y);
+    lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + space_width + special_spacing, special_start_y);
     lv_obj_t* backspace_label = lv_label_create(backspace_btn);
     lv_label_set_text(backspace_label, "←");
     lv_obj_set_style_text_font(backspace_label, font, 0);
@@ -381,7 +382,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     // Enter key
     lv_obj_t* enter_btn = lv_btn_create(tab);
     lv_obj_set_size(enter_btn, enter_width, btn_height);
-    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + space_width + special_spacing + backspace_width + special_spacing + 15, special_start_y);
+    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + space_width + special_spacing + backspace_width + special_spacing, special_start_y);
     lv_obj_t* enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_set_style_text_font(enter_label, font, 0);

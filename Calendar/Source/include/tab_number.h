@@ -11,5 +11,6 @@ void keypad_number_cb(lv_event_t * e);
 void keypad_clear_cb(lv_event_t * e);
 void keypad_enter_cb(lv_event_t * e);
 void keypad_backspace_cb(lv_event_t * e);
+void keypad_close_dialog_cb(lv_event_t * e);
 
 #endif // TAB_NUMBER_H 

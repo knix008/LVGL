@@ -1,6 +1,7 @@
 #include "tab_calendar.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 // Global variables for calendar input
@@ -11,17 +12,7 @@ static int current_month = 1;
 static int current_day = 1;
 
 // Calendar input callback functions
-void calendar_date_cb(lv_event_t * e) {
-    lv_obj_t * btn = lv_event_get_target(e);
-    lv_obj_t * label = lv_obj_get_child(btn, 0);
-    const char * number = lv_label_get_text(label);
-    
-    // Add number to buffer if there's space
-    if (strlen(calendar_buffer) < sizeof(calendar_buffer) - 1) {
-        strcat(calendar_buffer, number);
-        lv_label_set_text(calendar_display_label, calendar_buffer);
-    }
-}
+// calendar_date_cb removed - no day number buttons
 
 void calendar_month_cb(lv_event_t * e) {
     lv_obj_t * btn = lv_event_get_target(e);
@@ -48,23 +39,7 @@ void calendar_month_cb(lv_event_t * e) {
     }
 }
 
-void calendar_year_cb(lv_event_t * e) {
-    lv_obj_t * btn = lv_event_get_target(e);
-    lv_obj_t * label = lv_obj_get_child(btn, 0);
-    const char * year_text = lv_label_get_text(label);
-    
-    // Convert year text to number
-    int year = atoi(year_text);
-    if (year >= 1900 && year <= 2100) {
-        current_year = year;
-        // Update display with selected year
-        char display_text[64];
-        const char * months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-        snprintf(display_text, sizeof(display_text), "%s %d, %d", months[current_month-1], current_day, current_year);
-        lv_label_set_text(calendar_display_label, display_text);
-    }
-}
+// calendar_year_cb removed - no year selection buttons
 
 void calendar_clear_cb(lv_event_t * e) {
     calendar_buffer[0] = '\0';
@@ -142,76 +117,14 @@ void create_calendar_tab(lv_obj_t * parent) {
         lv_obj_add_event_cb(btn, calendar_month_cb, LV_EVENT_CLICKED, NULL);
     }
 
-    // Year selection buttons (recent years)
-    lv_obj_t * year_label = lv_label_create(parent);
-    lv_label_set_text(year_label, "Year:");
-    lv_obj_align(year_label, LV_ALIGN_CENTER, -200, 80);
+    // Year selection buttons (recent years) - REMOVED
 
-    const char * year_labels[] = {"2020", "2021", "2022", "2023", "2024", "2025"};
-    int year_btn_width = 60;
-    int year_btn_height = 30;
-    int year_btn_spacing = 5;
-    
-    for (int i = 0; i < 6; i++) {
-        lv_obj_t * btn = lv_btn_create(parent);
-        lv_obj_set_size(btn, year_btn_width, year_btn_height);
-        
-        int rel_x = -200 + i * (year_btn_width + year_btn_spacing);
-        lv_obj_align(btn, LV_ALIGN_CENTER, rel_x, 110);
-
-        lv_obj_t * btn_label = lv_label_create(btn);
-        lv_label_set_text(btn_label, year_labels[i]);
-        lv_obj_center(btn_label);
-
-        lv_obj_add_event_cb(btn, calendar_year_cb, LV_EVENT_CLICKED, NULL);
-    }
-
-    // Day input area
-    lv_obj_t * day_label = lv_label_create(parent);
-    lv_label_set_text(day_label, "Day:");
-    lv_obj_align(day_label, LV_ALIGN_CENTER, 100, 80);
-
-    // Day input display
-    lv_obj_t * day_display = lv_label_create(parent);
-    lv_label_set_text(day_display, "1");
-    lv_obj_set_style_bg_color(day_display, lv_color_hex(0xF0F0F0), 0);
-    lv_obj_set_style_bg_opa(day_display, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_all(day_display, 5, 0);
-    lv_obj_set_size(day_display, 60, 30);
-    lv_obj_align(day_display, LV_ALIGN_CENTER, 100, 110);
-
-    // Day number buttons (1-31)
-    const char * day_numbers[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                                 "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-                                 "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"};
-    
-    int day_btn_width = 40;
-    int day_btn_height = 25;
-    int day_btn_spacing = 2;
-    
-    for (int i = 0; i < 31; i++) {
-        lv_obj_t * btn = lv_btn_create(parent);
-        lv_obj_set_size(btn, day_btn_width, day_btn_height);
-        
-        int row = i / 7;  // 7 buttons per row
-        int col = i % 7;
-        
-        int rel_x = 100 + col * (day_btn_width + day_btn_spacing);
-        int rel_y = 150 + row * (day_btn_height + day_btn_spacing);
-        
-        lv_obj_align(btn, LV_ALIGN_CENTER, rel_x, rel_y);
-
-        lv_obj_t * btn_label = lv_label_create(btn);
-        lv_label_set_text(btn_label, day_numbers[i]);
-        lv_obj_center(btn_label);
-
-        lv_obj_add_event_cb(btn, calendar_date_cb, LV_EVENT_CLICKED, NULL);
-    }
+    // Day input area - REMOVED (no number buttons available)
 
     // Function buttons
     lv_obj_t * clear_btn = lv_btn_create(parent);
     lv_obj_set_size(clear_btn, 80, 40);
-    lv_obj_align(clear_btn, LV_ALIGN_CENTER, -100, 200);
+    lv_obj_align(clear_btn, LV_ALIGN_CENTER, -100, 120);
     
     lv_obj_t * clear_label = lv_label_create(clear_btn);
     lv_label_set_text(clear_label, "Clear");
@@ -220,7 +133,7 @@ void create_calendar_tab(lv_obj_t * parent) {
 
     lv_obj_t * enter_btn = lv_btn_create(parent);
     lv_obj_set_size(enter_btn, 80, 40);
-    lv_obj_align(enter_btn, LV_ALIGN_CENTER, 100, 200);
+    lv_obj_align(enter_btn, LV_ALIGN_CENTER, 100, 120);
     
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
