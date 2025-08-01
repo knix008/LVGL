@@ -30,7 +30,7 @@ static void update_button_colors() {
     // Default color for unselected month/day/year buttons
     lv_color_t default_color = lv_color_hex(0xFF9800); // Orange
     // Selected color
-    lv_color_t selected_color = lv_color_hex(0xF57C00); // Deep orange
+    lv_color_t selected_color = lv_color_hex(0xBF360C); // Much darker orange
     // Update month button color
     lv_obj_set_style_bg_color(month_button, 
         (current_mode == CALENDAR_MODE_MONTH) ? selected_color : default_color, 0);
