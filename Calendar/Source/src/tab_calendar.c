@@ -11,6 +11,9 @@ static lv_obj_t * day_label = NULL;
 static lv_obj_t * year_label = NULL;
 static lv_obj_t * prev_button = NULL;
 static lv_obj_t * next_button = NULL;
+static lv_obj_t * month_button = NULL;
+static lv_obj_t * day_button = NULL;
+static lv_obj_t * year_button = NULL;
 static calendar_date_t current_date;
 
 // Calendar selection mode
@@ -21,6 +24,23 @@ typedef enum {
 } calendar_mode_t;
 
 static calendar_mode_t current_mode = CALENDAR_MODE_MONTH;
+
+// Helper function to update button colors based on selection
+static void update_button_colors() {
+    // Default color for unselected month/day/year buttons
+    lv_color_t default_color = lv_color_hex(0xFF9800); // Orange
+    // Selected color
+    lv_color_t selected_color = lv_color_hex(0xF57C00); // Deep orange
+    // Update month button color
+    lv_obj_set_style_bg_color(month_button, 
+        (current_mode == CALENDAR_MODE_MONTH) ? selected_color : default_color, 0);
+    // Update day button color
+    lv_obj_set_style_bg_color(day_button, 
+        (current_mode == CALENDAR_MODE_DAY) ? selected_color : default_color, 0);
+    // Update year button color
+    lv_obj_set_style_bg_color(year_button, 
+        (current_mode == CALENDAR_MODE_YEAR) ? selected_color : default_color, 0);
+}
 
 // Helper function to update all displays
 static void update_calendar_displays() {
@@ -48,6 +68,9 @@ static void update_calendar_displays() {
     lv_label_set_text(month_label, month_text);
     lv_label_set_text(day_label, day_text);
     lv_label_set_text(year_label, year_text);
+    
+    // Update button colors
+    update_button_colors();
 }
 
 // Unified prev/next button callbacks
@@ -191,17 +214,19 @@ void create_calendar_tab(lv_obj_t * parent) {
     lv_obj_t * prev_btn = lv_btn_create(parent);
     lv_obj_set_size(prev_btn, 60, label_height);
     lv_obj_align(prev_btn, LV_ALIGN_CENTER, start_x, row_y);
+    lv_obj_set_style_bg_color(prev_btn, lv_color_hex(0x2196F3), 0); // Blue
+    lv_obj_set_style_bg_opa(prev_btn, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(prev_btn, lv_color_white(), 0);
     lv_obj_t * prev_label = lv_label_create(prev_btn);
     lv_label_set_text(prev_label, "<");
     lv_obj_center(prev_label);
     lv_obj_add_event_cb(prev_btn, calendar_prev_cb, LV_EVENT_CLICKED, NULL);
     prev_button = prev_btn;
-    
-    // Month label (clickable) - Purple color
+    // Month label (clickable) - Orange
     lv_obj_t * month_btn = lv_btn_create(parent);
     lv_obj_set_size(month_btn, label_width, label_height);
     lv_obj_align(month_btn, LV_ALIGN_CENTER, start_x + 60 + spacing, row_y);
-    lv_obj_set_style_bg_color(month_btn, lv_color_hex(0x9C27B0), 0); // Purple color
+    lv_obj_set_style_bg_color(month_btn, lv_color_hex(0xFF9800), 0); // Orange
     lv_obj_set_style_bg_opa(month_btn, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(month_btn, lv_color_white(), 0); // White text
     lv_obj_t * month_btn_label = lv_label_create(month_btn);
@@ -209,12 +234,12 @@ void create_calendar_tab(lv_obj_t * parent) {
     lv_obj_center(month_btn_label);
     lv_obj_add_event_cb(month_btn, calendar_select_month_cb, LV_EVENT_CLICKED, NULL);
     month_label = month_btn_label;
-    
-    // Day label (clickable) - Green color
+    month_button = month_btn;
+    // Day label (clickable) - Orange
     lv_obj_t * day_btn = lv_btn_create(parent);
     lv_obj_set_size(day_btn, label_width, label_height);
     lv_obj_align(day_btn, LV_ALIGN_CENTER, start_x + 60 + spacing + label_width + spacing, row_y);
-    lv_obj_set_style_bg_color(day_btn, lv_color_hex(0x4CAF50), 0); // Green color
+    lv_obj_set_style_bg_color(day_btn, lv_color_hex(0xFF9800), 0); // Orange
     lv_obj_set_style_bg_opa(day_btn, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(day_btn, lv_color_white(), 0); // White text
     lv_obj_t * day_btn_label = lv_label_create(day_btn);
@@ -224,12 +249,12 @@ void create_calendar_tab(lv_obj_t * parent) {
     lv_obj_center(day_btn_label);
     lv_obj_add_event_cb(day_btn, calendar_select_day_cb, LV_EVENT_CLICKED, NULL);
     day_label = day_btn_label;
-    
-    // Year label (clickable) - Orange color
+    day_button = day_btn;
+    // Year label (clickable) - Orange
     lv_obj_t * year_btn = lv_btn_create(parent);
     lv_obj_set_size(year_btn, label_width, label_height);
     lv_obj_align(year_btn, LV_ALIGN_CENTER, start_x + 60 + spacing + (label_width + spacing) * 2, row_y);
-    lv_obj_set_style_bg_color(year_btn, lv_color_hex(0xFF9800), 0); // Orange color
+    lv_obj_set_style_bg_color(year_btn, lv_color_hex(0xFF9800), 0); // Orange
     lv_obj_set_style_bg_opa(year_btn, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(year_btn, lv_color_white(), 0); // White text
     lv_obj_t * year_btn_label = lv_label_create(year_btn);
@@ -239,21 +264,26 @@ void create_calendar_tab(lv_obj_t * parent) {
     lv_obj_center(year_btn_label);
     lv_obj_add_event_cb(year_btn, calendar_select_year_cb, LV_EVENT_CLICKED, NULL);
     year_label = year_btn_label;
-    
+    year_button = year_btn;
     // Next button
     lv_obj_t * next_btn = lv_btn_create(parent);
     lv_obj_set_size(next_btn, 60, label_height);
     lv_obj_align(next_btn, LV_ALIGN_CENTER, start_x + 60 + spacing + (label_width + spacing) * 3, row_y);
+    lv_obj_set_style_bg_color(next_btn, lv_color_hex(0x2196F3), 0); // Blue
+    lv_obj_set_style_bg_opa(next_btn, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(next_btn, lv_color_white(), 0);
     lv_obj_t * next_label = lv_label_create(next_btn);
     lv_label_set_text(next_label, ">");
     lv_obj_center(next_label);
     lv_obj_add_event_cb(next_btn, calendar_next_cb, LV_EVENT_CLICKED, NULL);
     next_button = next_btn;
-
     // Second row: Enter button
     lv_obj_t * enter_btn = lv_btn_create(parent);
     lv_obj_set_size(enter_btn, 120, 40);
     lv_obj_align(enter_btn, LV_ALIGN_CENTER, 5, row_y + label_height + 10);  // Center aligned vertically
+    lv_obj_set_style_bg_color(enter_btn, lv_color_hex(0x2196F3), 0); // Blue
+    lv_obj_set_style_bg_opa(enter_btn, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(enter_btn, lv_color_white(), 0);
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);
