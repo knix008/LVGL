@@ -37,6 +37,7 @@ void test_dot_combinations(void);
 void test_gwon_syllable(void);
 void test_wi_vowel(void);
 void test_compound_vowels_comprehensive(void);
+void test_choseong_dot_dot_choseong(void);
 
 // Test result tracking
 typedef struct {
@@ -705,7 +706,7 @@ void test_advanced_korean_syllables() {
         
         // Compound final consonants
         {"gaeags", "과ㄳ", "ㄱ + ㆍ + ㅡ + ㅣ + ㆍ + ㄱ + ㅅ = 과ㄳ"},
-        {"dueagj", "뒤ㄵ", "ㄷ + ㅡ + ㅣ + ㆍ + ㄴ + ㅈ = 뒤ㄵ"},
+        {"dueagj", "뒤ㄵ", "ㄷ + ㅡ + ㆍ + ㅣ + ㄴ + ㅈ = 뒤ㄵ"},
         {"teaeigs", "퇴ㄶ", "ㅌ + ㅗ + ㅣ + ㄴ + ㅎ = 퇴ㄶ"},
         {"gueailg", "권ㄺ", "ㄱ + ㅡ + ㆍ + ㅣ + ㄹ + ㄱ = 권ㄺ"},
         
@@ -1558,6 +1559,120 @@ void test_compound_vowels_comprehensive() {
     }
 }
 
+// Test function for choseong + dot + dot + choseong
+void test_choseong_dot_dot_choseong(void) {
+    printf("\n=== TESTING CHOSEONG + DOT + DOT + CHOSEONG ===\n");
+    
+    // Debug test: Test the specific case that's failing
+    printf("\n--- DEBUG TEST: ㄴ + ㆍ + ㆍ + ㄷ ---\n");
+    clear_output();
+    
+    // Input: ㄴ + ㆍ + ㆍ + ㄷ
+    process_input('n'); // ㄴ
+    printf("After 'n': ");
+    char* debug_output = get_current_output();
+    printf("[%s]\n", debug_output);
+    free(debug_output);
+    
+    process_input('a'); // ㆍ
+    printf("After 'a': ");
+    debug_output = get_current_output();
+    printf("[%s]\n", debug_output);
+    free(debug_output);
+    
+    process_input('a'); // ㆍ (second dot)
+    printf("After 'aa': ");
+    debug_output = get_current_output();
+    printf("[%s]\n", debug_output);
+    free(debug_output);
+    
+    process_input('d'); // ㄷ
+    printf("After 'aad': ");
+    debug_output = get_current_output();
+    printf("[%s]\n", debug_output);
+    free(debug_output);
+    
+    chunjiin_enter_key_handler();
+    
+    struct {
+        char* input;
+        char* description;
+    } choseong_dot_dot_tests[] = {
+        // All combinations with ㄱ as first choseong
+        {"gaan", "ㄱ + ㆍ + ㆍ + ㄴ = ㄱㆍㆍ + ㄴ"},
+        {"gaad", "ㄱ + ㆍ + ㆍ + ㄷ = ㄱㆍㆍ + ㄷ"},
+        {"gaab", "ㄱ + ㆍ + ㆍ + ㅂ = ㄱㆍㆍ + ㅂ"},
+        {"gaas", "ㄱ + ㆍ + ㆍ + ㅅ = ㄱㆍㆍ + ㅅ"},
+        {"gaaj", "ㄱ + ㆍ + ㆍ + ㅈ = ㄱㆍㆍ + ㅈ"},
+        {"gaam", "ㄱ + ㆍ + ㆍ + ㅇ = ㄱㆍㆍ + ㅇ"},
+        
+        // All combinations with ㄴ as first choseong
+        {"naag", "ㄴ + ㆍ + ㆍ + ㄱ = ㄴㆍㆍ + ㄱ"},
+        {"naad", "ㄴ + ㆍ + ㆍ + ㄷ = ㄴㆍㆍ + ㄷ"},
+        {"naab", "ㄴ + ㆍ + ㆍ + ㅂ = ㄴㆍㆍ + ㅂ"},
+        {"naas", "ㄴ + ㆍ + ㆍ + ㅅ = ㄴㆍㆍ + ㅅ"},
+        {"naaj", "ㄴ + ㆍ + ㆍ + ㅈ = ㄴㆍㆍ + ㅈ"},
+        {"naam", "ㄴ + ㆍ + ㆍ + ㅇ = ㄴㆍㆍ + ㅇ"},
+        
+        // All combinations with ㄷ as first choseong
+        {"daag", "ㄷ + ㆍ + ㆍ + ㄱ = ㄷㆍㆍ + ㄱ"},
+        {"daan", "ㄷ + ㆍ + ㆍ + ㄴ = ㄷㆍㆍ + ㄴ"},
+        {"daab", "ㄷ + ㆍ + ㆍ + ㅂ = ㄷㆍㆍ + ㅂ"},
+        {"daas", "ㄷ + ㆍ + ㆍ + ㅅ = ㄷㆍㆍ + ㅅ"},
+        {"daaj", "ㄷ + ㆍ + ㆍ + ㅈ = ㄷㆍㆍ + ㅈ"},
+        {"daam", "ㄷ + ㆍ + ㆍ + ㅇ = ㄷㆍㆍ + ㅇ"},
+        
+        // All combinations with ㅂ as first choseong
+        {"baag", "ㅂ + ㆍ + ㆍ + ㄱ = ㅂㆍㆍ + ㄱ"},
+        {"baan", "ㅂ + ㆍ + ㆍ + ㄴ = ㅂㆍㆍ + ㄴ"},
+        {"baad", "ㅂ + ㆍ + ㆍ + ㄷ = ㅂㆍㆍ + ㄷ"},
+        {"baas", "ㅂ + ㆍ + ㆍ + ㅅ = ㅂㆍㆍ + ㅅ"},
+        {"baaj", "ㅂ + ㆍ + ㆍ + ㅈ = ㅂㆍㆍ + ㅈ"},
+        {"baam", "ㅂ + ㆍ + ㆍ + ㅇ = ㅂㆍㆍ + ㅇ"},
+        
+        // All combinations with ㅅ as first choseong
+        {"saag", "ㅅ + ㆍ + ㆍ + ㄱ = ㅅㆍㆍ + ㄱ"},
+        {"saan", "ㅅ + ㆍ + ㆍ + ㄴ = ㅅㆍㆍ + ㄴ"},
+        {"saad", "ㅅ + ㆍ + ㆍ + ㄷ = ㅅㆍㆍ + ㄷ"},
+        {"saab", "ㅅ + ㆍ + ㆍ + ㅂ = ㅅㆍㆍ + ㅂ"},
+        {"saaj", "ㅅ + ㆍ + ㆍ + ㅈ = ㅅㆍㆍ + ㅈ"},
+        {"saam", "ㅅ + ㆍ + ㆍ + ㅇ = ㅅㆍㆍ + ㅇ"},
+        
+        // All combinations with ㅈ as first choseong
+        {"jaag", "ㅈ + ㆍ + ㆍ + ㄱ = ㅈㆍㆍ + ㄱ"},
+        {"jaan", "ㅈ + ㆍ + ㆍ + ㄴ = ㅈㆍㆍ + ㄴ"},
+        {"jaad", "ㅈ + ㆍ + ㆍ + ㄷ = ㅈㆍㆍ + ㄷ"},
+        {"jaab", "ㅈ + ㆍ + ㆍ + ㅂ = ㅈㆍㆍ + ㅂ"},
+        {"jaas", "ㅈ + ㆍ + ㆍ + ㅅ = ㅈㆍㆍ + ㅅ"},
+        {"jaam", "ㅈ + ㆍ + ㆍ + ㅇ = ㅈㆍㆍ + ㅇ"},
+        
+        // All combinations with ㅇ as first choseong
+        {"maag", "ㅇ + ㆍ + ㆍ + ㄱ = ㅇㆍㆍ + ㄱ"},
+        {"maan", "ㅇ + ㆍ + ㆍ + ㄴ = ㅇㆍㆍ + ㄴ"},
+        {"maad", "ㅇ + ㆍ + ㆍ + ㄷ = ㅇㆍㆍ + ㄷ"},
+        {"maab", "ㅇ + ㆍ + ㆍ + ㅂ = ㅇㆍㆍ + ㅂ"},
+        {"maas", "ㅇ + ㆍ + ㆍ + ㅅ = ㅇㆍㆍ + ㅅ"},
+        {"maaj", "ㅇ + ㆍ + ㆍ + ㅈ = ㅇㆍㆍ + ㅈ"}
+    };
+    
+    for (int i = 0; i < 42; i++) { // 7 choseong × 6 other choseong = 42 total combinations
+        clear_output();
+        
+        // Input the sequence for each test
+        for (int j = 0; choseong_dot_dot_tests[i].input[j] != '\0'; j++) {
+            process_input(choseong_dot_dot_tests[i].input[j]);
+        }
+        
+        // Get output before enter (which clears the buffer)
+        char* output = get_current_output();
+        test_assert(strlen(output) > 0, 
+                   choseong_dot_dot_tests[i].description);
+        free(output);
+        
+        chunjiin_enter_key_handler();
+    }
+}
+
 // Main test runner
 int main() {
     // Set locale for wide character support
@@ -1590,6 +1705,7 @@ int main() {
     test_gwon_syllable(); // Add the new test function
     test_wi_vowel(); // Add the ㅟ vowel test
     test_compound_vowels_comprehensive(); // Add comprehensive compound vowel tests
+    test_choseong_dot_dot_choseong(); // Add the choseong + dot + dot + choseong test
     
     // Print final statistics
     test_print_stats();

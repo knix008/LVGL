@@ -96,11 +96,13 @@ void finalize_syllable() {
         
         // Handle dot after choseong before resetting
         if (g_current_syllable.state == STATE_CHOSEONG && g_current_syllable.temp_vowel > 0) {
+            int dot_count = (g_current_syllable.temp_vowel == 200) ? 2 : 1;
             size_t current_len = wcslen(g_output_buffer);
-            if (current_len < 1023) {
-                g_output_buffer[current_len] = 0x318D; // ㆍ (dot) character
-                g_output_buffer[current_len + 1] = L'\0';
+            
+            for (int i = 0; i < dot_count && current_len + i < 1023; i++) {
+                g_output_buffer[current_len + i] = 0x318D; // ㆍ (dot) character
             }
+            g_output_buffer[current_len + dot_count] = L'\0';
         }
     }
     // 다음 입력을 위해 현재 조합 상태 초기화
@@ -758,6 +760,8 @@ void chunjiin_get_current_text(wchar_t * buffer) {
 void chunjiin_enter_key_handler() {
     // First, finalize any current syllable to include it in the result
     finalize_syllable();
+    
+
     
     // Get the complete result
     wchar_t complete_buffer[4096];
