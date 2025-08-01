@@ -135,7 +135,7 @@ void create_number_tab(lv_obj_t * parent) {
     
     // Calculate center offsets to position the grid in the center
     int center_x_offset = -(grid_width / 3);
-    int center_y_offset = -100; // Move up from center for better positioning
+    int center_y_offset = -120; // Move up from center for better positioning
 
     for (int i = 0; i < 10; i++) {
         lv_obj_t * btn = lv_btn_create(parent);
