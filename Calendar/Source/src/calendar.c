@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <time.h>
 
+// Internal helper functions
+static int calendar_is_leap_year(int year);
+static int calendar_get_days_in_month(int year, int month);
+
 // Initialize calendar with current date
 void calendar_init(calendar_date_t* date) {
     time_t now = time(NULL);
@@ -184,7 +188,7 @@ void calendar_set_week(calendar_date_t* date, int week_number) {
 }
 
 // Get number of days in a month
-int calendar_get_days_in_month(int year, int month) {
+static int calendar_get_days_in_month(int year, int month) {
     const int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     
     if (month == 2 && calendar_is_leap_year(year)) {
@@ -195,7 +199,7 @@ int calendar_get_days_in_month(int year, int month) {
 }
 
 // Check if year is leap year
-int calendar_is_leap_year(int year) {
+static int calendar_is_leap_year(int year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
