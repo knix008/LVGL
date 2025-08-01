@@ -142,11 +142,23 @@ void process_input(char key) {
 // --- 자음 입력 처리 함수 ---
 void handle_consonant(int key_code) {
     // If we have temp_vowel == 200 (ㆍㆍ) and input a consonant,
-    // finalize the vowel to ㅗ (jungseong 8) first
+    // output the choseoung + dots and start a new syllable
     if (g_current_syllable.temp_vowel == 200) {
-        g_current_syllable.jung = 8; // ㅗ
-        g_current_syllable.state = STATE_JUNGSEONG;
-        g_current_syllable.temp_vowel = 0;
+        // Finalize current syllable with dots
+        finalize_syllable();
+        // Now handle the new consonant for the new syllable
+        handle_consonant(key_code);
+        return;
+    }
+    
+    // If we have temp_vowel == 100 (ㆍ) and input a consonant,
+    // output the choseoung + dot and start a new syllable
+    if (g_current_syllable.temp_vowel == 100) {
+        // Finalize current syllable with dot
+        finalize_syllable();
+        // Now handle the new consonant for the new syllable
+        handle_consonant(key_code);
+        return;
     }
     
     g_current_syllable.temp_vowel = 0; // 자음이 입력되면 모음 조합 상태는 초기화
