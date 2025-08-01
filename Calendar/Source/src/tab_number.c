@@ -113,11 +113,16 @@ void create_number_tab(lv_obj_t * parent) {
     // Display area for entered numbers
     lv_obj_t * keypad_display = lv_label_create(parent);
     lv_label_set_text(keypad_display, "0");
-    lv_obj_set_style_bg_color(keypad_display, lv_color_hex(0xE0E0E0), 0);
+    lv_obj_set_style_bg_color(keypad_display, lv_color_hex(0x00FF00), 0); // Green background like QWERTY tab
     lv_obj_set_style_bg_opa(keypad_display, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_all(keypad_display, 10, 0);
-    lv_obj_set_size(keypad_display, 260, 40);
-    lv_obj_align(keypad_display, LV_ALIGN_TOP_MID, 0, 40);
+    lv_obj_set_style_bg_main_stop(keypad_display, 0, 0); // Ensure main color is applied
+    lv_obj_set_style_bg_grad_color(keypad_display, lv_color_hex(0x00FF00), 0); // Set gradient color to same green
+    lv_obj_set_style_bg_grad_dir(keypad_display, LV_GRAD_DIR_NONE, 0); // No gradient, solid color
+    lv_obj_set_style_border_color(keypad_display, lv_color_make(128, 128, 128), 0); // Gray border like QWERTY tab
+    lv_obj_set_style_border_width(keypad_display, 3, 0); // Thicker border like QWERTY tab
+    lv_obj_set_style_pad_all(keypad_display, 15, 0); // More padding like QWERTY tab
+    lv_obj_set_size(keypad_display, 400, 60); // Match QWERTY tab size
+    lv_obj_align(keypad_display, LV_ALIGN_TOP_MID, 0, 10); // Match QWERTY tab position
     keypad_display_label = keypad_display;
 
     // Create number buttons in a 3x4 grid layout

@@ -10,7 +10,7 @@ CC=gcc
 CFLAGS="-Wall -Wextra -std=c99 -I./include"
 
 # Source files
-SOURCES="src/test_calendar.c"
+SOURCES="src/test_calendar.c src/calendar.c"
 
 # Output executable
 OUTPUT="calendar_test"

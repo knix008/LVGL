@@ -90,6 +90,7 @@ set(MAIN_SOURCES
     src/tab_chunjiin.c
     src/tab_qwerty.c
     src/tab_calendar.c
+    src/calendar.c
     src/korean_input.c
     src/qwerty_korean.c
     src/chunjiin_input.c
@@ -163,6 +164,7 @@ endif()
 # Calendar test executable
 set(CALENDAR_TEST_SOURCES
     src/test_calendar.c
+    src/calendar.c
 )
 
 # Create calendar test executable
