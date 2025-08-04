@@ -30,7 +30,7 @@ void create_settings_tab(lv_obj_t * parent) {
     lv_label_set_text(label2, "Settings");
     lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 10);
     
-       // Create the JPG image object for settings info (left side)
+    // Create the JPG image object for settings info (left side)
     lv_obj_t * jpg_img = lv_image_create(parent);
     lv_image_set_src(jpg_img, "A:../assets/setting.jpg");
     lv_obj_set_size(jpg_img, 64, 64);
@@ -63,21 +63,6 @@ void create_settings_tab(lv_obj_t * parent) {
     } else {
         printf("Settings tab: GIF failed to load: A:../assets/setting_simple.gif\n");
         printf("Settings tab: GIF source is NULL\n");
-    }
-    
-    // Create the SVG image object for settings info
-    lv_obj_t * svg_img = lv_image_create(parent);
-    lv_image_set_src(svg_img, "A:../assets/clock_icon.svg");
-    lv_obj_set_size(svg_img, 64, 64);
-    lv_obj_align(svg_img, LV_ALIGN_TOP_MID, 0, 150); // Position more visible
-    // Check SVG loading status
-    const void* svg_src = lv_image_get_src(svg_img);
-    if (svg_src) {
-        printf("Settings tab: SVG loaded successfully: A:../assets/clock_icon.svg\n");
-        printf("Settings tab: SVG source pointer: %p\n", svg_src);
-    } else {
-        printf("Settings tab: SVG failed to load: A:../assets/clock_icon.svg\n");
-        printf("Settings tab: SVG source is NULL\n");
     }
     
     // Create a slider

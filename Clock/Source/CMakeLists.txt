@@ -201,3 +201,22 @@ target_link_libraries(clock_test lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES
 if(UNIX)
     target_link_libraries(clock_test pthread dl m crypto)
 endif()
+
+# Qwerty Korean test executable
+set(QWERTY_KOREAN_TEST_SOURCES
+    src/test_qwerty_korean_integrated.c
+    src/qwerty_korean.c
+)
+
+# Create qwerty Korean test executable
+add_executable(qwerty_korean_test ${QWERTY_KOREAN_TEST_SOURCES})
+
+# Add include directories for qwerty Korean test
+target_include_directories(qwerty_korean_test PRIVATE include)
+
+# Link against LVGL library and other dependencies
+target_link_libraries(qwerty_korean_test lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+
+if(UNIX)
+    target_link_libraries(qwerty_korean_test pthread dl m crypto)
+endif()
