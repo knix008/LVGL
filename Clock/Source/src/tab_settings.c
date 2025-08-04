@@ -45,9 +45,10 @@ void create_settings_tab(lv_obj_t * parent) {
         printf("Settings tab: JPG failed to load: A:../assets/setting.jpg\n");
         printf("Settings tab: JPG source is NULL\n");
     }
-    
-    lv_obj_t * gif_img = lv_image_create(parent);
-    lv_image_set_src(gif_img, "A:../assets/setting.gif");
+
+    // Create the GIF image object for settings info (right side)
+    lv_obj_t * gif_img = lv_gif_create(parent);
+    lv_gif_set_src(gif_img, "A:../assets/bulb.gif");
     lv_obj_set_size(gif_img, 64, 64);
     lv_obj_align(gif_img, LV_ALIGN_TOP_MID, 40, 50); // Position to the right
     
@@ -57,10 +58,10 @@ void create_settings_tab(lv_obj_t * parent) {
     // Check GIF loading status
     const void* gif_src = lv_image_get_src(gif_img);
     if (gif_src) {
-        printf("Settings tab: GIF loaded successfully: A:../assets/setting.gif\n");
+        printf("Settings tab: GIF loaded successfully: A:../assets/setting_simple.gif\n");
         printf("Settings tab: GIF source pointer: %p\n", gif_src);
     } else {
-        printf("Settings tab: GIF failed to load: A:../assets/setting.gif\n");
+        printf("Settings tab: GIF failed to load: A:../assets/setting_simple.gif\n");
         printf("Settings tab: GIF source is NULL\n");
     }
     

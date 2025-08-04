@@ -183,3 +183,21 @@ if(UNIX)
     target_link_libraries(calendar_test pthread dl m crypto)
 endif()
 
+# Clock test executable
+set(CLOCK_TEST_SOURCES
+    src/test_clock.c
+    src/clock.c
+)
+
+# Create clock test executable
+add_executable(clock_test ${CLOCK_TEST_SOURCES})
+
+# Add include directories for clock test
+target_include_directories(clock_test PRIVATE include)
+
+# Link against LVGL library and other dependencies
+target_link_libraries(clock_test lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+
+if(UNIX)
+    target_link_libraries(clock_test pthread dl m crypto)
+endif()
