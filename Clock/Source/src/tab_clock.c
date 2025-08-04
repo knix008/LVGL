@@ -33,10 +33,14 @@
 #define CLOCK_TIME_FONT_SIZE 72
 
 // Global variables for clock display
-static lv_obj_t *time_label = NULL;
+static lv_obj_t *hours_label = NULL;
+static lv_obj_t *colon_label = NULL;
+static lv_obj_t *minutes_label = NULL;
 static lv_obj_t *date_label = NULL;
 static lv_obj_t *day_label = NULL;
 static lv_timer_t *clock_timer = NULL;
+static lv_timer_t *blink_timer = NULL;
+static bool colon_visible = true;
 
 // Font for large time display
 static lv_font_t *time_large_font = NULL;
@@ -46,19 +50,25 @@ static void update_clock_display(void) {
     clock_time_t current_time;
     clock_get_current_time(&current_time);
     
-    // Format time and date strings using clock logic
-    char time_str[32];
+    // Format time strings for separate display
+    char hours_str[8];
+    char minutes_str[8];
     char date_str[64];
     
-    clock_format_time_string(&current_time, time_str, sizeof(time_str));
+    snprintf(hours_str, sizeof(hours_str), "%02d", current_time.hour);
+    snprintf(minutes_str, sizeof(minutes_str), "%02d", current_time.minute);
     clock_format_date_string(&current_time, date_str, sizeof(date_str));
     
     // Get day name
     const char* day_str = clock_get_day_name(current_time.day_of_week);
     
     // Update labels if they exist
-    if (time_label) {
-        lv_label_set_text(time_label, time_str);
+    if (hours_label) {
+        lv_label_set_text(hours_label, hours_str);
+    }
+    
+    if (minutes_label) {
+        lv_label_set_text(minutes_label, minutes_str);
     }
     
     if (date_label) {
@@ -73,6 +83,18 @@ static void update_clock_display(void) {
 // Timer callback function
 static void clock_timer_cb(lv_timer_t * timer) {
     update_clock_display();
+}
+
+// Blink timer callback function
+static void blink_timer_cb(lv_timer_t * timer) {
+    if (colon_label) {
+        colon_visible = !colon_visible;
+        if (colon_visible) {
+            lv_obj_set_style_text_color(colon_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
+        } else {
+            lv_obj_set_style_text_color(colon_label, lv_color_hex(0xFFFFFF), 0); // Transparent (same as background)
+        }
+    }
 }
 
 // Create Clock tab
@@ -97,12 +119,26 @@ void create_clock_tab(lv_obj_t * parent) {
     lv_obj_set_style_text_font(title_label, get_korean_font(), 0);
     lv_obj_set_style_text_color(title_label, lv_color_hex(CLOCK_TITLE_COLOR), 0);
     
-    // Create time display (large font) - moved to upper position
-    time_label = lv_label_create(parent);
-    lv_label_set_text(time_label, CLOCK_TIME_INITIAL_TEXT);
-    lv_obj_align(time_label, LV_ALIGN_TOP_MID, 0, CLOCK_TIME_Y);
-    lv_obj_set_style_text_font(time_label, time_large_font, 0);
-    lv_obj_set_style_text_color(time_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
+    // Create hours display (left side)
+    hours_label = lv_label_create(parent);
+    lv_label_set_text(hours_label, "00");
+    lv_obj_align(hours_label, LV_ALIGN_TOP_MID, -60, CLOCK_TIME_Y);
+    lv_obj_set_style_text_font(hours_label, time_large_font, 0);
+    lv_obj_set_style_text_color(hours_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
+    
+    // Create blinking colon (center)
+    colon_label = lv_label_create(parent);
+    lv_label_set_text(colon_label, ":");
+    lv_obj_align(colon_label, LV_ALIGN_TOP_MID, 0, CLOCK_TIME_Y);
+    lv_obj_set_style_text_font(colon_label, time_large_font, 0);
+    lv_obj_set_style_text_color(colon_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
+    
+    // Create minutes display (right side)
+    minutes_label = lv_label_create(parent);
+    lv_label_set_text(minutes_label, "00");
+    lv_obj_align(minutes_label, LV_ALIGN_TOP_MID, 60, CLOCK_TIME_Y);
+    lv_obj_set_style_text_font(minutes_label, time_large_font, 0);
+    lv_obj_set_style_text_color(minutes_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
     
     // Create date display - moved to lower position
     date_label = lv_label_create(parent);
@@ -139,6 +175,9 @@ void create_clock_tab(lv_obj_t * parent) {
     
     // Create timer to update clock every second
     clock_timer = lv_timer_create(clock_timer_cb, 1000, NULL); // 1000ms = 1 second
+    
+    // Create timer for blinking colon every 500ms
+    blink_timer = lv_timer_create(blink_timer_cb, 500, NULL); // 500ms = 0.5 second
     
     printf("Clock tab created successfully\n");
 } 

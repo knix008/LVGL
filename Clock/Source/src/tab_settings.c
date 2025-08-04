@@ -65,6 +65,21 @@ void create_settings_tab(lv_obj_t * parent) {
         printf("Settings tab: GIF source is NULL\n");
     }
     
+    // Create the SVG image object for settings info
+    lv_obj_t * svg_img = lv_image_create(parent);
+    lv_image_set_src(svg_img, "A:../assets/clock_icon.svg");
+    lv_obj_set_size(svg_img, 64, 64);
+    lv_obj_align(svg_img, LV_ALIGN_TOP_MID, 0, 150); // Position more visible
+    // Check SVG loading status
+    const void* svg_src = lv_image_get_src(svg_img);
+    if (svg_src) {
+        printf("Settings tab: SVG loaded successfully: A:../assets/clock_icon.svg\n");
+        printf("Settings tab: SVG source pointer: %p\n", svg_src);
+    } else {
+        printf("Settings tab: SVG failed to load: A:../assets/clock_icon.svg\n");
+        printf("Settings tab: SVG source is NULL\n");
+    }
+    
     // Create a slider
     lv_obj_t * slider = lv_slider_create(parent);
     lv_obj_set_size(slider, 200, 10);
