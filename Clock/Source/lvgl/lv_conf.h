@@ -572,11 +572,11 @@
 #define LV_ATTRIBUTE_EXTERN_DATA
 
 /** Use `float` as `lv_value_precise_t` */
-#define LV_USE_FLOAT            0
+#define LV_USE_FLOAT            1
 
 /** Enable matrix support
  *  - Requires `LV_USE_FLOAT = 1` */
-#define LV_USE_MATRIX           0
+#define LV_USE_MATRIX           1
 
 /** Include `lvgl_private.h` in `lvgl.h` to access internal data and functions by default */
 #ifndef LV_USE_PRIVATE_API
@@ -925,14 +925,14 @@
 
 /** JPG + split JPG decoder library.
  *  Split JPG is a custom format optimized for embedded systems. */
-#define LV_USE_TJPGD 0
+#define LV_USE_TJPGD 1
 
 /** libjpeg-turbo decoder library.
  *  - Supports complete JPEG specifications and high-performance JPEG decoding. */
 #define LV_USE_LIBJPEG_TURBO 0
 
 /** GIF decoder library */
-#define LV_USE_GIF 0
+#define LV_USE_GIF 1
 #if LV_USE_GIF
     /** GIF decoder accelerate */
     #define LV_GIF_CACHE_DECODE_DATA 0
@@ -976,10 +976,10 @@
 
 /** Enable Vector Graphic APIs
  *  - Requires `LV_USE_MATRIX = 1` */
-#define LV_USE_VECTOR_GRAPHIC  0
+#define LV_USE_VECTOR_GRAPHIC  1
 
 /** Enable ThorVG (vector graphics library) from the src/libs folder */
-#define LV_USE_THORVG_INTERNAL 0
+#define LV_USE_THORVG_INTERNAL 1
 
 /** Enable ThorVG by assuming that its installed and linked to the project */
 #define LV_USE_THORVG_EXTERNAL 0
@@ -992,7 +992,7 @@
 
 /*SVG library
  *  - Requires `LV_USE_VECTOR_GRAPHIC = 1` */
-#define LV_USE_SVG 0
+#define LV_USE_SVG 1
 #define LV_USE_SVG_ANIMATION 0
 #define LV_USE_SVG_DEBUG 0
 

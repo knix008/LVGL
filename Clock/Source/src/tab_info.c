@@ -14,15 +14,11 @@ void create_info_tab(lv_obj_t * parent) {
 
     // Set the image source to the PNG file
     const char* image_path = IMAGE_PATH(INTELLIVIX_LOGO);
-    printf("Loading image from: %s\n", image_path);
     lv_image_set_src(logo_img, image_path);
-    printf("Image source set\n");
     
     // Check if the image loaded successfully
     const void* src = lv_image_get_src(logo_img);
-    if (src != NULL) {
-        printf("Image source is not NULL - image should be loaded\n");
-    } else {
+    if (src == NULL) {
         printf("Image source is NULL - image failed to load\n");
     }
     

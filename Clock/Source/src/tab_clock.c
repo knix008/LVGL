@@ -1,10 +1,36 @@
 #include "tab_clock.h"
-#include "calendar.h"
+#include "clock.h"
 #include "font_config.h"
 #include "ui_components.h"
 #include <stdio.h>
-#include <time.h>
-#include <string.h>
+
+// Constants for clock tab
+#define CLOCK_TITLE_TEXT "현재 시간"
+#define CLOCK_TIME_INITIAL_TEXT "00:00:00"
+#define CLOCK_DATE_INITIAL_TEXT "2024년 01월 01일"
+#define CLOCK_DAY_INITIAL_TEXT "월요일"
+#define CLOCK_INFO_TEXT "실시간 시계\n매초 자동 업데이트"
+
+// Color constants
+#define CLOCK_TITLE_COLOR 0x2196F3    // Blue
+#define CLOCK_TIME_COLOR 0x4CAF50      // Green
+#define CLOCK_DATE_COLOR 0xFF9800      // Orange
+#define CLOCK_DAY_COLOR 0x9C27B0       // Purple
+#define CLOCK_INFO_COLOR 0x757575      // Gray
+#define CLOCK_LINE_COLOR 0xE0E0E0      // Light gray
+
+// Position constants
+#define CLOCK_TITLE_Y 10
+#define CLOCK_TIME_Y 50
+#define CLOCK_DATE_Y -180
+#define CLOCK_DAY_Y -140
+#define CLOCK_LINE_Y -120
+#define CLOCK_INFO_Y -20
+
+// Size constants
+#define CLOCK_LINE_WIDTH 400
+#define CLOCK_LINE_HEIGHT 2
+#define CLOCK_TIME_FONT_SIZE 72
 
 // Global variables for clock display
 static lv_obj_t *time_label = NULL;
@@ -12,25 +38,23 @@ static lv_obj_t *date_label = NULL;
 static lv_obj_t *day_label = NULL;
 static lv_timer_t *clock_timer = NULL;
 
+// Font for large time display
+static lv_font_t *time_large_font = NULL;
+
 // Function to update clock display
 static void update_clock_display(void) {
-    time_t now = time(NULL);
-    struct tm* tm_info = localtime(&now);
+    clock_time_t current_time;
+    clock_get_current_time(&current_time);
     
-    // Format time string (HH:MM:SS)
+    // Format time and date strings using clock logic
     char time_str[32];
-    snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d", 
-             tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec);
-    
-    // Format date string
     char date_str[64];
-    snprintf(date_str, sizeof(date_str), "%04d년 %02d월 %02d일", 
-             tm_info->tm_year + 1900, tm_info->tm_mon + 1, tm_info->tm_mday);
     
-    // Get day of week
-    const char* day_names[] = {"일요일", "월요일", "화요일", "수요일", 
-                               "목요일", "금요일", "토요일"};
-    const char* day_str = day_names[tm_info->tm_wday];
+    clock_format_time_string(&current_time, time_str, sizeof(time_str));
+    clock_format_date_string(&current_time, date_str, sizeof(date_str));
+    
+    // Get day name
+    const char* day_str = clock_get_day_name(current_time.day_of_week);
     
     // Update labels if they exist
     if (time_label) {
@@ -53,48 +77,61 @@ static void clock_timer_cb(lv_timer_t * timer) {
 
 // Create Clock tab
 void create_clock_tab(lv_obj_t * parent) {
+    // Create large extra bold font for time display
+    const char* font_path = FONT_PATH(KOREAN_FONT_EXTRA);
+    time_large_font = lv_freetype_font_create(font_path, 
+                                             KOREAN_FONT_RENDER_MODE, 
+                                             CLOCK_TIME_FONT_SIZE,  // Large size for time display
+                                             KOREAN_FONT_STYLE);
+    if (!time_large_font) {
+        time_large_font = get_korean_font(); // Fallback
+        printf("Failed to create large font, using default font\n");
+    } else {
+        printf("Large font (%dpx) created successfully for time display\n", CLOCK_TIME_FONT_SIZE);
+    }
+    
     // Create title
     lv_obj_t * title_label = lv_label_create(parent);
-    lv_label_set_text(title_label, "현재 시간");
-    lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 20);
+    lv_label_set_text(title_label, CLOCK_TITLE_TEXT);
+    lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, CLOCK_TITLE_Y);
     lv_obj_set_style_text_font(title_label, get_korean_font(), 0);
-    lv_obj_set_style_text_color(title_label, lv_color_hex(0x2196F3), 0); // Blue color
+    lv_obj_set_style_text_color(title_label, lv_color_hex(CLOCK_TITLE_COLOR), 0);
     
-    // Create time display (large font)
+    // Create time display (large font) - moved to upper position
     time_label = lv_label_create(parent);
-    lv_label_set_text(time_label, "00:00:00");
-    lv_obj_align(time_label, LV_ALIGN_CENTER, 0, -30);
-    lv_obj_set_style_text_font(time_label, get_korean_font(), 0);
-    lv_obj_set_style_text_color(time_label, lv_color_hex(0x4CAF50), 0); // Green color
+    lv_label_set_text(time_label, CLOCK_TIME_INITIAL_TEXT);
+    lv_obj_align(time_label, LV_ALIGN_TOP_MID, 0, CLOCK_TIME_Y);
+    lv_obj_set_style_text_font(time_label, time_large_font, 0);
+    lv_obj_set_style_text_color(time_label, lv_color_hex(CLOCK_TIME_COLOR), 0);
     
-    // Create date display
+    // Create date display - moved to lower position
     date_label = lv_label_create(parent);
-    lv_label_set_text(date_label, "2024년 01월 01일");
-    lv_obj_align(date_label, LV_ALIGN_CENTER, 0, 20);
+    lv_label_set_text(date_label, CLOCK_DATE_INITIAL_TEXT);
+    lv_obj_align(date_label, LV_ALIGN_BOTTOM_MID, 0, CLOCK_DATE_Y);
     lv_obj_set_style_text_font(date_label, get_korean_font(), 0);
-    lv_obj_set_style_text_color(date_label, lv_color_hex(0xFF9800), 0); // Orange color
+    lv_obj_set_style_text_color(date_label, lv_color_hex(CLOCK_DATE_COLOR), 0);
     
-    // Create day of week display
+    // Create day of week display - moved to lower position
     day_label = lv_label_create(parent);
-    lv_label_set_text(day_label, "월요일");
-    lv_obj_align(day_label, LV_ALIGN_CENTER, 0, 60);
+    lv_label_set_text(day_label, CLOCK_DAY_INITIAL_TEXT);
+    lv_obj_align(day_label, LV_ALIGN_BOTTOM_MID, 0, CLOCK_DAY_Y);
     lv_obj_set_style_text_font(day_label, get_korean_font(), 0);
-    lv_obj_set_style_text_color(day_label, lv_color_hex(0x9C27B0), 0); // Purple color
+    lv_obj_set_style_text_color(day_label, lv_color_hex(CLOCK_DAY_COLOR), 0);
     
     // Create decorative line
     lv_obj_t * line = lv_obj_create(parent);
-    lv_obj_set_size(line, 400, 2);
-    lv_obj_align(line, LV_ALIGN_CENTER, 0, 100);
-    lv_obj_set_style_bg_color(line, lv_color_hex(0xE0E0E0), 0); // Light gray
+    lv_obj_set_size(line, CLOCK_LINE_WIDTH, CLOCK_LINE_HEIGHT);
+    lv_obj_align(line, LV_ALIGN_BOTTOM_MID, 0, CLOCK_LINE_Y);
+    lv_obj_set_style_bg_color(line, lv_color_hex(CLOCK_LINE_COLOR), 0);
     lv_obj_set_style_border_width(line, 0, 0);
     lv_obj_set_style_radius(line, 1, 0);
     
     // Create info text
     lv_obj_t * info_label = lv_label_create(parent);
-    lv_label_set_text(info_label, "실시간 시계\n매초 자동 업데이트");
-    lv_obj_align(info_label, LV_ALIGN_BOTTOM_MID, 0, -20);
+    lv_label_set_text(info_label, CLOCK_INFO_TEXT);
+    lv_obj_align(info_label, LV_ALIGN_BOTTOM_MID, 0, CLOCK_INFO_Y);
     lv_obj_set_style_text_font(info_label, get_korean_font_small(), 0);
-    lv_obj_set_style_text_color(info_label, lv_color_hex(0x757575), 0); // Gray color
+    lv_obj_set_style_text_color(info_label, lv_color_hex(CLOCK_INFO_COLOR), 0);
     lv_obj_set_style_text_align(info_label, LV_TEXT_ALIGN_CENTER, 0);
     
     // Initialize clock display

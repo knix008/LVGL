@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(main C)
+project(main C CXX)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -54,6 +54,7 @@ add_compile_definitions(
 # Create LVGL static library
 file(GLOB_RECURSE LVGL_SOURCES
     ${LVGL_DIR}/src/*.c
+    ${LVGL_DIR}/src/*.cpp
 )
 file(GLOB LV_DRIVERS_SOURCES
     ${LV_DRIVERS_DIR}/sdl/*.c
@@ -91,6 +92,7 @@ set(MAIN_SOURCES
     src/tab_qwerty.c
     src/tab_calendar.c
     src/tab_clock.c
+    src/clock.c
     src/calendar.c
     src/korean_input.c
     src/qwerty_korean.c
@@ -180,3 +182,4 @@ target_link_libraries(calendar_test lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRAR
 if(UNIX)
     target_link_libraries(calendar_test pthread dl m crypto)
 endif()
+

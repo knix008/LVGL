@@ -255,7 +255,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     
     // Get font with fallback
     lv_font_t* font = get_korean_font_small();
-    printf("QWERTY tab: Small font pointer: %p\n", (void*)font);
+    
     if (font == NULL) {
         font = get_korean_font();
         printf("QWERTY tab: Regular font pointer: %p\n", (void*)font);

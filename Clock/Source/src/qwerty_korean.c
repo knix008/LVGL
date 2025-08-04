@@ -47,7 +47,6 @@ const char* jongsung_list[28] = {
 static char *old_locale_saved = NULL;
 
 void qwerty_korean_init(void) {
-    printf("[DEBUG] qwerty_korean_init\n");
     // Save the current locale
     char *old_locale_tmp = setlocale(LC_ALL, NULL);
     old_locale_saved = strdup(old_locale_tmp);
@@ -55,7 +54,6 @@ void qwerty_korean_init(void) {
 }
 
 void qwerty_korean_cleanup(void) {
-    printf("[DEBUG] qwerty_korean_cleanup\n");
     if (old_locale_saved) {
         setlocale(LC_ALL, old_locale_saved);
         free(old_locale_saved);
