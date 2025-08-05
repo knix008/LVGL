@@ -38,6 +38,10 @@ set(OpenCV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv_install/lib/cmake/opencv4")
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+# Use local ONNX Runtime installation
+set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
+include_directories(${ONNXRUNTIME_DIR}/include)
+
 add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
 
 # SQLCipher compile definitions
@@ -98,6 +102,7 @@ set(MAIN_SOURCES
     src/tab_qwerty.c
     src/tab_calendar.c
     src/tab_clock.c
+    src/yolo_detection.cpp
     src/video.c
     src/tab_video.c
     src/webcam.c
@@ -129,6 +134,9 @@ target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
 
 # Link local OpenCV libraries
 target_link_libraries(main ${OpenCV_LIBS})
+
+# Link ONNX Runtime library
+target_link_libraries(main ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so)
 
 # Link FFmpeg libraries for video support
 target_link_libraries(main avformat avcodec avutil swscale z)

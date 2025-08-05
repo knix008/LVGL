@@ -19,6 +19,11 @@ void opencv_image_processing_demo(void);
 void opencv_camera_demo(void);
 void opencv_video_demo(void);
 
+// YOLOv8 demo functions
+void opencv_yolo_image_demo(void);
+void opencv_yolo_camera_demo(void);
+void opencv_yolo_video_demo(void);
+
 #ifdef __cplusplus
 }
 #endif

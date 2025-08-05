@@ -30,6 +30,31 @@ static void opencv_video_cb(lv_event_t * e) {
     }
 }
 
+// YOLOv8 callback functions
+static void opencv_yolo_image_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        printf("OpenCV Tab: YOLOv8 image detection started\n");
+        opencv_yolo_image_demo();
+    }
+}
+
+static void opencv_yolo_camera_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        printf("OpenCV Tab: YOLOv8 camera detection started\n");
+        opencv_yolo_camera_demo();
+    }
+}
+
+static void opencv_yolo_video_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        printf("OpenCV Tab: YOLOv8 video detection started\n");
+        opencv_yolo_video_demo();
+    }
+}
+
 // Create OpenCV tab
 void create_opencv_tab(lv_obj_t * parent) {
     // Create title
@@ -71,7 +96,7 @@ void create_opencv_tab(lv_obj_t * parent) {
     
     // Create button container
     lv_obj_t * btn_container = lv_obj_create(parent);
-    lv_obj_set_size(btn_container, 280, 140);
+    lv_obj_set_size(btn_container, 280, 200);
     lv_obj_align(btn_container, LV_ALIGN_BOTTOM_MID, 0, -20);
     lv_obj_set_style_pad_all(btn_container, 10, 0);
     lv_obj_set_style_bg_color(btn_container, lv_color_hex(0xF0F0F0), 0);
@@ -116,6 +141,39 @@ void create_opencv_tab(lv_obj_t * parent) {
     lv_obj_t * btn_info_label = lv_label_create(btn_info);
     lv_label_set_text(btn_info_label, "Info");
     lv_obj_center(btn_info_label);
+    
+    // Create YOLOv8 Image button
+    lv_obj_t * btn_yolo_image = lv_btn_create(btn_container);
+    lv_obj_set_size(btn_yolo_image, 120, 50);
+    lv_obj_align(btn_yolo_image, LV_ALIGN_TOP_LEFT, 0, 60);
+    lv_obj_add_event_cb(btn_yolo_image, opencv_yolo_image_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_set_style_bg_color(btn_yolo_image, lv_color_hex(0xFF6B35), 0); // Orange color
+    
+    lv_obj_t * btn_yolo_image_label = lv_label_create(btn_yolo_image);
+    lv_label_set_text(btn_yolo_image_label, "YOLO Image");
+    lv_obj_center(btn_yolo_image_label);
+    
+    // Create YOLOv8 Camera button
+    lv_obj_t * btn_yolo_camera = lv_btn_create(btn_container);
+    lv_obj_set_size(btn_yolo_camera, 120, 50);
+    lv_obj_align(btn_yolo_camera, LV_ALIGN_TOP_RIGHT, 0, 60);
+    lv_obj_add_event_cb(btn_yolo_camera, opencv_yolo_camera_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_set_style_bg_color(btn_yolo_camera, lv_color_hex(0xFF6B35), 0); // Orange color
+    
+    lv_obj_t * btn_yolo_camera_label = lv_label_create(btn_yolo_camera);
+    lv_label_set_text(btn_yolo_camera_label, "YOLO Camera");
+    lv_obj_center(btn_yolo_camera_label);
+    
+    // Create YOLOv8 Video button
+    lv_obj_t * btn_yolo_video = lv_btn_create(btn_container);
+    lv_obj_set_size(btn_yolo_video, 120, 50);
+    lv_obj_align(btn_yolo_video, LV_ALIGN_BOTTOM_LEFT, 0, 60);
+    lv_obj_add_event_cb(btn_yolo_video, opencv_yolo_video_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_set_style_bg_color(btn_yolo_video, lv_color_hex(0xFF6B35), 0); // Orange color
+    
+    lv_obj_t * btn_yolo_video_label = lv_label_create(btn_yolo_video);
+    lv_label_set_text(btn_yolo_video_label, "YOLO Video");
+    lv_obj_center(btn_yolo_video_label);
     
     // Set UI references for OpenCV functions
     opencv_set_ui_references(status_label, result_label, image_display, image_container);

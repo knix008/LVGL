@@ -2,6 +2,7 @@
 #include <string.h>
 #include <opencv4/opencv2/opencv.hpp>
 #include "lvgl.h"
+#include "yolo_detection.h"
 
 extern "C" {
 
@@ -323,6 +324,223 @@ void opencv_video_demo(void) {
     }
     
     cap.release();
+}
+
+// YOLOv8 demo functions integrated with OpenCV
+void opencv_yolo_image_demo(void) {
+    printf("OpenCV YOLO: Starting YOLOv8 image detection demo\n");
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Loading YOLOv8 model...");
+    }
+    
+    // Initialize YOLOv8 model
+    if (!yolo_init("../models/yolov8n.onnx")) {
+        printf("OpenCV YOLO: Failed to initialize YOLOv8 model\n");
+        if (g_opencv_status_label != NULL) {
+            lv_label_set_text(g_opencv_status_label, "Status: YOLOv8 model failed to load");
+        }
+        return;
+    }
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Running YOLOv8 detection...");
+    }
+    
+    // Perform YOLOv8 detection on Lenna.png
+    yolo_results_t* results = yolo_detect("../assets/Lenna.png");
+    if (results) {
+        printf("OpenCV YOLO: Found %d detections\n", results->num_detections);
+        
+        // Draw and save results
+        yolo_draw_detections("../assets/Lenna.png", "../assets/lenna_yolo_detections.jpg", results);
+        
+        // Display results
+        char info_text[512];
+        snprintf(info_text, sizeof(info_text),
+                 "YOLOv8 Detection Results:\n"
+                 "Detections: %d\n"
+                 "Model: YOLOv8n\n"
+                 "Input: Lenna.png\n"
+                 "Output: lenna_yolo_detections.jpg",
+                 results->num_detections);
+        
+        display_opencv_results_with_image(cv::imread("../assets/lenna_yolo_detections.jpg"), 
+                                        "YOLOv8 Detection", info_text, "lenna_yolo_detections.jpg");
+        
+        // Free results
+        yolo_free_results(results);
+        
+        if (g_opencv_result_label != NULL) {
+            lv_label_set_text(g_opencv_result_label, "YOLOv8 detection completed successfully");
+        }
+    }
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Ready");
+    }
+}
+
+void opencv_yolo_camera_demo(void) {
+    printf("OpenCV YOLO: Starting YOLOv8 camera detection demo\n");
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Loading YOLOv8 model...");
+    }
+    
+    // Initialize YOLOv8 model
+    if (!yolo_init("../models/yolov8n.onnx")) {
+        printf("OpenCV YOLO: Failed to initialize YOLOv8 model\n");
+        if (g_opencv_status_label != NULL) {
+            lv_label_set_text(g_opencv_status_label, "Status: YOLOv8 model failed to load");
+        }
+        return;
+    }
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Running YOLOv8 camera detection...");
+    }
+    
+    // Try to open camera
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        printf("OpenCV YOLO: Could not open camera\n");
+        if (g_opencv_result_label != NULL) {
+            lv_label_set_text(g_opencv_result_label, "Camera: Not available");
+        }
+        return;
+    }
+    
+    // Capture a frame
+    cv::Mat frame;
+    cap >> frame;
+    
+    if (!frame.empty()) {
+        // Perform YOLOv8 detection
+        yolo_results_t* results = yolo_detect_mat(&frame);
+        if (results) {
+            printf("OpenCV YOLO: Camera detection completed, found %d objects\n", results->num_detections);
+            
+            // Draw detections on frame
+            for (int i = 0; i < results->num_detections; i++) {
+                yolo_detection_t* det = &results->detections[i];
+                cv::Point pt1(det->x1, det->y1);
+                cv::Point pt2(det->x2, det->y2);
+                cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 2);
+                
+                char label[128];
+                snprintf(label, sizeof(label), "%s %.2f", det->class_name, det->confidence);
+                cv::putText(frame, label, cv::Point(det->x1, det->y1 - 10),
+                           cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+            }
+            
+            // Save and display result
+            cv::imwrite("../assets/camera_yolo_detections.jpg", frame);
+            
+            char camera_info[256];
+            snprintf(camera_info, sizeof(camera_info),
+                     "YOLOv8 Camera Detection:\n"
+                     "Detections: %d\n"
+                     "Frame: %dx%d\n"
+                     "Model: YOLOv8n",
+                     results->num_detections, frame.cols, frame.rows);
+            
+            display_opencv_results_with_image(frame, "YOLOv8 Camera Detection", camera_info, "camera_yolo_detections.jpg");
+            
+            yolo_free_results(results);
+            
+            if (g_opencv_result_label != NULL) {
+                lv_label_set_text(g_opencv_result_label, "YOLOv8 camera detection completed");
+            }
+        }
+    }
+    
+    cap.release();
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Ready");
+    }
+}
+
+void opencv_yolo_video_demo(void) {
+    printf("OpenCV YOLO: Starting YOLOv8 video detection demo\n");
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Loading YOLOv8 model...");
+    }
+    
+    // Initialize YOLOv8 model
+    if (!yolo_init("../models/yolov8n.onnx")) {
+        printf("OpenCV YOLO: Failed to initialize YOLOv8 model\n");
+        if (g_opencv_status_label != NULL) {
+            lv_label_set_text(g_opencv_status_label, "Status: YOLOv8 model failed to load");
+        }
+        return;
+    }
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Running YOLOv8 video detection...");
+    }
+    
+    // Try to open video file
+    cv::VideoCapture cap("../assets/example.mp4");
+    if (!cap.isOpened()) {
+        printf("OpenCV YOLO: Could not open video file\n");
+        if (g_opencv_result_label != NULL) {
+            lv_label_set_text(g_opencv_result_label, "Video: File not found");
+        }
+        return;
+    }
+    
+    // Read a frame
+    cv::Mat frame;
+    cap >> frame;
+    
+    if (!frame.empty()) {
+        // Perform YOLOv8 detection
+        yolo_results_t* results = yolo_detect_mat(&frame);
+        if (results) {
+            printf("OpenCV YOLO: Video detection completed, found %d objects\n", results->num_detections);
+            
+            // Draw detections on frame
+            for (int i = 0; i < results->num_detections; i++) {
+                yolo_detection_t* det = &results->detections[i];
+                cv::Point pt1(det->x1, det->y1);
+                cv::Point pt2(det->x2, det->y2);
+                cv::rectangle(frame, pt1, pt2, cv::Scalar(0, 255, 0), 2);
+                
+                char label[128];
+                snprintf(label, sizeof(label), "%s %.2f", det->class_name, det->confidence);
+                cv::putText(frame, label, cv::Point(det->x1, det->y1 - 10),
+                           cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+            }
+            
+            // Save and display result
+            cv::imwrite("../assets/video_yolo_detections.jpg", frame);
+            
+            char video_info[256];
+            snprintf(video_info, sizeof(video_info),
+                     "YOLOv8 Video Detection:\n"
+                     "Detections: %d\n"
+                     "Frame: %dx%d\n"
+                     "Model: YOLOv8n",
+                     results->num_detections, frame.cols, frame.rows);
+            
+            display_opencv_results_with_image(frame, "YOLOv8 Video Detection", video_info, "video_yolo_detections.jpg");
+            
+            yolo_free_results(results);
+            
+            if (g_opencv_result_label != NULL) {
+                lv_label_set_text(g_opencv_result_label, "YOLOv8 video detection completed");
+            }
+        }
+    }
+    
+    cap.release();
+    
+    if (g_opencv_status_label != NULL) {
+        lv_label_set_text(g_opencv_status_label, "Status: Ready");
+    }
 }
 
 } // extern "C" 
