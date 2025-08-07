@@ -17,14 +17,38 @@ find_package(OpenCV REQUIRED)
 # Find Eigen3
 find_package(Eigen3 REQUIRED)
 
-# Add executable
+# Add executables
 add_executable(yolov8n_detection 
     src/main.cpp
     src/yolov8n_detector.cpp
 )
 
+add_executable(yolov8n_video_detection 
+    src/video_detection_main.cpp
+    src/yolov8n_detector.cpp
+    src/yolov8n_video_detector.cpp
+)
+
+add_executable(yolov8n_video_example 
+    src/video_detection_example.cpp
+    src/yolov8n_detector.cpp
+    src/yolov8n_video_detector.cpp
+)
+
 # Include directories
 target_include_directories(yolov8n_detection PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_include_directories(yolov8n_video_detection PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_include_directories(yolov8n_video_example PRIVATE
     ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}
@@ -42,8 +66,46 @@ target_link_libraries(yolov8n_detection
     z
 )
 
+target_link_libraries(yolov8n_video_detection 
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/libopencv_world.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibprotobuf.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libade.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libittnotify.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibwebp.a
+    jpeg
+    png
+    z
+    avcodec
+    avformat
+    swscale
+    avutil
+)
+
+target_link_libraries(yolov8n_video_example 
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/libopencv_world.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibprotobuf.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libade.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libittnotify.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibwebp.a
+    jpeg
+    png
+    z
+    avcodec
+    avformat
+    swscale
+    avutil
+)
+
 # Set output directory
 set_target_properties(yolov8n_detection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+set_target_properties(yolov8n_video_detection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+set_target_properties(yolov8n_video_example PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -55,9 +117,13 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 
 # Compiler-specific options
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(yolov8n_detection PRIVATE -Wall -Wextra -O2)
+    target_compile_options(yolov8n_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
+    target_compile_options(yolov8n_video_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
+    target_compile_options(yolov8n_video_example PRIVATE -Wall -Wextra -Wpedantic -O2)
 endif()
 
 if(MSVC)
     target_compile_options(yolov8n_detection PRIVATE /W4)
+    target_compile_options(yolov8n_video_detection PRIVATE /W4)
+    target_compile_options(yolov8n_video_example PRIVATE /W4)
 endif()

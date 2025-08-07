@@ -13,6 +13,9 @@ using namespace cv;
 
 int main(int argc, char **argv)
 {
+    (void)argc;  // Suppress unused parameter warning
+    (void)argv;  // Suppress unused parameter warning
+    
     std::string projectBasePath = ""; // Current directory
 
     bool runOnGPU = false;
@@ -32,7 +35,7 @@ int main(int argc, char **argv)
     imageNames.push_back(projectBasePath + "../data/bus.jpg");
 
 
-    for (int i = 0; i < imageNames.size(); ++i)
+    for (size_t i = 0; i < imageNames.size(); ++i)
     {
         cv::Mat frame = cv::imread(imageNames[i]);
 
@@ -42,9 +45,9 @@ int main(int argc, char **argv)
         int detections = output.size();
         std::cout << "Number of detections:" << detections << std::endl;
 
-        for (int i = 0; i < detections; ++i)
+        for (int j = 0; j < detections; ++j)
         {
-            Detection detection = output[i];
+            Detection detection = output[j];
 
             cv::Rect box = detection.box;
             cv::Scalar color = detection.color;
