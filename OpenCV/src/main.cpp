@@ -1,46 +1,73 @@
-#include "yolov8n_detector.h"
+// Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 #include <iostream>
+#include <vector>
+#include <getopt.h>
+
 #include <opencv2/opencv.hpp>
 
-int main() {
-    try {
-        // Load the YOLOv8n model
-        YOLOv8nDetector detector("../models/yolov8n.onnx");
-        
-        // Load the test image
-        cv::Mat image = cv::imread("../data/bus.jpg");
-        if (image.empty()) {
-            std::cerr << "Error: Could not load image from ../data/bus.jpg" << std::endl;
-            return -1;
+#include "yolov8n_detector.h"
+
+using namespace std;
+using namespace cv;
+
+int main(int argc, char **argv)
+{
+    std::string projectBasePath = ""; // Current directory
+
+    bool runOnGPU = false;
+
+    //
+    // Pass in either:
+    //
+    // "yolov8s.onnx" or "yolov5s.onnx"
+    //
+    // To run Inference with yolov8/yolov5 (ONNX)
+    //
+
+    // Note that in this example the classes are hard-coded and 'classes.txt' is a place holder.
+    Inference inf(projectBasePath + "../models/yolov8n.onnx", cv::Size(640, 640), "classes.txt", runOnGPU);
+
+    std::vector<std::string> imageNames;
+    imageNames.push_back(projectBasePath + "../data/bus.jpg");
+
+
+    for (int i = 0; i < imageNames.size(); ++i)
+    {
+        cv::Mat frame = cv::imread(imageNames[i]);
+
+        // Inference starts here...
+        std::vector<Detection> output = inf.runInference(frame);
+
+        int detections = output.size();
+        std::cout << "Number of detections:" << detections << std::endl;
+
+        for (int i = 0; i < detections; ++i)
+        {
+            Detection detection = output[i];
+
+            cv::Rect box = detection.box;
+            cv::Scalar color = detection.color;
+
+            // Detection box
+            cv::rectangle(frame, box, color, 2);
+
+            // Detection box text
+            std::string classString = detection.className + ' ' + std::to_string(detection.confidence).substr(0, 4);
+            cv::Size textSize = cv::getTextSize(classString, cv::FONT_HERSHEY_DUPLEX, 1, 2, 0);
+            cv::Rect textBox(box.x, box.y - 40, textSize.width + 10, textSize.height + 20);
+
+            cv::rectangle(frame, textBox, color, cv::FILLED);
+            cv::putText(frame, classString, cv::Point(box.x + 5, box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 0, 0), 2, 0);
         }
+        // Inference ends here...
+
+        // Save the result image instead of displaying it (since we built without GUI support)
+        float scale = 0.8;
+        cv::resize(frame, frame, cv::Size(frame.cols*scale, frame.rows*scale));
         
-        std::cout << "Image loaded successfully. Size: " << image.size() << std::endl;
-        
-        // Run prediction
-        std::vector<Detection> detections = detector.predict(image);
-        
-        std::cout << "Found " << detections.size() << " detections:" << std::endl;
-        for (const auto& det : detections) {
-            std::cout << "  - " << det.class_name 
-                      << " (confidence: " << det.confidence 
-                      << ", bbox: " << det.bbox << ")" << std::endl;
-        }
-        
-        // Draw detections on the image
-        detector.draw_detections(image, detections);
-        
-        // Display the result
-        detector.show_result(image);
-        
-        // Save the result
-        detector.save_result(image, "result.jpg");
-        
-        std::cout << "Detection completed successfully!" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return -1;
+        std::string outputPath = "output_detection.jpg";
+        cv::imwrite(outputPath, frame);
+        std::cout << "Detection result saved to: " << outputPath << std::endl;
     }
-    
-    return 0;
-} 
+}
