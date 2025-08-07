@@ -29,7 +29,7 @@ void printUsage(const char* programName) {
 int main(int argc, char** argv) {
     std::string videoPath = "";
     std::string outputPath = "";
-    std::string modelPath = "../models/yolov8n.onnx";
+    std::string modelPath = "../models/yolov8n_onnx";
     bool useWebcam = false;
     bool useCuda = false;
     bool showFPS = true;
