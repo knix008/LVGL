@@ -43,6 +43,12 @@ add_executable(yolov8n_video_detection
     src/yolov8n_video_detector.cpp
 )
 
+add_executable(face_detection 
+    src/face_detection_main.cpp
+    src/yolo_face_detector.cpp
+    src/yolo_face_video_detector.cpp
+)
+
 add_executable(yolov8n_video_example 
     src/video_detection_example.cpp
     src/yolov8n_detector.cpp
@@ -78,6 +84,12 @@ target_include_directories(yolov8n_detection PRIVATE
 )
 
 target_include_directories(yolov8n_video_detection PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_include_directories(face_detection PRIVATE
     ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}
@@ -126,6 +138,22 @@ target_link_libraries(yolov8n_detection
 )
 
 target_link_libraries(yolov8n_video_detection 
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/libopencv_world.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibprotobuf.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libade.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libittnotify.a
+    ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibwebp.a
+    jpeg
+    png
+    z
+    avcodec
+    avformat
+    swscale
+    avutil
+    ${GTK3_LIBRARIES}
+)
+
+target_link_libraries(face_detection 
     ${CMAKE_SOURCE_DIR}/src/lib/lib/libopencv_world.a
     ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/liblibprotobuf.a
     ${CMAKE_SOURCE_DIR}/src/lib/lib/opencv4/3rdparty/libade.a
@@ -220,6 +248,10 @@ set_target_properties(yolov8n_video_detection PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+set_target_properties(face_detection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 set_target_properties(yolov8n_video_example PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -250,6 +282,7 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(yolov8n_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolov8n_video_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
+    target_compile_options(face_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolov8n_video_example PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolo_converter PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolo_converter_test PRIVATE -Wall -Wextra -Wpedantic -O2)
@@ -260,6 +293,7 @@ endif()
 if(MSVC)
     target_compile_options(yolov8n_detection PRIVATE /W4)
     target_compile_options(yolov8n_video_detection PRIVATE /W4)
+    target_compile_options(face_detection PRIVATE /W4)
     target_compile_options(yolov8n_video_example PRIVATE /W4)
     target_compile_options(yolo_converter PRIVATE /W4)
     target_compile_options(yolo_converter_test PRIVATE /W4)
