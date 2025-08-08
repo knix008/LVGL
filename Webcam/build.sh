@@ -1,0 +1,147 @@
+#!/bin/bash
+
+set -e
+
+echo "Building OpenCV 4.12.0 (CPU-only) and YOLOv8 Detection Program"
+
+# Create necessary directories
+mkdir -p lib
+mkdir -p build
+
+# Check if OpenCV source exists
+if [ ! -d "src/opencv" ] || [ ! -f "src/opencv/CMakeLists.txt" ]; then
+    echo "Downloading OpenCV 4.12.0..."
+    cd src
+    git clone --branch 4.12.0 --depth 1 https://github.com/opencv/opencv.git
+    cd ..
+fi
+
+# Note: We're not using opencv_contrib for this build
+
+# Build OpenCV
+echo "Building OpenCV..."
+cd src/opencv
+mkdir -p build
+cd build
+
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=../../lib \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTS=OFF \
+    -DBUILD_PERF_TESTS=OFF \
+    -DBUILD_EXAMPLES=OFF \
+    -DBUILD_DOCS=OFF \
+    -DWITH_CUDA=OFF \
+    -DWITH_OPENCL=OFF \
+    -DWITH_IPP=OFF \
+    -DWITH_TBB=OFF \
+    -DWITH_OPENMP=OFF \
+    -DWITH_PTHREADS_PF=ON \
+    -DOPENCV_ENABLE_NONFREE=ON \
+    -DOPENCV_GENERATE_PKGCONFIG=ON \
+    -DBUILD_opencv_world=ON \
+    -DWITH_GTK=ON \
+    -DWITH_QT=OFF \
+    -DWITH_FFMPEG=ON \
+    -DWITH_GSTREAMER=OFF \
+    -DWITH_1394=OFF \
+    -DWITH_OPENEXR=OFF \
+    -DWITH_JPEG=ON \
+    -DWITH_PNG=ON \
+    -DWITH_TIFF=OFF \
+    -DWITH_WEBP=ON \
+    -DWITH_JASPER=OFF \
+    -DWITH_OPENJPEG=OFF \
+    -DWITH_GDAL=OFF \
+    -DWITH_XINE=OFF \
+    -DWITH_UNICAP=OFF \
+    -DWITH_MSMF=OFF \
+    -DWITH_DSHOW=OFF \
+    -DWITH_VA=OFF \
+    -DWITH_VA_INTEL=OFF \
+    -DWITH_GPHOTO2=OFF \
+    -DWITH_LAPACK=OFF \
+    -DWITH_ITT=OFF \
+    -DWITH_QUIRC=OFF \
+    -DWITH_OPENCV_PYTHON=OFF \
+    -DWITH_OPENCV_JAVA=OFF \
+    -DWITH_OPENCV_JS=OFF \
+    -DWITH_OPENCV_OBJC=OFF \
+    -DWITH_OPENCV_C=OFF \
+    -DWITH_OPENCV_APP=OFF \
+    -DWITH_OPENCV_VIDEOIO=ON \
+    -DWITH_OPENCV_HIGHGUI=ON \
+    -DWITH_OPENCV_IMGCODECS=ON \
+    -DWITH_OPENCV_IMGPROC=ON \
+    -DWITH_OPENCV_CORE=ON \
+    -DWITH_OPENCV_DNN=ON \
+    -DWITH_OPENCV_FEATURES2D=OFF \
+    -DWITH_OPENCV_FLANN=OFF \
+    -DWITH_OPENCV_ML=OFF \
+    -DWITH_OPENCV_OBJDETECT=OFF \
+    -DWITH_OPENCV_PHOTO=OFF \
+    -DWITH_OPENCV_STITCHING=OFF \
+    -DWITH_OPENCV_VIDEO=ON \
+    -DWITH_OPENCV_CALIB3D=OFF \
+    -DWITH_OPENCV_GAPI=OFF \
+    -DWITH_OPENCV_ALPHAMAT=OFF \
+    -DWITH_OPENCV_ARUCO=OFF \
+    -DWITH_OPENCV_BARCODE=OFF \
+    -DWITH_OPENCV_BGSEGM=OFF \
+    -DWITH_OPENCV_BIOINSPIRED=OFF \
+    -DWITH_OPENCV_CCALIB=OFF \
+    -DWITH_OPENCV_DATASETS=OFF \
+    -DWITH_OPENCV_DNN_OBJDETECT=OFF \
+    -DWITH_OPENCV_DNN_SUPERRES=OFF \
+    -DWITH_OPENCV_DPM=OFF \
+    -DWITH_OPENCV_FACE=OFF \
+    -DWITH_OPENCV_FREETYPE=OFF \
+    -DWITH_OPENCV_FUZZY=OFF \
+    -DWITH_OPENCV_HDF=OFF \
+    -DWITH_OPENCV_HFS=OFF \
+    -DWITH_OPENCV_IMG_HASH=OFF \
+    -DWITH_OPENCV_INTENSITY_TRANSFORM=OFF \
+    -DWITH_OPENCV_LINE_DESCRIPTOR=OFF \
+    -DWITH_OPENCV_MCC=OFF \
+    -DWITH_OPENCV_OPTFLOW=OFF \
+    -DWITH_OPENCV_PHASE_UNWRAPPING=OFF \
+    -DWITH_OPENCV_PLOT=OFF \
+    -DWITH_OPENCV_QUALITY=OFF \
+    -DWITH_OPENCV_RAPID=OFF \
+    -DWITH_OPENCV_REG=OFF \
+    -DWITH_OPENCV_RGBD=OFF \
+    -DWITH_OPENCV_SALIENCY=OFF \
+    -DWITH_OPENCV_SHAPE=OFF \
+    -DWITH_OPENCV_STEREO=OFF \
+    -DWITH_OPENCV_STRUCTURED_LIGHT=OFF \
+    -DWITH_OPENCV_SUPERRES=OFF \
+    -DWITH_OPENCV_SURFACE_MATCHING=OFF \
+    -DWITH_OPENCV_TEXT=OFF \
+    -DWITH_OPENCV_TRACKING=OFF \
+    -DWITH_OPENCV_VIDEOSTAB=OFF \
+    -DWITH_OPENCV_VIZ=OFF \
+    -DWITH_OPENCV_WECHAT_QRCODE=OFF \
+    -DWITH_OPENCV_XIMGPROC=OFF \
+    -DWITH_OPENCV_XOBJDETECT=OFF \
+    -DWITH_OPENCV_XPHOTO=OFF
+
+
+make -j$(nproc)
+make install
+
+# Return to project root
+cd ../../../
+
+# Build the main program
+echo "Building YOLOv8 Detection Program..."
+cd build
+
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DOpenCV_DIR=../lib/lib/cmake/opencv4
+
+make -j$(nproc)
+
+echo "Build completed successfully!"
+echo "Executable: build/yolov8n_detection" 

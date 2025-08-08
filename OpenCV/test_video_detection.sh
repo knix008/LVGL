@@ -8,7 +8,7 @@ echo "==================================="
 echo
 
 # Check if executables exist
-if [ ! -f "./yolov8n_video_detection" ]; then
+if [ ! -f "./build/yolov8n_video_detection" ]; then
     echo "Error: yolov8n_video_detection executable not found!"
     echo "Please build the project first:"
     echo "  mkdir build && cd build"
