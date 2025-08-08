@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget libwebp libprotobuf ade ocv.3rdparty.flatbuffers ocv.3rdparty.v4l ocv.3rdparty.ffmpeg ocv.3rdparty.obsensor opencv_world)
+foreach(_expectedTarget libwebp libprotobuf ade ocv.3rdparty.flatbuffers ocv.3rdparty.v4l ocv.3rdparty.ffmpeg ocv.3rdparty.obsensor ocv.3rdparty.gtk3 opencv_world)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -88,11 +88,19 @@ set_target_properties(ocv.3rdparty.obsensor PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "HAVE_OBSENSOR;HAVE_OBSENSOR_V4L2"
 )
 
+# Create imported target ocv.3rdparty.gtk3
+add_library(ocv.3rdparty.gtk3 INTERFACE IMPORTED)
+
+set_target_properties(ocv.3rdparty.gtk3 PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "HAVE_GTK3;HAVE_GTK"
+  INTERFACE_LINK_LIBRARIES "/usr/lib/x86_64-linux-gnu/libgtk-3.so;/usr/lib/x86_64-linux-gnu/libgdk-3.so;/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so;/usr/lib/x86_64-linux-gnu/libpango-1.0.so;/usr/lib/x86_64-linux-gnu/libharfbuzz.so;/usr/lib/x86_64-linux-gnu/libatk-1.0.so;/usr/lib/x86_64-linux-gnu/libcairo-gobject.so;/usr/lib/x86_64-linux-gnu/libcairo.so;/usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so;/usr/lib/x86_64-linux-gnu/libgio-2.0.so;/usr/lib/x86_64-linux-gnu/libgobject-2.0.so;/usr/lib/x86_64-linux-gnu/libglib-2.0.so"
+)
+
 # Create imported target opencv_world
 add_library(opencv_world STATIC IMPORTED)
 
 set_target_properties(opencv_world PROPERTIES
-  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:dl>;\$<LINK_ONLY:m>;\$<LINK_ONLY:pthread>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:Eigen3::Eigen>;\$<LINK_ONLY:ocv.3rdparty.flatbuffers>;\$<LINK_ONLY:libprotobuf>;/usr/lib/x86_64-linux-gnu/libjpeg.so;\$<LINK_ONLY:libwebp>;/usr/lib/x86_64-linux-gnu/libpng.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;\$<LINK_ONLY:ocv.3rdparty.v4l>;\$<LINK_ONLY:ocv.3rdparty.ffmpeg>;\$<LINK_ONLY:ocv.3rdparty.obsensor>;\$<LINK_ONLY:ade>"
+  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:dl>;\$<LINK_ONLY:m>;\$<LINK_ONLY:pthread>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:Eigen3::Eigen>;\$<LINK_ONLY:ocv.3rdparty.flatbuffers>;\$<LINK_ONLY:libprotobuf>;/usr/lib/x86_64-linux-gnu/libjpeg.so;\$<LINK_ONLY:libwebp>;/usr/lib/x86_64-linux-gnu/libpng.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;\$<LINK_ONLY:ocv.3rdparty.v4l>;\$<LINK_ONLY:ocv.3rdparty.ffmpeg>;\$<LINK_ONLY:ocv.3rdparty.obsensor>;\$<LINK_ONLY:ocv.3rdparty.gtk3>;\$<LINK_ONLY:ade>"
 )
 
 if(CMAKE_VERSION VERSION_LESS 3.0.0)

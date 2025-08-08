@@ -3,6 +3,7 @@
 #include <string>
 #include <getopt.h>
 #include <filesystem>
+#include <iomanip>
 
 void printUsage(const char* programName)
 {
@@ -16,13 +17,17 @@ void printUsage(const char* programName)
     std::cout << "  -b, --benchmark <runs>    Run benchmark with specified number of runs\n";
     std::cout << "  -l, --load-only           Test only model loading\n";
     std::cout << "  -v, --validate            Validate model structure\n";
+    std::cout << "  -V, --visualize           Visualize detections on image (requires -i)\n";
+    std::cout << "  -o, --output <path>       Save visualization result to file\n";
     std::cout << "  -h, --help                Show this help message\n\n";
     std::cout << "Examples:\n";
     std::cout << "  " << programName << " -m yolov8n_converted.onnx\n";
     std::cout << "  " << programName << " -m yolov8n_converted.onnx -i ../data/bus.jpg\n";
     std::cout << "  " << programName << " -m yolov8n_converted.onnx -b 100\n";
     std::cout << "  " << programName << " -m yolov8n_converted.onnx -l\n";
-    std::cout << "  " << programName << " -m yolov8n_converted.onnx -v\n\n";
+    std::cout << "  " << programName << " -m yolov8n_converted.onnx -v\n";
+    std::cout << "  " << programName << " -m yolov8n_converted.onnx -i ../data/bus.jpg -V\n";
+    std::cout << "  " << programName << " -m yolov8n_converted.onnx -i ../data/bus.jpg -V -o result.jpg\n\n";
 }
 
 void printTestResult(const TestResult& result, const std::string& testName)
@@ -71,10 +76,12 @@ int main(int argc, char* argv[])
 {
     std::string modelPath;
     std::string imagePath;
+    std::string outputPath;
     cv::Size inputSize(640, 640);
     int benchmarkRuns = 0;
     bool loadOnly = false;
     bool validateOnly = false;
+    bool visualizeOnly = false;
     
     // Command line options
     static struct option long_options[] = {
@@ -84,6 +91,8 @@ int main(int argc, char* argv[])
         {"benchmark", required_argument, 0, 'b'},
         {"load-only", no_argument, 0, 'l'},
         {"validate", no_argument, 0, 'v'},
+        {"visualize", no_argument, 0, 'V'},
+        {"output", required_argument, 0, 'o'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
@@ -91,7 +100,7 @@ int main(int argc, char* argv[])
     int opt;
     int option_index = 0;
     
-    while ((opt = getopt_long(argc, argv, "m:i:s:b:lvh", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "m:i:s:b:lvo:Vh", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'm':
                 modelPath = optarg;
@@ -121,6 +130,12 @@ int main(int argc, char* argv[])
                 break;
             case 'v':
                 validateOnly = true;
+                break;
+            case 'V':
+                visualizeOnly = true;
+                break;
+            case 'o':
+                outputPath = optarg;
                 break;
             case 'h':
                 printUsage(argv[0]);
@@ -188,6 +203,22 @@ int main(int argc, char* argv[])
             std::cout << "Maximum Inference Time: " << tester.getMaxInferenceTime() << " ms\n";
             std::cout << "Total Tests: " << tester.getTotalTests() << "\n";
             std::cout << "Successful Tests: " << tester.getSuccessfulTests() << "\n\n";
+        } else if (visualizeOnly) {
+            // Visualize detections
+            if (imagePath.empty()) {
+                std::cerr << "Error: Image path is required for visualization. Use -i option.\n";
+                return 1;
+            }
+            
+            std::cout << "Visualizing detections on image: " << imagePath << "\n";
+            bool success = tester.visualizeDetections(modelPath, imagePath, outputPath, inputSize);
+            
+            if (success) {
+                std::cout << "✅ Visualization completed successfully!\n";
+            } else {
+                std::cout << "❌ Visualization failed!\n";
+                return 1;
+            }
         } else {
             // Run comprehensive test
             TestResult comprehensiveResult = tester.testConvertedModel(modelPath, imagePath, inputSize);
@@ -204,9 +235,30 @@ int main(int argc, char* argv[])
             
             TestResult validateResult = tester.validateModelStructure(modelPath);
             printTestResult(validateResult, "Model Structure Validation");
+            
+            // Additional tests for better coverage
+            TestResult postprocessResult = tester.testPostprocessing(modelPath);
+            printTestResult(postprocessResult, "Postprocessing Test");
+            
+            TestResult confidenceResult = tester.testWithConfidenceThreshold(modelPath, 0.3f);
+            printTestResult(confidenceResult, "Confidence Threshold Test");
         }
         
-        std::cout << "Test completed successfully!\n";
+        // Print final statistics
+        std::cout << "\nFinal Test Statistics:\n";
+        std::cout << "=====================\n";
+        std::cout << "Total Tests: " << tester.getTotalTests() << "\n";
+        std::cout << "Successful Tests: " << tester.getSuccessfulTests() << "\n";
+        std::cout << "Success Rate: " << std::fixed << std::setprecision(2) 
+                  << tester.getSuccessRate() << "%\n";
+        std::cout << "Average Inference Time: " << std::fixed << std::setprecision(2) 
+                  << tester.getAverageInferenceTime() << " ms\n";
+        std::cout << "Min Inference Time: " << std::fixed << std::setprecision(2) 
+                  << tester.getMinInferenceTime() << " ms\n";
+        std::cout << "Max Inference Time: " << std::fixed << std::setprecision(2) 
+                  << tester.getMaxInferenceTime() << " ms\n";
+        
+        std::cout << "\nTest completed successfully!\n";
         return 0;
         
     } catch (const std::exception& e) {

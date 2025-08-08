@@ -118,39 +118,20 @@ bool YOLOConverterTest::visualizeDetections(const std::string& onnxPath,
     }
 }
 
-// Essential test functions (minimal implementations)
-TestResult YOLOConverterTest::testModelLoading(const std::string& onnxPath) {
-    (void)onnxPath; // Suppress unused parameter warning
-    TestResult result;
-    result.success = true;
-    result.message = "Model loading handled by Inference class";
-    return result;
-}
-
-TestResult YOLOConverterTest::validateModelStructure(const std::string& onnxPath) {
-    (void)onnxPath; // Suppress unused parameter warning
-    TestResult result;
-    result.success = true;
-    result.message = "Model validation handled by Inference class";
-    return result;
-}
-
-TestResult YOLOConverterTest::benchmarkModel(const std::string& onnxPath, 
-                                            int numRuns,
-                                            const cv::Size& inputSize) {
-    (void)numRuns; // Suppress unused parameter warning
-    TestResult result;
-    result.success = visualizeDetections(onnxPath, "../data/bus.jpg", "", inputSize);
-    result.message = result.success ? "Benchmark test passed" : "Benchmark test failed";
-    return result;
-}
-
+// Implement required methods from header
 TestResult YOLOConverterTest::testConvertedModel(const std::string& onnxPath, 
                                                 const std::string& testImagePath,
                                                 const cv::Size& inputSize) {
     TestResult result;
     result.success = visualizeDetections(onnxPath, testImagePath, "", inputSize);
     result.message = result.success ? "Model test passed" : "Model test failed";
+    return result;
+}
+
+TestResult YOLOConverterTest::testModelLoading(const std::string& onnxPath) {
+    TestResult result;
+    result.success = true;
+    result.message = "Model loading handled by Inference class";
     return result;
 }
 
@@ -168,6 +149,24 @@ TestResult YOLOConverterTest::testWithImage(const std::string& onnxPath,
     TestResult result;
     result.success = visualizeDetections(onnxPath, imagePath, "", inputSize);
     result.message = result.success ? "Image test passed" : "Image test failed";
+    return result;
+}
+
+TestResult YOLOConverterTest::benchmarkModel(const std::string& onnxPath, 
+                                            int numRuns,
+                                            const cv::Size& inputSize) {
+    (void)numRuns;
+    TestResult result;
+    result.success = visualizeDetections(onnxPath, "../data/bus.jpg", "", inputSize);
+    result.message = result.success ? "Benchmark test passed" : "Benchmark test failed";
+    return result;
+}
+
+TestResult YOLOConverterTest::validateModelStructure(const std::string& onnxPath) {
+    (void)onnxPath;
+    TestResult result;
+    result.success = true;
+    result.message = "Model validation handled by Inference class";
     return result;
 }
 

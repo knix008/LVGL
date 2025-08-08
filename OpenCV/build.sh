@@ -41,7 +41,7 @@ cmake .. \
     -DOPENCV_ENABLE_NONFREE=ON \
     -DOPENCV_GENERATE_PKGCONFIG=ON \
     -DBUILD_opencv_world=ON \
-    -DWITH_GTK=OFF \
+    -DWITH_GTK=ON \
     -DWITH_QT=OFF \
     -DWITH_FFMPEG=ON \
     -DWITH_GSTREAMER=OFF \
@@ -71,7 +71,7 @@ cmake .. \
     -DWITH_OPENCV_C=OFF \
     -DWITH_OPENCV_APP=OFF \
     -DWITH_OPENCV_VIDEOIO=ON \
-    -DWITH_OPENCV_HIGHGUI=OFF \
+    -DWITH_OPENCV_HIGHGUI=ON \
     -DWITH_OPENCV_IMGCODECS=ON \
     -DWITH_OPENCV_IMGPROC=ON \
     -DWITH_OPENCV_CORE=ON \
@@ -130,7 +130,8 @@ cmake .. \
 make -j$(nproc)
 make install
 
-cd ../../
+# Return to project root
+cd ../../../
 
 # Build the main program
 echo "Building YOLOv8 Detection Program..."
