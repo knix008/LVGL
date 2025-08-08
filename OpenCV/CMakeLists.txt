@@ -47,6 +47,12 @@ add_executable(face_detection
     src/face_detection_main.cpp
     src/yolo_face_detector.cpp
     src/yolo_face_video_detector.cpp
+    src/simple_model_converter.cpp
+)
+
+add_executable(model_converter 
+    src/model_converter_main.cpp
+    src/simple_model_converter.cpp
 )
 
 add_executable(yolov8n_video_example 
@@ -91,6 +97,11 @@ target_include_directories(yolov8n_video_detection PRIVATE
 
 target_include_directories(face_detection PRIVATE
     ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_include_directories(model_converter PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}
 )
@@ -167,6 +178,10 @@ target_link_libraries(face_detection
     swscale
     avutil
     ${GTK3_LIBRARIES}
+)
+
+target_link_libraries(model_converter 
+    # No external libraries needed for simple converter
 )
 
 target_link_libraries(yolov8n_video_example 
@@ -252,6 +267,10 @@ set_target_properties(face_detection PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+set_target_properties(model_converter PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 set_target_properties(yolov8n_video_example PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -283,6 +302,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(yolov8n_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolov8n_video_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(face_detection PRIVATE -Wall -Wextra -Wpedantic -O2)
+    target_compile_options(model_converter PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolov8n_video_example PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolo_converter PRIVATE -Wall -Wextra -Wpedantic -O2)
     target_compile_options(yolo_converter_test PRIVATE -Wall -Wextra -Wpedantic -O2)
@@ -294,9 +314,13 @@ if(MSVC)
     target_compile_options(yolov8n_detection PRIVATE /W4)
     target_compile_options(yolov8n_video_detection PRIVATE /W4)
     target_compile_options(face_detection PRIVATE /W4)
+    target_compile_options(model_converter PRIVATE /W4)
     target_compile_options(yolov8n_video_example PRIVATE /W4)
     target_compile_options(yolo_converter PRIVATE /W4)
     target_compile_options(yolo_converter_test PRIVATE /W4)
     target_compile_options(webcam_viewer PRIVATE /W4)
     target_compile_options(webcam_viewer_simple PRIVATE /W4)
 endif()
+
+# Simple Model Converter Configuration
+# No external dependencies required

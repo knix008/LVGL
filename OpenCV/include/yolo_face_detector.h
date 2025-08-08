@@ -40,9 +40,8 @@ private:
 
     std::string modelPath{};
     std::vector<std::string> classes{"face"}; // Only face class for face detection
-    bool cudaEnabled{};
-
     cv::Size2f modelShape{};
+    bool cudaEnabled{};
 
     float modelConfidenceThreshold {0.25};
     float modelScoreThreshold      {0.45};

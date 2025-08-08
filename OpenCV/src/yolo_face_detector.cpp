@@ -2,6 +2,7 @@
 // This implementation is designed specifically for face detection
 
 #include "yolo_face_detector.h"
+#include "simple_model_converter.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -181,8 +182,6 @@ void YOLOFaceDetector::loadOnnxNetwork()
 
 void YOLOFaceDetector::convertPyTorchToOnnx()
 {
-    // For now, we'll assume the model is already converted
-    // In a real implementation, you would use Python to convert PyTorch to ONNX
     std::string onnxPath = modelPath.substr(0, modelPath.find_last_of('.')) + ".onnx";
     
     // Check if ONNX version already exists
@@ -192,12 +191,25 @@ void YOLOFaceDetector::convertPyTorchToOnnx()
         modelPath = onnxPath;
         f.close();
     } else {
-        std::cout << "Please convert the PyTorch model to ONNX format manually." << std::endl;
-        std::cout << "You can use the following Python script:" << std::endl;
-        std::cout << "import torch" << std::endl;
-        std::cout << "model = torch.load('" << modelPath << "')" << std::endl;
-        std::cout << "torch.onnx.export(model, torch.randn(1, 3, 640, 640), '" << onnxPath << "')" << std::endl;
-        throw std::runtime_error("PyTorch model conversion required");
+        std::cout << "Converting PyTorch model to ONNX format..." << std::endl;
+        
+        try {
+            // Use simple converter
+            SimpleModelConverter converter;
+            std::vector<int64_t> inputShape = {1, 3, 640, 640}; // YOLOv8 input shape
+            
+            if (converter.convertToOnnx(modelPath, onnxPath, inputShape)) {
+                std::cout << "Conversion successful!" << std::endl;
+                modelPath = onnxPath;
+            } else {
+                throw std::runtime_error("Model conversion failed");
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Conversion failed: " << e.what() << std::endl;
+            std::cout << "Please convert the PyTorch model to ONNX format manually." << std::endl;
+            std::cout << "You can use: python3 convert_face_model.py" << std::endl;
+            throw std::runtime_error("PyTorch model conversion required");
+        }
     }
 }
 
