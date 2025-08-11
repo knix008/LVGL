@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define gradients -->
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="redGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ee5a24;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background rectangle -->
+  <rect x="0" y="0" width="300" height="200" fill="#f8f9fa" stroke="none"/>
+  
+  <!-- Circle with gradient -->
+  <circle cx="80" cy="80" r="40" fill="url(#blueGradient)" stroke="#333" stroke-width="2"/>
+  
+  <!-- Rectangle with gradient -->
+  <rect x="160" y="40" width="80" height="60" fill="url(#redGradient)" stroke="#333" stroke-width="2"/>
+  
+  <!-- Triangle -->
+  <polygon points="250,100 290,160 210,160" fill="#51cf66" stroke="#333" stroke-width="2"/>
+  
+  <!-- Line -->
+  <line x1="20" y1="150" x2="280" y2="150" stroke="#6c5ce7" stroke-width="3"/>
+  
+  <!-- Text -->
+  <text x="150" y="190" font-family="Arial" font-size="16" text-anchor="middle" fill="#2d3436">
+    SVG Demo
+  </text>
+  
+  <!-- Small decorative circles -->
+  <circle cx="50" cy="160" r="8" fill="#fd79a8"/>
+  <circle cx="80" cy="160" r="8" fill="#fdcb6e"/>
+  <circle cx="110" cy="160" r="8" fill="#6c5ce7"/>
+  <circle cx="140" cy="160" r="8" fill="#00b894"/>
+</svg>
