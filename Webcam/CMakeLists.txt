@@ -326,10 +326,13 @@ endif()
 # No external dependencies required
 # ------------------------------------------------------------
 # LVGL Graphics Library 추가
+# Set LVGL configuration directory to point to include directory
+set(LV_BUILD_CONF_DIR ${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(lvgl)
 
 # LVGL 헤더 경로를 모든 타겟에 추가하려면 아래 예시처럼 사용
 include_directories(${CMAKE_SOURCE_DIR}/lvgl)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # LVGL 라이브러리를 링크하려면 원하는 타겟에 아래 예시처럼 추가
 # target_link_libraries(yolov8n_detection lvgl)

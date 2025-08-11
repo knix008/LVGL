@@ -1,6 +1,6 @@
 # Package Information for pkg-config
 
-prefix=/home/shkwon/Projects/LVGL/OpenCV/src/lib
+prefix=/home/shkwon/Projects/LVGL/Webcam/src/lib
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include/opencv4
