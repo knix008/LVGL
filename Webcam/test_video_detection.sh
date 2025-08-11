@@ -29,26 +29,26 @@ echo
 echo "Test 2: Process video file (10 seconds)"
 echo "----------------------------------------"
 echo "Processing traffic.mp4 for 10 seconds..."
-timeout 10s ./build/yolov8n_video_detection -v ./data/traffic.mp4 -f
+(cd build && timeout 10s ./yolov8n_video_detection -v ../data/traffic.mp4 -f)
 echo
 
 # Test 3: Process video file with output
 echo "Test 3: Process video file with output"
 echo "--------------------------------------"
 echo "Processing traffic.mp4 and saving output..."
-timeout 15s ./build/yolov8n_video_detection -v ./data/traffic.mp4 -o test_output.mp4 -f -s
+(cd build && timeout 15s ./yolov8n_video_detection -v ../data/traffic.mp4 -o test_output.mp4 -f -s)
 echo
 
 # Test 4: Test webcam (should fail gracefully)
 echo "Test 4: Test webcam (should fail gracefully)"
 echo "--------------------------------------------"
-timeout 5s ./build/yolov8n_video_detection -w 0
+(cd build && timeout 5s ./yolov8n_video_detection -w 0)
 echo
 
 # Test 5: Test with CUDA flag (should work on CPU)
 echo "Test 5: Test with CUDA flag"
 echo "---------------------------"
-timeout 10s ./build/yolov8n_video_detection -v ./data/traffic.mp4 -c -f
+(cd build && timeout 10s ./yolov8n_video_detection -v ../data/traffic.mp4 -c -f)
 echo
 
 echo "All tests completed!"
