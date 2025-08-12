@@ -18,9 +18,6 @@ include_directories(
     include
 )
 
-# Use our custom lv_conf.h instead of LVGL's default
-add_compile_definitions(LV_CONF_INCLUDE_SIMPLE=1)
-
 # Find SDL2
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
@@ -28,12 +25,17 @@ include_directories(${SDL2_INCLUDE_DIRS})
 # Add compile definitions
 add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
 
+# Collect SDL driver source files
+file(GLOB SDL_DRIVER_SOURCES
+    ${LV_DRIVERS_DIR}/sdl/*.c
+)
+
 # Create the main executable
-add_executable(lvgl_main ./src/main.c)
+add_executable(main ./src/main.c ${SDL_DRIVER_SOURCES})
 
 # Set library directory and link with the pre-built LVGL library
-target_link_directories(lvgl_main PRIVATE ${CMAKE_SOURCE_DIR}/${LIB_DIR})
-target_link_libraries(lvgl_main 
+target_link_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/${LIB_DIR})
+target_link_libraries(main 
     lvgl
     lvgl_thorvg
     ${SDL2_LIBRARIES}
@@ -41,5 +43,5 @@ target_link_libraries(lvgl_main
 )
 
 if(UNIX)
-    target_link_libraries(lvgl_main pthread)
+    target_link_libraries(main pthread)
 endif()
