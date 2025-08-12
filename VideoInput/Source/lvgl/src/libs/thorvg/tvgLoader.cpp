@@ -80,25 +80,25 @@ static LoadModule* _find(FileType type)
     switch(type) {
         case FileType::Png: {
 #ifdef THORVG_PNG_LOADER_SUPPORT
-            return new PngLoader;
+            // return new PngLoader;
 #endif
             break;
         }
         case FileType::Jpg: {
 #ifdef THORVG_JPG_LOADER_SUPPORT
-            return new JpgLoader;
+            // return new JpgLoader;
 #endif
             break;
         }
         case FileType::Webp: {
 #ifdef THORVG_WEBP_LOADER_SUPPORT
-            return new WebpLoader;
+            // return new WebpLoader;
 #endif
             break;
         }
         case FileType::Tvg: {
 #ifdef THORVG_TVG_LOADER_SUPPORT
-            return new TvgLoader;
+            // return new TvgLoader;
 #endif
             break;
         }
@@ -110,7 +110,7 @@ static LoadModule* _find(FileType type)
         }
         case FileType::Ttf: {
 #ifdef THORVG_TTF_LOADER_SUPPORT
-            return new TtfLoader;
+            // return new TtfLoader;
 #endif
             break;
         }
@@ -446,17 +446,17 @@ LoadModule* LoaderMgr::loader(const char* name, const char* data, uint32_t size,
     if (auto loader = _findFromCache(name)) return loader;
 
     //function is dedicated for ttf loader (the only supported font loader)
-    auto loader = new TtfLoader;
-    if (loader->open(data, size, copy)) {
-        loader->hashpath = lv_strdup(name);
-        loader->pathcache = true;
-        ScopedLock lock(key);
-        _activeLoaders.back(loader);
-        return loader;
-    }
+    // auto loader = new TtfLoader;
+    // if (loader->open(data, size, copy)) {
+    //     loader->hashpath = lv_strdup(name);
+    //     loader->pathcache = true;
+    //     ScopedLock lock(key);
+    //     _activeLoaders.back(loader);
+    //     return loader;
+    // }
 
-    TVGLOG("LOADER", "The font data \"%s\" could not be loaded.", name);
-    delete(loader);
+    // TVGLOG("LOADER", "The font data \"%s\" could not be loaded.", name);
+    // delete(loader);
 #endif
     return nullptr;
 }

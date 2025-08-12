@@ -66,6 +66,10 @@ file(GLOB_RECURSE LVGL_SOURCES
     ${LVGL_DIR}/src/*.c
     ${LVGL_DIR}/src/*.cpp
 )
+
+# Exclude problematic ThorVG files
+list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgGl.*\\.cpp$")
+list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgWg.*\\.cpp$")
 file(GLOB LV_DRIVERS_SOURCES
     ${LV_DRIVERS_DIR}/sdl/*.c
 )
@@ -136,7 +140,7 @@ target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
 target_link_libraries(main ${OpenCV_LIBS})
 
 # Link ONNX Runtime library
-target_link_libraries(main ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so)
+target_link_libraries(main ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3)
 
 # Link FFmpeg libraries for video support
 target_link_libraries(main avformat avcodec avutil swscale z)

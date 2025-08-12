@@ -252,6 +252,9 @@ void web_server_init(void) {
     
     mg_mgr_init(&mgr);
     
+    // Initialize TLS context
+    mg_tls_ctx_init(&mgr);
+    
     // Initialize TLS if enabled
     if (init_tls()) {
         tls_enabled = true;
@@ -280,11 +283,13 @@ void web_server_init(void) {
         char tls_listen_url[64];
         snprintf(tls_listen_url, sizeof(tls_listen_url), "https://0.0.0.0:%d", tls_port);
         
-        if (mg_http_listen(&mgr, tls_listen_url, fn, NULL) != NULL) {
+        struct mg_connection *https_conn = mg_http_listen(&mgr, tls_listen_url, fn, NULL);
+        if (https_conn != NULL) {
             printf("HTTPS server started on port %d\n", tls_port);
             printf("Access the secure web interface at: https://localhost:%d\n", tls_port);
         } else {
             printf("Failed to start HTTPS server on port %d\n", tls_port);
+            printf("TLS configuration might be incompatible\n");
         }
     }
 }
@@ -297,6 +302,7 @@ void web_server_poll(void) {
 void web_server_cleanup(void) {
     if (!web_server_enabled) return;
     cleanup_tls();
+    mg_tls_ctx_free(&mgr);
     mg_mgr_free(&mgr);
     snprintf(web_server_status, sizeof(web_server_status), "Web server stopped");
 }
@@ -342,7 +348,17 @@ const char* web_server_get_tls_status(void) {
 
 // Mongoose event handler
 static void fn(struct mg_connection *c, int ev, void *ev_data) {
-    if (ev == MG_EV_HTTP_MSG) {
+    if (ev == MG_EV_ACCEPT) {
+        // Initialize TLS for HTTPS connections
+        if (c->is_tls && tls_enabled) {
+            struct mg_tls_opts opts = {
+                .cert = tls_opts.cert,
+                .key = tls_opts.key
+            };
+            mg_tls_init(c, &opts);
+            printf("TLS initialized for connection\n");
+        }
+    } else if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         handle_http_request(c, hm);
     } else if (ev == MG_EV_WS_OPEN) {
@@ -639,33 +655,38 @@ static bool init_tls(void) {
         return false;
     }
     
+    // Set additional TLS options for better compatibility
+    tls_opts.ca = mg_str("");  // No CA required for self-signed
+    
     printf("TLS certificates loaded successfully\n");
     return true;
 }
 
 // Create self-signed certificates for development
 static bool create_self_signed_certificates(void) {
-    printf("Creating self-signed certificates for development...\n");
+    printf("Creating self-signed ECC certificates for development...\n");
     
     // Create certs directory if it doesn't exist
     system("mkdir -p certs");
     
-    // Generate self-signed certificate using OpenSSL
+    // Generate ECC key and certificate for better compatibility with built-in TLS
     char cmd[512];
     snprintf(cmd, sizeof(cmd),
-        "openssl req -x509 -newkey rsa:4096 -keyout %s -out %s -days 365 -nodes "
+        "openssl ecparam -name prime256v1 -genkey -noout -out %s && "
+        "openssl req -new -key %s -x509 -nodes -out %s -days 365 "
         "-subj '/C=US/ST=State/L=City/O=Organization/CN=localhost' "
         "-addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' "
+        "-addext 'keyUsage=digitalSignature,keyEncipherment' "
         "-addext 'extendedKeyUsage=serverAuth'",
-        TLS_KEY_FILE, TLS_CERT_FILE);
+        TLS_KEY_FILE, TLS_KEY_FILE, TLS_CERT_FILE);
     
     int result = system(cmd);
     if (result != 0) {
-        printf("Failed to create self-signed certificates\n");
+        printf("Failed to create self-signed ECC certificates\n");
         return false;
     }
     
-    printf("Self-signed certificates created successfully\n");
+    printf("Self-signed ECC certificates created successfully\n");
     
     // Load the newly created certificates
     tls_opts.cert = mg_file_read(&mg_fs_posix, TLS_CERT_FILE);

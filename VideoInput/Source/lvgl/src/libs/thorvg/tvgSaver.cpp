@@ -56,13 +56,13 @@ static SaveModule* _find(FileType type)
     switch(type) {
         case FileType::Tvg: {
 #ifdef THORVG_TVG_SAVER_SUPPORT
-            return new TvgSaver;
+            // return new TvgSaver;
 #endif
             break;
         }
         case FileType::Gif: {
 #ifdef THORVG_GIF_SAVER_SUPPORT
-            return new GifSaver;
+            // return new GifSaver;
 #endif
             break;
         }

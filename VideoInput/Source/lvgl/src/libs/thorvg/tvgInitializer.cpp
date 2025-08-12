@@ -43,6 +43,11 @@
     #include "tvgWgRenderer.h"
 #endif
 
+// Forward declarations for renderer classes
+namespace tvg {
+    class GlRenderer;
+    class WgRenderer;
+}
 
 /************************************************************************/
 /* Internal Class Implementation                                        */
@@ -102,17 +107,19 @@ Result Initializer::init(CanvasEngine engine, uint32_t threads) noexcept
     }
 
     if (engine & CanvasEngine::Gl) {
-        #ifdef THORVG_GL_RASTER_SUPPORT
-            if (!GlRenderer::init(threads)) return Result::FailedAllocation;
-            nonSupport = false;
-        #endif
+        // GL renderer support disabled
+        // #ifdef THORVG_GL_RASTER_SUPPORT
+        //     if (!GlRenderer::init(threads)) return Result::FailedAllocation;
+        //     nonSupport = false;
+        // #endif
     }
 
     if (engine & CanvasEngine::Wg) {
-        #ifdef THORVG_WG_RASTER_SUPPORT
-            if (!WgRenderer::init(threads)) return Result::FailedAllocation;
-            nonSupport = false;
-        #endif
+        // WG renderer support disabled
+        // #ifdef THORVG_WG_RASTER_SUPPORT
+        //     if (!WgRenderer::init(threads)) return Result::FailedAllocation;
+        //     nonSupport = false;
+        // #endif
     }
 
     if (nonSupport) return Result::NonSupport;
@@ -144,17 +151,19 @@ Result Initializer::term(CanvasEngine engine) noexcept
     }
 
     if (engine & CanvasEngine::Gl) {
-        #ifdef THORVG_GL_RASTER_SUPPORT
-            if (!GlRenderer::term()) return Result::InsufficientCondition;
-            nonSupport = false;
-        #endif
+        // GL renderer support disabled
+        // #ifdef THORVG_GL_RASTER_SUPPORT
+        //     if (!GlRenderer::term()) return Result::InsufficientCondition;
+        //     nonSupport = false;
+        // #endif
     }
 
     if (engine & CanvasEngine::Wg) {
-        #ifdef THORVG_WG_RASTER_SUPPORT
-            if (!WgRenderer::term()) return Result::InsufficientCondition;
-            nonSupport = false;
-        #endif
+        // WG renderer support disabled
+        // #ifdef THORVG_WG_RASTER_SUPPORT
+        //     if (!WgRenderer::term()) return Result::InsufficientCondition;
+        //     nonSupport = false;
+        // #endif
     }
 
     if (nonSupport) return Result::NonSupport;
