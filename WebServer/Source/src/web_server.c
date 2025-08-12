@@ -27,6 +27,7 @@ static int active_connections = 0;
 static void fn(struct mg_connection *c, int ev, void *ev_data);
 static void handle_http_request(struct mg_connection *c, struct mg_http_message *hm);
 static void handle_websocket_message(struct mg_connection *c, int ev, void *ev_data);
+
 static const char* generate_ui_state_json(void);
 static void send_json_response(struct mg_connection *c, const char* json);
 static bool init_tls(void);
@@ -406,9 +407,17 @@ static void handle_http_request(struct mg_connection *c, struct mg_http_message 
         // API endpoint for UI state
         const char* json = generate_ui_state_json();
         send_json_response(c, json);
+    } else if (mg_strcmp(hm->uri, mg_str("/test-ws")) == 0) {
+        // Serve the WebSocket test page
+        struct mg_http_serve_opts opts = { .root_dir = ".", .mime_types = "text/html" };
+        mg_http_serve_file(c, hm, "websocket_chrome_test.html", &opts);
     } else if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
         // Upgrade to WebSocket
         mg_ws_upgrade(c, hm, NULL);
+    } else if (mg_strcmp(hm->uri, mg_str("/assets")) == 0) {
+        // Handle static files
+        struct mg_http_serve_opts opts = { .root_dir = "assets" };
+        mg_http_serve_dir(c, hm, &opts);
     } else {
         // 404 Not Found
         mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "Not Found");
@@ -713,3 +722,5 @@ static void cleanup_tls(void) {
         tls_opts.ca.len = 0;
     }
 }
+
+

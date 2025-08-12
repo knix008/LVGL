@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chrome Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .connecting { background: #fff3cd; color: #856404; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .controls { margin: 20px 0; }
+        button { margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Chrome Test</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Make sure the server is running (cd Source/build && ./main)<br>
+            2. Click "Connect" to establish WebSocket connection<br>
+            3. Accept any certificate warnings in Chrome<br>
+            4. Use the buttons below to test commands
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div class="controls">
+            <button onclick="connect()" class="btn-primary">Connect</button>
+            <button onclick="disconnect()" class="btn-danger">Disconnect</button>
+            <button onclick="clearLog()" class="btn-warning">Clear Log</button>
+            <button onclick="testConnection()" class="btn-success">Test Connection</button>
+        </div>
+        
+        <h3>Quick Commands</h3>
+        <div class="controls">
+            <button onclick="sendCommand('system', 'status')" class="btn-success">Get Status</button>
+            <button onclick="sendCommand('tab', 'calendar')" class="btn-primary">Calendar Tab</button>
+            <button onclick="sendCommand('tab', 'clock')" class="btn-primary">Clock Tab</button>
+            <button onclick="sendCommand('video', 'play')" class="btn-success">Play Video</button>
+            <button onclick="sendCommand('video', 'pause')" class="btn-warning">Pause Video</button>
+        </div>
+        
+        <h3>Custom Command</h3>
+        <div class="controls">
+            <select id="commandType">
+                <option value="system">System</option>
+                <option value="tab">Tab</option>
+                <option value="video">Video</option>
+                <option value="database">Database</option>
+                <option value="custom">Custom</option>
+            </select>
+            <input type="text" id="commandValue" placeholder="Enter command value...">
+            <button onclick="sendCustomCommand()" class="btn-primary">Send</button>
+        </div>
+        
+        <h3>WebSocket Log</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(status, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = status;
+            statusDiv.className = `status ${className}`;
+        }
+        
+        function testConnection() {
+            log('Testing server connection...');
+            
+            // Test HTTPS endpoint
+            fetch('https://localhost:8443', { 
+                method: 'GET',
+                mode: 'no-cors' // This will fail but we can catch the error
+            }).then(() => {
+                log('✅ HTTPS server is accessible');
+            }).catch((error) => {
+                log(`❌ HTTPS server test failed: ${error.message}`);
+            });
+            
+            // Test WebSocket endpoint
+            const testWs = new WebSocket('wss://localhost:8443/ws');
+            
+            testWs.onopen = function() {
+                log('✅ WebSocket endpoint is accessible');
+                testWs.close();
+            };
+            
+            testWs.onerror = function(error) {
+                log(`❌ WebSocket endpoint test failed: ${error}`);
+            };
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Already connected');
+                return;
+            }
+            
+            // Determine the correct WebSocket URL
+            let wsUrl = 'wss://localhost:8443/ws';
+            
+            // If we're accessing this page through the server, use relative URL
+            if (window.location.hostname === 'localhost' && window.location.port === '8443') {
+                wsUrl = 'wss://' + window.location.host + '/ws';
+            }
+            
+            log(`Connecting to ${wsUrl}...`);
+            updateStatus('Connecting...', 'connecting');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                log('✅ WebSocket connected successfully!');
+                log(`Connection URL: ${wsUrl}`);
+                log(`ReadyState: ${ws.readyState} (OPEN)`);
+                updateStatus('Connected', 'connected');
+                
+                // Send initial status request
+                setTimeout(() => {
+                    sendCommand('system', 'status');
+                }, 500);
+            };
+            
+            ws.onmessage = function(event) {
+                log(`📨 Received: ${event.data}`);
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`   Parsed: ${JSON.stringify(data, null, 2)}`);
+                } catch (e) {
+                    log(`   Raw data (not JSON): ${event.data}`);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                log(`❌ WebSocket disconnected (code: ${event.code}, reason: ${event.reason})`);
+                updateStatus('Disconnected', 'disconnected');
+                
+                // Show common error codes
+                switch(event.code) {
+                    case 1000: log('   Normal closure'); break;
+                    case 1001: log('   Going away'); break;
+                    case 1002: log('   Protocol error'); break;
+                    case 1003: log('   Unsupported data'); break;
+                    case 1006: log('   Abnormal closure (no close frame)'); break;
+                    case 1015: log('   TLS handshake failed'); break;
+                    default: log(`   Unknown close code: ${event.code}`);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                log(`❌ WebSocket error: ${error}`);
+                log('Common causes:');
+                log('   - Server not running');
+                log('   - Certificate not trusted (try accepting it)');
+                log('   - Firewall blocking connection');
+                log('   - Wrong port or URL');
+                updateStatus('Error', 'disconnected');
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('🔌 WebSocket connection closed');
+            }
+        }
+        
+        function sendCommand(type, value) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected. Please connect first.');
+                return;
+            }
+            
+            const command = { type: type, value: value };
+            const jsonCommand = JSON.stringify(command);
+            ws.send(jsonCommand);
+            log(`📤 Sent: ${jsonCommand}`);
+        }
+        
+        function sendCustomCommand() {
+            const type = document.getElementById('commandType').value;
+            const value = document.getElementById('commandValue').value;
+            
+            if (!value.trim()) {
+                log('❌ Please enter a command value');
+                return;
+            }
+            
+            sendCommand(type, value);
+            document.getElementById('commandValue').value = '';
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Handle Enter key in command input
+        document.getElementById('commandValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCustomCommand();
+            }
+        });
+        
+        // Auto-connect when page loads
+        window.onload = function() {
+            log('🚀 WebSocket Chrome Test loaded');
+            log('Server should be running at: https://localhost:8443');
+            log('Click "Connect" to start testing WebSocket communication');
+            log('If connection fails, try clicking "Test Connection" first');
+        };
+    </script>
+</body>
+</html>
