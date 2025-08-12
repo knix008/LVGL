@@ -33,8 +33,10 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(FREETYPE REQUIRED freetype2)
 include_directories(${FREETYPE_INCLUDE_DIRS})
 
-# TLS Configuration - Using Mongoose built-in TLS
-add_compile_definitions(MG_TLS=MG_TLS_BUILTIN)
+# TLS Configuration - Using OpenSSL for better compatibility
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+add_compile_definitions(MG_TLS=MG_TLS_OPENSSL)
 
 # Use local ONNX Runtime installation
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
@@ -129,7 +131,7 @@ add_executable(main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
 target_include_directories(main PRIVATE include sqlcipher sqlite lvgl lvgl/src/libs/svg lvgl/src/libs/ffmpeg .)
 
 # Link against LVGL library and other dependencies
-target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES} ${OPENSSL_LIBRARIES})
 
 
 

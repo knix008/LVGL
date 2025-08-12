@@ -664,15 +664,15 @@ static bool init_tls(void) {
 
 // Create self-signed certificates for development
 static bool create_self_signed_certificates(void) {
-    printf("Creating self-signed ECC certificates for development...\n");
+    printf("Creating self-signed RSA certificates for development...\n");
     
     // Create certs directory if it doesn't exist
     system("mkdir -p certs");
     
-    // Generate ECC key and certificate for better compatibility with built-in TLS
+    // Generate RSA key and certificate for better compatibility with built-in TLS
     char cmd[512];
     snprintf(cmd, sizeof(cmd),
-        "openssl ecparam -name prime256v1 -genkey -noout -out %s && "
+        "openssl genrsa -out %s 2048 && "
         "openssl req -new -key %s -x509 -nodes -out %s -days 365 "
         "-subj '/C=US/ST=State/L=City/O=Organization/CN=localhost' "
         "-addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' "
@@ -682,11 +682,11 @@ static bool create_self_signed_certificates(void) {
     
     int result = system(cmd);
     if (result != 0) {
-        printf("Failed to create self-signed ECC certificates\n");
+        printf("Failed to create self-signed RSA certificates\n");
         return false;
     }
     
-    printf("Self-signed ECC certificates created successfully\n");
+    printf("Self-signed RSA certificates created successfully\n");
     
     // Load the newly created certificates
     tls_opts.cert = mg_file_read(&mg_fs_posix, TLS_CERT_FILE);

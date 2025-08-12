@@ -1,4 +1,5 @@
-build
-opencv_build
+build/
+opencv_build/
 opencv_install
-models
+models/
+certs/
