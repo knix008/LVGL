@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - LVGL Control</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
+        .connecting { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        input { padding: 5px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Test - LVGL Control</h1>
+        
+        <div id="status" class="status offline">Disconnected</div>
+        
+        <div>
+            <h3>Connection</h3>
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div>
+            <h3>Test Commands</h3>
+            <button onclick="sendTestCommand('tab', 'db')">Tab: DB</button>
+            <button onclick="sendTestCommand('tab', 'settings')">Tab: Settings</button>
+            <button onclick="sendTestCommand('system', 'status')">System: Status</button>
+            <button onclick="sendTestCommand('video', 'play')">Video: Play</button>
+        </div>
+        
+        <div>
+            <h3>Custom Command</h3>
+            <input type="text" id="commandType" placeholder="Command type" value="tab">
+            <input type="text" id="commandValue" placeholder="Command value" value="db">
+            <button onclick="sendCustomCommand()">Send</button>
+        </div>
+        
+        <div>
+            <h3>Log</h3>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + className;
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Already connected');
+                return;
+            }
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = protocol + '//' + window.location.host + '/ws';
+            
+            log(`Connecting to ${wsUrl}...`);
+            updateStatus('Connecting...', 'connecting');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                log('WebSocket connection opened');
+                log(`WebSocket readyState: ${ws.readyState}`);
+                updateStatus('Connected', 'online');
+                
+                // Send initial status request
+                setTimeout(() => {
+                    sendTestCommand('system', 'status');
+                }, 100);
+            };
+            
+            ws.onclose = function(event) {
+                log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`);
+                updateStatus('Disconnected', 'offline');
+            };
+            
+            ws.onerror = function(error) {
+                log(`WebSocket error: ${error}`);
+                updateStatus('Error', 'offline');
+            };
+            
+            ws.onmessage = function(event) {
+                log(`Received: ${event.data}`);
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`Parsed JSON: ${JSON.stringify(data, null, 2)}`);
+                } catch (e) {
+                    log(`Failed to parse JSON: ${e.message}`);
+                }
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                updateStatus('Disconnected', 'offline');
+                log('Disconnected');
+            }
+        }
+        
+        function sendTestCommand(type, value) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocket not connected');
+                return;
+            }
+            
+            const command = {type: type, value: value};
+            const jsonCommand = JSON.stringify(command);
+            
+            log(`Sending: ${jsonCommand}`);
+            ws.send(jsonCommand);
+        }
+        
+        function sendCustomCommand() {
+            const type = document.getElementById('commandType').value;
+            const value = document.getElementById('commandValue').value;
+            
+            if (type && value) {
+                sendTestCommand(type, value);
+            } else {
+                log('Please enter both command type and value');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Auto-connect on page load
+        window.onload = function() {
+            log('Page loaded, attempting to connect...');
+            connect();
+        };
+        
+        // Handle Enter key in input fields
+        document.getElementById('commandValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCustomCommand();
+            }
+        });
+    </script>
+</body>
+</html>
