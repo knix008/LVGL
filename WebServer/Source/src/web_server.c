@@ -3,6 +3,7 @@
 #include "ui_components.h"
 #include "tls_config.h"
 #include "tab_control.h"
+#include "video.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -397,9 +398,11 @@ static const char* generate_ui_state_json(void) {
         "},"
         "\"available_commands\":{"
         "\"tab\":[\"db\",\"settings\",\"info\",\"calendar\",\"clock\",\"video\",\"korean\",\"chunjiin\",\"num\",\"kor\",\"cji\",\"qwerty\"],"
-        "\"system\":[\"refresh\",\"status\",\"restart\",\"shutdown\"],"
-        "\"database\":[\"query\",\"backup\",\"optimize\"],"
         "\"video\":[\"play\",\"pause\",\"stop\",\"next\",\"prev\",\"volume\"]"
+        "},"
+        "\"video_status\":{"
+        "\"status\":\"%s\","
+        "\"current_file\":\"%s\""
         "}"
         "}"
         "}", 
@@ -411,7 +414,9 @@ static const char* generate_ui_state_json(void) {
         tls_port,
         active_connections,
         ui_connected ? "true" : "false",
-        (long)time(NULL) // uptime (simplified)
+        (long)time(NULL), // uptime (simplified)
+        video_get_status_string(),
+        video_get_current_path()
     );
     
     return ui_state_json;
@@ -458,17 +463,47 @@ static void handle_lvgl_command(const char* command, const char* value) {
         }
         
     } else if (strcmp(command, "video") == 0) {
-        // Handle video commands
+        // First, switch to video tab automatically
+        printf("Web command: Switching to video tab for video control\n");
+        switch_to_tab_by_name("video");
+        strncpy(current_tab, "video", sizeof(current_tab) - 1);
+        current_tab[sizeof(current_tab) - 1] = '\0';
+        
+        // Then handle video commands
         if (strcmp(value, "play") == 0) {
-            printf("Playing video\n");
+            printf("Web command: Playing video\n");
+            lv_result_t result = video_play();
+            if (result == LV_RESULT_OK) {
+                printf("Video play command executed successfully\n");
+            } else {
+                printf("Video play command failed\n");
+            }
         } else if (strcmp(value, "pause") == 0) {
-            printf("Pausing video\n");
+            printf("Web command: Pausing video\n");
+            lv_result_t result = video_pause();
+            if (result == LV_RESULT_OK) {
+                printf("Video pause command executed successfully\n");
+            } else {
+                printf("Video pause command failed\n");
+            }
         } else if (strcmp(value, "stop") == 0) {
-            printf("Stopping video\n");
+            printf("Web command: Stopping video\n");
+            lv_result_t result = video_stop();
+            if (result == LV_RESULT_OK) {
+                printf("Video stop command executed successfully\n");
+            } else {
+                printf("Video stop command failed\n");
+            }
         } else if (strcmp(value, "next") == 0) {
-            printf("Next video\n");
+            printf("Web command: Next video\n");
+            lv_result_t result = video_next();
+            if (result == LV_RESULT_OK) {
+                printf("Video next command executed successfully\n");
+            } else {
+                printf("Video next command failed\n");
+            }
         } else if (strcmp(value, "prev") == 0) {
-            printf("Previous video\n");
+            printf("Web command: Previous video (not implemented)\n");
         }
         
     } else if (strcmp(command, "custom") == 0) {

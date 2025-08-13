@@ -24,11 +24,6 @@ function connect() {
         reconnectAttempts = 0;
         log('WebSocket connection established successfully');
         log('WebSocket readyState: ' + ws.readyState);
-        
-        // Send initial status request
-        setTimeout(function() {
-            sendCommand('system', 'status');
-        }, 100);
     };
     
     ws.onclose = function() {
@@ -86,22 +81,7 @@ function sendCommand(type, value) {
     }
 }
 
-function sendCustomCommand() {
-    const type = document.getElementById('commandType').value;
-    const value = document.getElementById('commandValue').value;
-    if (value.trim()) {
-        sendCommand(type, value);
-        document.getElementById('commandValue').value = '';
-    }
-}
-
-// Handle Enter key in command input
+// Initialize connection when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('commandValue').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendCustomCommand();
-        }
-    });
-    
     connect();
 });

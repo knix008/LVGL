@@ -31,20 +31,7 @@
                     <button onclick='sendCommand("tab", "video")'>Video Tab</button>
                 </div>
                 
-                <div class='control-group'>
-                    <h3>⚙️ System Control</h3>
-                    <button onclick='sendCommand("system", "refresh")' class='success'>Refresh UI</button>
-                    <button onclick='sendCommand("system", "status")'>Get Status</button>
-                    <button onclick='sendCommand("system", "restart")' class='warning'>Restart App</button>
-                    <button onclick='sendCommand("system", "shutdown")' class='danger'>Shutdown</button>
-                </div>
-                
-                <div class='control-group'>
-                    <h3>📊 Database Operations</h3>
-                    <button onclick='sendCommand("database", "query")'>Query DB</button>
-                    <button onclick='sendCommand("database", "backup")'>Backup DB</button>
-                    <button onclick='sendCommand("database", "optimize")'>Optimize DB</button>
-                </div>
+
                 
                 <div class='control-group'>
                     <h3>🎥 Media Control</h3>
@@ -56,24 +43,7 @@
             </div>
         </div>
         
-        <div class='card'>
-            <h2>📝 Custom Commands</h2>
-            <div class='input-group'>
-                <label for='commandType'>Command Type:</label>
-                <select id='commandType'>
-                    <option value='tab'>Tab Navigation</option>
-                    <option value='system'>System Control</option>
-                    <option value='database'>Database</option>
-                    <option value='video'>Video Control</option>
-                    <option value='custom'>Custom</option>
-                </select>
-            </div>
-            <div class='input-group'>
-                <label for='commandValue'>Command Value:</label>
-                <input type='text' id='commandValue' placeholder='Enter command value...'>
-            </div>
-            <button onclick='sendCustomCommand()' class='success'>Send Command</button>
-        </div>
+
         
         <div class='card'>
             <h2>📊 UI State</h2>
