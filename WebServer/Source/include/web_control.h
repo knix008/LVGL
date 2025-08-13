@@ -1,5 +1,5 @@
-#ifndef TAB_CONTROL_H
-#define TAB_CONTROL_H
+#ifndef WEB_CONTROL_H
+#define WEB_CONTROL_H
 
 #include "lvgl.h"
 
@@ -30,8 +30,11 @@ tab_index_t get_current_tab(void);
 // Function to switch tab by name
 void switch_to_tab_by_name(const char* tab_name);
 
+// Function to set tabview reference (internal use)
+void set_tabview_reference(lv_obj_t* tabview);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif // TAB_CONTROL_H
+#endif // WEB_CONTROL_H

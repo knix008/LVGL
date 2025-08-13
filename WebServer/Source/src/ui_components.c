@@ -12,7 +12,7 @@
 #include "ui_callbacks.h"
 #include "font_config.h"
 #include "lv_freetype.h"
-#include "tab_control.h"
+#include "web_control.h"
 #include <stdio.h>
 
 // Global Korean font variable
