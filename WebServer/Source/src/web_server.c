@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <unistd.h>
 
 // Global variables
 static struct mg_mgr mgr;
@@ -36,220 +37,15 @@ static bool create_self_signed_certificates(void);
 static void broadcast_ui_state(void);
 static void handle_lvgl_command(const char* command, const char* value);
 
-// Enhanced HTML page for web interface with better control
-static const char* html_page = 
-"<!DOCTYPE html>"
-"<html><head><title>LVGL Web Control - TLS 1.3</title>"
-"<meta charset='UTF-8'>"
-"<style>"
-"body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }"
-".container { max-width: 1200px; margin: 0 auto; }"
-".header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }"
-".card { background: white; border-radius: 10px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }"
-".card h2 { margin-top: 0; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }"
-".control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0; }"
-".control-group { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; }"
-"button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin: 5px; font-weight: 500; transition: all 0.3s ease; }"
-"button:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }"
-"button:active { transform: translateY(0); }"
-"button.danger { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); }"
-"button.success { background: linear-gradient(135deg, #51cf66 0%, #40c057 100%); }"
-"button.warning { background: linear-gradient(135deg, #ffd43b 0%, #fcc419 100%); color: #333; }"
-".status { padding: 15px; border-radius: 8px; margin: 15px 0; font-weight: 500; }"
-".status.online { background: linear-gradient(135deg, #51cf66 0%, #40c057 100%); color: white; }"
-".status.offline { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; }"
-".status.connecting { background: linear-gradient(135deg, #ffd43b 0%, #fcc419 100%); color: #333; }"
-".tls-badge { background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; margin-left: 10px; }"
-".ui-state { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }"
-".log { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }"
-".input-group { margin: 10px 0; }"
-".input-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }"
-".input-group input, .input-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }"
-".input-group input:focus, .input-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }"
-"</style>"
-"</head><body>"
-"<div class='container'>"
-"<div class='header'>"
-"<h1>LVGL Web Control <span class='tls-badge'>TLS 1.3</span></h1>"
-"<p>Secure remote control interface for LVGL application</p>"
-"</div>"
-"<div class='card'>"
-"<h2>🔗 Connection Status</h2>"
-"<div id='status' class='status connecting'>Connecting...</div>"
-"<div id='connectionInfo'>Protocol: <span id='protocol'>-</span> | Port: <span id='port'>-</span></div>"
-"</div>"
-"<div class='card'>"
-"<h2>🎮 Application Control</h2>"
-"<div class='control-grid'>"
-"<div class='control-group'>"
-"<h3>📱 Tab Navigation</h3>"
-"<button onclick='sendCommand(\"tab\", \"db\")'>Database Tab</button>"
-"<button onclick='sendCommand(\"tab\", \"settings\")'>Settings Tab</button>"
-"<button onclick='sendCommand(\"tab\", \"info\")'>Info Tab</button>"
-"<button onclick='sendCommand(\"tab\", \"calendar\")'>Calendar Tab</button>"
-"<button onclick='sendCommand(\"tab\", \"clock\")'>Clock Tab</button>"
-"<button onclick='sendCommand(\"tab\", \"video\")'>Video Tab</button>"
-"</div>"
-"<div class='control-group'>"
-"<h3>⚙️ System Control</h3>"
-"<button onclick='sendCommand(\"system\", \"refresh\")' class='success'>Refresh UI</button>"
-"<button onclick='sendCommand(\"system\", \"status\")'>Get Status</button>"
-"<button onclick='sendCommand(\"system\", \"restart\")' class='warning'>Restart App</button>"
-"<button onclick='sendCommand(\"system\", \"shutdown\")' class='danger'>Shutdown</button>"
-"</div>"
-"<div class='control-group'>"
-"<h3>📊 Database Operations</h3>"
-"<button onclick='sendCommand(\"database\", \"query\")'>Query DB</button>"
-"<button onclick='sendCommand(\"database\", \"backup\")'>Backup DB</button>"
-"<button onclick='sendCommand(\"database\", \"optimize\")'>Optimize DB</button>"
-"</div>"
-"<div class='control-group'>"
-"<h3>🎥 Media Control</h3>"
-"<button onclick='sendCommand(\"video\", \"play\")'>Play Video</button>"
-"<button onclick='sendCommand(\"video\", \"pause\")'>Pause Video</button>"
-"<button onclick='sendCommand(\"video\", \"stop\")'>Stop Video</button>"
-"<button onclick='sendCommand(\"video\", \"next\")'>Next Video</button>"
-"</div>"
-"</div>"
-"</div>"
-"<div class='card'>"
-"<h2>📝 Custom Commands</h2>"
-"<div class='input-group'>"
-"<label for='commandType'>Command Type:</label>"
-"<select id='commandType'>"
-"<option value='tab'>Tab Navigation</option>"
-"<option value='system'>System Control</option>"
-"<option value='database'>Database</option>"
-"<option value='video'>Video Control</option>"
-"<option value='custom'>Custom</option>"
-"</select>"
-"</div>"
-"<div class='input-group'>"
-"<label for='commandValue'>Command Value:</label>"
-"<input type='text' id='commandValue' placeholder='Enter command value...'>"
-"</div>"
-"<button onclick='sendCustomCommand()' class='success'>Send Command</button>"
-"</div>"
-"<div class='card'>"
-"<h2>📊 UI State</h2>"
-"<div id='uiState' class='ui-state'>Loading...</div>"
-"</div>"
-"<div class='card'>"
-"<h2>📋 Activity Log</h2>"
-"<div id='log' class='log'></div>"
-"</div>"
-"</div>"
-"<script>"
-"let ws = null;"
-"let reconnectAttempts = 0;"
-"const maxReconnectAttempts = 5;"
-""
-"function log(message) {"
-"    const logDiv = document.getElementById('log');"
-"    const timestamp = new Date().toLocaleTimeString();"
-"    logDiv.innerHTML += `[${timestamp}] ${message}\\n`;"
-"    logDiv.scrollTop = logDiv.scrollHeight;"
-"}"
-""
-"function connect() {"
-"    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';"
-"    const wsUrl = protocol + '//' + window.location.host + '/ws';"
-"    "
-"    log(`Connecting to ${wsUrl}...`);"
-"    ws = new WebSocket(wsUrl);"
-"    "
-"    ws.onopen = function(event) {"
-"        document.getElementById('status').className = 'status online';"
-"        document.getElementById('status').textContent = 'Connected';"
-"        document.getElementById('protocol').textContent = window.location.protocol;"
-"        document.getElementById('port').textContent = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');"
-"        reconnectAttempts = 0;"
-"        log('WebSocket connection established successfully');"
-"        log('WebSocket readyState: ' + ws.readyState);"
-"        "
-"        // Send initial status request"
-"        setTimeout(function() {"
-"            sendCommand('system', 'status');"
-"        }, 100);"
-"    };"
-"    "
-"    ws.onclose = function() {"
-"        document.getElementById('status').className = 'status offline';"
-"        document.getElementById('status').textContent = 'Disconnected';"
-"        log('WebSocket connection closed');"
-"        "
-"        if (reconnectAttempts < maxReconnectAttempts) {"
-"            reconnectAttempts++;"
-"            log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);"
-"            setTimeout(connect, 2000);"
-"        } else {"
-"            log('Max reconnection attempts reached');"
-"        }"
-"    };"
-"    "
-"    ws.onerror = function(error) {"
-"        log('WebSocket error: ' + error);"
-"    };"
-"    "
-"    ws.onmessage = function(event) {"
-"        try {"
-"            const data = JSON.parse(event.data);"
-"            log(`Received: ${event.data}`);"
-"            "
-"            if (data.type === 'ui_state') {"
-"                document.getElementById('uiState').textContent = JSON.stringify(data.state, null, 2);"
-"            } else if (data.type === 'response') {"
-"                log(`Command response: ${data.message}`);"
-"            } else if (data.type === 'error') {"
-"                log(`Error: ${data.message}`);"
-"            }"
-"        } catch (e) {"
-"            log('Failed to parse message: ' + event.data);"
-"        }"
-"    };"
-"}"
-""
-"function sendCommand(type, value) {"
-"    if (!ws) {"
-"        log('WebSocket not initialized');"
-"        return;"
-"    }"
-"    "
-"    if (ws.readyState === WebSocket.OPEN) {"
-"        const command = {type: type, value: value};"
-"        const jsonCommand = JSON.stringify(command);"
-"        ws.send(jsonCommand);"
-"        log(`Sent command: ${jsonCommand}`);"
-"        log(`WebSocket readyState: ${ws.readyState}`);"
-"    } else {"
-"        log(`WebSocket not connected. ReadyState: ${ws.readyState}`);"
-"        log('Attempting to reconnect...');"
-"        connect();"
-"    }"
-"}"
-""
-"function sendCustomCommand() {"
-"    const type = document.getElementById('commandType').value;"
-"    const value = document.getElementById('commandValue').value;"
-"    if (value.trim()) {"
-"        sendCommand(type, value);"
-"        document.getElementById('commandValue').value = '';"
-"    }"
-"}"
-""
-"// Handle Enter key in command input"
-"document.getElementById('commandValue').addEventListener('keypress', function(e) {"
-"    if (e.key === 'Enter') {"
-"        sendCustomCommand();"
-"    }"
-"});"
-""
-"connect();"
-"</script>"
-"</body></html>";
+// HTML files directory path - use absolute path
+static char html_dir[256];
 
 void web_server_init(void) {
     if (!web_server_enabled) return;
+    
+    // Initialize HTML directory path
+    snprintf(html_dir, sizeof(html_dir), "%s/html", getcwd(NULL, 0));
+    printf("HTML directory: %s\n", html_dir);
     
     mg_mgr_init(&mgr);
     
@@ -391,8 +187,59 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
 // Handle HTTP requests
 static void handle_http_request(struct mg_connection *c, struct mg_http_message *hm) {
     if (mg_strcmp(hm->uri, mg_str("/")) == 0) {
-        // Serve main HTML page
-        mg_http_reply(c, 200, "Content-Type: text/html\r\n", "%s", html_page);
+        // Serve main HTML page from external file
+        FILE *file = fopen("html/index.html", "r");
+        if (file) {
+            fseek(file, 0, SEEK_END);
+            long file_size = ftell(file);
+            fseek(file, 0, SEEK_SET);
+            
+            char *content = malloc(file_size + 1);
+            fread(content, 1, file_size, file);
+            content[file_size] = '\0';
+            fclose(file);
+            
+            mg_http_reply(c, 200, "Content-Type: text/html\r\n", "%s", content);
+            free(content);
+        } else {
+            mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "HTML file not found");
+        }
+    } else if (mg_strcmp(hm->uri, mg_str("/styles.css")) == 0) {
+        // Serve CSS file
+        FILE *file = fopen("html/styles.css", "r");
+        if (file) {
+            fseek(file, 0, SEEK_END);
+            long file_size = ftell(file);
+            fseek(file, 0, SEEK_SET);
+            
+            char *content = malloc(file_size + 1);
+            fread(content, 1, file_size, file);
+            content[file_size] = '\0';
+            fclose(file);
+            
+            mg_http_reply(c, 200, "Content-Type: text/css\r\n", "%s", content);
+            free(content);
+        } else {
+            mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "CSS file not found");
+        }
+    } else if (mg_strcmp(hm->uri, mg_str("/script.js")) == 0) {
+        // Serve JavaScript file
+        FILE *file = fopen("html/script.js", "r");
+        if (file) {
+            fseek(file, 0, SEEK_END);
+            long file_size = ftell(file);
+            fseek(file, 0, SEEK_SET);
+            
+            char *content = malloc(file_size + 1);
+            fread(content, 1, file_size, file);
+            content[file_size] = '\0';
+            fclose(file);
+            
+            mg_http_reply(c, 200, "Content-Type: application/javascript\r\n", "%s", content);
+            free(content);
+        } else {
+            mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "JS file not found");
+        }
     } else if (mg_strcmp(hm->uri, mg_str("/api/status")) == 0) {
         // API endpoint for status with TLS information
         char json[512];

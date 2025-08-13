@@ -85,6 +85,14 @@ target_include_directories(lvgl_lib PUBLIC
     ${LV_DRIVERS_DIR}/sdl
 )
 
+# Copy HTML files to build directory
+add_custom_command(
+    TARGET lvgl_lib POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/html
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/html ${CMAKE_BINARY_DIR}/html
+    COMMENT "Copying HTML files to build directory"
+)
+
 # Set output directory for LVGL library
 set_target_properties(lvgl_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR}
