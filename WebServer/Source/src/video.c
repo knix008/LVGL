@@ -1,4 +1,5 @@
 #include "video.h"
+#include "audio.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -13,14 +14,23 @@ static char g_video_file_paths[3][256] = {
     "A:../assets/test_video.mp4", 
     "A:../assets/bulb.gif"
 };
+
+// Audio file paths
+static char g_audio_file_paths[2][256] = {
+    "A:../assets/test_audio.wav",
+    "A:../assets/test_audio2.wav"
+};
+
 static int g_current_video_index = 0;
+static int g_current_audio_index = 0;
 static char g_video_file_path[256] = "A:../assets/example.mp4";
 static char g_video_status[64] = "Ready";
 
 // Initialize video system
 void video_init(void) {
     printf("Video: Initializing video system\n");
-    // Video system initialization logic can be added here
+    // Initialize audio system
+    audio_init();
 }
 
 // Load video file
@@ -163,4 +173,64 @@ lv_obj_t* video_get_status_label(void) {
 // Get path label object
 lv_obj_t* video_get_path_label(void) {
     return g_video_path_label;
+}
+
+// Audio control functions
+void video_audio_play(void) {
+    if (audio_is_initialized()) {
+        // Load and play current audio file
+        audio_play_file(g_audio_file_paths[g_current_audio_index]);
+    }
+}
+
+void video_audio_pause(void) {
+    if (audio_is_initialized()) {
+        audio_pause();
+    }
+}
+
+void video_audio_stop(void) {
+    if (audio_is_initialized()) {
+        audio_stop();
+    }
+}
+
+void video_audio_set_volume(int volume) {
+    if (audio_is_initialized()) {
+        audio_set_volume(volume);
+    }
+}
+
+int video_audio_get_volume(void) {
+    if (audio_is_initialized()) {
+        return audio_get_volume();
+    }
+    return 0;
+}
+
+void video_audio_set_mute(bool mute) {
+    if (audio_is_initialized()) {
+        audio_set_mute(mute);
+    }
+}
+
+bool video_audio_is_muted(void) {
+    if (audio_is_initialized()) {
+        return audio_is_muted();
+    }
+    return false;
+}
+
+bool video_audio_is_playing(void) {
+    if (audio_is_initialized()) {
+        return audio_is_playing();
+    }
+    return false;
+}
+
+const char* video_audio_get_status(void) {
+    if (audio_is_initialized()) {
+        return audio_get_status_string();
+    }
+    return "Audio not initialized";
 } 

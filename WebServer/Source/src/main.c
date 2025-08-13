@@ -38,8 +38,6 @@ int main(void)
     lv_ffmpeg_init();
     printf("FFmpeg initialized successfully.\n");
 
-
-
     // Run SQLCipher demonstration
     printf("Running SQLCipher demonstration...\n");
     sqlite_demo();
@@ -55,8 +53,6 @@ int main(void)
     printf("Tab menu GUI created successfully. Window should appear now.\n");
     printf("Web interface available at: http://localhost:8080\n");
     printf("Press Ctrl+C to exit.\n");
-
-
 
     while(1) {
         lv_timer_handler();

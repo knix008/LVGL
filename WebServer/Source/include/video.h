@@ -28,4 +28,15 @@ void video_set_player(lv_obj_t* player);
 void video_set_status_label(lv_obj_t* label);
 void video_set_path_label(lv_obj_t* label);
 
+// Audio control functions
+void video_audio_play(void);
+void video_audio_pause(void);
+void video_audio_stop(void);
+void video_audio_set_volume(int volume);
+int video_audio_get_volume(void);
+void video_audio_set_mute(bool mute);
+bool video_audio_is_muted(void);
+bool video_audio_is_playing(void);
+const char* video_audio_get_status(void);
+
 #endif // VIDEO_H 

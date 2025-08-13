@@ -97,7 +97,7 @@ void lv_example_tab_menu(void) {
     lv_obj_t * tab7 = lv_tabview_add_tab(tabview, "QWERTY"); // Added QWERTY tab
     lv_obj_t * tab8 = lv_tabview_add_tab(tabview, "CAL"); // Added Calendar tab
     lv_obj_t * tab9 = lv_tabview_add_tab(tabview, "Clock"); // Added Clock tab
-    lv_obj_t * tab10 = lv_tabview_add_tab(tabview, "Video"); // Added Video tab
+    lv_obj_t * tab10 = lv_tabview_add_tab(tabview, "A/V"); // Added Video tab
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     
     // Create tab contents using separate functions

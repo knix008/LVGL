@@ -108,6 +108,7 @@ set(MAIN_SOURCES
     src/tab_clock.c
     src/video.c
     src/tab_video.c
+    src/audio.c
     src/clock.c
     src/calendar.c
     src/korean_input.c
