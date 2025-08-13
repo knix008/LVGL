@@ -2,6 +2,7 @@
 #include "mongoose.h"
 #include "ui_components.h"
 #include "tls_config.h"
+#include "tab_control.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -348,12 +349,32 @@ static void handle_websocket_message(struct mg_connection *c, int ev, void *ev_d
 
 // Generate UI state as JSON
 static const char* generate_ui_state_json(void) {
+    // Get current tab from the actual LVGL application
+    tab_index_t current_tab_index = get_current_tab();
+    const char* current_tab_name = "db"; // Default
+    
+    // Map tab index to name
+    switch (current_tab_index) {
+        case TAB_DB: current_tab_name = "db"; break;
+        case TAB_SETTINGS: current_tab_name = "settings"; break;
+        case TAB_NUM: current_tab_name = "num"; break;
+        case TAB_KOR: current_tab_name = "kor"; break;
+        case TAB_CJI: current_tab_name = "cji"; break;
+        case TAB_QWERTY: current_tab_name = "qwerty"; break;
+        case TAB_CAL: current_tab_name = "cal"; break;
+        case TAB_CLOCK: current_tab_name = "clock"; break;
+        case TAB_AV: current_tab_name = "video"; break;
+        case TAB_INFO: current_tab_name = "info"; break;
+        default: current_tab_name = "db"; break;
+    }
+    
     // Enhanced UI state with more detailed information
     snprintf(ui_state_json, sizeof(ui_state_json),
         "{"
         "\"type\":\"ui_state\","
         "\"state\":{"
         "\"current_tab\":\"%s\","
+        "\"current_tab_index\":%d,"
         "\"timestamp\":%ld,"
         "\"web_server_status\":\"%s\","
         "\"tls_enabled\":%s,"
@@ -375,14 +396,15 @@ static const char* generate_ui_state_json(void) {
         "\"cpu_usage\":\"low\""
         "},"
         "\"available_commands\":{"
-        "\"tab\":[\"db\",\"settings\",\"info\",\"calendar\",\"clock\",\"video\",\"korean\",\"chunjiin\"],"
+        "\"tab\":[\"db\",\"settings\",\"info\",\"calendar\",\"clock\",\"video\",\"korean\",\"chunjiin\",\"num\",\"kor\",\"cji\",\"qwerty\"],"
         "\"system\":[\"refresh\",\"status\",\"restart\",\"shutdown\"],"
         "\"database\":[\"query\",\"backup\",\"optimize\"],"
         "\"video\":[\"play\",\"pause\",\"stop\",\"next\",\"prev\",\"volume\"]"
         "}"
         "}"
         "}", 
-        current_tab,
+        current_tab_name,
+        current_tab_index,
         (long)time(NULL), 
         web_server_status,
         tls_enabled ? "true" : "false",
@@ -409,24 +431,8 @@ static void handle_lvgl_command(const char* command, const char* value) {
         strncpy(current_tab, value, sizeof(current_tab) - 1);
         current_tab[sizeof(current_tab) - 1] = '\0';
         
-        if (strcmp(value, "db") == 0) {
-            printf("Switching to Database tab\n");
-            // TODO: Add actual LVGL tab switching logic
-        } else if (strcmp(value, "settings") == 0) {
-            printf("Switching to Settings tab\n");
-        } else if (strcmp(value, "info") == 0) {
-            printf("Switching to Info tab\n");
-        } else if (strcmp(value, "calendar") == 0) {
-            printf("Switching to Calendar tab\n");
-        } else if (strcmp(value, "clock") == 0) {
-            printf("Switching to Clock tab\n");
-        } else if (strcmp(value, "video") == 0) {
-            printf("Switching to Video tab\n");
-        } else if (strcmp(value, "korean") == 0) {
-            printf("Switching to Korean Input tab\n");
-        } else if (strcmp(value, "chunjiin") == 0) {
-            printf("Switching to ChunJiIn Input tab\n");
-        }
+        // Use the tab control function to actually switch tabs
+        switch_to_tab_by_name(value);
         
     } else if (strcmp(command, "system") == 0) {
         // Handle system commands

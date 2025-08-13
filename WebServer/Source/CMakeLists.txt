@@ -126,6 +126,7 @@ set(MAIN_SOURCES
     src/svg_example.c
     src/web_server.c
     src/mongoose.c
+    src/tab_control.c
 )
 
 # SQLCipher amalgamation files

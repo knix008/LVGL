@@ -12,6 +12,7 @@
 #include "ui_callbacks.h"
 #include "font_config.h"
 #include "lv_freetype.h"
+#include "tab_control.h"
 #include <stdio.h>
 
 // Global Korean font variable
@@ -84,6 +85,9 @@ void lv_example_tab_menu(void) {
     
     // 탭 바(탭 버튼 영역) 높이만 줄임
     lv_tabview_set_tab_bar_size(tabview, 40); // Increased tab bar size for larger screen
+    
+    // Set tabview reference for web control
+    set_tabview_reference(tabview);
     
     // Add event callback for tab changes
     lv_obj_add_event_cb(tabview, tab_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
