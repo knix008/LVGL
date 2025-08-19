@@ -46,6 +46,10 @@ private:
     const float NMS_THRESHOLD = 0.4f;
     const float CONFIDENCE_THRESHOLD = 0.1f;  // Lowered from 0.5f
     
+    // Detection tracking
+    int m_current_detection_count = 0;
+    std::vector<cv::Rect> m_last_detections;
+    
 public:
     WebcamIPCApp() : m_socket_fd(-1), m_running(false) {
         m_model_path = "../models/yolov8_face_model.onnx";
@@ -449,6 +453,9 @@ public:
                                 " at " + std::to_string(static_cast<int>(cap.get(cv::CAP_PROP_FPS))) + " FPS";
         send_message(IPC_MSG_STATUS, camera_info);
         
+        // Send initial detection state
+        send_message(IPC_MSG_DETECTION, "Faces: 0");
+        
         while (m_running.load()) {
             cap >> frame;
             if (frame.empty()) {
@@ -467,6 +474,9 @@ public:
             // Perform real face detection every 5 frames for real-time visual feedback
             if (frame_count % 5 == 0) {
                 detect_faces(frame, current_detections, current_confidences, current_class_ids);
+                
+                // Check for detection count changes and send to GUI
+                check_and_send_detection_changes(current_detections);
             }
             
             // Draw current detections on the frame
@@ -523,6 +533,33 @@ public:
         return m_running.load();
     }
     
+    void check_and_send_detection_changes(const std::vector<cv::Rect>& current_detections) {
+        int new_count = static_cast<int>(current_detections.size());
+        
+        // Check if detection count has changed
+        if (new_count != m_current_detection_count) {
+            std::cout << "Detection count changed: " << m_current_detection_count << " -> " << new_count << std::endl;
+            
+            // Create detection message with coordinates
+            std::string detection_msg = "Faces: " + std::to_string(new_count);
+            
+            // Add coordinates for each detection
+            for (size_t i = 0; i < current_detections.size(); ++i) {
+                const cv::Rect& rect = current_detections[i];
+                detection_msg += " | Face" + std::to_string(i + 1) + ": (" + 
+                               std::to_string(rect.x) + "," + std::to_string(rect.y) + "," + 
+                               std::to_string(rect.width) + "x" + std::to_string(rect.height) + ")";
+            }
+            
+            // Send detection message to GUI
+            send_message(IPC_MSG_DETECTION, detection_msg);
+            
+            // Update tracking variables
+            m_current_detection_count = new_count;
+            m_last_detections = current_detections;
+        }
+    }
+    
 private:
     void run_simulation() {
         int frame_count = 0;
@@ -557,6 +594,9 @@ private:
                     sim_confidences.push_back(0.85f);
                     sim_class_ids.push_back(0);
                 }
+                
+                // Check for detection count changes and send to GUI
+                check_and_send_detection_changes(sim_detections);
             }
             
             // Draw detections on simulation frame
@@ -586,6 +626,11 @@ private:
             if (frame_count % 30 == 0) { // Every 3 seconds
                 send_message(IPC_MSG_STATUS, "Simulation: No camera available (640x480)");
                 send_message(IPC_MSG_FRAME_PROCESSED, "Simulated frame: " + std::to_string(frame_count));
+            }
+            
+            // Send initial detection state for simulation
+            if (frame_count == 1) {
+                send_message(IPC_MSG_DETECTION, "Faces: 0");
             }
             
             // Handle key presses
