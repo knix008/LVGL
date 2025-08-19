@@ -644,6 +644,7 @@ void WebcamIPCApp::draw_detections(cv::Mat& frame, const std::vector<cv::Rect>& 
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 2);
         }
     }
+}
 
 static WebcamIPCApp* g_app = nullptr;
 
