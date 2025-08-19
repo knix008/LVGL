@@ -365,6 +365,7 @@ static const char* generate_ui_state_json(void) {
         case TAB_CAL: current_tab_name = "cal"; break;
         case TAB_CLOCK: current_tab_name = "clock"; break;
         case TAB_AV: current_tab_name = "video"; break;
+        case TAB_OPENCV: current_tab_name = "opencv"; break;
         case TAB_INFO: current_tab_name = "info"; break;
         default: current_tab_name = "db"; break;
     }
@@ -397,7 +398,7 @@ static const char* generate_ui_state_json(void) {
         "\"cpu_usage\":\"low\""
         "},"
         "\"available_commands\":{"
-        "\"tab\":[\"db\",\"settings\",\"info\",\"calendar\",\"clock\",\"video\",\"korean\",\"chunjiin\",\"num\",\"kor\",\"cji\",\"qwerty\"],"
+        "\"tab\":[\"db\",\"settings\",\"info\",\"calendar\",\"clock\",\"video\",\"opencv\",\"korean\",\"chunjiin\",\"num\",\"kor\",\"cji\",\"qwerty\"],"
         "\"video\":[\"play\",\"pause\",\"stop\",\"next\",\"prev\",\"volume\"]"
         "},"
         "\"video_status\":{"

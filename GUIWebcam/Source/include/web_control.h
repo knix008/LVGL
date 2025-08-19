@@ -18,7 +18,8 @@ typedef enum {
     TAB_CAL = 6,
     TAB_CLOCK = 7,
     TAB_AV = 8,
-    TAB_INFO = 9
+    TAB_OPENCV = 9,
+    TAB_INFO = 10
 } tab_index_t;
 
 // Function to switch to a specific tab

@@ -139,6 +139,14 @@ set(SQLCIPHER_SOURCES
 # Create main executable
 add_executable(main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
 
+# Copy HTML files when main executable is built
+add_custom_command(
+    TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/html
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/html ${CMAKE_BINARY_DIR}/html
+    COMMENT "Copying HTML files to build directory for web server"
+)
+
 # Add include directories
 target_include_directories(main PRIVATE include sqlcipher sqlite lvgl lvgl/src/libs/svg lvgl/src/libs/ffmpeg .)
 
