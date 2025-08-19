@@ -668,12 +668,14 @@ void WebcamIPCApp::start_webcam() {
             cv::imshow("Webcam Detection", display_frame);
             
             // Send frame processed message only every 30 frames (about once per second)
+            /*
             if (frame_count % 30 == 0) {
                 std::string frame_data = "Frame: " + std::to_string(frame_count) + 
                                        ", FPS: " + std::to_string(static_cast<int>(fps)) + 
                                        ", Time: " + std::to_string(elapsed.count() / 1000.0f) + "s";
                 send_message(IPC_MSG_FRAME_PROCESSED, frame_data);
             }
+            */
             
             // Handle key presses
             int key = cv::waitKey(1) & 0xFF;
