@@ -14,6 +14,8 @@ A LVGL-based GUI application with embedded web server, AI-powered face detection
 - **Korean Input**: ChunJiIn and QWERTY Korean input methods
 - **Calendar & Clock**: Date/time functionality
 - **Remote Control**: Web-based interface for controlling the LVGL application
+- **OpenCV Tab**: Real-time display of webcam detection messages
+- **Web Interface**: Complete web-based control interface with tab navigation
 
 ## Quick Start
 
@@ -41,7 +43,7 @@ A LVGL-based GUI application with embedded web server, AI-powered face detection
 
 This will:
 - Check dependencies
-- Build the application
+- Build the application (including automatic HTML file copying)
 - Start the LVGL GUI with embedded web server
 
 ## Usage
@@ -71,18 +73,19 @@ The project includes two main executables:
 cd Source/build
 ./main
 ```
-- Starts the LVGL GUI with all tabs
-- Includes OpenCV tab for webcam message display
+- Starts the LVGL GUI with all tabs including OpenCV tab
 - Web interface available at http://localhost:8080
+- Automatic HTML file copying during build process
 
 #### 2. Webcam IPC Application
 ```bash
 cd Source/build
-./webcam_ipc_app
+./webcam_ipc_app --model ../models/yolov8_face_model.onnx
 ```
 - Standalone webcam processing with AI face detection
 - Communicates with GUI via IPC (Unix domain socket)
 - Real-time face detection with coordinate reporting
+- Optimized message frequency (every 30 frames to reduce traffic)
 - Automatic detection count change notifications
 
 ### Running Both Applications
@@ -98,7 +101,7 @@ cd Source/build
 **Terminal 2 (Webcam):**
 ```bash
 cd Source/build
-./webcam_ipc_app
+./webcam_ipc_app --model ../models/yolov8_face_model.onnx
 ```
 
 ### Web Interface
@@ -112,6 +115,26 @@ Once the application is running, you can access:
 - **WebSocket**: ws://localhost:8080/ws
 - **Secure WebSocket**: wss://localhost:8443/ws
 
+#### Web Interface Features
+
+The web interface provides complete control over the LVGL application:
+
+- **Tab Navigation**: Switch between all GUI tabs including OpenCV tab
+- **Video Controls**: Play, pause, stop, next, previous, volume control
+- **Real-time Status**: View current application state and status
+- **WebSocket Communication**: Real-time bidirectional communication
+
+#### Available Tab Controls
+
+- Database Tab
+- Settings Tab
+- Info Tab
+- Calendar Tab
+- Clock Tab
+- Video Tab
+- **OpenCV Tab** - New! Real-time webcam detection display
+- Korean Input Tabs (Korean, ChunJiIn, QWERTY, Number)
+
 ## AI Face Detection
 
 ### Features
@@ -122,6 +145,7 @@ Once the application is running, you can access:
 - **Coordinate Reporting**: Real-time bounding box coordinates
 - **Change Detection**: Automatic notifications when face count changes
 - **Simulation Mode**: Fallback when no camera is available
+- **Optimized Communication**: Reduced message frequency to prevent GUI overload
 
 ### Model Information
 
@@ -130,6 +154,7 @@ Once the application is running, you can access:
 - **Confidence Threshold**: 0.1 (10%)
 - **NMS Threshold**: 0.4
 - **Processing**: Every 5 frames for real-time performance
+- **Message Frequency**: Every 30 frames to reduce IPC traffic
 
 ### Detection Output
 
@@ -150,7 +175,7 @@ The webcam application communicates with the GUI via Unix domain socket:
 - **Protocol**: SOCK_DGRAM (datagram)
 - **Message Types**:
   - `IPC_MSG_DETECTION`: Face detection results with coordinates
-  - `IPC_MSG_FRAME_PROCESSED`: Frame processing statistics
+  - `IPC_MSG_FRAME_PROCESSED`: Frame processing statistics (every 30 frames)
   - `IPC_MSG_STATUS`: Application status updates
   - `IPC_MSG_ERROR`: Error messages
 
@@ -175,19 +200,25 @@ GUIWebcam/
     │   ├── web_server.h
     │   ├── mongoose.h
     │   ├── tab_opencv.h
+    │   ├── web_control.h
     │   └── tls_config.h
     ├── src/           # Source files
     │   ├── main.c                    # LVGL GUI application
     │   ├── webcam_ipc_app.cpp        # Webcam AI application
     │   ├── tab_opencv.c              # OpenCV tab for GUI
-    │   ├── web_server.c
+    │   ├── web_server.c              # Web server implementation
+    │   ├── web_control.c             # Web control handlers
     │   ├── mongoose.c
     │   └── ...
+    ├── html/          # Web interface files
+    │   ├── index.html                # Main web interface
+    │   ├── script.js                 # JavaScript functionality
+    │   └── styles.css                # CSS styling
     ├── assets/        # Media files
     ├── lvgl/          # LVGL library
     ├── sqlcipher/     # SQLCipher library
     ├── onnxruntime/   # ONNX Runtime library
-    └── build/         # Build artifacts
+    └── build/         # Build artifacts (auto-copied HTML files)
 ```
 
 ## LVGL Features
@@ -202,7 +233,7 @@ GUIWebcam/
 - **Calendar Tab**: Date and calendar functionality
 - **Clock Tab**: Time display and management
 - **Video Tab**: Video playback with controls
-- **OpenCV Tab**: Real-time webcam detection messages
+- **OpenCV Tab**: Real-time webcam detection messages and status
 
 ## Development
 
@@ -220,6 +251,8 @@ This builds both:
 - `main` - LVGL GUI application
 - `webcam_ipc_app` - Webcam AI processing application
 
+**Note**: The build process automatically copies HTML files from `Source/html` to `Source/build/html` for the web server.
+
 ### Running
 
 ```bash
@@ -229,7 +262,7 @@ cd Source/build
 ./main
 
 # Run webcam application (in another terminal)
-./webcam_ipc_app
+./webcam_ipc_app --model ../models/yolov8_face_model.onnx
 ```
 
 ### Testing
@@ -243,6 +276,9 @@ cd Source
 ./build_chunjiin_test.sh
 ./build_calendar_test.sh
 ./build_clock_test.sh
+
+# Test web interface
+curl http://localhost:8080
 ```
 
 ## Troubleshooting
@@ -258,6 +294,8 @@ cd Source
 7. **Webcam not detected**: Check camera permissions and try different camera indices
 8. **Face detection not working**: Ensure ONNX Runtime and model files are present
 9. **IPC communication fails**: Check that both applications are running and socket permissions
+10. **OpenCV button not visible**: Ensure the application was built after the latest changes
+11. **Too many messages**: The system now limits messages to every 30 frames to prevent overload
 
 ### Dependencies
 
@@ -285,6 +323,12 @@ If the webcam application can't detect your camera:
 
 4. **Check GStreamer warnings**: Some warnings are normal and don't affect functionality
 
+### Web Interface Issues
+
+1. **OpenCV button not working**: Ensure both applications are running and the web interface is accessible
+2. **Tab switching not working**: Check WebSocket connection and browser console for errors
+3. **HTML files not updated**: The build process automatically copies HTML files, but you may need to rebuild
+
 ## License
 
 This project uses various open-source libraries:
@@ -307,6 +351,15 @@ This project uses various open-source libraries:
 
 ## Recent Updates
 
+### Version 2.1 - Web Interface & Performance Improvements
+- ✅ Added OpenCV button to web interface for direct tab navigation
+- ✅ Implemented automatic HTML file copying during build process
+- ✅ Optimized message frequency to reduce IPC traffic (every 30 frames)
+- ✅ Fixed confidence display to show real-time values instead of static 90%
+- ✅ Improved web server command parsing and error handling
+- ✅ Enhanced tab navigation with proper OpenCV tab support
+- ✅ Added comprehensive web interface testing and validation
+
 ### Version 2.0 - AI Face Detection
 - ✅ Added YOLOv8 face detection model
 - ✅ Real-time webcam processing with AI inference
@@ -318,3 +371,12 @@ This project uses various open-source libraries:
 - ✅ OpenCV tab for real-time message display
 - ✅ Improved confidence thresholds for better detection
 - ✅ Fixed coordinate calculation for proper bounding boxes
+
+### Version 1.0 - Core Features
+- ✅ LVGL GUI with multiple tabs
+- ✅ Embedded web server with WebSocket support
+- ✅ Database integration with SQLCipher
+- ✅ Video playback with FFmpeg
+- ✅ Korean input methods (ChunJiIn, QWERTY)
+- ✅ Calendar and clock functionality
+- ✅ TLS 1.3 support for secure connections
