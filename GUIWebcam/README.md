@@ -1,10 +1,13 @@
-# LVGL WebServer Application
+# LVGL Webcam Application
 
-A LVGL-based GUI application with an embedded web server for remote control and monitoring.
+A LVGL-based GUI application with embedded web server, AI-powered face detection, and real-time webcam processing capabilities.
 
 ## Features
 
 - **LVGL GUI**: Rich graphical user interface with multiple tabs
+- **AI Face Detection**: YOLOv8-based real-time face detection using ONNX Runtime
+- **Webcam Processing**: Real-time camera capture and processing
+- **IPC Communication**: Inter-process communication between webcam and GUI
 - **Embedded Web Server**: Mongoose-based HTTP server with WebSocket support
 - **Database Integration**: SQLCipher encrypted database
 - **Video Support**: FFmpeg-based video playback
@@ -22,12 +25,14 @@ A LVGL-based GUI application with an embedded web server for remote control and 
 - SDL2 (`libsdl2-dev`)
 - FFmpeg libraries
 - OpenSSL (`libssl-dev`) - for TLS 1.3 support
+- OpenCV (`libopencv-dev`) - for webcam processing
+- ONNX Runtime - for AI inference
 - curl (for testing)
 
 ### Installation
 
 1. Clone the repository
-2. Navigate to the WebServer directory
+2. Navigate to the project directory
 3. Run the application:
 
 ```bash
@@ -57,6 +62,45 @@ This will:
 ./run.sh help
 ```
 
+### Webcam Application
+
+The project includes two main executables:
+
+#### 1. LVGL GUI Application
+```bash
+cd Source/build
+./main
+```
+- Starts the LVGL GUI with all tabs
+- Includes OpenCV tab for webcam message display
+- Web interface available at http://localhost:8080
+
+#### 2. Webcam IPC Application
+```bash
+cd Source/build
+./webcam_ipc_app
+```
+- Standalone webcam processing with AI face detection
+- Communicates with GUI via IPC (Unix domain socket)
+- Real-time face detection with coordinate reporting
+- Automatic detection count change notifications
+
+### Running Both Applications
+
+For full functionality, run both applications:
+
+**Terminal 1 (GUI):**
+```bash
+cd Source/build
+./main
+```
+
+**Terminal 2 (Webcam):**
+```bash
+cd Source/build
+./webcam_ipc_app
+```
+
 ### Web Interface
 
 Once the application is running, you can access:
@@ -68,50 +112,52 @@ Once the application is running, you can access:
 - **WebSocket**: ws://localhost:8080/ws
 - **Secure WebSocket**: wss://localhost:8443/ws
 
-### TLS 1.3 Security
+## AI Face Detection
 
-The application supports TLS 1.3 for secure HTTPS communication:
+### Features
 
-#### Features
-- **TLS 1.3 Protocol**: Latest security standard with enhanced performance
-- **Self-Signed Certificates**: Automatically generated for development/testing
-- **Secure WebSocket**: WSS support for real-time encrypted communication
-- **Certificate Management**: Automatic certificate generation and loading
+- **YOLOv8 Model**: State-of-the-art face detection using YOLOv8
+- **Real-time Processing**: 30 FPS target with detection every 5 frames
+- **Multi-camera Support**: Automatic camera detection (indices 0, 2, 3, 1)
+- **Coordinate Reporting**: Real-time bounding box coordinates
+- **Change Detection**: Automatic notifications when face count changes
+- **Simulation Mode**: Fallback when no camera is available
 
-#### Certificate Details
-- **Certificate Location**: `certs/` directory (created automatically)
-- **Certificate Type**: Self-signed X.509 certificates
-- **Key Size**: 2048-bit RSA
-- **Validity**: 365 days from generation
-- **Subject**: `CN=localhost, O=LVGL WebServer, C=US`
+### Model Information
 
-#### Security Considerations
-- Self-signed certificates are suitable for development and internal use
-- For production deployment, replace with certificates from a trusted CA
-- TLS 1.3 provides forward secrecy and improved security over TLS 1.2
-- All HTTPS traffic is encrypted end-to-end
+- **Model**: `yolov8_face_model.onnx` (12MB)
+- **Input Resolution**: 640x640 pixels
+- **Confidence Threshold**: 0.1 (10%)
+- **NMS Threshold**: 0.4
+- **Processing**: Every 5 frames for real-time performance
 
-#### Testing HTTPS
-```bash
-# Test HTTPS endpoints (ignore certificate warnings for self-signed certs)
-curl -k https://localhost:8443/api/status
-curl -k https://localhost:8443/
+### Detection Output
 
-# Test secure WebSocket
-wscat -c wss://localhost:8443/ws --no-check
+The webcam application sends detection messages in this format:
+```
+"Faces: 2 | Face1: (270,157,88x116) | Face2: (356,220,12x12)"
 ```
 
-### Testing the Web Server
+Where:
+- **Faces: N** - Total number of detected faces
+- **FaceN: (x,y,widthxheight)** - Bounding box coordinates for each face
 
-```bash
-# Test web server functionality
-./test_web.sh
-```
+### IPC Communication
+
+The webcam application communicates with the GUI via Unix domain socket:
+
+- **Socket Path**: `/tmp/opencv_gui_socket`
+- **Protocol**: SOCK_DGRAM (datagram)
+- **Message Types**:
+  - `IPC_MSG_DETECTION`: Face detection results with coordinates
+  - `IPC_MSG_FRAME_PROCESSED`: Frame processing statistics
+  - `IPC_MSG_STATUS`: Application status updates
+  - `IPC_MSG_ERROR`: Error messages
 
 ## Project Structure
 
 ```
-WebServer/
+GUIWebcam/
 ├── run.sh              # Main runner script
 ├── test_web.sh         # Web server test script
 ├── README.md           # This file
@@ -119,53 +165,30 @@ WebServer/
 │   ├── server.crt      # Server certificate
 │   ├── server.key      # Private key
 │   └── ca.crt          # CA certificate
+├── models/             # AI models
+│   ├── yolov8_face_model.onnx  # Face detection model
+│   ├── yolov8_face_model.pt    # PyTorch version
+│   ├── yolov8n.onnx            # General YOLOv8 model
+│   └── yolov8n.pt              # PyTorch version
 └── Source/
     ├── include/        # Header files
     │   ├── web_server.h
     │   ├── mongoose.h
-    │   └── tls_config.h # TLS configuration
+    │   ├── tab_opencv.h
+    │   └── tls_config.h
     ├── src/           # Source files
-    │   ├── main.c
+    │   ├── main.c                    # LVGL GUI application
+    │   ├── webcam_ipc_app.cpp        # Webcam AI application
+    │   ├── tab_opencv.c              # OpenCV tab for GUI
     │   ├── web_server.c
     │   ├── mongoose.c
     │   └── ...
     ├── assets/        # Media files
     ├── lvgl/          # LVGL library
     ├── sqlcipher/     # SQLCipher library
+    ├── onnxruntime/   # ONNX Runtime library
     └── build/         # Build artifacts
 ```
-
-## API Endpoints
-
-### HTTP API
-
-- `GET /` - Web interface
-- `GET /api/status` - Server status (includes TLS information)
-- `GET /api/ui/state` - Current UI state
-
-### HTTPS API
-
-- `GET /` - Secure web interface
-- `GET /api/status` - Secure server status
-- `GET /api/ui/state` - Secure UI state
-
-### WebSocket
-
-- `ws://localhost:8080/ws` - Real-time communication
-- `wss://localhost:8443/ws` - Secure real-time communication
-
-#### WebSocket Commands
-
-Send JSON messages to control the LVGL application:
-
-```json
-{
-  "type": "tab",
-  "value": "db"
-}
-```
-
-Available tab values: `db`, `settings`, `info`, `calendar`, `clock`, `video`
 
 ## LVGL Features
 
@@ -179,6 +202,7 @@ Available tab values: `db`, `settings`, `info`, `calendar`, `clock`, `video`
 - **Calendar Tab**: Date and calendar functionality
 - **Clock Tab**: Time display and management
 - **Video Tab**: Video playback with controls
+- **OpenCV Tab**: Real-time webcam detection messages
 
 ## Development
 
@@ -189,14 +213,23 @@ cd Source
 mkdir -p build
 cd build
 cmake ..
-make main
+make
 ```
+
+This builds both:
+- `main` - LVGL GUI application
+- `webcam_ipc_app` - Webcam AI processing application
 
 ### Running
 
 ```bash
 cd Source/build
+
+# Run GUI application
 ./main
+
+# Run webcam application (in another terminal)
+./webcam_ipc_app
 ```
 
 ### Testing
@@ -222,14 +255,35 @@ cd Source
 4. **HTTPS not working**: Ensure OpenSSL is installed and port 8443 is available
 5. **Certificate warnings**: Self-signed certificates will show browser warnings (normal for development)
 6. **TLS handshake fails**: Check that OpenSSL libraries are properly linked
+7. **Webcam not detected**: Check camera permissions and try different camera indices
+8. **Face detection not working**: Ensure ONNX Runtime and model files are present
+9. **IPC communication fails**: Check that both applications are running and socket permissions
 
 ### Dependencies
 
 Install required packages on Ubuntu/Debian:
 
 ```bash
-sudo apt-get install cmake make libfreetype6-dev libsdl2-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libssl-dev
+sudo apt-get install cmake make libfreetype6-dev libsdl2-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libssl-dev libopencv-dev
 ```
+
+### Camera Issues
+
+If the webcam application can't detect your camera:
+
+1. **Check camera permissions**:
+   ```bash
+   ls -la /dev/video*
+   ```
+
+2. **Test camera with other applications**:
+   ```bash
+   v4l2-ctl --list-devices
+   ```
+
+3. **Try different camera indices**: The application automatically tries indices 0, 2, 3, 1
+
+4. **Check GStreamer warnings**: Some warnings are normal and don't affect functionality
 
 ## License
 
@@ -239,6 +293,9 @@ This project uses various open-source libraries:
 - SQLCipher (BSD License)
 - SDL2 (zlib License)
 - FFmpeg (LGPL/GPL)
+- OpenCV (Apache 2.0 License)
+- ONNX Runtime (MIT License)
+- YOLOv8 (AGPL-3.0 License)
 
 ## Contributing
 
@@ -247,3 +304,17 @@ This project uses various open-source libraries:
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+## Recent Updates
+
+### Version 2.0 - AI Face Detection
+- ✅ Added YOLOv8 face detection model
+- ✅ Real-time webcam processing with AI inference
+- ✅ IPC communication between webcam and GUI applications
+- ✅ Automatic detection count change notifications
+- ✅ Coordinate reporting for detected faces
+- ✅ Multi-camera support with automatic detection
+- ✅ Simulation mode for testing without camera
+- ✅ OpenCV tab for real-time message display
+- ✅ Improved confidence thresholds for better detection
+- ✅ Fixed coordinate calculation for proper bounding boxes
