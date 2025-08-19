@@ -19,9 +19,9 @@ WebcamIPCApp::WebcamIPCApp()
       m_model_loaded(false),
       INPUT_WIDTH(640),
       INPUT_HEIGHT(640),
-      SCORE_THRESHOLD(0.1f),
+      SCORE_THRESHOLD(0.25f),  // Increased from 0.1f to reduce false positives
       NMS_THRESHOLD(0.4f),
-      CONFIDENCE_THRESHOLD(0.1f),
+      CONFIDENCE_THRESHOLD(0.25f),  // Increased from 0.1f to reduce false positives
       m_current_detection_count(0) {
     m_model_path = "../models/yolov8_face_model.onnx";
 }
@@ -225,18 +225,36 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             int width = static_cast<int>(w * scale_x);
             int height = static_cast<int>(h * scale_y);
 
-            // Debug: Print detection details for high confidence detections
-            if (conf > 0.01f) {  // Only print for reasonable confidence
-                std::cout << "Detection " << i << ": x=" << x << ", y=" << y 
-                         << ", w=" << w << ", h=" << h << ", conf=" << conf
-                         << " -> rect(" << left << "," << top << "," << width << "x" << height << ")" << std::endl;
-            }
+                    // Debug: Print detection details for high confidence detections
+        if (conf > 0.01f) {  // Only print for reasonable confidence
+            std::cout << "Detection " << i << ": x=" << x << ", y=" << y 
+                     << ", w=" << w << ", h=" << h << ", conf=" << conf
+                     << " -> rect(" << left << "," << top << "," << width << "x" << height << ")"
+                     << " [aspect=" << (static_cast<float>(width) / height) << "]" << std::endl;
+        }
 
             // Clamp to image bounds
             left = std::max(0, std::min(img_w - 1, left));
             top = std::max(0, std::min(img_h - 1, top));
             width = std::max(0, std::min(img_w - left, width));
             height = std::max(0, std::min(img_h - top, height));
+
+            // Additional filtering to reduce false positives
+            // Check minimum size (face should be reasonably sized)
+            if (width < 20 || height < 20) continue;
+            
+            // Check aspect ratio (face should have reasonable proportions)
+            float aspect_ratio = static_cast<float>(width) / height;
+            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;
+            
+            // Check if detection is too close to image edges (likely false positive)
+            int margin = 10;
+            if (left < margin || top < margin || 
+                (left + width) > (img_w - margin) || 
+                (top + height) > (img_h - margin)) {
+                // Only allow edge detections if they have very high confidence
+                if (conf < 0.6f) continue;
+            }
 
             boxes.emplace_back(left, top, width, height);
             confidences.push_back(conf * class_score);
@@ -246,10 +264,37 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
         // NMS
         std::vector<int> indices;
         cv::dnn::NMSBoxes(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
+        
+        // Apply adaptive confidence filtering based on number of detections
+        std::vector<cv::Rect> filtered_detections;
+        std::vector<float> filtered_confidences;
+        
         for (int idx : indices) {
             if (idx >= 0 && idx < static_cast<int>(boxes.size())) {
-                detections.push_back(boxes[idx]);
+                float detection_conf = confidences[idx];
+                
+                // Adaptive threshold: if we have many detections, be more strict
+                float adaptive_threshold = CONFIDENCE_THRESHOLD;
+                if (indices.size() > 3) {
+                    adaptive_threshold = std::max(0.4f, CONFIDENCE_THRESHOLD);  // 40% if many detections
+                } else if (indices.size() > 1) {
+                    adaptive_threshold = std::max(0.3f, CONFIDENCE_THRESHOLD);  // 30% if multiple detections
+                }
+                
+                if (detection_conf >= adaptive_threshold) {
+                    filtered_detections.push_back(boxes[idx]);
+                    filtered_confidences.push_back(detection_conf);
+                }
             }
+        }
+        
+        // Use filtered detections
+        detections = filtered_detections;
+        
+        // Debug: Show filtering results
+        if (!detections.empty()) {
+            std::cout << "Filtering: " << indices.size() << " NMS detections -> " 
+                     << detections.size() << " final detections" << std::endl;
         }
 
         return detections;
