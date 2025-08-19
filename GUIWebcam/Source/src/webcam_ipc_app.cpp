@@ -300,6 +300,160 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
         return detections;
     }
     
+void WebcamIPCApp::postprocess_output_with_confidence(const cv::Mat& input_image,
+                                             const float* output_data,
+                                             const std::vector<int64_t>& output_shape,
+                                             std::vector<cv::Rect>& detections,
+                                             std::vector<float>& confidences,
+                                             std::vector<int>& class_ids) {
+        // Clear output vectors
+        detections.clear();
+        confidences.clear();
+        class_ids.clear();
+        
+        if (output_data == nullptr || output_shape.empty()) {
+            return;
+        }
+
+        // Expect shape like [1, A, C] or [1, C, A]
+        int64_t dim1 = output_shape.size() > 1 ? output_shape[1] : 0;
+        int64_t dim2 = output_shape.size() > 2 ? output_shape[2] : 0;
+
+        int rows = 0;      // number of anchors
+        int dims = 0;      // values per anchor (bbox + conf + classes)
+        bool channels_first = false; // if true: [C, A], else [A, C]
+
+        if (output_shape.size() == 3 && dim1 > 0 && dim2 > 0) {
+            // For YOLOv8, the format is typically [batch, channels, anchors]
+            // where channels = 5 (x, y, w, h, confidence) for single class
+            if (dim1 == 5) {
+                dims = static_cast<int>(dim1);  // 5 channels
+                rows = static_cast<int>(dim2);  // 8400 anchors
+                channels_first = true; // layout [C, A] - channels first
+            } else {
+                rows = static_cast<int>(dim1);
+                dims = static_cast<int>(dim2);
+                channels_first = false; // layout [A, C]
+            }
+        } else if (output_shape.size() == 2) {
+            rows = static_cast<int>(output_shape[0]);
+            dims = static_cast<int>(output_shape[1]);
+            channels_first = false;
+        } else {
+            // Unknown layout
+            return;
+        }
+
+        if (rows <= 0 || dims < 5) return;
+
+        auto value_at = [&](int anchor_idx, int c) -> float {
+            if (channels_first) {
+                // [C, A]
+                return output_data[c * rows + anchor_idx];
+            } else {
+                // [A, C]
+                return output_data[anchor_idx * dims + c];
+            }
+        };
+
+        int img_w = input_image.cols;
+        int img_h = input_image.rows;
+        std::vector<cv::Rect> boxes;
+        std::vector<float> temp_confidences;
+        std::vector<int> temp_class_ids;
+
+        for (int i = 0; i < rows; ++i) {
+            float x = value_at(i, 0);
+            float y = value_at(i, 1);
+            float w = value_at(i, 2);
+            float h = value_at(i, 3);
+            float conf = value_at(i, 4);
+
+            if (conf < CONFIDENCE_THRESHOLD) continue;
+
+            int class_id = 0;
+            float class_score = 1.0f;
+
+            if (dims > 5) {
+                // There are class scores
+                int num_classes = dims - 5;
+                float best_score = -1.0f;
+                int best_id = 0;
+                for (int c = 0; c < num_classes; ++c) {
+                    float sc = value_at(i, 5 + c);
+                    if (sc > best_score) {
+                        best_score = sc;
+                        best_id = c;
+                    }
+                }
+                if (best_score < SCORE_THRESHOLD) continue;
+                class_id = best_id;
+                class_score = best_score;
+            }
+
+            // Coordinates are in model input space (640x640), need to scale to image space
+            float scale_x = static_cast<float>(img_w) / INPUT_WIDTH;
+            float scale_y = static_cast<float>(img_h) / INPUT_HEIGHT;
+            
+            int left = static_cast<int>((x - 0.5f * w) * scale_x);
+            int top = static_cast<int>((y - 0.5f * h) * scale_y);
+            int width = static_cast<int>(w * scale_x);
+            int height = static_cast<int>(h * scale_y);
+
+            // Clamp to image bounds
+            left = std::max(0, std::min(img_w - 1, left));
+            top = std::max(0, std::min(img_h - 1, top));
+            width = std::max(0, std::min(img_w - left, width));
+            height = std::max(0, std::min(img_h - top, height));
+
+            // Additional filtering to reduce false positives
+            // Check minimum size (face should be reasonably sized)
+            if (width < 20 || height < 20) continue;
+            
+            // Check aspect ratio (face should have reasonable proportions)
+            float aspect_ratio = static_cast<float>(width) / height;
+            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;
+            
+            // Check if detection is too close to image edges (likely false positive)
+            int margin = 10;
+            if (left < margin || top < margin || 
+                (left + width) > (img_w - margin) || 
+                (top + height) > (img_h - margin)) {
+                // Only allow edge detections if they have very high confidence
+                if (conf < 0.6f) continue;
+            }
+
+            boxes.emplace_back(left, top, width, height);
+            temp_confidences.push_back(conf * class_score);
+            temp_class_ids.push_back(class_id);
+        }
+
+        // NMS
+        std::vector<int> indices;
+        cv::dnn::NMSBoxes(boxes, temp_confidences, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
+        
+        // Apply adaptive confidence filtering based on number of detections
+        for (int idx : indices) {
+            if (idx >= 0 && idx < static_cast<int>(boxes.size())) {
+                float detection_conf = temp_confidences[idx];
+                
+                // Adaptive threshold: if we have many detections, be more strict
+                float adaptive_threshold = CONFIDENCE_THRESHOLD;
+                if (indices.size() > 3) {
+                    adaptive_threshold = std::max(0.4f, CONFIDENCE_THRESHOLD);  // 40% if many detections
+                } else if (indices.size() > 1) {
+                    adaptive_threshold = std::max(0.3f, CONFIDENCE_THRESHOLD);  // 30% if multiple detections
+                }
+                
+                if (detection_conf >= adaptive_threshold) {
+                    detections.push_back(boxes[idx]);
+                    confidences.push_back(detection_conf);
+                    class_ids.push_back(temp_class_ids[idx]);
+                }
+            }
+        }
+    }
+    
 void WebcamIPCApp::detect_faces(const cv::Mat& frame, std::vector<cv::Rect>& detections, 
                      std::vector<float>& confidences, std::vector<int>& class_ids) {
         if (!m_model_loaded) {
@@ -368,7 +522,7 @@ void WebcamIPCApp::detect_faces(const cv::Mat& frame, std::vector<cv::Rect>& det
 
             std::vector<float> output_vector(output_data, output_data + output_size);
             
-            // Postprocess to get detections
+            // Postprocess to get detections with confidence values
             std::vector<cv::Rect> face_detections = postprocess_output_dynamic(frame, output_data, output_shape);
             
             // Debug output
@@ -380,14 +534,14 @@ void WebcamIPCApp::detect_faces(const cv::Mat& frame, std::vector<cv::Rect>& det
             std::cout << "], size: " << output_size << std::endl;
             std::cout << "Detected " << face_detections.size() << " faces" << std::endl;
             
-            // Convert to our format
-            for (const auto& detection : face_detections) {
-                detections.push_back(detection);
-                confidences.push_back(0.9f); // Default confidence for face detection
-                class_ids.push_back(0); // Face class
-                std::cout << "Face detected at: (" << detection.x << ", " << detection.y 
-                         << ", " << detection.width << "x" << detection.height << ")" << std::endl;
-            }
+            // Get the actual confidence values from postprocessing
+            std::vector<float> actual_confidences;
+            std::vector<int> actual_class_ids;
+            
+            // We need to call postprocess again to get confidence values, or modify postprocess to return them
+            // For now, let's modify the approach to get real confidence values
+            postprocess_output_with_confidence(frame, output_data, output_shape, 
+                                             detections, confidences, class_ids);
             
         } catch (const Ort::Exception& e) {
             std::cerr << "Inference error: " << e.what() << std::endl;
@@ -683,8 +837,10 @@ void WebcamIPCApp::draw_detections(cv::Mat& frame, const std::vector<cv::Rect>& 
             // Draw rectangle
             cv::rectangle(frame, rect, color, 2);
             
-            // Draw label with confidence
-            std::string text = label + " " + std::to_string(static_cast<int>(conf * 100)) + "%";
+            // Draw label with confidence (show one decimal place for better precision)
+            char confidence_text[32];
+            snprintf(confidence_text, sizeof(confidence_text), "%.1f%%", conf * 100.0f);
+            std::string text = label + " " + confidence_text;
             cv::putText(frame, text, cv::Point(rect.x, rect.y - 10), 
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 2);
         }

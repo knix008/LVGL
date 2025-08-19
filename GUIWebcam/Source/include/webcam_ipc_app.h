@@ -129,6 +129,22 @@ public:
                                                     const std::vector<int64_t>& output_shape);
     
     /**
+     * @brief Postprocess YOLOv8 model output to extract detections with confidence values
+     * @param input_image Original input image for coordinate scaling
+     * @param output_data Raw model output data
+     * @param output_shape Shape of the model output
+     * @param detections Output vector for detected face rectangles
+     * @param confidences Output vector for detection confidences
+     * @param class_ids Output vector for class IDs
+     */
+    void postprocess_output_with_confidence(const cv::Mat& input_image,
+                                          const float* output_data,
+                                          const std::vector<int64_t>& output_shape,
+                                          std::vector<cv::Rect>& detections,
+                                          std::vector<float>& confidences,
+                                          std::vector<int>& class_ids);
+    
+    /**
      * @brief Detect faces in the given frame
      * @param frame Input frame to process
      * @param detections Output vector for detected face rectangles
