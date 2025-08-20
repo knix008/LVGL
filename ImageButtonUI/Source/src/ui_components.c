@@ -10,8 +10,8 @@
 #include "tab_clock.h"
 #include "tab_video.h"
 #include "tab_opencv.h"
-#include "tab_button.h"
-#include "ui_callbacks.h"
+
+
 #include "font_config.h"
 #include "lv_freetype.h"
 #include "web_control.h"
@@ -91,9 +91,6 @@ void lv_example_tab_menu(void) {
     // Set tabview reference for web control
     set_tabview_reference(tabview);
     
-    // Add event callback for tab changes
-    lv_obj_add_event_cb(tabview, tab_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    
     // Create tabs
     lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "DB");
     lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Setting");
@@ -105,7 +102,7 @@ void lv_example_tab_menu(void) {
     lv_obj_t * tab9 = lv_tabview_add_tab(tabview, "Clock"); // Added Clock tab
     lv_obj_t * tab10 = lv_tabview_add_tab(tabview, "A/V"); // Added Video tab
     lv_obj_t * tab11 = lv_tabview_add_tab(tabview, "OpenCV"); // Added OpenCV tab
-    lv_obj_t * tab12 = lv_tabview_add_tab(tabview, "Button"); // Added Button tab
+
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     
     // Create tab contents using separate functions
@@ -119,6 +116,6 @@ void lv_example_tab_menu(void) {
     create_clock_tab(tab9);
     create_video_tab(tab10);
     tab_opencv_init(tab11);
-    create_button_tab(tab12);
+
     create_info_tab(tab3);
 }

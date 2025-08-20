@@ -123,13 +123,13 @@ set(MAIN_SOURCES
     src/korean_input.c
     src/qwerty_korean.c
     src/chunjiin_input.c
-    src/ui_callbacks.c
+
     src/svg_example.c
     src/web_server.c
     src/mongoose.c
     src/web_control.c
     src/tab_opencv.c
-    src/tab_button.c
+
 )
 
 # SQLCipher amalgamation files
