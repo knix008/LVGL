@@ -4,7 +4,7 @@
 set -e
 
 echo "=== Master Library Build Script ==="
-echo "Usage: $0 [freetype|sdl2|lvgl|onnxruntime|openssl|all]"
+echo "Usage: $0 [freetype|sdl2|lvgl|onnxruntime|openssl|sqlcipher|all]"
 
 # Function to build a specific library
 build_library() {
@@ -31,6 +31,7 @@ if [ $# -eq 0 ]; then
     build_library "lvgl"
     build_library "onnxruntime"
     build_library "openssl"
+    build_library "sqlcipher"
     echo "=== All libraries built successfully ==="
     exit 0
 fi
@@ -52,17 +53,21 @@ case "$1" in
     "openssl")
         build_library "openssl"
         ;;
+    "sqlcipher")
+        build_library "sqlcipher"
+        ;;
     "all")
         build_library "freetype"
         build_library "sdl2"
         build_library "lvgl"
         build_library "onnxruntime"
         build_library "openssl"
+        build_library "sqlcipher"
         echo "=== All libraries built successfully ==="
         ;;
     *)
         echo "Error: Unknown library '$1'"
-        echo "Available options: freetype, sdl2, lvgl, onnxruntime, openssl, all"
+        echo "Available options: freetype, sdl2, lvgl, onnxruntime, openssl, sqlcipher, all"
         exit 1
         ;;
 esac
