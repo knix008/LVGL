@@ -40,7 +40,7 @@ lv_result_t video_load_file(const char* file_path) {
         return LV_RESULT_INVALID;
     }
     
-    lv_result_t result = lv_ffmpeg_player_set_src(g_video_player, file_path);
+        lv_result_t result = lv_ffmpeg_player_set_src(g_video_player, file_path);
     if (result == LV_RESULT_OK) {
         strcpy(g_video_file_path, file_path);
         printf("Video: Loaded file successfully: %s\n", file_path);

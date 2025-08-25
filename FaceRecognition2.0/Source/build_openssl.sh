@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# OpenSSL Build Script
+set -e
+
+echo "=== Building OpenSSL ==="
+
+# Configuration
+OPENSSL_VERSION="3.0.16"
+OPENSSL_SOURCE="openssl-${OPENSSL_VERSION}"
+OPENSSL_ARCHIVE="${OPENSSL_SOURCE}.tar.gz"
+OPENSSL_URL="https://www.openssl.org/source/${OPENSSL_ARCHIVE}"
+LIB_DIR="lib"
+
+# Create lib directory structure
+mkdir -p ${LIB_DIR}/include
+mkdir -p ${LIB_DIR}/lib
+
+# Check if OpenSSL source exists
+if [ ! -d "${OPENSSL_SOURCE}" ]; then
+    echo "Error: OpenSSL source directory ${OPENSSL_SOURCE} not found!"
+    echo "Please ensure the OpenSSL source is in the Source directory."
+    exit 1
+fi
+
+# Create build directory
+BUILD_DIR="openssl_build"
+rm -rf "${BUILD_DIR}"
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+
+# Configure OpenSSL
+echo "Configuring OpenSSL..."
+../${OPENSSL_SOURCE}/config \
+    --prefix="$(pwd)/install" \
+    --openssldir="$(pwd)/install" \
+    no-shared \
+    no-dso \
+    no-engine \
+    no-hw \
+    no-asm
+
+# Build OpenSSL
+echo "Building OpenSSL..."
+make -j$(nproc)
+
+# Install to build directory
+echo "Installing OpenSSL..."
+make install_sw
+
+# Copy to lib directory
+echo "Copying to lib directory..."
+cp -r install/include/* ../${LIB_DIR}/include/
+cp install/lib64/libcrypto.a ../${LIB_DIR}/lib/
+cp install/lib64/libssl.a ../${LIB_DIR}/lib/
+
+# Cleanup build directory only (keep source)
+cd ..
+rm -rf "${BUILD_DIR}"
+
+echo "=== OpenSSL build completed successfully ==="
+echo "Libraries installed to: ${LIB_DIR}/lib/"
+echo "Headers installed to: ${LIB_DIR}/include/"
+echo "Source kept in: ${OPENSSL_SOURCE}/"

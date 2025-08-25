@@ -31,15 +31,13 @@ set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libSDL2.a)
 set(FREETYPE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/freetype2)
 set(FREETYPE_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libfreetype.a)
 set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
+set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
+set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
 
 # System libraries
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
+pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale libswresample)
 find_package(OpenCV REQUIRED)
-
-# Use pre-built OpenSSL from lib directory
-set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
-set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
 
 # Compile definitions
 add_compile_definitions(
@@ -105,8 +103,6 @@ target_include_directories(main PRIVATE
     ${FFMPEG_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
 )
-
-# No custom build dependencies needed for pre-built libraries
 
 # Link libraries for main
 target_link_libraries(main 
