@@ -1,5 +1,4 @@
 build/
 opencv_build/
 opencv_install
-models/
 certs/

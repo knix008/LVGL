@@ -23,7 +23,7 @@ WebcamIPCApp::WebcamIPCApp()
       NMS_THRESHOLD(0.4f),
       CONFIDENCE_THRESHOLD(0.25f),  // Increased from 0.1f to reduce false positives
       m_current_detection_count(0) {
-    m_model_path = "../models/yolov8_face_model.onnx";
+    m_model_path = "../models/model.onnx";
 }
     
 WebcamIPCApp::~WebcamIPCApp() {
@@ -239,13 +239,13 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             width = std::max(0, std::min(img_w - left, width));
             height = std::max(0, std::min(img_h - top, height));
 
-            // Additional filtering to reduce false positives
+            // Additional filtering to reduce false positives for face detection
             // Check minimum size (face should be reasonably sized)
-            if (width < 20 || height < 20) continue;
+            if (width < 20 || height < 20) continue;  // Face should be reasonably sized
             
-            // Check aspect ratio (face should have reasonable proportions)
+            // Check aspect ratio (face should have reasonable proportions - roughly square)
             float aspect_ratio = static_cast<float>(width) / height;
-            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;
+            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;  // Face should be roughly square-ish
             
             // Check if detection is too close to image edges (likely false positive)
             int margin = 10;
@@ -406,13 +406,13 @@ void WebcamIPCApp::postprocess_output_with_confidence(const cv::Mat& input_image
             width = std::max(0, std::min(img_w - left, width));
             height = std::max(0, std::min(img_h - top, height));
 
-            // Additional filtering to reduce false positives
+            // Additional filtering to reduce false positives for face detection
             // Check minimum size (face should be reasonably sized)
-            if (width < 20 || height < 20) continue;
+            if (width < 20 || height < 20) continue;  // Face should be reasonably sized
             
-            // Check aspect ratio (face should have reasonable proportions)
+            // Check aspect ratio (face should have reasonable proportions - roughly square)
             float aspect_ratio = static_cast<float>(width) / height;
-            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;
+            if (aspect_ratio < 0.5f || aspect_ratio > 2.0f) continue;  // Face should be roughly square-ish
             
             // Check if detection is too close to image edges (likely false positive)
             int margin = 10;
@@ -873,7 +873,7 @@ int main(int argc, char* argv[]) {
     }
     
     // Parse command line arguments
-    std::string model_path = "../models/yolov8_face_model.onnx";
+    std::string model_path = "../models/model.onnx";
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--model") == 0 && i + 1 < argc) {
             model_path = argv[i + 1];
