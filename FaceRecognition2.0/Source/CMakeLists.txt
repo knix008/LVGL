@@ -4,56 +4,46 @@ project(main C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
+# Project directories
 set(LVGL_DIR "lvgl")
-set(LV_DRIVERS_DIR "lvgl/src/drivers")
 set(SQLCIPHER_DIR "sqlcipher")
+set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
 
 # Create lib directory
 set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
 file(MAKE_DIRECTORY ${LIB_DIR})
 
+# Include directories
 include_directories(
     ${LVGL_DIR}
     ${LVGL_DIR}/src
     ${LVGL_DIR}/src/libs
     ${LVGL_DIR}/src/libs/freetype
-    ${LV_DRIVERS_DIR}
-    ${LV_DRIVERS_DIR}/sdl
+    ${LVGL_DIR}/src/drivers
+    ${LVGL_DIR}/src/drivers/sdl
     ${SQLCIPHER_DIR}/src
+    ${ONNXRUNTIME_DIR}/include
 )
 
-# Use pre-built SDL2 from lib directory
+# Pre-built libraries from lib directory
 set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/SDL2)
 set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libSDL2.a)
-
-# Use pre-built FreeType from lib directory
 set(FREETYPE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/freetype2)
 set(FREETYPE_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libfreetype.a)
+set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
 
-# Use system FFmpeg libraries
+# System libraries
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
-
-# Set FFmpeg variables for our project
-set(FFMPEG_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIRS})
-set(FFMPEG_LIBS ${FFMPEG_LIBRARIES})
-
-# Use system OpenCV for webcam IPC app only
 find_package(OpenCV REQUIRED)
 
-# TLS Configuration - Using OpenSSL for better compatibility
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
-add_compile_definitions(MG_TLS=MG_TLS_OPENSSL)
+# Use pre-built OpenSSL from lib directory
+set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
+set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
 
-# Use local ONNX Runtime installation
-set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
-include_directories(${ONNXRUNTIME_DIR}/include)
-
-add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
-
-# SQLCipher compile definitions
+# Compile definitions
 add_compile_definitions(
+    MG_TLS=MG_TLS_OPENSSL
     SQLITE_HAS_CODEC=1
     SQLITE_EXTRA_INIT=sqlcipher_extra_init
     SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
@@ -68,24 +58,6 @@ add_compile_definitions(
     SQLCIPHER_CRYPTO_OPENSSL=1
     SQLCIPHER_OMIT_LOG=1
 )
-
-# Create LVGL static library
-file(GLOB_RECURSE LVGL_SOURCES
-    ${LVGL_DIR}/src/*.c
-    ${LVGL_DIR}/src/*.cpp
-)
-
-# Exclude problematic ThorVG files
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgGl.*\\.cpp$")
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgWg.*\\.cpp$")
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*thorvg.*\\.cpp$")
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*thorvg.*\\.h$")
-file(GLOB LV_DRIVERS_SOURCES
-    ${LV_DRIVERS_DIR}/sdl/*.c
-)
-
-# Use pre-built LVGL library from lib directory
-set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
 
 # Main application sources
 set(MAIN_SOURCES
@@ -113,23 +85,43 @@ set(MAIN_SOURCES
     src/mongoose.c
     src/web_control.c
     src/tab_opencv.c
-)
-
-# SQLCipher amalgamation files
-set(SQLCIPHER_SOURCES
     ${SQLCIPHER_DIR}/sqlite3.c
 )
 
 # Create main executable
-add_executable(main ${MAIN_SOURCES} ${SQLCIPHER_SOURCES})
+add_executable(main ${MAIN_SOURCES})
 
-# Add include directories
-target_include_directories(main PRIVATE include sqlcipher sqlite lvgl lvgl/src/libs/svg lvgl/src/libs/ffmpeg . ${FREETYPE_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIRS})
+# Include directories for main
+target_include_directories(main PRIVATE 
+    include 
+    sqlcipher 
+    sqlite 
+    lvgl 
+    lvgl/src/libs/svg 
+    lvgl/src/libs/ffmpeg 
+    . 
+    ${FREETYPE_INCLUDE_DIRS} 
+    ${SDL2_INCLUDE_DIRS} 
+    ${FFMPEG_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
+)
 
-# No custom build dependencies needed for system libraries
+# No custom build dependencies needed for pre-built libraries
 
-# Link against LVGL library and other dependencies
-target_link_libraries(main ${LVGL_LIBRARY} ${SDL2_LIBRARIES} ${FREETYPE_LIBS} ${OPENSSL_LIBRARIES})
+# Link libraries for main
+target_link_libraries(main 
+    ${LVGL_LIBRARY} 
+    ${SDL2_LIBRARIES} 
+    ${FREETYPE_LIBS} 
+    ${OPENSSL_LIBRARIES}
+    ${FFMPEG_LIBRARIES}
+    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3
+)
+
+# System libraries for Unix
+if(UNIX)
+    target_link_libraries(main pthread dl m crypto)
+endif()
 
 # Copy HTML files to build directory
 add_custom_command(
@@ -139,31 +131,18 @@ add_custom_command(
     COMMENT "Copying HTML files to build directory"
 )
 
-# Main app doesn't use OpenCV
-
-# Link ONNX Runtime library
-target_link_libraries(main ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3)
-
-# Link FFmpeg libraries for video support
-target_link_libraries(main ${FFMPEG_LIBS})
-
-if(UNIX)
-    target_link_libraries(main pthread dl m crypto)
-endif()
-
 # Webcam IPC Application
-set(WEBCAM_IPC_SOURCES
-    src/webcam_ipc_app.cpp
+add_executable(webcam_ipc_app src/webcam_ipc_app.cpp)
+
+target_include_directories(webcam_ipc_app PRIVATE 
+    include 
+    ${OpenCV_INCLUDE_DIRS}
 )
 
-# Create webcam IPC executable
-add_executable(webcam_ipc_app ${WEBCAM_IPC_SOURCES})
-
-# Add include directories for webcam IPC
-target_include_directories(webcam_ipc_app PRIVATE include onnxruntime/include ${OpenCV_INCLUDE_DIRS})
-
-# Link against system OpenCV and ONNX Runtime
-target_link_libraries(webcam_ipc_app ${OpenCV_LIBS} ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3)
+target_link_libraries(webcam_ipc_app 
+    ${OpenCV_LIBS} 
+    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3
+)
 
 if(UNIX)
     target_link_libraries(webcam_ipc_app pthread)

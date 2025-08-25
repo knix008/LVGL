@@ -14,9 +14,6 @@ CMakeFiles/
 Makefile
 *.cmake
 
-# Pre-built libraries (these are built from source)
-lib/
-
 # Certificates and security files
 certs/
 *.pem
@@ -60,27 +57,6 @@ zlib-*/
 xz-*/
 ffmpeg-*/
 
-# ONNX Runtime files (these are downloaded separately)
-onnxruntime/
-
-# Model files (these can be large)
-models/*.onnx
-models/*.pt
-
-# Audio/Video files (these can be large)
-assets/*.mp4
-assets/*.wav
-assets/*.avi
-assets/*.mov
-
-# Keep some essential assets
-!assets/*.png
-!assets/*.jpg
-!assets/*.jpeg
-!assets/*.gif
-!assets/*.svg
-!assets/*.ttf
-
 # Python cache files
 __pycache__/
 *.pyc
@@ -115,3 +91,4 @@ core.*
 *.db
 *.sqlite
 *.sqlite3
+e
