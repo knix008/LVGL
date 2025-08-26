@@ -61,7 +61,7 @@ Source/xz-*/
 Source/ffmpeg-*/
 
 # ONNX Runtime files (these are downloaded separately)
-Source/onnxruntime/
+# Source/onnxruntime/
 
 # Model files (these can be large)
 Source/models/*.onnx
