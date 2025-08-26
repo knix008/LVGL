@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 # Project directories
 set(LVGL_DIR "lvgl")
 set(SQLCIPHER_DIR "sqlcipher")
-set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
+set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
 # Create lib directory
 set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
@@ -22,7 +22,7 @@ include_directories(
     ${LVGL_DIR}/src/drivers
     ${LVGL_DIR}/src/drivers/sdl
     ${SQLCIPHER_DIR}/src
-    ${ONNXRUNTIME_DIR}/include
+    ${ONNXRUNTIME_DIR}/include/onnxruntime
 )
 
 # Pre-built libraries from lib directory
