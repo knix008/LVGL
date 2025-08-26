@@ -43,25 +43,50 @@ check_dependencies() {
         exit 1
     fi
     
-    if ! pkg-config --exists freetype2; then
-        print_error "FreeType2 is not installed. Please install libfreetype6-dev."
+    if ! command -v pkg-config &> /dev/null; then
+        print_error "pkg-config is not installed. Please install pkg-config first."
         exit 1
     fi
     
-    if ! pkg-config --exists sdl2; then
-        print_error "SDL2 is not installed. Please install libsdl2-dev."
-        exit 1
-    fi
-    
-    # Check for OpenSSL (required for TLS)
-    if ! pkg-config --exists openssl; then
-        print_warning "OpenSSL is not installed. TLS will be disabled."
-        print_warning "Install libssl-dev to enable TLS 1.3 support."
+    # Check for system libraries that are still needed
+    if ! pkg-config --exists libavformat libavcodec libavutil libswscale libswresample; then
+        print_warning "FFmpeg system libraries not found. Video playback may not work."
+        print_warning "Install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
     else
-        print_success "OpenSSL found - TLS 1.3 support available"
+        print_success "FFmpeg system libraries found"
+    fi
+    
+    if ! pkg-config --exists opencv4; then
+        print_warning "OpenCV system library not found. Webcam functionality may not work."
+        print_warning "Install libopencv-dev"
+    else
+        print_success "OpenCV system library found"
     fi
     
     print_success "All dependencies are available"
+}
+
+# Function to build all libraries
+build_libraries() {
+    print_status "Building all libraries..."
+    
+    cd Source
+    
+    # Check if build_all_libs.sh exists
+    if [ ! -f "build_all_libs.sh" ]; then
+        print_error "build_all_libs.sh not found in Source directory"
+        exit 1
+    fi
+    
+    # Make the script executable and run it
+    chmod +x build_all_libs.sh
+    ./build_all_libs.sh all || {
+        print_error "Library build failed"
+        exit 1
+    }
+    
+    print_success "All libraries built successfully"
+    cd ..
 }
 
 # Function to build the application
@@ -85,14 +110,14 @@ build_application() {
         exit 1
     }
     
-    # Build the application
-    print_status "Building application..."
-    make main || {
+    # Build all applications
+    print_status "Building all applications..."
+    make || {
         print_error "Build failed"
         exit 1
     }
     
-    print_success "Application built successfully"
+    print_success "All applications built successfully"
     cd ../..
 }
 
@@ -133,14 +158,16 @@ show_help() {
     echo "Usage: $0 [OPTION]"
     echo ""
     echo "Options:"
-    echo "  run, -r, --run      Build and run the application (default)"
-    echo "  build, -b, --build  Build the application only"
+    echo "  run, -r, --run      Build all libraries, applications and run (default)"
+    echo "  build, -b, --build  Build all libraries and applications only"
+    echo "  libs, -l, --libs    Build all libraries only"
     echo "  clean, -c, --clean  Clean build artifacts"
     echo "  help, -h, --help    Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                 # Build and run"
-    echo "  $0 build          # Build only"
+    echo "  $0                 # Build everything and run"
+    echo "  $0 build          # Build libraries and applications"
+    echo "  $0 libs           # Build libraries only"
     echo "  $0 clean          # Clean build artifacts"
     echo ""
 }
@@ -150,12 +177,18 @@ main() {
     case "${1:-run}" in
         "run"|"-r"|"--run")
             check_dependencies
+            build_libraries
             build_application
             run_application
             ;;
         "build"|"-b"|"--build")
             check_dependencies
+            build_libraries
             build_application
+            ;;
+        "libs"|"-l"|"--libs")
+            check_dependencies
+            build_libraries
             ;;
         "clean"|"-c"|"--clean")
             clean_build
