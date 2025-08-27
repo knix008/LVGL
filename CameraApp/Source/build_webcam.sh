@@ -2,6 +2,7 @@
 
 # Webcam Application Build Script
 # This script builds the webcam application with proper configuration
+# Updated for ONNX Runtime 1.16.3
 
 set -e  # Exit on any error
 
@@ -43,9 +44,44 @@ check_dependencies() {
         exit 1
     fi
     
-    if ! pkg-config --exists opencv4; then
-        print_error "OpenCV is not installed. Please install libopencv-dev"
+    # Check for local OpenCV installation
+    if [ ! -d "opencv" ]; then
+        print_error "OpenCV directory not found. Please ensure OpenCV is built in the opencv directory."
         exit 1
+    fi
+    
+    if [ ! -f "opencv/lib/cmake/opencv4/OpenCVConfig.cmake" ]; then
+        print_error "OpenCV CMake configuration not found. Please rebuild OpenCV."
+        exit 1
+    fi
+    
+    # Check for ONNX Runtime installation
+    if [ ! -d "onnxruntime-linux-x64-1.16.3" ]; then
+        print_warning "ONNX Runtime 1.16.3 not found."
+        print_status "Installing ONNX Runtime..."
+        if [ -f "install_onnxruntime.sh" ]; then
+            chmod +x install_onnxruntime.sh
+            ./install_onnxruntime.sh
+        else
+            print_error "install_onnxruntime.sh not found. Please install ONNX Runtime manually."
+            exit 1
+        fi
+    fi
+    
+    if [ ! -f "onnxruntime-linux-x64-1.16.3/lib/libonnxruntime.so" ]; then
+        print_error "ONNX Runtime library not found. Please run ./install_onnxruntime.sh"
+        exit 1
+    fi
+    
+    if [ ! -f "onnxruntime-linux-x64-1.16.3/include/onnxruntime_c_api.h" ]; then
+        print_error "ONNX Runtime headers not found. Please run ./install_onnxruntime.sh"
+        exit 1
+    fi
+    
+    # Check for model files
+    if [ ! -f "models/yolov8n-face.onnx" ]; then
+        print_warning "YOLOv8 face detection model not found in models/yolov8n-face.onnx"
+        print_status "Please ensure the model file is available for face detection to work."
     fi
     
     print_success "All dependencies are available"
@@ -85,12 +121,26 @@ run_tests() {
     print_success "Tests completed"
 }
 
+# Function to run the application
+run_application() {
+    print_status "Running webcam application..."
+    cd build
+    make run-webcam
+}
+
 # Function to install
 install_app() {
     print_status "Installing webcam application..."
     cd build
     sudo make install
     print_success "Installation completed"
+}
+
+# Function to show build information
+show_info() {
+    print_status "Build information:"
+    cd build
+    make info
 }
 
 # Function to show help
@@ -101,8 +151,10 @@ show_help() {
     echo "  build [type]    Build the application (default: Release)"
     echo "  clean           Clean build artifacts"
     echo "  test            Run tests"
+    echo "  run             Run the application"
     echo "  install         Install the application"
-    echo "  all             Build, test, and install"
+    echo "  info            Show build information"
+    echo "  all             Build, test, and run"
     echo "  help            Show this help message"
     echo ""
     echo "Build types:"
@@ -114,7 +166,14 @@ show_help() {
     echo "  $0 build Debug  # Build with Debug configuration"
     echo "  $0 clean        # Clean build artifacts"
     echo "  $0 test         # Run tests"
+    echo "  $0 run          # Run the application"
     echo "  $0 install      # Install the application"
+    echo "  $0 info         # Show build information"
+    echo ""
+    echo "Dependencies:"
+    echo "  - OpenCV (local installation in opencv/)"
+    echo "  - ONNX Runtime 1.16.3 (auto-installed if missing)"
+    echo "  - YOLOv8 face detection model (models/yolov8n-face.onnx)"
 }
 
 # Main function
@@ -134,6 +193,13 @@ main() {
             fi
             run_tests
             ;;
+        "run")
+            if [ ! -d "build" ]; then
+                print_error "Build directory not found. Run 'build' first."
+                exit 1
+            fi
+            run_application
+            ;;
         "install")
             if [ ! -d "build" ]; then
                 print_error "Build directory not found. Run 'build' first."
@@ -141,11 +207,18 @@ main() {
             fi
             install_app
             ;;
+        "info")
+            if [ ! -d "build" ]; then
+                print_error "Build directory not found. Run 'build' first."
+                exit 1
+            fi
+            show_info
+            ;;
         "all")
             check_dependencies
             build_application Release
             run_tests
-            print_warning "Skipping install (requires sudo). Run '$0 install' separately if needed."
+            print_status "Build and tests completed. Run '$0 run' to start the application."
             ;;
         "help"|"-h"|"--help")
             show_help

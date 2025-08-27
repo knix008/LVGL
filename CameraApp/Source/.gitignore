@@ -4,7 +4,6 @@ build/
 *.a
 *.so
 *.exe
-main
 webcam_app
 
 # CMake generated files
