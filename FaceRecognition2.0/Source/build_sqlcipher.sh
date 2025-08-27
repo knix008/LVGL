@@ -1,66 +1,83 @@
 #!/bin/bash
 
-# Build script for SQLCipher amalgamation files
-# This script generates sqlite3.h and sqlite3.c from the SQLCipher source
-# TCL is only required if the amalgamation files don't already exist
-
+# SQLCipher Build Script
 set -e
 
-echo "Checking SQLCipher amalgamation files..."
+echo "=== Building SQLCipher ==="
+
+# Configuration
+SQLCIPHER_VERSION="4.5.4"
+SQLCIPHER_SOURCE="sqlcipher-${SQLCIPHER_VERSION}"
+SQLCIPHER_ARCHIVE="${SQLCIPHER_SOURCE}.tar.gz"
+SQLCIPHER_URL="https://github.com/sqlcipher/sqlcipher/archive/refs/tags/v${SQLCIPHER_VERSION}.tar.gz"
+LIB_DIR="lib"
+
+# Create lib directory structure
+mkdir -p ${LIB_DIR}/include
+mkdir -p ${LIB_DIR}/lib
+
+# Download and extract SQLCipher if not exists
+if [ ! -d "${SQLCIPHER_SOURCE}" ]; then
+    echo "Downloading SQLCipher ${SQLCIPHER_VERSION}..."
+    if [ ! -f "${SQLCIPHER_ARCHIVE}" ]; then
+        wget "${SQLCIPHER_URL}" || {
+            echo "Error: Failed to download SQLCipher"
+            exit 1
+        }
+    fi
+    
+    echo "Extracting SQLCipher..."
+    tar -xf "v${SQLCIPHER_VERSION}.tar.gz" || {
+        echo "Error: Failed to extract SQLCipher"
+        exit 1
+    }
+fi
+
+echo "Building SQLCipher..."
 
 # Change to SQLCipher directory
-cd sqlcipher
+cd ${SQLCIPHER_SOURCE}
 
-# Check if amalgamation files already exist
-if [ -f "sqlite3.h" ] && [ -f "sqlite3.c" ]; then
-    echo "SQLCipher amalgamation files already exist!"
-    echo "Files found:"
-    echo "  - sqlite3.h"
-    echo "  - sqlite3.c"
-    echo ""
-    echo "If you need to regenerate these files, delete them first and run this script again."
-    echo "Note: Regeneration requires TCL to be installed."
-    cd ..
-    exit 0
-fi
+# Create build directory
+BUILD_DIR="sqlcipher_build"
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
 
-echo "SQLCipher amalgamation files not found. Generating them..."
+# Configure SQLCipher
+echo "Configuring SQLCipher..."
+../configure \
+    --prefix="$(pwd)/install" \
+    --enable-static \
+    --disable-shared \
+    --disable-tcl \
+    --disable-readline \
+    --disable-load-extension \
+    --with-crypto-lib=openssl \
+    --enable-tempstore=yes \
+    CFLAGS="-DSQLITE_HAS_CODEC=1 -DSQLCIPHER_CRYPTO_OPENSSL=1" \
+    LDFLAGS="-L$(pwd)/../../lib/lib" \
+    CPPFLAGS="-I$(pwd)/../../lib/include"
 
-# Check if TCL is available
-if ! command -v tclsh &> /dev/null; then
-    echo "Error: tclsh is required to generate SQLCipher amalgamation files."
-    echo "Please install TCL:"
-    echo "  Ubuntu/Debian: sudo apt-get install tcl"
-    echo "  CentOS/RHEL: sudo yum install tcl"
-    echo ""
-    echo "Alternatively, you can download pre-generated amalgamation files from:"
-    echo "  https://github.com/sqlcipher/sqlcipher/releases"
-    cd ..
-    exit 1
-fi
+# Build SQLCipher
+echo "Building SQLCipher..."
+make -j$(nproc)
 
-# Generate sqlite3.h
-echo "Generating sqlite3.h..."
-make -f Makefile.linux-generic sqlite3.h
+# Install SQLCipher
+echo "Installing SQLCipher..."
+make install
 
-# Generate sqlite3.c
-echo "Generating sqlite3.c..."
-make -f Makefile.linux-generic sqlite3.c
+# Copy to lib directory
+echo "Copying to lib directory..."
+cp install/lib/libsqlcipher.a ../../${LIB_DIR}/lib/
+cp -r install/include/* ../../${LIB_DIR}/include/
 
-# Patch sqlite3.c to include stdint.h for uint64_t support
-echo "Patching sqlite3.c to include stdint.h..."
-if grep -q "#include <sys/resource.h>" sqlite3.c; then
-    # Insert stdint.h include after sys/resource.h
-    sed -i '/^#include <sys\/resource.h>/a #include <stdint.h> /* needed for uint64_t */' sqlite3.c
-    echo "Successfully patched sqlite3.c to include stdint.h"
-else
-    echo "Warning: Could not find sys/resource.h include in sqlite3.c for patching"
-    echo "You may need to manually add '#include <stdint.h>' to sqlite3.c"
-fi
+cd ../..
 
-echo "SQLCipher amalgamation files generated successfully!"
-echo "Files created:"
-echo "  - sqlite3.h"
-echo "  - sqlite3.c (patched with stdint.h)"
+# Clean up downloaded archive and source directory
+rm -f "v${SQLCIPHER_VERSION}.tar.gz"
+rm -rf "${SQLCIPHER_SOURCE}"
 
-cd .. 
+echo "=== SQLCipher build completed successfully ==="
+echo "Files installed to: ${LIB_DIR}/"
+echo "Library: ${LIB_DIR}/lib/libsqlcipher.a"
+echo "Headers: ${LIB_DIR}/include/" 

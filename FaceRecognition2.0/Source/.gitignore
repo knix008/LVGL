@@ -56,10 +56,14 @@ Thumbs.db
 zlib-*/
 xz-*/
 ffmpeg-*/
+freetype-*/
+SDL2-*/
+openssl-*/
+sqlcipher-*/
 
 # Python cache files
 __pycache__/
-*.pyc
+*.py
 *.pyo
 *.pyd
 .Python

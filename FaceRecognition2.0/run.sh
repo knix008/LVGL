@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LVGL WebServer Application Runner
+# LVGL Face Recognition Application Runner
 # This script builds and runs the LVGL application with embedded web server
 
 set -e  # Exit on any error
@@ -31,7 +31,7 @@ print_error() {
 
 # Function to check if required tools are available
 check_dependencies() {
-    print_status "Checking dependencies..."
+    print_status "Checking system dependencies..."
     
     if ! command -v cmake &> /dev/null; then
         print_error "cmake is not installed. Please install cmake first."
@@ -56,19 +56,13 @@ check_dependencies() {
         print_success "FFmpeg system libraries found"
     fi
     
-    if ! pkg-config --exists opencv4; then
-        print_warning "OpenCV system library not found. Webcam functionality may not work."
-        print_warning "Install libopencv-dev"
-    else
-        print_success "OpenCV system library found"
-    fi
-    
-    print_success "All dependencies are available"
+    print_success "All system dependencies are available"
+    print_status "Note: All other dependencies (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source"
 }
 
 # Function to build all libraries
 build_libraries() {
-    print_status "Building all libraries..."
+    print_status "Building all libraries from source..."
     
     cd Source
     
@@ -85,7 +79,8 @@ build_libraries() {
         exit 1
     }
     
-    print_success "All libraries built successfully"
+    print_success "All libraries built successfully from source"
+    print_status "Source directories have been cleaned up to save disk space"
     cd ..
 }
 
@@ -110,14 +105,14 @@ build_application() {
         exit 1
     }
     
-    # Build all applications
-    print_status "Building all applications..."
+    # Build the application
+    print_status "Building application..."
     make || {
         print_error "Build failed"
         exit 1
     }
     
-    print_success "All applications built successfully"
+    print_success "Application built successfully"
     cd ../..
 }
 
@@ -135,6 +130,7 @@ run_application() {
     
     print_success "Application starting..."
     print_status "Web interface will be available at: http://localhost:8080"
+    print_status "HTTPS interface will be available at: https://localhost:8443"
     print_status "Press Ctrl+C to stop the application"
     echo ""
     
@@ -153,22 +149,30 @@ clean_build() {
 
 # Function to show help
 show_help() {
-    echo "LVGL WebServer Application Runner"
+    echo "LVGL Face Recognition Application Runner"
     echo ""
     echo "Usage: $0 [OPTION]"
     echo ""
     echo "Options:"
-    echo "  run, -r, --run      Build all libraries, applications and run (default)"
-    echo "  build, -b, --build  Build all libraries and applications only"
+    echo "  run, -r, --run      Build all libraries, application and run (default)"
+    echo "  build, -b, --build  Build all libraries and application only"
     echo "  libs, -l, --libs    Build all libraries only"
     echo "  clean, -c, --clean  Clean build artifacts"
     echo "  help, -h, --help    Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0                 # Build everything and run"
-    echo "  $0 build          # Build libraries and applications"
+    echo "  $0 build          # Build libraries and application"
     echo "  $0 libs           # Build libraries only"
     echo "  $0 clean          # Clean build artifacts"
+    echo ""
+    echo "Features:"
+    echo "  - Automatic library building from source"
+    echo "  - Source cleanup after successful builds"
+    echo "  - Database encryption with SQLCipher"
+    echo "  - Web interface with HTTPS support"
+    echo "  - Korean input methods"
+    echo "  - Video playback with FFmpeg"
     echo ""
 }
 

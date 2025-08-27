@@ -16,11 +16,21 @@ LIB_DIR="lib"
 mkdir -p ${LIB_DIR}/include
 mkdir -p ${LIB_DIR}/lib
 
-# Check if OpenSSL source exists
+# Download and extract OpenSSL if not exists
 if [ ! -d "${OPENSSL_SOURCE}" ]; then
-    echo "Error: OpenSSL source directory ${OPENSSL_SOURCE} not found!"
-    echo "Please ensure the OpenSSL source is in the Source directory."
-    exit 1
+    echo "Downloading OpenSSL ${OPENSSL_VERSION}..."
+    if [ ! -f "${OPENSSL_ARCHIVE}" ]; then
+        wget "${OPENSSL_URL}" || {
+            echo "Error: Failed to download OpenSSL"
+            exit 1
+        }
+    fi
+    
+    echo "Extracting OpenSSL..."
+    tar -xf "${OPENSSL_ARCHIVE}" || {
+        echo "Error: Failed to extract OpenSSL"
+        exit 1
+    }
 fi
 
 # Create build directory
@@ -57,6 +67,10 @@ cp install/lib64/libssl.a ../${LIB_DIR}/lib/
 # Cleanup build directory only (keep source)
 cd ..
 rm -rf "${BUILD_DIR}"
+
+# Clean up downloaded archive and source directory
+rm -f "${OPENSSL_ARCHIVE}"
+rm -rf "${OPENSSL_SOURCE}"
 
 echo "=== OpenSSL build completed successfully ==="
 echo "Libraries installed to: ${LIB_DIR}/lib/"

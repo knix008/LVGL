@@ -21,10 +21,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 # Find required packages
 find_package(PkgConfig REQUIRED)
 
+# Set OpenCV to use local static installation
+set(OpenCV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv/lib/cmake/opencv4")
+set(OpenCV_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/opencv/include/opencv4")
+set(OpenCV_LIBS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv/lib")
+
+# Force OpenCV to use static libraries
+set(BUILD_SHARED_LIBS OFF)
+set(OpenCV_STATIC ON)
+
 # Find OpenCV with better error handling
 find_package(OpenCV REQUIRED)
 if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV not found. Please install OpenCV development libraries.")
+    message(FATAL_ERROR "Local OpenCV not found. Please ensure OpenCV is built in the opencv directory.")
 endif()
 
 # Check OpenCV version
@@ -32,7 +41,11 @@ if(OpenCV_VERSION VERSION_LESS "4.0.0")
     message(WARNING "OpenCV version ${OpenCV_VERSION} is older than 4.0.0. Some features may not work properly.")
 endif()
 
-# ONNX Runtime path
+message(STATUS "Using OpenCV version: ${OpenCV_VERSION}")
+message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+
+# Set ONNX Runtime directory
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
 
 # Check if ONNX Runtime exists
@@ -61,22 +74,57 @@ target_include_directories(webcam_app PRIVATE
     ${ONNXRUNTIME_DIR}/include
 )
 
-# Link libraries
+# Find system libraries needed for static linking
+find_library(JPEG_LIBRARY NAMES jpeg libjpeg)
+find_library(PNG_LIBRARY NAMES png libpng)
+find_library(TIFF_LIBRARY NAMES tiff libtiff)
+find_library(OPENJP2_LIBRARY NAMES openjp2 libopenjp2 libopenjp2.so.7)
+if(NOT OPENJP2_LIBRARY)
+    set(OPENJP2_LIBRARY "/usr/lib/x86_64-linux-gnu/libopenjp2.so.7")
+endif()
+find_library(ZLIB_LIBRARY NAMES z libz)
+find_library(THREADS_LIBRARY NAMES pthread)
+
+# Check if required libraries are found
+if(NOT JPEG_LIBRARY)
+    message(FATAL_ERROR "JPEG library not found")
+endif()
+if(NOT PNG_LIBRARY)
+    message(FATAL_ERROR "PNG library not found")
+endif()
+if(NOT TIFF_LIBRARY)
+    message(FATAL_ERROR "TIFF library not found")
+endif()
+if(NOT OPENJP2_LIBRARY)
+    message(FATAL_ERROR "OpenJP2 library not found")
+endif()
+if(NOT ZLIB_LIBRARY)
+    message(FATAL_ERROR "ZLIB library not found")
+endif()
+if(NOT THREADS_LIBRARY)
+    message(FATAL_ERROR "Pthread library not found")
+endif()
+
+# Link libraries - use static OpenCV libraries with system dependencies
 target_link_libraries(webcam_app 
-    ${OpenCV_LIBS} 
     ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3
+    ${JPEG_LIBRARY}
+    ${PNG_LIBRARY}
+    ${TIFF_LIBRARY}
+    ${OPENJP2_LIBRARY}
+    ${ZLIB_LIBRARY}
+    ${THREADS_LIBRARY}
+    dl
+    m
+    rt
+    ${OpenCV_LIBS}
 )
 
-# System-specific libraries
-if(UNIX)
-    target_link_libraries(webcam_app pthread dl)
-    
-    # Check for additional system libraries
-    find_library(M_LIBRARY m)
-    if(M_LIBRARY)
-        target_link_libraries(webcam_app ${M_LIBRARY})
-    endif()
-endif()
+# Set RPATH to include local OpenCV libraries
+set_target_properties(webcam_app PROPERTIES
+    INSTALL_RPATH "${OpenCV_LIBS_DIR}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
 
 # Compile definitions
 target_compile_definitions(webcam_app PRIVATE

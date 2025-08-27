@@ -5,7 +5,7 @@ build/
 *.so
 *.exe
 main
-webcam_ipc_app
+webcam_app
 
 # CMake generated files
 CMakeCache.txt

@@ -89,6 +89,7 @@ cp -r ${LVGL_DIR}/src/drivers ${LIB_DIR}/include/lvgl_drivers
 cd ..
 rm -rf "${BUILD_DIR}"
 
+
 echo "=== LVGL build completed successfully ==="
 echo "Library installed to: ${LIB_DIR}/lib/liblvgl_lib.a"
 echo "Headers installed to: ${LIB_DIR}/include/"

@@ -9,6 +9,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <cstring>
+#include <chrono>
 
 // Implementation of WebcamIPCApp class
 WebcamIPCApp::WebcamIPCApp() 
@@ -662,15 +663,15 @@ void WebcamIPCApp::run_simulation() {
             std::string detection_text = "Detections: " + std::to_string(sim_detections.size());
             
             cv::putText(sim_frame, sim_text, cv::Point(150, 200), 
-                       cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
             cv::putText(sim_frame, frame_text, cv::Point(150, 250), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
             cv::putText(sim_frame, time_text, cv::Point(150, 300), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
             cv::putText(sim_frame, res_text, cv::Point(150, 350), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
             cv::putText(sim_frame, detection_text, cv::Point(150, 400), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
             
             // Display the simulation frame
             cv::imshow("Simulation Mode", sim_frame);
@@ -725,6 +726,12 @@ void WebcamIPCApp::run_webcam() {
         cv::Mat frame;
         int frame_count = 0;
         
+        // FPS calculation variables
+        auto start_time = std::chrono::high_resolution_clock::now();
+        auto last_fps_time = start_time;
+        int fps_frame_count = 0;
+        double current_fps = 0.0;
+        
         // Persistent detection storage
         std::vector<cv::Rect> detections;
         std::vector<float> confidences;
@@ -740,6 +747,17 @@ void WebcamIPCApp::run_webcam() {
             }
             
             frame_count++;
+            fps_frame_count++;
+            
+            // Calculate FPS every second
+            auto current_time = std::chrono::high_resolution_clock::now();
+            auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_fps_time).count();
+            
+            if (elapsed_time >= 1000) { // Update FPS every second
+                current_fps = (fps_frame_count * 1000.0) / elapsed_time;
+                fps_frame_count = 0;
+                last_fps_time = current_time;
+            }
             
             // Run face detection every few frames
             if (frame_count % 3 == 0) {
@@ -753,14 +771,14 @@ void WebcamIPCApp::run_webcam() {
             // Add status text
             std::string frame_text = "Frame: " + std::to_string(frame_count);
             std::string detection_text = "Detections: " + std::to_string(detections.size());
-            std::string fps_text = "FPS: ~" + std::to_string(30);
+            std::string fps_text = "FPS: " + std::to_string(static_cast<int>(current_fps));
             
             cv::putText(frame, frame_text, cv::Point(10, 30), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
             cv::putText(frame, detection_text, cv::Point(10, 60), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
             cv::putText(frame, fps_text, cv::Point(10, 90), 
-                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+                       cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
             
             // Display the frame
             cv::imshow("Webcam Face Detection", frame);
@@ -800,7 +818,7 @@ void WebcamIPCApp::draw_detections(cv::Mat& frame, const std::vector<cv::Rect>& 
                     label = "Face";
                     break;
                 default:
-                    color = cv::Scalar(0, 0, 255); // Red
+                    color = cv::Scalar(0, 255, 0); // Green for all classes
                     label = "Unknown";
                     break;
             }

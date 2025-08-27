@@ -9,7 +9,7 @@
 #include "tab_calendar.h"
 #include "tab_clock.h"
 #include "tab_video.h"
-#include "tab_opencv.h"
+#include "tab_webcam.h"
 
 
 #include "font_config.h"
@@ -101,7 +101,7 @@ void lv_example_tab_menu(void) {
     lv_obj_t * tab8 = lv_tabview_add_tab(tabview, "CAL"); // Added Calendar tab
     lv_obj_t * tab9 = lv_tabview_add_tab(tabview, "Clock"); // Added Clock tab
     lv_obj_t * tab10 = lv_tabview_add_tab(tabview, "A/V"); // Added Video tab
-    lv_obj_t * tab11 = lv_tabview_add_tab(tabview, "OpenCV"); // Added OpenCV tab
+    lv_obj_t * tab11 = lv_tabview_add_tab(tabview, "Webcam"); // Added Webcam tab
 
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "Info");
     
@@ -115,7 +115,8 @@ void lv_example_tab_menu(void) {
     create_calendar_tab(tab8);
     create_clock_tab(tab9);
     create_video_tab(tab10);
-    tab_opencv_init(tab11);
+    // Initialize webcam tab
+    tab_webcam_init(tab11);
 
     create_info_tab(tab3);
 }

@@ -33,6 +33,7 @@ set(FREETYPE_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libfreetype.a)
 set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
 set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
 set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
+set(SQLCIPHER_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libsqlcipher.a)
 
 # System libraries
 find_package(PkgConfig REQUIRED)
@@ -82,8 +83,7 @@ set(MAIN_SOURCES
     src/web_server.c
     src/mongoose.c
     src/web_control.c
-    src/tab_opencv.c
-    ${SQLCIPHER_DIR}/sqlite3.c
+    src/tab_webcam.c
 )
 
 # Create main executable
@@ -93,7 +93,6 @@ add_executable(main ${MAIN_SOURCES})
 target_include_directories(main PRIVATE 
     include 
     sqlcipher 
-    sqlite 
     lvgl 
     lvgl/src/libs/svg 
     lvgl/src/libs/ffmpeg 
@@ -102,6 +101,7 @@ target_include_directories(main PRIVATE
     ${SDL2_INCLUDE_DIRS} 
     ${FFMPEG_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/sqlcipher
 )
 
 # Link libraries for main
@@ -111,7 +111,7 @@ target_link_libraries(main
     ${FREETYPE_LIBS} 
     ${OPENSSL_LIBRARIES}
     ${FFMPEG_LIBRARIES}
-    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3
+    ${SQLCIPHER_LIBRARY}
 )
 
 # System libraries for Unix
@@ -127,19 +127,3 @@ add_custom_command(
     COMMENT "Copying HTML files to build directory"
 )
 
-# Webcam IPC Application
-add_executable(webcam_ipc_app src/webcam_ipc_app.cpp)
-
-target_include_directories(webcam_ipc_app PRIVATE 
-    include 
-    ${OpenCV_INCLUDE_DIRS}
-)
-
-target_link_libraries(webcam_ipc_app 
-    ${OpenCV_LIBS} 
-    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3
-)
-
-if(UNIX)
-    target_link_libraries(webcam_ipc_app pthread)
-endif()

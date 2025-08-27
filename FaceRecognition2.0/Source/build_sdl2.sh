@@ -16,11 +16,21 @@ LIB_DIR="lib"
 mkdir -p ${LIB_DIR}/include
 mkdir -p ${LIB_DIR}/lib
 
-# Check if SDL2 source exists
+# Download and extract SDL2 if not exists
 if [ ! -d "${SDL2_SOURCE}" ]; then
-    echo "Error: SDL2 source directory ${SDL2_SOURCE} not found!"
-    echo "Please ensure the SDL2 source is in the Source directory."
-    exit 1
+    echo "Downloading SDL2 ${SDL2_VERSION}..."
+    if [ ! -f "${SDL2_ARCHIVE}" ]; then
+        wget "${SDL2_URL}" || {
+            echo "Error: Failed to download SDL2"
+            exit 1
+        }
+    fi
+    
+    echo "Extracting SDL2..."
+    tar -xf "${SDL2_ARCHIVE}" || {
+        echo "Error: Failed to extract SDL2"
+        exit 1
+    }
 fi
 
 # Create build directory
@@ -118,6 +128,10 @@ cp install/lib/libSDL2.a ../${LIB_DIR}/lib/
 # Cleanup
 cd ..
 rm -rf "${BUILD_DIR}"
+
+# Clean up downloaded archive and source directory
+rm -f "${SDL2_ARCHIVE}"
+rm -rf "${SDL2_SOURCE}"
 
 echo "=== SDL2 build completed successfully ==="
 echo "Libraries installed to: ${LIB_DIR}/lib/libSDL2.a"

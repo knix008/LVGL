@@ -16,11 +16,21 @@ LIB_DIR="lib"
 mkdir -p ${LIB_DIR}/include
 mkdir -p ${LIB_DIR}/lib
 
-# Check if FreeType source exists
+# Download and extract FreeType if not exists
 if [ ! -d "${FREETYPE_SOURCE}" ]; then
-    echo "Error: FreeType source directory ${FREETYPE_SOURCE} not found!"
-    echo "Please ensure the FreeType source is in the Source directory."
-    exit 1
+    echo "Downloading FreeType ${FREETYPE_VERSION}..."
+    if [ ! -f "${FREETYPE_ARCHIVE}" ]; then
+        wget "${FREETYPE_URL}" || {
+            echo "Error: Failed to download FreeType"
+            exit 1
+        }
+    fi
+    
+    echo "Extracting FreeType..."
+    tar -xf "${FREETYPE_ARCHIVE}" || {
+        echo "Error: Failed to extract FreeType"
+        exit 1
+    }
 fi
 
 # Create build directory
@@ -57,6 +67,10 @@ cp install/lib/libfreetype.a ../${LIB_DIR}/lib/
 # Cleanup
 cd ..
 rm -rf "${BUILD_DIR}"
+
+# Clean up downloaded archive and source directory
+rm -f "${FREETYPE_ARCHIVE}"
+rm -rf "${FREETYPE_SOURCE}"
 
 echo "=== FreeType build completed successfully ==="
 echo "Libraries installed to: ${LIB_DIR}/lib/libfreetype.a"
