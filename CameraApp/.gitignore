@@ -61,10 +61,6 @@ Source/ffmpeg-*/
 # ONNX Runtime files (these are downloaded separately)
 # Source/onnxruntime/
 
-# Model files (these can be large)
-Source/models/*.onnx
-Source/models/*.pt
-
 # Audio/Video files (these can be large)
 Source/assets/*.mp4
 Source/assets/*.wav
