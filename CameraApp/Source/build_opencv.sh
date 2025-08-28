@@ -149,24 +149,10 @@ build_opencv() {
         missing_deps+=("libgstreamer-plugins-base1.0-dev")
     fi
     
-    if ! pkg-config --exists libavcodec; then
-        missing_deps+=("libavcodec-dev")
-    fi
-    
-    if ! pkg-config --exists libavformat; then
-        missing_deps+=("libavformat-dev")
-    fi
-    
-    if ! pkg-config --exists libavutil; then
-        missing_deps+=("libavutil-dev")
-    fi
-    
-    if ! pkg-config --exists libswscale; then
-        missing_deps+=("libswscale-dev")
-    fi
-    
-    # Note: OpenCV can build its own versions of JPEG, PNG, TIFF, WebP
-    # We'll configure it to do so instead of requiring system packages
+    # Note: OpenCV builds its own versions of:
+    # - Image codecs: JPEG, PNG, TIFF, WebP, Zlib
+    # - Video codecs: FFmpeg (libavcodec, libavformat, libavutil, libswscale)
+    # so we don't need to check for system packages for these
     
     if [ ${#missing_deps[@]} -ne 0 ]; then
         print_error "Missing system dependencies: ${missing_deps[*]}"
@@ -276,6 +262,7 @@ build_opencv() {
         -DBUILD_TIFF=ON \
         -DBUILD_WEBP=ON \
         -DBUILD_ZLIB=ON \
+        -DBUILD_FFMPEG=ON \
         -DOPENCV_ENABLE_NONFREE=OFF \
         -DOPENCV_GENERATE_PKGCONFIG=OFF \
         -DOPENCV_PYTHON_INSTALL_PATH="" \
@@ -293,7 +280,7 @@ build_opencv() {
         -DOPENCV_SKIP_EIGEN_INSTALL=ON \
         -DOPENCV_SKIP_LAPACK_INSTALL=ON \
         -DOPENCV_SKIP_GSTREAMER_INSTALL=ON \
-        -DOPENCV_SKIP_FFMPEG_INSTALL=ON \
+        -DOPENCV_SKIP_FFMPEG_INSTALL=OFF \
         -DOPENCV_SKIP_JPEG_INSTALL=OFF \
         -DOPENCV_SKIP_PNG_INSTALL=OFF \
         -DOPENCV_SKIP_TIFF_INSTALL=OFF \

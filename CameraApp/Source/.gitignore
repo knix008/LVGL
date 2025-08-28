@@ -5,6 +5,7 @@ build/
 *.so
 *.exe
 webcam_app
+opencv/
 
 # CMake generated files
 CMakeCache.txt

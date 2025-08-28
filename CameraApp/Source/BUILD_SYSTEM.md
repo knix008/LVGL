@@ -21,14 +21,14 @@ The following development packages are required for building OpenCV:
 ```bash
 sudo apt update && sudo apt install \
     libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev \
-    libavcodec-dev \
-    libavformat-dev \
-    libavutil-dev \
-    libswscale-dev
+    libgstreamer-plugins-base1.0-dev
 ```
 
-**Note**: OpenCV builds its own versions of JPEG, PNG, TIFF, WebP, and Zlib libraries, so system packages for these are not required.
+**Note**: OpenCV builds its own versions of:
+- **Image codecs**: JPEG, PNG, TIFF, WebP, Zlib
+- **Video codecs**: FFmpeg (libavcodec, libavformat, libavutil, libswscale)
+
+So system packages for these are not required.
 
 ## Build Scripts
 
