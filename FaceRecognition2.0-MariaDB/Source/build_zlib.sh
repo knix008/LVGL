@@ -44,21 +44,21 @@ make install
 
 # Copy library files to lib directory
 echo "Copying library files to ${LIB_DIR}/..."
-mkdir -p "../../${LIB_DIR}/lib"
-mkdir -p "../../${LIB_DIR}/include/zlib"
+mkdir -p "../${LIB_DIR}/lib"
+mkdir -p "../${LIB_DIR}/include/zlib"
 
-cp install/lib/libz.a "../../${LIB_DIR}/lib/"
-cp install/include/zlib.h "../../${LIB_DIR}/include/zlib/"
-cp install/include/zconf.h "../../${LIB_DIR}/include/zlib/"
+cp install/lib/libz.a "../${LIB_DIR}/lib/"
+cp install/include/zlib.h "../${LIB_DIR}/include/zlib/"
+cp install/include/zconf.h "../${LIB_DIR}/include/zlib/"
 
 # Verify the files were copied
 echo "Verifying copied files..."
-ls -la "../../${LIB_DIR}/lib/libz.a"
-ls -la "../../${LIB_DIR}/include/zlib/zlib.h"
+ls -la "../${LIB_DIR}/lib/libz.a"
+ls -la "../${LIB_DIR}/include/zlib/zlib.h"
 
 # Also copy to pkgconfig directory
-mkdir -p "../../${LIB_DIR}/lib/pkgconfig"
-cp install/lib/pkgconfig/zlib.pc "../../${LIB_DIR}/lib/pkgconfig/"
+mkdir -p "../${LIB_DIR}/lib/pkgconfig"
+cp install/lib/pkgconfig/zlib.pc "../${LIB_DIR}/lib/pkgconfig/"
 
 # Go back to original directory and verify
 cd ..
@@ -69,23 +69,7 @@ ls -la "${LIB_DIR}/include/zlib/zlib.h"
 # Clean up build directory
 rm -rf "$BUILD_DIR"
 
-# Create pkg-config file
-mkdir -p "../../${LIB_DIR}/lib/pkgconfig"
-cat > "../../${LIB_DIR}/lib/pkgconfig/zlib.pc" << EOF
-prefix=../../${LIB_DIR}
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: zlib
-Description: zlib compression library
-Version: ${ZLIB_VERSION}
-Libs: -L\${libdir} -lz
-Cflags: -I\${includedir}
-EOF
-
-# Clean up source archive only (keep build directory for debugging)
-cd ..
+# Clean up downloaded source archive
 rm -f "zlib-${ZLIB_VERSION}.tar.gz"
 
 echo "=== zlib build completed successfully ==="

@@ -6,7 +6,6 @@ build/
 *.exe
 main
 
-
 # CMake generated files
 CMakeCache.txt
 cmake_install.cmake
@@ -91,4 +90,3 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
-e
