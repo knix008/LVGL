@@ -112,9 +112,9 @@ yarn-error.log*
 *.old
 *.orig
 
-# Core dumps
-core
-core.*
+# Core dumps (but not LVGL core directory)
+/core$
+/core.*$
 
 # IPC socket files
 /tmp/webcam_gui_socket
