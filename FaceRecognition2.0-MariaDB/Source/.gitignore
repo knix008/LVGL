@@ -88,7 +88,7 @@ core
 core.*
 
 # IPC socket files
-/tmp/opencv_gui_socket
+/tmp/webcam_gui_socket
 *.socket
 
 # Database files (if any are created)

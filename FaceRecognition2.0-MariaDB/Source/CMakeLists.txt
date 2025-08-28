@@ -16,8 +16,10 @@ set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
 set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
 set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
 set(MARIADB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libmariadb.a)
+set(ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/zlib)
+set(ZLIB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libz.a)
 
-# System libraries
+# System libraries 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale libswresample)
 
@@ -72,22 +74,24 @@ target_include_directories(main PRIVATE
     ${SDL2_INCLUDE_DIRS} 
     ${FFMPEG_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
+    ${ZLIB_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/mysql
 )
 
-# Link libraries for main
+# Link libraries for main (local crypto libraries first for priority)
 target_link_libraries(main 
+    ${OPENSSL_LIBRARIES}
     ${LVGL_LIBRARY} 
     ${SDL2_LIBRARIES} 
     ${FREETYPE_LIBS} 
-    ${OPENSSL_LIBRARIES}
     ${FFMPEG_LIBRARIES}
     ${MARIADB_LIBRARY}
+    ${ZLIB_LIBRARY}
 )
 
 # System libraries for Unix
 if(UNIX)
-    target_link_libraries(main pthread dl m crypto z)
+    target_link_libraries(main pthread dl m crypto)
 endif()
 
 # Copy HTML files to build directory

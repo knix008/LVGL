@@ -76,7 +76,7 @@ void switch_to_tab_by_name(const char* tab_name) {
     } else if (strcmp(tab_name, "av") == 0 || strcmp(tab_name, "video") == 0) {
         tab_index = TAB_AV;
     } else if (strcmp(tab_name, "webcam") == 0) {
-        tab_index = TAB_OPENCV;
+        tab_index = TAB_WEBCAM;
     } else if (strcmp(tab_name, "info") == 0) {
         tab_index = TAB_INFO;
     } else {

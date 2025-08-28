@@ -4,7 +4,7 @@
 set -e
 
 echo "=== Master Library Build Script ==="
-echo "Usage: $0 [freetype|sdl2|lvgl|openssl|mariadb|all]"
+echo "Usage: $0 [freetype|sdl2|lvgl|openssl|mariadb|zlib|all]"
 
 # Function to build a specific library
 build_library() {
@@ -31,6 +31,7 @@ if [ $# -eq 0 ]; then
     build_library "lvgl"
     build_library "openssl"
     build_library "mariadb"
+    build_library "zlib"
     echo "=== All libraries built successfully ==="
     exit 0
 fi
@@ -53,17 +54,21 @@ case "$1" in
     "mariadb")
         build_library "mariadb"
         ;;
+    "zlib")
+        build_library "zlib"
+        ;;
     "all")
         build_library "freetype"
         build_library "sdl2"
         build_library "lvgl"
         build_library "openssl"
         build_library "mariadb"
+        build_library "zlib"
         echo "=== All libraries built successfully ==="
         ;;
     *)
         echo "Error: Unknown library '$1'"
-        echo "Available options: freetype, sdl2, lvgl, openssl, mariadb, all"
+        echo "Available options: freetype, sdl2, lvgl, openssl, mariadb, zlib, all"
         exit 1
         ;;
 esac
