@@ -46,8 +46,15 @@ check_dependencies() {
     
     # Check for local OpenCV installation
     if [ ! -d "opencv" ]; then
-        print_error "OpenCV directory not found. Please ensure OpenCV is built in the opencv directory."
-        exit 1
+        print_warning "OpenCV directory not found."
+        print_status "Building OpenCV locally..."
+        if [ -f "build_opencv.sh" ]; then
+            chmod +x build_opencv.sh
+            ./build_opencv.sh
+        else
+            print_error "build_opencv.sh not found. Please build OpenCV manually."
+            exit 1
+        fi
     fi
     
     if [ ! -f "opencv/lib/cmake/opencv4/OpenCVConfig.cmake" ]; then
@@ -171,9 +178,13 @@ show_help() {
     echo "  $0 info         # Show build information"
     echo ""
     echo "Dependencies:"
-    echo "  - OpenCV (local installation in opencv/)"
+    echo "  - OpenCV (auto-built locally with self-contained libraries)"
     echo "  - ONNX Runtime 1.16.3 (auto-installed if missing)"
     echo "  - YOLOv8 face detection model (models/yolov8n-face.onnx)"
+    echo ""
+    echo "System Dependencies (auto-installed):"
+    echo "  - libgstreamer1.0-dev"
+    echo "  - libgstreamer-plugins-base1.0-dev"
 }
 
 # Main function

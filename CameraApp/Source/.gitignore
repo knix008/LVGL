@@ -7,6 +7,17 @@ build/
 webcam_app
 opencv/
 
+# OpenCV build directories (created during build_opencv.sh)
+opencv_build/
+opencv_src/
+
+# ONNX Runtime libraries (downloaded and installed by install_onnxruntime.sh)
+onnxruntime-linux-*/
+onnxruntime-linux-*
+onnxruntime-*/
+onnxruntime*.tgz
+onnxruntime*.tar.gz
+
 # CMake generated files
 CMakeCache.txt
 cmake_install.cmake
