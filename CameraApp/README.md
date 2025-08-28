@@ -18,6 +18,7 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
 - Webcam device
 - Linux system with GTK libraries
 - wget and tar (for ONNX Runtime installation)
+- Git (for downloading OpenCV source)
 
 ## Quick Start
 
@@ -27,76 +28,115 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
    cd CameraApp
    ```
 
-2. **Install ONNX Runtime:**
+2. **Build the application (auto-installs dependencies):**
    ```bash
    cd Source
-   ./install_onnxruntime.sh
+   ./build_webcam.sh
    ```
 
-3. **Build the application:**
+3. **Run the application:**
    ```bash
-   mkdir build
-   cd build
-   cmake ..
-   make
+   cd Source
+   ./build_webcam.sh run
    ```
 
-4. **Run the application:**
-   ```bash
-   make run-webcam
-   ```
+## Build System
+
+The project uses a comprehensive build system with the following components:
+
+### Automated Build Scripts
+
+1. **build_webcam.sh** - Main build script that:
+   - Auto-installs ONNX Runtime if missing
+   - Auto-builds OpenCV locally if missing
+   - Builds the webcam application
+   - Provides run, test, and clean commands
+
+2. **build_opencv.sh** - OpenCV build script that:
+   - Detects CPU architecture (x64/aarch64)
+   - Downloads and builds OpenCV 4.8.1 locally
+   - Includes self-contained image and video codecs
+   - Optimized for the target architecture
+
+3. **install_onnxruntime.sh** - ONNX Runtime installer that:
+   - Detects CPU architecture (x64/aarch64)
+   - Downloads appropriate ONNX Runtime version
+   - Installs to the correct location
+
+### Self-Contained Dependencies
+
+The build system is designed to be self-contained:
+- **OpenCV**: Built locally with all dependencies included
+- **ONNX Runtime**: Downloaded and installed locally
+- **System Dependencies**: Only requires GStreamer development packages
 
 ## Installation
 
-### ONNX Runtime Installation
+### Automated Installation (Recommended)
 
-The project includes an automated script to install ONNX Runtime 1.16.3:
+The project includes automated scripts that handle all dependencies:
 
 ```bash
 cd Source
-./install_onnxruntime.sh [OPTIONS]
+./build_webcam.sh
 ```
 
-**Options:**
-- `--help` - Show usage information
-- `--version` - Show script version
-- `--force` - Force reinstallation
-
-**What the script does:**
-1. Downloads ONNX Runtime 1.16.3 from official releases
-2. Extracts it to the correct location
-3. Verifies the installation
-4. Tests CMake configuration
+This single command will:
+1. Install ONNX Runtime 1.16.3 (if missing)
+2. Build OpenCV 4.8.1 locally (if missing)
+3. Build the webcam application
+4. Set up all necessary configurations
 
 ### Manual Installation
 
 If you prefer manual installation:
 
-1. Download ONNX Runtime 1.16.3 from [GitHub releases](https://github.com/microsoft/onnxruntime/releases/tag/v1.16.3)
-2. Extract to `Source/onnxruntime-linux-x64-1.16.3/`
-3. Ensure the library file `lib/libonnxruntime.so` exists
+1. **Install ONNX Runtime:**
+   ```bash
+   cd Source
+   ./install_onnxruntime.sh
+   ```
+
+2. **Build OpenCV:**
+   ```bash
+   cd Source
+   ./build_opencv.sh
+   ```
+
+3. **Build the application:**
+   ```bash
+   cd Source
+   mkdir build && cd build
+   cmake ..
+   make
+   ```
 
 ## Building the Application
 
-### Method 1: Using the Installation Script (Recommended)
+### Method 1: Using the Build Script (Recommended)
 ```bash
 cd Source
-./install_onnxruntime.sh
-mkdir build && cd build
-cmake ..
-make
+./build_webcam.sh
 ```
 
 ### Method 2: Manual Build
 ```bash
 cd Source
-mkdir build
-cd build
+./build_webcam.sh build
+```
+
+### Method 3: Step-by-step Manual Build
+```bash
+cd Source
+./install_onnxruntime.sh
+./build_opencv.sh
+mkdir build && cd build
 cmake ..
 make
 ```
 
 The build process will:
+- Auto-install missing dependencies
 - Compile the C++ source code
 - Link against OpenCV and ONNX Runtime libraries
 - Copy model files to the build directory
@@ -104,15 +144,19 @@ The build process will:
 
 ## Running the Application
 
-### Method 1: Using CMake Target (Recommended)
+### Method 1: Using the Build Script (Recommended)
+```bash
+cd Source
+./build_webcam.sh run
+```
+
+### Method 2: Using CMake Target
 ```bash
 cd Source/build
 make run-webcam
 ```
 
-This method automatically sets the correct library paths and runs the application.
-
-### Method 2: Direct Execution
+### Method 3: Direct Execution
 ```bash
 cd Source/build
 ./webcam_app
@@ -120,8 +164,19 @@ cd Source/build
 
 The executable is configured with RPATH, so it should find the libraries automatically.
 
-## Available CMake Targets
+## Available Commands
 
+### Build Script Commands
+```bash
+./build_webcam.sh build        # Build the application
+./build_webcam.sh run          # Build and run the application
+./build_webcam.sh test         # Run tests
+./build_webcam.sh clean        # Clean build files
+./build_webcam.sh info         # Show build information
+./build_webcam.sh help         # Show help
+```
+
+### CMake Targets
 - `make` - Build the application
 - `make run-webcam` - Build and run the application
 - `make info` - Display build configuration information
@@ -180,13 +235,20 @@ CameraApp/
 │   │   └── webcam.cpp
 │   ├── models/                                  # AI models
 │   │   └── yolov8n-face.onnx
-│   ├── opencv/                                  # OpenCV installation
+│   ├── opencv/                                  # Local OpenCV installation
+│   │   ├── lib/                                # OpenCV libraries
+│   │   ├── include/                            # OpenCV headers
+│   │   └── share/                              # OpenCV data files
 │   ├── onnxruntime-linux-x64-1.16.3/           # ONNX Runtime 1.16.3
 │   │   ├── lib/
 │   │   │   └── libonnxruntime.so
 │   │   └── include/
 │   │       └── onnxruntime_c_api.h
-│   ├── install_onnxruntime.sh                   # Installation script
+│   ├── build_webcam.sh                         # Main build script
+│   ├── build_opencv.sh                         # OpenCV build script
+│   ├── install_onnxruntime.sh                  # ONNX Runtime installer
+│   ├── convert_yolo.sh                         # Model conversion script
+│   ├── BUILD_SYSTEM.md                         # Build system documentation
 │   └── CMakeLists.txt                          # Build configuration
 ├── .gitignore
 └── README.md
