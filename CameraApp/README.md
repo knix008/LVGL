@@ -20,6 +20,8 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
 - wget and tar (for ONNX Runtime installation)
 - Git (for downloading OpenCV source)
 
+**For detailed system dependencies, see [SYSTEM_DEPENDENCIES.md](Source/SYSTEM_DEPENDENCIES.md)**
+
 ## Quick Start
 
 1. **Clone the repository:**
@@ -249,6 +251,8 @@ CameraApp/
 │   ├── install_onnxruntime.sh                  # ONNX Runtime installer
 │   ├── convert_yolo.sh                         # Model conversion script
 │   ├── BUILD_SYSTEM.md                         # Build system documentation
+│   ├── SYSTEM_DEPENDENCIES.md                  # System dependencies guide
+│   ├── DEPENDENCIES_QUICK_REFERENCE.md         # Quick dependency reference
 │   └── CMakeLists.txt                          # Build configuration
 ├── .gitignore
 └── README.md

@@ -30,6 +30,8 @@ sudo apt update && sudo apt install \
 
 So system packages for these are not required.
 
+**For comprehensive system dependency information, see [SYSTEM_DEPENDENCIES.md](SYSTEM_DEPENDENCIES.md)**
+
 ## Build Scripts
 
 ### 1. build_opencv.sh
