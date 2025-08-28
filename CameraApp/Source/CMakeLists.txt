@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 project(webcam_app CXX)
 
+# Architecture detection
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(ARCHITECTURE "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+    set(ARCHITECTURE "aarch64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7l|armv8l")
+    set(ARCHITECTURE "aarch64")
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}. Supported: x86_64, aarch64, arm64")
+endif()
+
+message(STATUS "Detected architecture: ${ARCHITECTURE}")
+
 # Build configuration
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -32,14 +45,16 @@ if(OpenCV_VERSION VERSION_LESS "4.0.0")
 endif()
 
 # ONNX Runtime configuration
-set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.16.3")
+set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-${ARCHITECTURE}-1.16.3")
 
 if(NOT EXISTS "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
     message(FATAL_ERROR "ONNX Runtime prebuilt library not found at ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
+    message(FATAL_ERROR "Please run: ./install_onnxruntime.sh to download the correct version for ${ARCHITECTURE}")
 endif()
 
 if(NOT EXISTS "${ONNXRUNTIME_DIR}/include/onnxruntime_c_api.h")
     message(FATAL_ERROR "ONNX Runtime headers not found at ${ONNXRUNTIME_DIR}/include/")
+    message(FATAL_ERROR "Please run: ./install_onnxruntime.sh to download the correct version for ${ARCHITECTURE}")
 endif()
 
 # Check model files
@@ -112,6 +127,7 @@ add_custom_target(clean-build
 
 add_custom_target(info
     COMMAND ${CMAKE_COMMAND} -E echo "=== Build Information ==="
+    COMMAND ${CMAKE_COMMAND} -E echo "Architecture: ${ARCHITECTURE}"
     COMMAND ${CMAKE_COMMAND} -E echo "Build directory: ${CMAKE_BINARY_DIR}"
     COMMAND ${CMAKE_COMMAND} -E echo "OpenCV: ${OpenCV_LIBS_DIR}"
     COMMAND ${CMAKE_COMMAND} -E echo "ONNX Runtime: ${ONNXRUNTIME_DIR}/lib"
@@ -128,6 +144,7 @@ install(DIRECTORY models/ DESTINATION share/webcam_app/models FILES_MATCHING PAT
 
 # Configuration summary
 message(STATUS "=== Webcam Application Configuration ===")
+message(STATUS "Architecture: ${ARCHITECTURE}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")

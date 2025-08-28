@@ -7,10 +7,36 @@ set -e  # Exit on any error
 
 # Configuration
 ONNX_VERSION="1.16.3"
-ONNX_URL="https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-x64-${ONNX_VERSION}.tgz"
-ONNX_ARCHIVE="onnxruntime-linux-x64-${ONNX_VERSION}.tgz"
-ONNX_DIR="onnxruntime-linux-x64-${ONNX_VERSION}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Function to detect CPU architecture
+detect_architecture() {
+    local arch
+    arch=$(uname -m)
+    
+    case "$arch" in
+        x86_64)
+            echo "x64"
+            ;;
+        aarch64|arm64)
+            echo "aarch64"
+            ;;
+        armv7l|armv8l)
+            echo "aarch64"
+            ;;
+        *)
+            print_error "Unsupported architecture: $arch"
+            print_error "Supported architectures: x86_64 (x64), aarch64, arm64"
+            exit 1
+            ;;
+    esac
+}
+
+# Detect architecture and set URLs
+ARCHITECTURE=$(detect_architecture)
+ONNX_URL="https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-${ARCHITECTURE}-${ONNX_VERSION}.tgz"
+ONNX_ARCHIVE="onnxruntime-linux-${ARCHITECTURE}-${ONNX_VERSION}.tgz"
+ONNX_DIR="onnxruntime-linux-${ARCHITECTURE}-${ONNX_VERSION}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -60,6 +86,7 @@ trap cleanup EXIT
 # Main installation function
 install_onnxruntime() {
     print_status "Starting ONNX Runtime ${ONNX_VERSION} installation..."
+    print_status "Detected architecture: ${ARCHITECTURE}"
     
     # Check if we're in the right directory
     if [ ! -f "CMakeLists.txt" ]; then
@@ -184,10 +211,11 @@ show_usage() {
     echo "  -f, --force    Force reinstallation even if already installed"
     echo
     echo "This script will:"
-    echo "  1. Download ONNX Runtime ${ONNX_VERSION}"
-    echo "  2. Extract it to the current directory"
-    echo "  3. Verify the installation"
-    echo "  4. Test CMake configuration"
+echo "  1. Detect your CPU architecture (x64 or aarch64)"
+echo "  2. Download ONNX Runtime ${ONNX_VERSION} for your architecture"
+echo "  3. Extract it to the current directory"
+echo "  4. Verify the installation"
+echo "  5. Test CMake configuration"
     echo
     echo "Requirements:"
     echo "  - wget (for downloading)"
@@ -201,7 +229,8 @@ show_usage() {
 show_version() {
     echo "ONNX Runtime Installation Script v1.0"
     echo "Target ONNX Runtime version: ${ONNX_VERSION}"
-    echo "Supported platform: Linux x64"
+    echo "Supported platforms: Linux x64, Linux aarch64"
+    echo "Detected architecture: ${ARCHITECTURE}"
 }
 
 # Parse command line arguments
