@@ -25,12 +25,10 @@ sudo apt update && sudo apt install \
     libavcodec-dev \
     libavformat-dev \
     libavutil-dev \
-    libswscale-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libwebp-dev
+    libswscale-dev
 ```
+
+**Note**: OpenCV builds its own versions of JPEG, PNG, TIFF, WebP, and Zlib libraries, so system packages for these are not required.
 
 ## Build Scripts
 
@@ -161,6 +159,8 @@ Source/
    ```bash
    sudo apt update && sudo apt install [missing-package]
    ```
+   
+   **Note**: OpenCV builds its own versions of image codecs (JPEG, PNG, TIFF, WebP, Zlib), so you don't need to install system packages for these.
 
 2. **Build Time**: OpenCV build can take 30-60 minutes depending on your system. Be patient.
 

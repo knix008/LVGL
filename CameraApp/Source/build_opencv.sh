@@ -140,7 +140,7 @@ build_opencv() {
     
     local missing_deps=()
     
-    # Check for development packages
+    # Check for development packages (only essential ones that OpenCV can't build itself)
     if ! pkg-config --exists gstreamer-1.0; then
         missing_deps+=("libgstreamer1.0-dev")
     fi
@@ -165,21 +165,8 @@ build_opencv() {
         missing_deps+=("libswscale-dev")
     fi
     
-    if ! pkg-config --exists libjpeg; then
-        missing_deps+=("libjpeg-dev")
-    fi
-    
-    if ! pkg-config --exists libpng; then
-        missing_deps+=("libpng-dev")
-    fi
-    
-    if ! pkg-config --exists libtiff-4; then
-        missing_deps+=("libtiff-dev")
-    fi
-    
-    if ! pkg-config --exists libwebp; then
-        missing_deps+=("libwebp-dev")
-    fi
+    # Note: OpenCV can build its own versions of JPEG, PNG, TIFF, WebP
+    # We'll configure it to do so instead of requiring system packages
     
     if [ ${#missing_deps[@]} -ne 0 ]; then
         print_error "Missing system dependencies: ${missing_deps[*]}"
@@ -284,6 +271,11 @@ build_opencv() {
         -DWITH_XINE=OFF \
         -DWITH_XVID=OFF \
         -DWITH_ZLIB=ON \
+        -DBUILD_JPEG=ON \
+        -DBUILD_PNG=ON \
+        -DBUILD_TIFF=ON \
+        -DBUILD_WEBP=ON \
+        -DBUILD_ZLIB=ON \
         -DOPENCV_ENABLE_NONFREE=OFF \
         -DOPENCV_GENERATE_PKGCONFIG=OFF \
         -DOPENCV_PYTHON_INSTALL_PATH="" \
@@ -302,11 +294,11 @@ build_opencv() {
         -DOPENCV_SKIP_LAPACK_INSTALL=ON \
         -DOPENCV_SKIP_GSTREAMER_INSTALL=ON \
         -DOPENCV_SKIP_FFMPEG_INSTALL=ON \
-        -DOPENCV_SKIP_JPEG_INSTALL=ON \
-        -DOPENCV_SKIP_PNG_INSTALL=ON \
-        -DOPENCV_SKIP_TIFF_INSTALL=ON \
-        -DOPENCV_SKIP_WEBP_INSTALL=ON \
-        -DOPENCV_SKIP_ZLIB_INSTALL=ON \
+        -DOPENCV_SKIP_JPEG_INSTALL=OFF \
+        -DOPENCV_SKIP_PNG_INSTALL=OFF \
+        -DOPENCV_SKIP_TIFF_INSTALL=OFF \
+        -DOPENCV_SKIP_WEBP_INSTALL=OFF \
+        -DOPENCV_SKIP_ZLIB_INSTALL=OFF \
         -DOPENCV_SKIP_1394_INSTALL=ON \
         -DOPENCV_SKIP_CAROTENE_INSTALL=ON \
         -DOPENCV_SKIP_CUBLAS_INSTALL=ON \

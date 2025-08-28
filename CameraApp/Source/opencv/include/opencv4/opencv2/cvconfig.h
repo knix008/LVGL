@@ -60,7 +60,7 @@
 /* #undef HAVE_VULKAN */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-/* #undef HAVE_INTTYPES_H */
+#define HAVE_INTTYPES_H 1
 
 /* Intel Integrated Performance Primitives */
 /* #undef HAVE_IPP */
@@ -79,7 +79,7 @@
 #define HAVE_JPEG
 
 /* libpng/png.h needs to be included */
-#define HAVE_LIBPNG_PNG_H
+/* #undef HAVE_LIBPNG_PNG_H */
 
 /* GDCM DICOM codec */
 /* #undef HAVE_GDCM */
