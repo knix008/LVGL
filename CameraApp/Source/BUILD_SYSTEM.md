@@ -1,270 +1,234 @@
-# Webcam Application Build System
+# Build System Documentation
 
-This document describes the build system for the webcam application with AI face detection capabilities using ONNX Runtime 1.16.3.
+This document explains how to build the webcam application with local libraries.
 
 ## Overview
 
-The build system uses CMake for configuration and provides multiple build options including Release and Debug configurations. It includes comprehensive error checking, dependency validation, and automated testing. The system now uses prebuilt ONNX Runtime 1.16.3 for improved reliability and performance.
+The project uses local versions of OpenCV and ONNX Runtime to ensure consistency and avoid system dependencies. The build system automatically detects your CPU architecture and configures everything accordingly.
 
-## Files
+## Prerequisites
 
-### Core Build Files
+### Required Tools
+- `cmake` (3.10 or higher)
+- `make`
+- `git`
+- `wget`
+- `tar`
 
-- **`CMakeLists.txt`** - Main CMake configuration file
-- **`build_webcam.sh`** - Convenient build script with multiple options
-- **`install_onnxruntime.sh`** - Automated ONNX Runtime installation script
+### System Dependencies
+The following development packages are required for building OpenCV:
 
-### Source Files
-
-- **`src/main.cpp`** - Main application entry point
-- **`src/webcam.cpp`** - Webcam application implementation
-- **`include/webcam.h`** - Application header file
-
-### Dependencies
-
-- **`onnxruntime-linux-x64-1.16.3/`** - Prebuilt ONNX Runtime 1.16.3
-- **`models/`** - YOLOv8 face detection models
-- **`opencv/`** - Local OpenCV installation
-
-## Build Configuration
-
-### CMakeLists.txt Features
-
-#### 1. **Compiler Configuration**
-```cmake
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+```bash
+sudo apt update && sudo apt install \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libwebp-dev
 ```
 
-#### 2. **Build Types**
-- **Release**: Optimized build with `-O3` and `-DNDEBUG`
-- **Debug**: Debug build with `-g` and `-O0`
+## Build Scripts
 
-#### 3. **Compiler Flags**
-```cmake
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O2")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+### 1. build_opencv.sh
+
+Builds OpenCV 4.8.1 locally with optimized settings for your architecture.
+
+**Usage:**
+```bash
+./build_opencv.sh [OPTIONS]
 ```
 
-#### 4. **Dependency Checking**
-- OpenCV version validation (requires 4.0.0+)
-- ONNX Runtime 1.16.3 library and header validation
-- Model file existence checking
+**Options:**
+- `-h, --help`: Show help message
+- `-v, --version`: Show version information
+- `-f, --force`: Force rebuild even if already installed
+- `-c, --clean`: Clean build (remove existing installation)
 
-#### 5. **Library Configuration**
-- **OpenCV**: Local installation in `opencv/` directory
-- **ONNX Runtime**: Prebuilt 1.16.3 in `onnxruntime-linux-x64-1.16.3/`
-- **System Libraries**: pthread, dl, rt, m, stdc++
+**Example:**
+```bash
+# First time build
+./build_opencv.sh
 
-#### 6. **RPATH Configuration**
-- Automatic RPATH setup for self-contained execution
-- Includes both OpenCV and ONNX Runtime library paths
+# Force rebuild
+./build_opencv.sh --force
 
-#### 7. **Installation Support**
-- Install targets for executable and model files
-- Configurable install prefix
+# Clean build
+./build_opencv.sh --clean
+```
 
-## Installation Process
+### 2. install_onnxruntime.sh
 
-### ONNX Runtime Installation
+Downloads and installs ONNX Runtime 1.16.3 for your architecture.
 
-The project includes an automated installation script for ONNX Runtime 1.16.3:
-
+**Usage:**
 ```bash
 ./install_onnxruntime.sh [OPTIONS]
 ```
 
-**Features:**
-- Downloads from official GitHub releases
-- Automatic extraction and verification
-- CMake configuration testing
-- Error handling and cleanup
-
 **Options:**
-- `--help` - Show usage information
-- `--version` - Show script version
-- `--force` - Force reinstallation
+- `-h, --help`: Show help message
+- `-v, --version`: Show version information
+- `-f, --force`: Force reinstallation even if already installed
 
-## Build Script Usage
-
-### Basic Commands
-
+**Example:**
 ```bash
-# Install ONNX Runtime first
+# First time installation
 ./install_onnxruntime.sh
 
-# Build with default Release configuration
-./build_webcam.sh build
-
-# Build with Debug configuration
-./build_webcam.sh build Debug
-
-# Clean build artifacts
-./build_webcam.sh clean
-
-# Run tests
-./build_webcam.sh test
-
-# Install application (requires sudo)
-./build_webcam.sh install
-
-# Build, test, and install
-./build_webcam.sh all
-
-# Show help
-./build_webcam.sh help
+# Force reinstall
+./install_onnxruntime.sh --force
 ```
 
-### Build Process
+## Build Process
 
-1. **Dependency Check**: Validates cmake, make, and OpenCV
-2. **ONNX Runtime Check**: Ensures ONNX Runtime 1.16.3 is installed
-3. **Configuration**: Runs CMake with specified build type
-4. **Compilation**: Builds with parallel compilation (`-j$(nproc)`)
-5. **Post-processing**: Copies model files to build directory
-6. **Testing**: Runs application tests
-
-## Configuration Summary
-
-The build system provides detailed configuration information:
-
-```
-=== Webcam Application Configuration ===
-Build type: Release
-C++ standard: 14
-OpenCV version: 4.8.1
-ONNX Runtime: /path/to/onnxruntime-linux-x64-1.16.3 (1.16.3)
-Install prefix: /usr/local
-=========================================
-```
-
-## Error Handling
-
-### Dependency Errors
-- Missing cmake or make tools
-- OpenCV not found or version too old
-- ONNX Runtime 1.16.3 library/headers missing
-- Model file missing
-
-### Build Errors
-- Compilation errors with detailed messages
-- Linking errors with library path information
-- RPATH configuration issues
-
-## Installation
-
-### System Installation
+### Step 1: Build OpenCV
 ```bash
-# Install ONNX Runtime
+cd Source
+./build_opencv.sh
+```
+
+This will:
+- Detect your CPU architecture (x64 or aarch64)
+- Check for required tools and dependencies
+- Download OpenCV 4.8.1 source code
+- Configure and build OpenCV with optimized settings
+- Install OpenCV to the local `opencv/` directory
+
+### Step 2: Install ONNX Runtime
+```bash
 ./install_onnxruntime.sh
-
-# Build and install
-./build_webcam.sh build
-./build_webcam.sh install
 ```
 
-### Install Locations
-- **Executable**: `/usr/local/bin/webcam_app`
-- **Models**: `/usr/local/share/webcam_app/models/`
+This will:
+- Detect your CPU architecture
+- Download the appropriate ONNX Runtime version
+- Extract it to the local directory
+- Verify the installation
 
-## Testing
-
-### Test Targets
-- **`test_webcam`**: Runs application tests
-- **`run-webcam`**: Runs the application with proper environment
-- **Manual Testing**: Direct application execution
-
-### Test Commands
+### Step 3: Build the Application
 ```bash
-# Run automated tests
-./build_webcam.sh test
-
-# Run application
+mkdir -p build
 cd build
+cmake ..
+make
+```
+
+### Step 4: Run the Application
+```bash
 make run-webcam
+```
 
-# Manual testing
-cd build
-./webcam_app
+## Architecture Support
+
+The build system automatically detects and supports:
+- **x64**: Intel/AMD 64-bit processors
+- **aarch64**: ARM 64-bit processors (including Apple Silicon)
+
+## Directory Structure
+
+After building, your directory structure will look like:
+
+```
+Source/
+├── opencv/                    # Local OpenCV installation
+│   ├── lib/                  # OpenCV libraries
+│   ├── include/              # OpenCV headers
+│   └── share/                # OpenCV configuration files
+├── onnxruntime-linux-x64-1.16.3/  # ONNX Runtime (architecture-specific)
+│   ├── lib/                  # ONNX Runtime libraries
+│   └── include/              # ONNX Runtime headers
+├── build/                    # Build directory
+│   ├── webcam_app           # Executable
+│   └── models/              # Copied model files
+├── models/                   # Model files
+├── src/                      # Source code
+├── include/                  # Header files
+├── build_opencv.sh          # OpenCV build script
+├── install_onnxruntime.sh   # ONNX Runtime installation script
+└── CMakeLists.txt           # CMake configuration
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### OpenCV Build Issues
 
-1. **ONNX Runtime Not Found**
+1. **Missing Dependencies**: If the build fails due to missing dependencies, install them:
    ```bash
-   ./install_onnxruntime.sh --force
+   sudo apt update && sudo apt install [missing-package]
    ```
 
-2. **OpenCV Not Found**
-   - Ensure OpenCV is built in `opencv/` directory
+2. **Build Time**: OpenCV build can take 30-60 minutes depending on your system. Be patient.
 
-3. **Model Files Missing**
-   - Check that `models/yolov8n-face.onnx` exists
+3. **Memory Issues**: If you encounter memory issues during build, reduce the number of parallel jobs:
+   ```bash
+   # Edit build_opencv.sh and change:
+   make -j$cpu_count
+   # to:
+   make -j2
+   ```
 
-4. **Permission Errors**
-   - Use `sudo` for installation commands
+### ONNX Runtime Issues
 
-5. **Library Loading Issues**
-   - Use `make run-webcam` instead of direct execution
+1. **Download Failures**: Check your internet connection and try again.
 
-### Debug Build
-```bash
-./build_webcam.sh build Debug
-```
+2. **Wrong Architecture**: The script automatically detects architecture, but if you have issues, check:
+   ```bash
+   uname -m
+   ```
+
+### CMake Issues
+
+1. **Configuration Failures**: Clean the build directory and try again:
+   ```bash
+   cd build
+   make clean
+   cmake ..
+   ```
+
+2. **Library Not Found**: Ensure both OpenCV and ONNX Runtime are properly installed:
+   ```bash
+   ls -la opencv/lib/
+   ls -la onnxruntime-linux-*/lib/
+   ```
 
 ## Performance Optimization
 
-### Release Build Features
-- **Optimization Level**: `-O3` for maximum performance
-- **Debug Symbols**: Disabled with `-DNDEBUG`
-- **Parallel Compilation**: Uses all CPU cores
-- **ONNX Runtime**: Prebuilt optimized version
+The build scripts include several optimizations:
 
-### Debug Build Features
-- **Debug Symbols**: Enabled with `-g`
-- **Optimization**: Disabled with `-O0`
-- **Debug Information**: Full debugging support
+- **OpenCV**: Built with `-O3 -march=native` for maximum performance
+- **Architecture Detection**: Automatically optimizes for your specific CPU
+- **Parallel Build**: Uses all available CPU cores for faster builds
+- **Minimal Build**: Only includes necessary OpenCV modules
 
-## Project Structure
+## Maintenance
 
-```
-Source/
-├── build/                                    # Build directory
-├── include/                                  # Header files
-│   └── webcam.h
-├── src/                                     # Source files
-│   ├── main.cpp
-│   └── webcam.cpp
-├── models/                                  # AI models
-│   └── yolov8n-face.onnx
-├── opencv/                                  # OpenCV installation
-├── onnxruntime-linux-x64-1.16.3/           # ONNX Runtime 1.16.3
-│   ├── lib/
-│   │   └── libonnxruntime.so
-│   └── include/
-│       └── onnxruntime_c_api.h
-├── install_onnxruntime.sh                   # Installation script
-├── build_webcam.sh                         # Build script
-├── convert_yolo.sh                         # Model conversion script
-└── CMakeLists.txt                          # Build configuration
+### Updating OpenCV
+To update to a newer OpenCV version:
+1. Edit `build_opencv.sh` and change `OPENCV_VERSION`
+2. Run `./build_opencv.sh --clean`
+
+### Updating ONNX Runtime
+To update to a newer ONNX Runtime version:
+1. Edit `install_onnxruntime.sh` and change `ONNX_VERSION`
+2. Run `./install_onnxruntime.sh --force`
+
+### Cleaning Up
+To remove all local installations:
+```bash
+rm -rf opencv/
+rm -rf onnxruntime-linux-*/
+rm -rf build/
 ```
 
-## Version Information
+## Notes
 
-- **Version**: 1.0.0
-- **C++ Standard**: C++14
-- **CMake Minimum**: 3.10
-- **OpenCV Minimum**: 4.0.0
-- **ONNX Runtime**: 1.16.3
-
-## Future Enhancements
-
-- Support for additional build types (RelWithDebInfo, MinSizeRel)
-- Cross-platform compilation support
-- Package generation (DEB, RPM)
-- Continuous Integration integration
-- Automated dependency management
-- Support for newer ONNX Runtime versions
+- The build system is designed to be self-contained and portable
+- All libraries are built locally to avoid system dependency conflicts
+- The scripts include comprehensive error checking and user feedback
+- Build times can vary significantly depending on your system specifications
+- The resulting application is optimized for your specific architecture

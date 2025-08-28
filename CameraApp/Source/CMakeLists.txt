@@ -27,22 +27,29 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O2")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
-# Find packages
-find_package(PkgConfig REQUIRED)
-
-# OpenCV configuration
+# OpenCV configuration - Local installation only
 set(OpenCV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv/lib/cmake/opencv4")
 set(OpenCV_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/opencv/include/opencv4")
 set(OpenCV_LIBS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv/lib")
 
-find_package(OpenCV REQUIRED)
-if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "Local OpenCV not found. Please ensure OpenCV is built in the opencv directory.")
+# Check if local OpenCV exists before trying to find it
+if(NOT EXISTS "${OpenCV_DIR}")
+    message(FATAL_ERROR "Local OpenCV not found at ${OpenCV_DIR}")
+    message(FATAL_ERROR "Please ensure OpenCV is built in the opencv directory.")
 endif()
 
-if(OpenCV_VERSION VERSION_LESS "4.0.0")
-    message(WARNING "OpenCV version ${OpenCV_VERSION} is older than 4.0.0. Some features may not work properly.")
+# Force CMake to use our local OpenCV installation
+set(OpenCV_FOUND TRUE)
+set(OpenCV_VERSION "4.8.1")
+set(OpenCV_LIBS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/opencv/lib")
+
+# Verify local OpenCV shared libraries exist
+if(NOT EXISTS "${OpenCV_LIBS_DIR}/libopencv_core.so")
+    message(FATAL_ERROR "Local OpenCV shared libraries not found at ${OpenCV_LIBS_DIR}")
+    message(FATAL_ERROR "Please ensure OpenCV is properly built in the opencv directory.")
 endif()
+
+message(STATUS "Using local OpenCV shared libraries: ${OpenCV_LIBS_DIR}")
 
 # ONNX Runtime configuration
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-${ARCHITECTURE}-1.16.3")
@@ -74,14 +81,21 @@ target_include_directories(webcam_app PRIVATE
     ${ONNXRUNTIME_DIR}/include
 )
 
-# Link libraries
+# Link libraries - Explicit local OpenCV shared libraries
 target_link_libraries(webcam_app 
     ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
-    ${OpenCV_LIBS}
+    ${OpenCV_LIBS_DIR}/libopencv_core.so
+    ${OpenCV_LIBS_DIR}/libopencv_imgproc.so
+    ${OpenCV_LIBS_DIR}/libopencv_highgui.so
+    ${OpenCV_LIBS_DIR}/libopencv_imgcodecs.so
+    ${OpenCV_LIBS_DIR}/libopencv_videoio.so
+    ${OpenCV_LIBS_DIR}/libopencv_dnn.so
+    ${OpenCV_LIBS_DIR}/libopencv_features2d.so
+    ${OpenCV_LIBS_DIR}/libopencv_flann.so
     pthread dl rt m stdc++
 )
 
-# RPATH configuration
+# RPATH configuration (needed for both OpenCV and ONNX Runtime shared libraries)
 set_target_properties(webcam_app PROPERTIES
     INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib"
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -129,7 +143,7 @@ add_custom_target(info
     COMMAND ${CMAKE_COMMAND} -E echo "=== Build Information ==="
     COMMAND ${CMAKE_COMMAND} -E echo "Architecture: ${ARCHITECTURE}"
     COMMAND ${CMAKE_COMMAND} -E echo "Build directory: ${CMAKE_BINARY_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E echo "OpenCV: ${OpenCV_LIBS_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E echo "OpenCV shared: ${OpenCV_LIBS_DIR}"
     COMMAND ${CMAKE_COMMAND} -E echo "ONNX Runtime: ${ONNXRUNTIME_DIR}/lib"
     COMMAND ${CMAKE_COMMAND} -E echo "Models: ${CMAKE_CURRENT_SOURCE_DIR}/models"
     COMMAND ${CMAKE_COMMAND} -E echo "Executable: ${CMAKE_BINARY_DIR}/webcam_app"
