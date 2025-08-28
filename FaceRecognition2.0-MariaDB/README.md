@@ -29,11 +29,30 @@ A LVGL-based GUI application with embedded web server, database encryption, and 
 
 1. Clone the repository
 2. Navigate to the project directory
-3. Run the application:
+3. Set up the project (first time only):
+
+```bash
+cd Source
+chmod +x setup_project.sh
+./setup_project.sh
+```
+
+4. Run the application:
 
 ```bash
 ./run.sh
 ```
+
+### First-Time Setup
+
+If you encounter header file errors (like `"../core/lv_obj.h" no such file or directory`), you need to build the libraries first:
+
+```bash
+cd Source
+./setup_project.sh
+```
+
+This will build all required libraries before building the main application.
 
 This will:
 - Check system dependencies

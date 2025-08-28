@@ -15,6 +15,7 @@ Makefile
 *.cmake
 
 # Pre-built libraries (these are built from source)
+# Note: These are built automatically by setup_project.sh
 Source/lib/
 
 # Certificates and security files

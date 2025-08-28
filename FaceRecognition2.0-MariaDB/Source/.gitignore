@@ -47,6 +47,7 @@ Thumbs.db
 *.cache
 
 # Downloaded source archives (these are downloaded during build)
+# Note: These are cleaned up automatically after build
 *.tar.gz
 *.tar.xz
 *.zip
