@@ -89,6 +89,10 @@ install_ubuntu_debian() {
     print_status "Installing Bluetooth dependencies..."
     sudo apt install -y libbluetooth-dev bluez bluez-tools
     
+    # NFC dependencies
+    print_status "Installing NFC dependencies..."
+    sudo apt install -y libpcsclite-dev pcsc-tools libnfc-dev
+    
     # Network testing dependencies
     print_status "Installing network testing dependencies..."
     sudo apt install -y net-tools iputils-ping
@@ -105,9 +109,7 @@ install_ubuntu_debian() {
     print_status "Installing display/DRM dependencies..."
     sudo apt install -y libdrm-dev
     
-    # GTK dependencies (optional, for GUI)
-    print_status "Installing GTK dependencies..."
-    sudo apt install -y libgtk-3-dev libgdk-3-dev
+    # GTK dependencies removed - not used in this project
     
     # Additional utilities
     print_status "Installing additional utilities..."

@@ -30,13 +30,7 @@ pkg_check_modules(ALSA REQUIRED alsa)
 # Find Bluetooth libraries
 pkg_check_modules(BLUETOOTH REQUIRED bluez)
 
-# Find GTK for GUI (optional, can be disabled)
-option(USE_GTK "Use GTK for GUI" ON)
-if(USE_GTK)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    pkg_check_modules(GDK3 REQUIRED gdk-3.0)
-endif()
+# GTK is not used in this project - removed dependency
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -55,11 +49,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Link libraries
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${ALSA_LIBRARIES} ${BLUETOOTH_LIBRARIES} pthread)
 target_compile_options(${PROJECT_NAME} PRIVATE ${OpenCV_CFLAGS_OTHER} ${ALSA_CFLAGS_OTHER} ${BLUETOOTH_CFLAGS_OTHER})
-
-if(USE_GTK)
-    target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES} ${GDK3_LIBRARIES})
-    target_compile_options(${PROJECT_NAME} PRIVATE ${GTK3_CFLAGS_OTHER})
-endif()
 
 # Compiler flags - suppress warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -w)

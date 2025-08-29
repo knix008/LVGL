@@ -8,6 +8,7 @@
 #include "speaker.h"
 #include "led.h"
 #include "bluetooth.h"
+#include "nfc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +28,7 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     test_summary_t speaker_summary = {0, 0, 0, 0.0, ""};
     test_summary_t led_summary = {0, 0, 0, 0.0, ""};
     test_summary_t bluetooth_summary = {0, 0, 0, 0.0, ""};
+    test_summary_t nfc_summary = {0, 0, 0, 0.0, ""};
     
     // Run serial tests if device is specified
     if (serial_device && strlen(serial_device) > 0) {
@@ -56,6 +58,9 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     // Run Bluetooth tests
     bluetooth_summary = run_all_bluetooth_tests();
     
+    // Run NFC tests
+    nfc_summary = run_all_nfc_tests();
+    
     // Overall summary
     printf("\n=== TEST SUMMARY ===\n");
     printf("Camera Tests: %s\n", camera_summary.summary);
@@ -72,10 +77,11 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     printf("Speaker Tests: %s\n", speaker_summary.summary);
     printf("LED Tests: %s\n", led_summary.summary);
     printf("Bluetooth Tests: %s\n", bluetooth_summary.summary);
+    printf("NFC Tests: %s\n", nfc_summary.summary);
     
-    int total_tests = camera_summary.total_tests + network_summary.total_tests + serial_summary.total_tests + wiegand_summary.total_tests + lcd_summary.total_tests + cpu_summary.total_tests + emmc_summary.total_tests + speaker_summary.total_tests + led_summary.total_tests + bluetooth_summary.total_tests;
-    int total_passed = camera_summary.passed_tests + network_summary.passed_tests + serial_summary.passed_tests + wiegand_summary.passed_tests + lcd_summary.passed_tests + cpu_summary.passed_tests + emmc_summary.passed_tests + speaker_summary.passed_tests + led_summary.passed_tests + bluetooth_summary.passed_tests;
-    int total_failed = camera_summary.failed_tests + network_summary.failed_tests + serial_summary.failed_tests + wiegand_summary.failed_tests + lcd_summary.failed_tests + cpu_summary.failed_tests + emmc_summary.failed_tests + speaker_summary.failed_tests + led_summary.failed_tests + bluetooth_summary.failed_tests;
+    int total_tests = camera_summary.total_tests + network_summary.total_tests + serial_summary.total_tests + wiegand_summary.total_tests + lcd_summary.total_tests + cpu_summary.total_tests + emmc_summary.total_tests + speaker_summary.total_tests + led_summary.total_tests + bluetooth_summary.total_tests + nfc_summary.total_tests;
+    int total_passed = camera_summary.passed_tests + network_summary.passed_tests + serial_summary.passed_tests + wiegand_summary.passed_tests + lcd_summary.passed_tests + cpu_summary.passed_tests + emmc_summary.passed_tests + speaker_summary.passed_tests + led_summary.passed_tests + bluetooth_summary.passed_tests + nfc_summary.passed_tests;
+    int total_failed = camera_summary.failed_tests + network_summary.failed_tests + serial_summary.failed_tests + wiegand_summary.failed_tests + lcd_summary.failed_tests + cpu_summary.failed_tests + emmc_summary.failed_tests + speaker_summary.failed_tests + led_summary.failed_tests + bluetooth_summary.failed_tests + nfc_summary.failed_tests;
     double overall_score = 0.0;
     int score_count = 0;
     
@@ -117,6 +123,10 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     }
     if (bluetooth_summary.total_tests > 0) {
         overall_score += bluetooth_summary.average_score;
+        score_count++;
+    }
+    if (nfc_summary.total_tests > 0) {
+        overall_score += nfc_summary.average_score;
         score_count++;
     }
     
@@ -172,6 +182,9 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     if (bluetooth_summary.failed_tests > 0) {
         printf("- Bluetooth issues detected. Check Bluetooth hardware and drivers.\n");
     }
+    if (nfc_summary.failed_tests > 0) {
+        printf("- NFC issues detected. Check NFC hardware and drivers.\n");
+    }
     if (camera_summary.average_score < 50.0) {
         printf("- Camera performance is poor. Consider upgrading camera hardware.\n");
     }
@@ -202,6 +215,9 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     if (bluetooth_summary.average_score < 50.0) {
         printf("- Bluetooth performance is poor. Check Bluetooth configuration and drivers.\n");
     }
+    if (nfc_summary.average_score < 50.0) {
+        printf("- NFC performance is poor. Check NFC configuration and drivers.\n");
+    }
     if (overall_score >= 80.0) {
         printf("- Overall device performance is excellent!\n");
     } else if (overall_score >= 60.0) {
@@ -215,7 +231,7 @@ void print_usage(const char* program_name) {
     printf("Usage: %s [options]\n", program_name);
     printf("\nOptions:\n");
     printf("-h                    Show this help message\n");
-    printf("-d <device>           Device type (camera, network, serial, wiegand, lcd, cpu, emmc, speaker, led, bluetooth, auto)\n");
+    printf("-d <device>           Device type (camera, network, serial, wiegand, lcd, cpu, emmc, speaker, led, bluetooth, nfc, auto)\n");
     printf("-c <index>            Camera index (default: 0)\n");
     printf("-n <interface>        Network interface name (e.g., eth0, wlan0)\n");
     printf("-s <device>           Serial device path (e.g., /dev/ttyUSB0)\n");
@@ -272,6 +288,9 @@ void print_usage(const char* program_name) {
     printf("                   Bluetooth tests:\n");
     printf("                     detection - Test Bluetooth detection\n");
     printf("                     capabilities - Test Bluetooth capabilities\n");
+    printf("                   NFC tests:\n");
+    printf("                     detection - Test NFC detection\n");
+    printf("                     capabilities - Test NFC capabilities\n");
     printf("                     all       - Run all tests for selected device\n");
     printf("                     auto      - Run automated test suite\n");
     printf("-i                    Start interactive mode\n");
@@ -287,6 +306,7 @@ void print_usage(const char* program_name) {
     printf("  %s -d speaker -t all          # Run all speaker tests\n", program_name);
     printf("  %s -d led -l 17 18 -t all     # Run all LED tests\n", program_name);
     printf("  %s -d bluetooth -t all        # Run all Bluetooth tests\n", program_name);
+    printf("  %s -d nfc -t all              # Run all NFC tests\n", program_name);
     printf("  %s -t auto -s /dev/ttyUSB0 -b 9600 -w 17 18  # Run automated test suite with serial and Wiegand\n", program_name);
     printf("  %s -i                         # Start interactive camera mode\n", program_name);
 }
@@ -410,6 +430,10 @@ int main(int argc, char* argv[]) {
     // Handle Bluetooth tests
     else if (strcmp(device_type, "bluetooth") == 0) {
         return handle_bluetooth_commands(test_type, interactive_mode);
+    }
+    // Handle NFC tests
+    else if (strcmp(device_type, "nfc") == 0) {
+        return handle_nfc_commands(test_type, interactive_mode);
     }
     else {
         printf("Error: Unknown device type '%s'\n", device_type);
