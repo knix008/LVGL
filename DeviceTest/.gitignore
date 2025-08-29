@@ -1,0 +1,159 @@
+# Build directories
+build/
+bin/
+lib/
+obj/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+DeviceTest
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+
+# Test output files
+test_output/
+test_results/
+*.test
+
+# Package files
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Documentation build
+docs/build/
+docs/_build/
+
+# Python cache (if any Python scripts are used)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Node modules (if any Node.js tools are used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.orig
+*.rej
+*.old
+
+# Local configuration files
+config.local
+settings.local
+.env.local
+
+# Coverage reports
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+# Profiling data
+gmon.out
+*.prof
+
+# Memory check files
+valgrind-out.txt
+*.vglog
+
+# Kernel module files
+*.ko
+*.mod.c
+*.mod.o
+
+# Device files (for testing)
+/dev/test*
+/tmp/test*
+
+# Large test files
+test_data/
+sample_data/
+*.bin
+*.dat
+*.raw
+
+# Archive files
+*.7z
+*.rar
+*.tar
+*.bz2
+*.gz
+*.xz
+
+# Backup and swap files
+*~
+*.swp
+*.swo
+*.swn
+*.bak
+*.backup
+*.orig
