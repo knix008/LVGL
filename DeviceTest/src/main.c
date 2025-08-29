@@ -5,6 +5,9 @@
 #include "lcd.h"
 #include "cpu.h"
 #include "emmc.h"
+#include "speaker.h"
+#include "led.h"
+#include "bluetooth.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +24,9 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     test_summary_t lcd_summary = {0, 0, 0, 0.0, ""};
     test_summary_t cpu_summary = {0, 0, 0, 0.0, ""};
     test_summary_t emmc_summary = {0, 0, 0, 0.0, ""};
+    test_summary_t speaker_summary = {0, 0, 0, 0.0, ""};
+    test_summary_t led_summary = {0, 0, 0, 0.0, ""};
+    test_summary_t bluetooth_summary = {0, 0, 0, 0.0, ""};
     
     // Run serial tests if device is specified
     if (serial_device && strlen(serial_device) > 0) {
@@ -41,6 +47,15 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     // Run eMMC tests (try common device paths)
     emmc_summary = run_all_emmc_tests("/dev/mmcblk0");
     
+    // Run speaker tests
+    speaker_summary = run_all_speaker_tests(NULL);
+    
+    // Run LED tests (try common GPIO pins)
+    led_summary = run_all_led_tests(17, 18);
+    
+    // Run Bluetooth tests
+    bluetooth_summary = run_all_bluetooth_tests();
+    
     // Overall summary
     printf("\n=== TEST SUMMARY ===\n");
     printf("Camera Tests: %s\n", camera_summary.summary);
@@ -54,10 +69,13 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     printf("LCD Tests: %s\n", lcd_summary.summary);
     printf("CPU Tests: %s\n", cpu_summary.summary);
     printf("eMMC Tests: %s\n", emmc_summary.summary);
+    printf("Speaker Tests: %s\n", speaker_summary.summary);
+    printf("LED Tests: %s\n", led_summary.summary);
+    printf("Bluetooth Tests: %s\n", bluetooth_summary.summary);
     
-    int total_tests = camera_summary.total_tests + network_summary.total_tests + serial_summary.total_tests + wiegand_summary.total_tests + lcd_summary.total_tests + cpu_summary.total_tests + emmc_summary.total_tests;
-    int total_passed = camera_summary.passed_tests + network_summary.passed_tests + serial_summary.passed_tests + wiegand_summary.passed_tests + lcd_summary.passed_tests + cpu_summary.passed_tests + emmc_summary.passed_tests;
-    int total_failed = camera_summary.failed_tests + network_summary.failed_tests + serial_summary.failed_tests + wiegand_summary.failed_tests + lcd_summary.failed_tests + cpu_summary.failed_tests + emmc_summary.failed_tests;
+    int total_tests = camera_summary.total_tests + network_summary.total_tests + serial_summary.total_tests + wiegand_summary.total_tests + lcd_summary.total_tests + cpu_summary.total_tests + emmc_summary.total_tests + speaker_summary.total_tests + led_summary.total_tests + bluetooth_summary.total_tests;
+    int total_passed = camera_summary.passed_tests + network_summary.passed_tests + serial_summary.passed_tests + wiegand_summary.passed_tests + lcd_summary.passed_tests + cpu_summary.passed_tests + emmc_summary.passed_tests + speaker_summary.passed_tests + led_summary.passed_tests + bluetooth_summary.passed_tests;
+    int total_failed = camera_summary.failed_tests + network_summary.failed_tests + serial_summary.failed_tests + wiegand_summary.failed_tests + lcd_summary.failed_tests + cpu_summary.failed_tests + emmc_summary.failed_tests + speaker_summary.failed_tests + led_summary.failed_tests + bluetooth_summary.failed_tests;
     double overall_score = 0.0;
     int score_count = 0;
     
@@ -87,6 +105,18 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     }
     if (emmc_summary.total_tests > 0) {
         overall_score += emmc_summary.average_score;
+        score_count++;
+    }
+    if (speaker_summary.total_tests > 0) {
+        overall_score += speaker_summary.average_score;
+        score_count++;
+    }
+    if (led_summary.total_tests > 0) {
+        overall_score += led_summary.average_score;
+        score_count++;
+    }
+    if (bluetooth_summary.total_tests > 0) {
+        overall_score += bluetooth_summary.average_score;
         score_count++;
     }
     
@@ -133,6 +163,15 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     if (emmc_summary.failed_tests > 0) {
         printf("- eMMC issues detected. Check eMMC connections and storage health.\n");
     }
+    if (speaker_summary.failed_tests > 0) {
+        printf("- Speaker issues detected. Check audio hardware and drivers.\n");
+    }
+    if (led_summary.failed_tests > 0) {
+        printf("- LED issues detected. Check GPIO connections and permissions.\n");
+    }
+    if (bluetooth_summary.failed_tests > 0) {
+        printf("- Bluetooth issues detected. Check Bluetooth hardware and drivers.\n");
+    }
     if (camera_summary.average_score < 50.0) {
         printf("- Camera performance is poor. Consider upgrading camera hardware.\n");
     }
@@ -154,6 +193,15 @@ void run_automated_tests(int camera_index, const char* network_interface, const 
     if (emmc_summary.average_score < 50.0) {
         printf("- eMMC performance is poor. Check eMMC configuration and health.\n");
     }
+    if (speaker_summary.average_score < 50.0) {
+        printf("- Speaker performance is poor. Check audio configuration and drivers.\n");
+    }
+    if (led_summary.average_score < 50.0) {
+        printf("- LED performance is poor. Check GPIO configuration and connections.\n");
+    }
+    if (bluetooth_summary.average_score < 50.0) {
+        printf("- Bluetooth performance is poor. Check Bluetooth configuration and drivers.\n");
+    }
     if (overall_score >= 80.0) {
         printf("- Overall device performance is excellent!\n");
     } else if (overall_score >= 60.0) {
@@ -167,7 +215,7 @@ void print_usage(const char* program_name) {
     printf("Usage: %s [options]\n", program_name);
     printf("\nOptions:\n");
     printf("-h                    Show this help message\n");
-    printf("-d <device>           Device type (camera, network, serial, wiegand, lcd, cpu, emmc, auto)\n");
+    printf("-d <device>           Device type (camera, network, serial, wiegand, lcd, cpu, emmc, speaker, led, bluetooth, auto)\n");
     printf("-c <index>            Camera index (default: 0)\n");
     printf("-n <interface>        Network interface name (e.g., eth0, wlan0)\n");
     printf("-s <device>           Serial device path (e.g., /dev/ttyUSB0)\n");
@@ -215,6 +263,15 @@ void print_usage(const char* program_name) {
     printf("                     detection - Test eMMC detection\n");
     printf("                     capacity  - Test eMMC capacity\n");
     printf("                     capabilities - Test eMMC capabilities\n");
+    printf("                   Speaker tests:\n");
+    printf("                     detection - Test speaker detection\n");
+    printf("                     capabilities - Test speaker capabilities\n");
+    printf("                   LED tests:\n");
+    printf("                     detection - Test LED detection\n");
+    printf("                     capabilities - Test LED capabilities\n");
+    printf("                   Bluetooth tests:\n");
+    printf("                     detection - Test Bluetooth detection\n");
+    printf("                     capabilities - Test Bluetooth capabilities\n");
     printf("                     all       - Run all tests for selected device\n");
     printf("                     auto      - Run automated test suite\n");
     printf("-i                    Start interactive mode\n");
@@ -227,6 +284,9 @@ void print_usage(const char* program_name) {
     printf("  %s -d lcd -t all              # Run all LCD tests\n", program_name);
     printf("  %s -d cpu -t all              # Run all CPU tests\n", program_name);
     printf("  %s -d emmc -p /dev/mmcblk0 -t all # Run all eMMC tests\n", program_name);
+    printf("  %s -d speaker -t all          # Run all speaker tests\n", program_name);
+    printf("  %s -d led -l 17 18 -t all     # Run all LED tests\n", program_name);
+    printf("  %s -d bluetooth -t all        # Run all Bluetooth tests\n", program_name);
     printf("  %s -t auto -s /dev/ttyUSB0 -b 9600 -w 17 18  # Run automated test suite with serial and Wiegand\n", program_name);
     printf("  %s -i                         # Start interactive camera mode\n", program_name);
 }
@@ -241,6 +301,8 @@ int main(int argc, char* argv[]) {
     int wiegand_data1_pin = -1;
     char* test_type = NULL;
     char* device_path = NULL;
+    int led1_pin = -1;
+    int led2_pin = -1;
     bool interactive_mode = false;
     
     // Parse command line arguments
@@ -263,6 +325,9 @@ int main(int argc, char* argv[]) {
             wiegand_data1_pin = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
             device_path = argv[++i];
+        } else if (strcmp(argv[i], "-l") == 0 && i + 2 < argc) {
+            led1_pin = atoi(argv[++i]);
+            led2_pin = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             test_type = argv[++i];
         } else if (strcmp(argv[i], "-i") == 0) {
@@ -329,6 +394,22 @@ int main(int argc, char* argv[]) {
             device_path = "/dev/mmcblk0"; // Default eMMC device
         }
         return handle_emmc_commands(test_type, device_path, interactive_mode);
+    }
+    // Handle speaker tests
+    else if (strcmp(device_type, "speaker") == 0) {
+        return handle_speaker_commands(test_type, device_path, interactive_mode);
+    }
+    // Handle LED tests
+    else if (strcmp(device_type, "led") == 0) {
+        if (led1_pin < 0 || led2_pin < 0) {
+            led1_pin = 17; // Default LED pins
+            led2_pin = 18;
+        }
+        return handle_led_commands(test_type, led1_pin, led2_pin, interactive_mode);
+    }
+    // Handle Bluetooth tests
+    else if (strcmp(device_type, "bluetooth") == 0) {
+        return handle_bluetooth_commands(test_type, interactive_mode);
     }
     else {
         printf("Error: Unknown device type '%s'\n", device_type);

@@ -1,6 +1,6 @@
 # Device Test Program
 
-A comprehensive device testing suite for embedded systems and Linux devices, supporting camera, network, serial, Wiegand, LCD, CPU, and eMMC testing.
+A comprehensive device testing suite for embedded systems and Linux devices, supporting camera, network, serial, Wiegand, LCD, CPU, eMMC, speaker, and LED testing.
 
 ## Features
 
@@ -11,6 +11,8 @@ A comprehensive device testing suite for embedded systems and Linux devices, sup
 - **LCD Testing**: Test LCD interfaces (SPI, I2C, Parallel, MIPI DSI, HDMI, VGA, DVI, DisplayPort)
 - **CPU Testing**: Test CPU architecture, cores, frequency, cache, and performance metrics
 - **eMMC Testing**: Test embedded MultiMediaCard storage capacity, read/write speed, and health
+- **Speaker Testing**: Test audio playback, volume control, frequency response, and quality
+- **LED Testing**: Test LED control, patterns, synchronization, and GPIO functionality
 - **Interactive Mode**: Real-time testing with user commands
 - **Automated Test Suite**: Run all tests automatically with comprehensive summary
 - **Performance Scoring**: Each test provides a score out of 100
@@ -25,8 +27,23 @@ A comprehensive device testing suite for embedded systems and Linux devices, sup
 - pkg-config
 - Network interface access
 - Serial port access (for UART testing)
-- GPIO access (for Wiegand testing)
+- GPIO access (for Wiegand and LED testing)
 - Display access (for LCD testing)
+- Audio access (for speaker testing)
+
+### Quick Installation
+
+For automatic installation of all dependencies on supported systems:
+
+```bash
+./install_dependencies.sh
+```
+
+This script will automatically detect your operating system and install all required dependencies.
+
+### Manual Installation
+
+For manual installation or if your system is not supported by the automatic script, see [INSTALL.md](INSTALL.md) for detailed instructions.
 
 ### Install Dependencies (Ubuntu/Debian)
 
@@ -35,6 +52,8 @@ sudo apt update
 sudo apt install build-essential cmake pkg-config
 sudo apt install libopencv-dev
 sudo apt install libv4l-dev
+sudo apt install libasound2-dev
+sudo apt install libbluetooth-dev
 ```
 
 ## Building
@@ -83,6 +102,12 @@ The executable will be created at `build/bin/DeviceTest`.
 # Run all eMMC tests
 ./build/bin/DeviceTest -d emmc -p /dev/mmcblk0 -t all
 
+# Run all speaker tests
+./build/bin/DeviceTest -d speaker -t all
+
+# Run all LED tests
+./build/bin/DeviceTest -d led -l 17 18 -t all
+
 # Start interactive camera mode
 ./build/bin/DeviceTest -i
 ```
@@ -90,12 +115,13 @@ The executable will be created at `build/bin/DeviceTest`.
 ### Command Line Options
 
 - `-h`: Show help message
-- `-d <device>`: Device type (`camera`, `network`, `serial`, `wiegand`, `lcd`, `cpu`, `emmc`, `auto`)
+- `-d <device>`: Device type (`camera`, `network`, `serial`, `wiegand`, `lcd`, `cpu`, `emmc`, `speaker`, `led`, `auto`)
 - `-c <index>`: Camera index (default: 0)
 - `-n <interface>`: Network interface name (e.g., `eth0`, `wlan0`)
 - `-s <device>`: Serial device path (e.g., `/dev/ttyUSB0`)
 - `-b <baud_rate>`: Serial baud rate (default: 115200)
 - `-w <data0> <data1>`: Wiegand data pins (e.g., 17 18)
+- `-l <led1> <led2>`: LED GPIO pins (e.g., 17 18)
 - `-p <path>`: Device path for specific tests (e.g., `/dev/mmcblk0` for eMMC)
 - `-t <test>`: Run specific test (see test types below)
 - `-i`: Start interactive mode
@@ -156,6 +182,16 @@ The executable will be created at `build/bin/DeviceTest`.
 - `capabilities`: Test eMMC capabilities
 - `all`: Run all eMMC tests
 
+#### Speaker Tests
+- `detection`: Test speaker detection
+- `capabilities`: Test speaker capabilities
+- `all`: Run all speaker tests
+
+#### LED Tests
+- `detection`: Test LED detection
+- `capabilities`: Test LED capabilities
+- `all`: Run all LED tests
+
 #### Special Tests
 - `auto`: Run automated test suite (all device tests)
 
@@ -164,7 +200,7 @@ The executable will be created at `build/bin/DeviceTest`.
 The automated test suite (`-t auto`) runs all available tests and provides a comprehensive summary:
 
 ### Features
-- **Complete Coverage**: Tests all device functionality (camera, network, serial, Wiegand, LCD, CPU, eMMC)
+- **Complete Coverage**: Tests all device functionality (camera, network, serial, Wiegand, LCD, CPU, eMMC, speaker, LED)
 - **Performance Scoring**: Each test scored out of 100
 - **Summary Report**: Overall results with pass/fail statistics
 - **Recommendations**: Actionable advice based on test results
@@ -212,6 +248,14 @@ Starting comprehensive device testing...
 ✓ eMMC Capacity: PASS (90.0/100)
 ✓ eMMC Capabilities: PASS (85.0/100)
 
+=== Running All Speaker Tests ===
+✓ Speaker Detection: PASS (100.0/100)
+✓ Speaker Capabilities: PASS (95.0/100)
+
+=== Running All LED Tests ===
+✓ LED Detection: PASS (100.0/100)
+✓ LED Capabilities: PASS (85.0/100)
+
 === TEST SUMMARY ===
 Camera Tests: 5/5 passed, Average Score: 82.5/100
 Network Tests: 2/4 passed, Average Score: 39.2/100
@@ -220,13 +264,15 @@ Wiegand Tests: 2/2 passed, Average Score: 95.0/100
 LCD Tests: 2/2 passed, Average Score: 92.5/100
 CPU Tests: 4/4 passed, Average Score: 91.4/100
 eMMC Tests: 3/3 passed, Average Score: 91.7/100
+Speaker Tests: 2/2 passed, Average Score: 97.5/100
+LED Tests: 2/2 passed, Average Score: 92.5/100
 
 === OVERALL RESULTS ===
-Total Tests: 24
-Passed: 20
+Total Tests: 28
+Passed: 24
 Failed: 4
-Success Rate: 83.3%
-Overall Score: 82.1/100
+Success Rate: 85.7%
+Overall Score: 84.2/100
 
 === FINAL VERDICT ===
 ✅ MOST TESTS PASSED! Device is working well with minor issues.
@@ -313,12 +359,32 @@ Available commands:
 - **Performance Testing**: Tests read/write speeds
 - **Health Monitoring**: Tests device health and temperature
 
+### Speaker Testing
+- **Interface Detection**: Automatically detects ALSA, PulseAudio, or OSS audio interfaces
+- **Device Detection**: Tests audio device accessibility and initialization
+- **Playback Testing**: Tests actual audio playback with sine wave generation
+- **Volume Control**: Tests volume control capabilities
+- **Frequency Response**: Tests multiple frequencies (100Hz, 440Hz, 1kHz, 5kHz, 10kHz)
+- **Quality Assessment**: Scores based on sample rate, bit depth, and channels
+- **Latency Testing**: Measures audio latency and timing accuracy
+
+### LED Testing
+- **GPIO Control**: Direct GPIO sysfs interface for LED control
+- **LED Detection**: Tests if LED GPIO pins are available and accessible
+- **Individual Control**: Tests each LED separately for on/off functionality
+- **Brightness Control**: Tests brightness control (binary for GPIO, PWM support)
+- **Pattern Testing**: Tests various LED patterns (alternating, synchronized, sequential)
+- **Blink Patterns**: Tests LED blinking functionality with timing
+- **Synchronization**: Tests timing accuracy of LED operations
+
 ## Project Structure
 
 ```
 DeviceTest/
 ├── CMakeLists.txt          # Build configuration
 ├── build.sh               # Build script
+├── install_dependencies.sh # Dependencies installation script
+├── INSTALL.md             # Manual installation guide
 ├── .gitignore             # Git ignore file
 ├── README.md              # This file
 ├── include/
@@ -329,7 +395,9 @@ DeviceTest/
 │   ├── wiegand.h          # Wiegand-specific declarations
 │   ├── lcd.h              # LCD-specific declarations
 │   ├── cpu.h              # CPU-specific declarations
-│   └── emmc.h             # eMMC-specific declarations
+│   ├── emmc.h             # eMMC-specific declarations
+│   ├── speaker.h          # Speaker-specific declarations
+│   └── led.h              # LED-specific declarations
 └── src/
     ├── main.c             # Main program entry point
     ├── camera.cpp         # Camera testing implementation
@@ -338,7 +406,9 @@ DeviceTest/
     ├── wiegand.cpp        # Wiegand testing implementation
     ├── lcd.cpp            # LCD testing implementation
     ├── cpu.cpp            # CPU testing implementation
-    └── emmc.cpp           # eMMC testing implementation
+    ├── emmc.cpp           # eMMC testing implementation
+    ├── speaker.cpp        # Speaker testing implementation
+    └── led.cpp            # LED testing implementation
 ```
 
 ## Header Organization
@@ -353,6 +423,8 @@ The project uses a modular header structure:
 - **`lcd.h`**: Contains LCD-specific structures and function declarations
 - **`cpu.h`**: Contains CPU-specific structures and function declarations
 - **`emmc.h`**: Contains eMMC-specific structures and function declarations
+- **`speaker.h`**: Contains speaker-specific structures and function declarations
+- **`led.h`**: Contains LED-specific structures and function declarations
 
 This modular approach provides:
 - Clear separation of concerns
@@ -414,10 +486,24 @@ Each test provides a performance score out of 100:
 - Verify device configuration
 - Test with different device paths
 
+### Speaker Issues
+- Ensure audio device exists and is accessible
+- Check audio permissions and ALSA configuration
+- Verify audio interface (ALSA, PulseAudio, OSS)
+- Test with different audio devices
+- Check for audio driver conflicts
+
+### LED Issues
+- Ensure GPIO pins are accessible and not in use
+- Check GPIO permissions (`/sys/class/gpio/`)
+- Verify GPIO pin configuration
+- Test with different pin combinations
+- Check for GPIO driver conflicts
+
 ### Build Issues
 - Ensure all dependencies are installed
 - Check CMake version (3.10+ required)
-- Verify OpenCV and V4L2 installation
+- Verify OpenCV, V4L2, and ALSA installation
 - Check compiler compatibility
 
 ## License
