@@ -30,8 +30,6 @@ pkg_check_modules(ALSA REQUIRED alsa)
 # Find Bluetooth libraries
 pkg_check_modules(BLUETOOTH REQUIRED bluez)
 
-# GTK is not used in this project - removed dependency
-
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${OpenCV_INCLUDE_DIRS})
