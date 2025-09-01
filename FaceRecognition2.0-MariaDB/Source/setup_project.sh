@@ -20,6 +20,7 @@ fi
 # Make all build scripts executable
 echo "Making build scripts executable..."
 chmod +x build_*.sh
+chmod +x install_openssl.sh
 
 # Build all libraries
 echo ""

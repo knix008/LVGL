@@ -245,7 +245,7 @@ The project includes a comprehensive library build system that:
 
 - **FreeType2**: Font rendering library
 - **SDL2**: Graphics and input library
-- **OpenSSL**: Cryptography library (system dependency)
+- **OpenSSL**: Cryptography library (system dependency, install with `./Source/install_openssl.sh`)
 - **MariaDB**: Database client library
 - **LVGL**: Graphics library (built from existing source)
 
@@ -260,6 +260,7 @@ The project includes a comprehensive library build system that:
 ./Source/build_sdl2.sh
 ./Source/build_sqlcipher.sh
 ./Source/build_lvgl.sh
+./Source/install_openssl.sh
 ```
 
 ## Troubleshooting

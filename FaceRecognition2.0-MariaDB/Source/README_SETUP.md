@@ -33,6 +33,7 @@ chmod +x build_all_libs.sh
 ./build_all_libs.sh lvgl
 ./build_all_libs.sh mariadb
 ./build_all_libs.sh zlib
+./build_all_libs.sh openssl
 ```
 
 ### 3. Build the Main Application
@@ -89,11 +90,26 @@ cd Source
 ./build_all_libs.sh [library_name]
 ```
 
-Available libraries: `freetype`, `sdl2`, `lvgl`, `mariadb`, `zlib`
+Available libraries: `freetype`, `sdl2`, `lvgl`, `mariadb`, `zlib`, `openssl`
 
 ## Dependencies
 
 **Note**: OpenSSL is now a system dependency (not built locally) to avoid linking conflicts.
+
+### OpenSSL Installation
+
+The project includes an automatic OpenSSL installation script:
+
+```bash
+cd Source
+./install_openssl.sh
+```
+
+This script will:
+- Detect your operating system
+- Install the appropriate OpenSSL development packages
+- Verify the installation
+- Support Ubuntu/Debian, CentOS/RHEL/Fedora, Arch Linux, and Alpine Linux
 
 The project requires these system packages:
 - `build-essential` (gcc, make, etc.)
