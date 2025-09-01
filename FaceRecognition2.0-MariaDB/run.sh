@@ -57,7 +57,7 @@ check_dependencies() {
     fi
     
     print_success "All system dependencies are available"
-    print_status "Note: All other dependencies (FreeType2, SDL2, OpenSSL, MariaDB, LVGL) will be built from source"
+    print_status "Note: All other dependencies (FreeType2, SDL2, MariaDB, LVGL) will be built from source. OpenSSL uses system library."
 }
 
 # Function to build all libraries

@@ -31,7 +31,6 @@ chmod +x build_all_libs.sh
 ./build_all_libs.sh freetype
 ./build_all_libs.sh sdl2
 ./build_all_libs.sh lvgl
-./build_all_libs.sh openssl
 ./build_all_libs.sh mariadb
 ./build_all_libs.sh zlib
 ```
@@ -90,21 +89,24 @@ cd Source
 ./build_all_libs.sh [library_name]
 ```
 
-Available libraries: `freetype`, `sdl2`, `lvgl`, `openssl`, `mariadb`, `zlib`
+Available libraries: `freetype`, `sdl2`, `lvgl`, `mariadb`, `zlib`
 
 ## Dependencies
+
+**Note**: OpenSSL is now a system dependency (not built locally) to avoid linking conflicts.
 
 The project requires these system packages:
 - `build-essential` (gcc, make, etc.)
 - `cmake`
 - `wget`
 - `pkg-config`
+- `libssl-dev` (OpenSSL development libraries)
 - `libavformat-dev`, `libavcodec-dev`, `libavutil-dev`, `libswscale-dev`, `libswresample-dev` (FFmpeg)
 
 Install on Ubuntu/Debian:
 ```bash
 sudo apt update
-sudo apt install build-essential cmake wget pkg-config libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
+sudo apt install build-essential cmake wget pkg-config libssl-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
 ```
 
 ## Project Structure

@@ -55,9 +55,6 @@ cmake .. \
     -DWITH_UNIT_TESTS=OFF \
     -DWITH_DYNAMIC_PLUGINS=OFF \
     -DWITH_OPENSSL=ON \
-    -DOPENSSL_ROOT_DIR="$(pwd)/../../lib" \
-    -DOPENSSL_INCLUDE_DIR="$(pwd)/../../lib/include" \
-    -DOPENSSL_LIBRARIES="$(pwd)/../../lib/lib" \
     -DCMAKE_C_FLAGS="-I$(pwd)/../../lib/include" \
     -DCMAKE_EXE_LINKER_FLAGS="-L$(pwd)/../../lib/lib" \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5

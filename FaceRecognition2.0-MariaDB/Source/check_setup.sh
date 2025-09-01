@@ -55,7 +55,6 @@ required_headers=(
     "lib/include/lvgl_src/core/lv_obj.h"
     "lib/include/SDL2/SDL.h"
     "lib/include/freetype2/freetype/freetype.h"
-    "lib/include/openssl/ssl.h"
     "lib/include/mariadb/mysql.h"
     "lib/include/zlib/zlib.h"
 )
@@ -78,8 +77,6 @@ required_libs=(
     "lib/lib/liblvgl_lib.a"
     "lib/lib/libSDL2.a"
     "lib/lib/libfreetype.a"
-    "lib/lib/libcrypto.a"
-    "lib/lib/libssl.a"
     "lib/lib/libmariadb.a"
     "lib/lib/libz.a"
 )

@@ -245,7 +245,7 @@ The project includes a comprehensive library build system that:
 
 - **FreeType2**: Font rendering library
 - **SDL2**: Graphics and input library
-- **OpenSSL**: Cryptography library
+- **OpenSSL**: Cryptography library (system dependency)
 - **MariaDB**: Database client library
 - **LVGL**: Graphics library (built from existing source)
 
@@ -258,7 +258,6 @@ The project includes a comprehensive library build system that:
 # Build individual libraries
 ./Source/build_freetype.sh
 ./Source/build_sdl2.sh
-./Source/build_openssl.sh
 ./Source/build_sqlcipher.sh
 ./Source/build_lvgl.sh
 ```
@@ -280,7 +279,7 @@ The project includes a comprehensive library build system that:
 Install required packages on Ubuntu/Debian:
 
 ```bash
-sudo apt-get install cmake make pkg-config libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
+sudo apt-get install cmake make pkg-config libssl-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
 ```
 
 ### Web Interface Issues

@@ -13,8 +13,10 @@ set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libSDL2.a)
 set(FREETYPE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/freetype2)
 set(FREETYPE_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libfreetype.a)
 set(LVGL_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/liblvgl_lib.a)
-set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
-set(OPENSSL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a)
+# Use system OpenSSL
+find_package(OpenSSL REQUIRED)
+set(OPENSSL_INCLUDE_DIR ${OPENSSL_INCLUDE_DIR})
+set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES})
 set(MARIADB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libmariadb.a)
 set(ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/zlib)
 set(ZLIB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libz.a)
@@ -91,7 +93,7 @@ target_link_libraries(main
 
 # System libraries for Unix
 if(UNIX)
-    target_link_libraries(main pthread dl m crypto)
+    target_link_libraries(main pthread dl m)
 endif()
 
 # Copy HTML files to build directory
