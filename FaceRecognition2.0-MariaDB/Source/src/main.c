@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <SDL2/SDL.h>
 #include "lvgl.h"
 #include "lv_drivers.h"
 #include "ui_components.h"
@@ -8,25 +7,6 @@
 #include "lv_freetype.h"
 #include "lv_ffmpeg.h"
 #include "web_server.h"
-
-// Global quit flag
-static volatile bool quit_requested = false;
-
-// Custom keyboard event handler for quit key
-void handle_quit_key(SDL_Event *event) {
-    if (event->type == SDL_KEYDOWN) {
-        // Check for Q key to quit
-        if (event->key.keysym.sym == SDLK_q) {
-            printf("\nQuit key (Q) pressed. Exiting...\n");
-            quit_requested = true;
-        }
-        // Also support Escape key
-        else if (event->key.keysym.sym == SDLK_ESCAPE) {
-            printf("\nEscape key pressed. Exiting...\n");
-            quit_requested = true;
-        }
-    }
-}
 
 // In your main loop, call lv_timer_handler() periodically, e.g., every 5-10 ms
 int main(void)
@@ -72,20 +52,13 @@ int main(void)
 
     printf("Tab menu GUI created successfully. Window should appear now.\n");
     printf("Web interface available at: http://localhost:8080\n");
-    printf("Press Q or Escape to exit.\n");
+    printf("Press CTRL+C to exit.\n");
 
-    while(!quit_requested) {
-        // Handle SDL events for quit keys
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            handle_quit_key(&event);
-        }
-        
+    while(1) {
         lv_timer_handler();
         web_server_poll();  // Poll web server
         usleep(5000);
     }
 
-    printf("Shutting down...\n");
     return 0;
 }
