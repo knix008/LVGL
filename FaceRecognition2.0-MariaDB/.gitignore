@@ -65,24 +65,6 @@ Source/mariadb-connector-c-*/
 # ONNX Runtime files (these are downloaded separately)
 # Source/onnxruntime/
 
-# Model files (these can be large)
-Source/models/*.onnx
-Source/models/*.pt
-
-# Audio/Video files (these can be large)
-Source/assets/*.mp4
-Source/assets/*.wav
-Source/assets/*.avi
-Source/assets/*.mov
-
-# Keep some essential assets
-!Source/assets/*.png
-!Source/assets/*.jpg
-!Source/assets/*.jpeg
-!Source/assets/*.gif
-!Source/assets/*.svg
-!Source/assets/*.ttf
-
 # Python cache files
 __pycache__/
 *.pyc
