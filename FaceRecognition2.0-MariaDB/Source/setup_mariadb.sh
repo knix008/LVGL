@@ -68,12 +68,20 @@ fi
 
 # Secure the installation
 print_status "Securing MariaDB installation..."
+
+# Check if local mysql_secure_installation script exists
+if [ ! -f "./mysql_secure_installation.sh" ]; then
+    print_error "Local mysql_secure_installation.sh script not found."
+    print_error "Please ensure the script is copied to this directory."
+    exit 1
+fi
+
 print_warning "You will be prompted to set a root password and answer security questions."
 print_warning "For development, you can use an empty password by pressing Enter."
 echo ""
 
-# Run mysql_secure_installation
-sudo mysql_secure_installation
+# Run mysql_secure_installation (using local copy)
+sudo ./mysql_secure_installation.sh
 
 # Create test database and user
 print_status "Setting up test database..."

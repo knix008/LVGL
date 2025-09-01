@@ -106,10 +106,27 @@ cd Source
 ```
 
 This script will:
-- Detect your operating system
-- Install the appropriate OpenSSL development packages
-- Verify the installation
-- Support Ubuntu/Debian, CentOS/RHEL/Fedora, Arch Linux, and Alpine Linux
+ - Detect your operating system
+ - Install the appropriate OpenSSL development packages
+ - Verify the installation
+ - Support Ubuntu/Debian, CentOS/RHEL/Fedora, Arch Linux, and Alpine Linux
+
+### MariaDB Setup
+
+The project includes a MariaDB setup script with a local copy of `mysql_secure_installation.sh`:
+
+```bash
+cd Source
+./setup_mariadb.sh
+```
+
+This script will:
+ - Install MariaDB server (if not already installed)
+ - Use the local `mysql_secure_installation.sh` script for security setup
+ - Create a test database for the application
+ - Work on any system regardless of MariaDB installation status
+
+**Note**: The `mysql_secure_installation.sh` script is included locally in the project to ensure it's always available.
 
 The project requires these system packages:
 - `build-essential` (gcc, make, etc.)
