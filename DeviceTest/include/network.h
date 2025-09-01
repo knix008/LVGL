@@ -2,6 +2,7 @@
 #define NETWORK_H
 
 #include "common.h"
+#include <stddef.h>
 
 // Forward declarations for C++ types
 #ifdef __cplusplus
@@ -42,6 +43,36 @@ test_summary_t run_all_network_tests(const char* interface_name);
 
 // Command handler function
 int handle_network_commands(const char* test_type, const char* interface_name, bool interactive_mode);
+
+// Network server functions for remote command execution
+typedef struct {
+    int server_socket;
+    int port;
+    bool running;
+    char bind_address[16];
+} network_server_t;
+
+typedef struct {
+    char command[64];
+    char device_type[32];
+    char parameters[256];
+    int client_socket;
+} remote_command_t;
+
+// Server management functions
+int init_network_server(network_server_t* server, int port, const char* bind_address);
+void cleanup_network_server(network_server_t* server);
+int start_network_server(network_server_t* server);
+void stop_network_server(network_server_t* server);
+int handle_client_connection(network_server_t* server, int client_socket);
+
+// Command processing functions
+int process_remote_command(const remote_command_t* cmd, char* response, size_t response_size);
+int parse_command_json(const char* json_str, remote_command_t* cmd);
+int create_response_json(const char* command, bool success, const char* message, double score, char* response, size_t response_size);
+
+// Main server loop function
+int run_command_server(int port, const char* bind_address);
 
 #ifdef __cplusplus
 }

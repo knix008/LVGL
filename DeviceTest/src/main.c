@@ -237,6 +237,9 @@ void print_usage(const char* program_name) {
     printf("-s <device>           Serial device path (e.g., /dev/ttyUSB0)\n");
     printf("-b <baud_rate>        Serial baud rate (default: 115200)\n");
     printf("-w <data0> <data1>    Wiegand data pins (e.g., 17 18)\n");
+    printf("--server              Start network command server mode\n");
+    printf("--port <port>         Server port (default: 8080)\n");
+    printf("--bind <address>      Server bind address (default: 0.0.0.0)\n");
     printf("-t <test>             Run specific test:\n");
     printf("                   Camera tests:\n");
     printf("                     init      - Test camera initialization\n");
@@ -309,6 +312,8 @@ void print_usage(const char* program_name) {
     printf("  %s -d nfc -t all              # Run all NFC tests\n", program_name);
     printf("  %s -t auto -s /dev/ttyUSB0 -b 9600 -w 17 18  # Run automated test suite with serial and Wiegand\n", program_name);
     printf("  %s -i                         # Start interactive camera mode\n", program_name);
+    printf("  %s --server --port 8080       # Start network command server on port 8080\n", program_name);
+    printf("  %s --server --bind 192.168.1.100 # Start server bound to specific address\n", program_name);
 }
 
 int main(int argc, char* argv[]) {
@@ -324,6 +329,9 @@ int main(int argc, char* argv[]) {
     int led1_pin = -1;
     int led2_pin = -1;
     bool interactive_mode = false;
+    bool server_mode = false;
+    int server_port = 8080;
+    char* bind_address = NULL;
     
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
@@ -352,7 +360,23 @@ int main(int argc, char* argv[]) {
             test_type = argv[++i];
         } else if (strcmp(argv[i], "-i") == 0) {
             interactive_mode = true;
+        } else if (strcmp(argv[i], "--server") == 0) {
+            server_mode = true;
+        } else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc) {
+            server_port = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--bind") == 0 && i + 1 < argc) {
+            bind_address = argv[++i];
         }
+    }
+    
+    // Handle server mode
+    if (server_mode) {
+        printf("Starting Device Test Command Server...\n");
+        if (server_port < 1 || server_port > 65535) {
+            printf("Error: Invalid port number %d (must be 1-65535)\n", server_port);
+            return 1;
+        }
+        return run_command_server(server_port, bind_address);
     }
     
     // Default to camera if no device type specified

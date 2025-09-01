@@ -1,4 +1,14 @@
 #include "network.h"
+#include "camera.h"
+#include "serial.h"
+#include "wiegand.h"
+#include "lcd.h"
+#include "cpu.h"
+#include "emmc.h"
+#include "speaker.h"
+#include "led.h"
+#include "bluetooth.h"
+#include "nfc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,9 +25,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <signal.h>
+#include <pthread.h>
+#include <sys/select.h>
+#include <termios.h>
 
 // C++ implementation
 extern "C" {
+
+// Global server instance for signal handling
+static network_server_t* g_server = NULL;
 
 int init_network_test(network_test_t* network, const char* interface_name) {
     if (!network || !interface_name) {
@@ -563,6 +580,465 @@ int handle_network_commands(const char* test_type, const char* interface_name, b
     }
     
     return 0;
+}
+
+// Network server implementation
+int init_network_server(network_server_t* server, int port, const char* bind_address) {
+    if (!server) {
+        printf("Error: Invalid server object\n");
+        return -1;
+    }
+    
+    memset(server, 0, sizeof(network_server_t));
+    server->port = port;
+    server->running = false;
+    server->server_socket = -1;
+    
+    if (bind_address) {
+        strncpy(server->bind_address, bind_address, sizeof(server->bind_address) - 1);
+    } else {
+        strcpy(server->bind_address, "0.0.0.0");
+    }
+    
+    // Create socket
+    server->server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server->server_socket < 0) {
+        printf("Error: Could not create server socket: %s\n", strerror(errno));
+        return -1;
+    }
+    
+    // Set socket options to reuse address
+    int reuse = 1;
+    if (setsockopt(server->server_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        printf("Warning: Could not set socket option SO_REUSEADDR: %s\n", strerror(errno));
+    }
+    
+    // Bind socket
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = inet_addr(server->bind_address);
+    
+    if (bind(server->server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        printf("Error: Could not bind server socket to %s:%d: %s\n", server->bind_address, port, strerror(errno));
+        close(server->server_socket);
+        server->server_socket = -1;
+        return -1;
+    }
+    
+    // Listen for connections
+    if (listen(server->server_socket, 5) < 0) {
+        printf("Error: Could not listen on server socket: %s\n", strerror(errno));
+        close(server->server_socket);
+        server->server_socket = -1;
+        return -1;
+    }
+    
+    printf("Network server initialized on %s:%d\n", server->bind_address, port);
+    return 0;
+}
+
+void cleanup_network_server(network_server_t* server) {
+    if (server) {
+        server->running = false;
+        if (server->server_socket >= 0) {
+            close(server->server_socket);
+            server->server_socket = -1;
+        }
+        printf("Network server cleanup completed\n");
+    }
+}
+
+int start_network_server(network_server_t* server) {
+    if (!server || server->server_socket < 0) {
+        printf("Error: Server not properly initialized\n");
+        return -1;
+    }
+    
+    server->running = true;
+    printf("Network server started, listening on %s:%d\n", server->bind_address, server->port);
+    printf("Waiting for client connections...\n");
+    
+    // Set socket to non-blocking mode for better signal handling
+    int flags = fcntl(server->server_socket, F_GETFL, 0);
+    fcntl(server->server_socket, F_SETFL, flags | O_NONBLOCK);
+    
+    while (server->running) {
+        fd_set read_fds;
+        struct timeval timeout;
+        
+        FD_ZERO(&read_fds);
+        FD_SET(server->server_socket, &read_fds);
+        FD_SET(STDIN_FILENO, &read_fds);
+        
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 500000; // 500ms timeout
+        
+        int max_fd = server->server_socket > STDIN_FILENO ? server->server_socket : STDIN_FILENO;
+        int select_result = select(max_fd + 1, &read_fds, NULL, NULL, &timeout);
+        
+        if (select_result < 0) {
+            if (errno == EINTR) {
+                continue; // Interrupted by signal, check running flag
+            }
+            printf("Error in select(): %s\n", strerror(errno));
+            break;
+        }
+        
+        // Check for keyboard input
+        if (FD_ISSET(STDIN_FILENO, &read_fds)) {
+            char c = getchar();
+            if (c == 'q' || c == 'Q' || c == 27) { // 27 is ESC key
+                printf("\nShutdown requested via keyboard. Stopping server...\n");
+                server->running = false;
+                break;
+            }
+        }
+        
+        // Check for incoming client connections
+        if (FD_ISSET(server->server_socket, &read_fds)) {
+            struct sockaddr_in client_addr;
+            socklen_t client_len = sizeof(client_addr);
+            
+            int client_socket = accept(server->server_socket, (struct sockaddr*)&client_addr, &client_len);
+            if (client_socket < 0) {
+                if (server->running) {
+                    printf("Error: Could not accept client connection: %s\n", strerror(errno));
+                }
+                continue;
+            }
+            
+            char client_ip[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+            printf("Client connected from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
+            
+            // Handle client connection
+            handle_client_connection(server, client_socket);
+            
+            close(client_socket);
+            printf("Client %s:%d disconnected\n", client_ip, ntohs(client_addr.sin_port));
+        }
+    }
+    
+    return 0;
+}
+
+void stop_network_server(network_server_t* server) {
+    if (server) {
+        server->running = false;
+        printf("Network server stop requested\n");
+    }
+}
+
+int handle_client_connection(network_server_t* server, int client_socket) {
+    char buffer[1024];
+    char response[2048];
+    
+    while (server->running) {
+        memset(buffer, 0, sizeof(buffer));
+        
+        // Receive data from client
+        ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received <= 0) {
+            if (bytes_received == 0) {
+                printf("Client disconnected\n");
+            } else {
+                printf("Error receiving data: %s\n", strerror(errno));
+            }
+            break;
+        }
+        
+        printf("Received command: %s\n", buffer);
+        
+        // Parse and process command
+        remote_command_t cmd;
+        memset(&cmd, 0, sizeof(cmd));
+        cmd.client_socket = client_socket;
+        
+        if (parse_command_json(buffer, &cmd) == 0) {
+            memset(response, 0, sizeof(response));
+            if (process_remote_command(&cmd, response, sizeof(response)) == 0) {
+                // Send response back to client
+                ssize_t bytes_sent = send(client_socket, response, strlen(response), 0);
+                if (bytes_sent < 0) {
+                    printf("Error sending response: %s\n", strerror(errno));
+                } else {
+                    printf("Response sent: %s\n", response);
+                }
+            } else {
+                // Send error response
+                snprintf(response, sizeof(response), 
+                         "{\"success\":false,\"message\":\"Command execution failed\",\"score\":0.0}");
+                send(client_socket, response, strlen(response), 0);
+            }
+        } else {
+            // Send error response for invalid command
+            snprintf(response, sizeof(response), 
+                     "{\"success\":false,\"message\":\"Invalid command format\",\"score\":0.0}");
+            send(client_socket, response, strlen(response), 0);
+        }
+    }
+    
+    return 0;
+}
+
+int parse_command_json(const char* json_str, remote_command_t* cmd) {
+    if (!json_str || !cmd) {
+        return -1;
+    }
+    
+    // Simple JSON parsing (for production, consider using a proper JSON library)
+    // Expected format: {"command":"test","device":"camera","parameters":"init"}
+    
+    // Find command field
+    const char* cmd_start = strstr(json_str, "\"command\":");
+    if (!cmd_start) {
+        return -1;
+    }
+    cmd_start = strchr(cmd_start, ':') + 1;
+    while (*cmd_start == ' ' || *cmd_start == '\t') cmd_start++;
+    if (*cmd_start == '"') cmd_start++;
+    
+    const char* cmd_end = strchr(cmd_start, '"');
+    if (!cmd_end || cmd_end - cmd_start >= sizeof(cmd->command)) {
+        return -1;
+    }
+    strncpy(cmd->command, cmd_start, cmd_end - cmd_start);
+    
+    // Find device field
+    const char* dev_start = strstr(json_str, "\"device\":");
+    if (dev_start) {
+        dev_start = strchr(dev_start, ':') + 1;
+        while (*dev_start == ' ' || *dev_start == '\t') dev_start++;
+        if (*dev_start == '"') dev_start++;
+        
+        const char* dev_end = strchr(dev_start, '"');
+        if (dev_end && dev_end - dev_start < sizeof(cmd->device_type)) {
+            strncpy(cmd->device_type, dev_start, dev_end - dev_start);
+        }
+    }
+    
+    // Find parameters field
+    const char* param_start = strstr(json_str, "\"parameters\":");
+    if (param_start) {
+        param_start = strchr(param_start, ':') + 1;
+        while (*param_start == ' ' || *param_start == '\t') param_start++;
+        if (*param_start == '"') param_start++;
+        
+        const char* param_end = strchr(param_start, '"');
+        if (param_end && param_end - param_start < sizeof(cmd->parameters)) {
+            strncpy(cmd->parameters, param_start, param_end - param_start);
+        }
+    }
+    
+    return 0;
+}
+
+int create_response_json(const char* command, bool success, const char* message, double score, char* response, size_t response_size) {
+    if (!response || response_size == 0) {
+        return -1;
+    }
+    
+    snprintf(response, response_size,
+             "{\"command\":\"%s\",\"success\":%s,\"message\":\"%s\",\"score\":%.2f}",
+             command ? command : "unknown",
+             success ? "true" : "false",
+             message ? message : "",
+             score);
+    
+    return 0;
+}
+
+int process_remote_command(const remote_command_t* cmd, char* response, size_t response_size) {
+    if (!cmd || !response) {
+        return -1;
+    }
+    
+    printf("Processing command: %s, device: %s, parameters: %s\n", 
+           cmd->command, cmd->device_type, cmd->parameters);
+    
+    test_result_t result = {false, "", 0.0};
+    
+    if (strcmp(cmd->command, "test") == 0) {
+        // Handle different device types
+        if (strcmp(cmd->device_type, "camera") == 0) {
+            if (strcmp(cmd->parameters, "init") == 0) {
+                result = test_camera_initialization(0);
+            } else if (strcmp(cmd->parameters, "capture") == 0) {
+                result = test_camera_capture(0);
+            } else if (strcmp(cmd->parameters, "all") == 0) {
+                test_summary_t summary = run_all_camera_tests(0);
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown camera test: %s", cmd->parameters);
+            }
+        } else if (strcmp(cmd->device_type, "network") == 0) {
+            if (strcmp(cmd->parameters, "init") == 0) {
+                result = test_network_initialization("lo");
+            } else if (strcmp(cmd->parameters, "connectivity") == 0) {
+                result = test_network_connectivity("lo", "8.8.8.8");
+            } else if (strcmp(cmd->parameters, "all") == 0) {
+                test_summary_t summary = run_all_network_tests("lo");
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown network test: %s", cmd->parameters);
+            }
+        } else if (strcmp(cmd->device_type, "cpu") == 0) {
+            if (strcmp(cmd->parameters, "all") == 0) {
+                test_summary_t summary = run_all_cpu_tests();
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown CPU test: %s", cmd->parameters);
+            }
+        } else if (strcmp(cmd->device_type, "bluetooth") == 0) {
+            if (strcmp(cmd->parameters, "all") == 0) {
+                test_summary_t summary = run_all_bluetooth_tests();
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown Bluetooth test: %s", cmd->parameters);
+            }
+        } else if (strcmp(cmd->device_type, "nfc") == 0) {
+            if (strcmp(cmd->parameters, "all") == 0) {
+                test_summary_t summary = run_all_nfc_tests();
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown NFC test: %s", cmd->parameters);
+            }
+        } else if (strcmp(cmd->device_type, "serial") == 0) {
+            // Parse serial parameters: "device:/dev/ttyUSB0,baud:115200,test:all"
+            char device_path[64] = "/dev/ttyUSB0"; // default
+            int baud_rate = 115200; // default
+            char test_name[32] = "all"; // default
+            
+            // Parse parameters string
+            char params_copy[256];
+            strncpy(params_copy, cmd->parameters, sizeof(params_copy) - 1);
+            params_copy[sizeof(params_copy) - 1] = '\0';
+            
+            char* token = strtok(params_copy, ",");
+            while (token != NULL) {
+                if (strncmp(token, "device:", 7) == 0) {
+                    strncpy(device_path, token + 7, sizeof(device_path) - 1);
+                    device_path[sizeof(device_path) - 1] = '\0';
+                } else if (strncmp(token, "baud:", 5) == 0) {
+                    baud_rate = atoi(token + 5);
+                } else if (strncmp(token, "test:", 5) == 0) {
+                    strncpy(test_name, token + 5, sizeof(test_name) - 1);
+                    test_name[sizeof(test_name) - 1] = '\0';
+                }
+                token = strtok(NULL, ",");
+            }
+            
+            // Handle simple format for backward compatibility
+            if (strcmp(cmd->parameters, "all") == 0) {
+                strcpy(test_name, "all");
+            } else if (strcmp(cmd->parameters, "init") == 0) {
+                strcpy(test_name, "init");
+            } else if (strcmp(cmd->parameters, "comm") == 0) {
+                strcpy(test_name, "comm");
+            } else if (strcmp(cmd->parameters, "loopback") == 0) {
+                strcpy(test_name, "loopback");
+            }
+            
+            // Execute serial tests
+            if (strcmp(test_name, "init") == 0) {
+                result = test_serial_initialization(device_path, baud_rate);
+            } else if (strcmp(test_name, "comm") == 0) {
+                result = test_serial_communication(device_path, baud_rate);
+            } else if (strcmp(test_name, "loopback") == 0) {
+                result = test_serial_loopback(device_path, baud_rate);
+            } else if (strcmp(test_name, "speed") == 0) {
+                result = test_serial_speed(device_path, baud_rate);
+            } else if (strcmp(test_name, "error") == 0) {
+                result = test_serial_error_handling(device_path, baud_rate);
+            } else if (strcmp(test_name, "config") == 0) {
+                result = test_serial_configuration(device_path, baud_rate);
+            } else if (strcmp(test_name, "all") == 0) {
+                test_summary_t summary = run_all_serial_tests(device_path, baud_rate);
+                result.success = summary.passed_tests > 0;
+                snprintf(result.message, sizeof(result.message), "%s", summary.summary);
+                result.performance_score = summary.average_score;
+            } else {
+                snprintf(result.message, sizeof(result.message), "Unknown serial test: %s", test_name);
+            }
+        } else {
+            snprintf(result.message, sizeof(result.message), "Unknown device type: %s", cmd->device_type);
+        }
+    } else if (strcmp(cmd->command, "status") == 0) {
+        result.success = true;
+        snprintf(result.message, sizeof(result.message), "Device test server is running");
+        result.performance_score = 100.0;
+    } else if (strcmp(cmd->command, "shutdown") == 0) {
+        result.success = true;
+        snprintf(result.message, sizeof(result.message), "Server shutdown requested");
+        result.performance_score = 100.0;
+        // Signal the global server to stop
+        if (g_server) {
+            stop_network_server(g_server);
+        }
+    } else {
+        snprintf(result.message, sizeof(result.message), "Unknown command: %s", cmd->command);
+    }
+    
+    return create_response_json(cmd->command, result.success, result.message, result.performance_score, response, response_size);
+}
+
+void signal_handler(int sig) {
+    if (sig == SIGINT || sig == SIGTERM) {
+        printf("\nReceived signal %d, shutting down server...\n", sig);
+        if (g_server) {
+            stop_network_server(g_server);
+        }
+    }
+}
+
+int run_command_server(int port, const char* bind_address) {
+    network_server_t server;
+    g_server = &server;
+    
+    // Set up signal handlers
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+    
+    if (init_network_server(&server, port, bind_address) != 0) {
+        printf("Error: Failed to initialize network server\n");
+        return -1;
+    }
+    
+    printf("=== Device Test Command Server ===\n");
+    printf("Server listening on %s:%d\n", server.bind_address, port);
+    printf("Supported commands:\n");
+    printf("  {\"command\":\"test\",\"device\":\"camera\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"network\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"cpu\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"bluetooth\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"nfc\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"serial\",\"parameters\":\"all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"serial\",\"parameters\":\"device:/dev/ttyUSB0,baud:115200,test:all\"}\n");
+    printf("  {\"command\":\"test\",\"device\":\"serial\",\"parameters\":\"device:/dev/ttyUSB0,baud:9600,test:init\"}\n");
+    printf("  {\"command\":\"status\",\"device\":\"\",\"parameters\":\"\"}\n");
+    printf("  {\"command\":\"shutdown\",\"device\":\"\",\"parameters\":\"\"}\n");
+    printf("Press Ctrl+C, Q, or Escape to stop the server\n");
+    printf("Remote clients can also send 'shutdown' command\n");
+    printf("=====================================\n\n");
+    
+    int result = start_network_server(&server);
+    
+    cleanup_network_server(&server);
+    g_server = NULL;
+    
+    return result;
 }
 
 } // extern "C"
