@@ -13,6 +13,9 @@ A comprehensive device testing suite for embedded systems and Linux devices, sup
 - **eMMC Testing**: Test embedded MultiMediaCard storage capacity, read/write speed, and health
 - **Speaker Testing**: Test audio playback, volume control, frequency response, and quality
 - **LED Testing**: Test LED control, patterns, synchronization, and GPIO functionality
+- **🌐 Remote Internet Access**: TCP server for remote command execution and test result retrieval
+- **📡 Network Command Server**: JSON-based API for automated testing and integration
+- **🔧 Remote Serial Testing**: Control and test serial devices remotely over the internet
 - **Interactive Mode**: Real-time testing with user commands
 - **Automated Test Suite**: Run all tests automatically with comprehensive summary
 - **Performance Scoring**: Each test provides a score out of 100
@@ -30,6 +33,8 @@ A comprehensive device testing suite for embedded systems and Linux devices, sup
 - GPIO access (for Wiegand and LED testing)
 - Display access (for LCD testing)
 - Audio access (for speaker testing)
+- Network connectivity (for remote server functionality)
+- TCP port access (for network command server)
 
 ### Quick Installation
 
@@ -110,6 +115,12 @@ The executable will be created at `build/bin/DeviceTest`.
 
 # Start interactive camera mode
 ./build/bin/DeviceTest -i
+
+# Start network command server
+./build/bin/DeviceTest --server --port 8080
+
+# Start server on specific address and port
+./build/bin/DeviceTest --server --bind 192.168.1.100 --port 8081
 ```
 
 ### Command Line Options
@@ -125,6 +136,9 @@ The executable will be created at `build/bin/DeviceTest`.
 - `-p <path>`: Device path for specific tests (e.g., `/dev/mmcblk0` for eMMC)
 - `-t <test>`: Run specific test (see test types below)
 - `-i`: Start interactive mode
+- `--server`: Start network command server mode
+- `--port <port>`: Server port (default: 8080)
+- `--bind <address>`: Server bind address (default: 0.0.0.0)
 
 ### Test Types
 
@@ -194,6 +208,225 @@ The executable will be created at `build/bin/DeviceTest`.
 
 #### Special Tests
 - `auto`: Run automated test suite (all device tests)
+
+## 🌐 Remote Access & Network Command Server
+
+The DeviceTest application includes a powerful network command server that enables remote device testing over the internet. This feature allows you to:
+
+- **Execute device tests remotely** from anywhere on the network
+- **Receive structured JSON responses** with detailed test results
+- **Integrate with automation systems** and CI/CD pipelines
+- **Monitor device health** remotely
+
+### Starting the Server
+
+```bash
+# Start server on default port 8080
+./build/bin/DeviceTest --server
+
+# Start server on custom port
+./build/bin/DeviceTest --server --port 9090
+
+# Start server bound to specific IP address
+./build/bin/DeviceTest --server --bind 192.168.1.100 --port 8080
+```
+
+### Server Features
+
+- **🔒 Graceful Shutdown**: Supports Ctrl+C, Q, Escape keys, and remote shutdown commands
+- **🔌 Multiple Clients**: Handles multiple concurrent client connections
+- **📊 JSON API**: Structured command/response format for easy integration
+- **⚡ Real-time Results**: Immediate test execution and response
+- **🛡️ Error Handling**: Comprehensive error reporting and device validation
+
+### Command Format
+
+All commands use JSON format:
+
+```json
+{
+  "command": "test",
+  "device": "camera",
+  "parameters": "all"
+}
+```
+
+### Response Format
+
+All responses include status, message, and performance score:
+
+```json
+{
+  "command": "test",
+  "success": true,
+  "message": "Camera Tests: 5/5 passed, Average Score: 82.5/100",
+  "score": 82.5
+}
+```
+
+### Supported Commands
+
+#### Status Command
+```json
+{"command": "status", "device": "", "parameters": ""}
+```
+Returns server status and availability.
+
+#### Device Test Commands
+```json
+{"command": "test", "device": "camera", "parameters": "all"}
+{"command": "test", "device": "network", "parameters": "all"}
+{"command": "test", "device": "cpu", "parameters": "all"}
+{"command": "test", "device": "bluetooth", "parameters": "all"}
+{"command": "test", "device": "nfc", "parameters": "all"}
+```
+
+#### Serial Communication Commands
+```json
+# Basic serial test (uses default /dev/ttyUSB0, 115200 baud)
+{"command": "test", "device": "serial", "parameters": "all"}
+
+# Custom serial device and parameters
+{"command": "test", "device": "serial", "parameters": "device:/dev/ttyUSB0,baud:115200,test:all"}
+
+# Specific serial tests
+{"command": "test", "device": "serial", "parameters": "device:/dev/ttyS0,baud:9600,test:init"}
+{"command": "test", "device": "serial", "parameters": "device:/dev/ttyUSB1,baud:230400,test:loopback"}
+{"command": "test", "device": "serial", "parameters": "baud:57600,test:comm"}
+```
+
+#### Serial Parameter Format
+Serial commands support flexible parameter formatting:
+- `device:<path>` - Serial device path (default: /dev/ttyUSB0)
+- `baud:<rate>` - Baud rate (default: 115200)
+- `test:<name>` - Test type (default: all)
+
+Available serial tests: `init`, `comm`, `loopback`, `speed`, `error`, `config`, `all`
+
+#### Shutdown Command
+```json
+{"command": "shutdown", "device": "", "parameters": ""}
+```
+Gracefully shuts down the server.
+
+### Client Examples
+
+#### Using netcat (nc)
+```bash
+# Check server status
+echo '{"command":"status","device":"","parameters":""}' | nc localhost 8080
+
+# Run all camera tests
+echo '{"command":"test","device":"camera","parameters":"all"}' | nc localhost 8080
+
+# Run serial tests with custom parameters
+echo '{"command":"test","device":"serial","parameters":"device:/dev/ttyUSB0,baud:9600,test:init"}' | nc localhost 8080
+
+# Shutdown server
+echo '{"command":"shutdown","device":"","parameters":""}' | nc localhost 8080
+```
+
+#### Using curl
+```bash
+# Check server status
+curl -X POST -d '{"command":"status","device":"","parameters":""}' localhost:8080
+
+# Run network tests
+curl -X POST -d '{"command":"test","device":"network","parameters":"all"}' localhost:8080
+```
+
+#### Using Python
+```python
+import socket
+import json
+
+def send_command(host, port, command):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((host, port))
+    s.send(json.dumps(command).encode())
+    response = s.recv(4096).decode()
+    s.close()
+    return json.loads(response)
+
+# Test camera
+result = send_command("localhost", 8080, {
+    "command": "test",
+    "device": "camera", 
+    "parameters": "all"
+})
+print(f"Success: {result['success']}, Score: {result['score']}")
+
+# Test serial with custom parameters
+result = send_command("localhost", 8080, {
+    "command": "test",
+    "device": "serial",
+    "parameters": "device:/dev/ttyUSB0,baud:115200,test:loopback"
+})
+print(f"Serial test result: {result['message']}")
+```
+
+### Integration Examples
+
+#### CI/CD Pipeline
+```yaml
+# .github/workflows/device-test.yml
+name: Device Testing
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Camera
+        run: |
+          echo '{"command":"test","device":"camera","parameters":"all"}' | nc device-server.local 8080
+      
+      - name: Test Serial Communication
+        run: |
+          echo '{"command":"test","device":"serial","parameters":"device:/dev/ttyUSB0,baud:115200,test:all"}' | nc device-server.local 8080
+```
+
+#### Monitoring Script
+```bash
+#!/bin/bash
+# monitor_device.sh
+SERVER="192.168.1.100:8080"
+
+while true; do
+    RESULT=$(echo '{"command":"test","device":"cpu","parameters":"all"}' | nc $SERVER)
+    SCORE=$(echo $RESULT | jq '.score')
+    
+    if (( $(echo "$SCORE < 70" | bc -l) )); then
+        echo "Alert: Device performance below threshold ($SCORE)"
+        # Send alert notification
+    fi
+    
+    sleep 300  # Check every 5 minutes
+done
+```
+
+### Security Considerations
+
+- The server binds to all interfaces (0.0.0.0) by default
+- Use `--bind` option to restrict access to specific network interfaces
+- Consider firewall rules to control access
+- The server does not implement authentication (add proxy/firewall for production)
+- Serial device access requires appropriate permissions
+
+### Testing Tools
+
+The project includes test client scripts:
+
+- `test_client.py` - General testing with multiple device types
+- `test_serial_commands.py` - Comprehensive serial communication testing
+
+```bash
+# Run general tests
+python3 test_client.py 8080
+
+# Run serial-specific tests
+python3 test_serial_commands.py 8080
+```
 
 ## Automated Test Suite
 
@@ -381,34 +614,36 @@ Available commands:
 
 ```
 DeviceTest/
-├── CMakeLists.txt          # Build configuration
-├── build.sh               # Build script
-├── install_dependencies.sh # Dependencies installation script
-├── INSTALL.md             # Manual installation guide
-├── .gitignore             # Git ignore file
-├── README.md              # This file
+├── CMakeLists.txt              # Build configuration
+├── build.sh                   # Build script
+├── install_dependencies.sh     # Dependencies installation script
+├── INSTALL.md                 # Manual installation guide
+├── .gitignore                 # Git ignore file
+├── README.md                  # This file
+├── test_client.py             # Python test client for remote testing
+├── test_serial_commands.py    # Serial communication test examples
 ├── include/
-│   ├── common.h           # Common structures and definitions
-│   ├── camera.h           # Camera-specific declarations
-│   ├── network.h          # Network-specific declarations
-│   ├── serial.h           # Serial-specific declarations
-│   ├── wiegand.h          # Wiegand-specific declarations
-│   ├── lcd.h              # LCD-specific declarations
-│   ├── cpu.h              # CPU-specific declarations
-│   ├── emmc.h             # eMMC-specific declarations
-│   ├── speaker.h          # Speaker-specific declarations
-│   └── led.h              # LED-specific declarations
+│   ├── common.h               # Common structures and definitions
+│   ├── camera.h               # Camera-specific declarations
+│   ├── network.h              # Network-specific declarations (includes server)
+│   ├── serial.h               # Serial-specific declarations
+│   ├── wiegand.h              # Wiegand-specific declarations
+│   ├── lcd.h                  # LCD-specific declarations
+│   ├── cpu.h                  # CPU-specific declarations
+│   ├── emmc.h                 # eMMC-specific declarations
+│   ├── speaker.h              # Speaker-specific declarations
+│   └── led.h                  # LED-specific declarations
 └── src/
-    ├── main.c             # Main program entry point
-    ├── camera.cpp         # Camera testing implementation
-    ├── network.cpp        # Network testing implementation
-    ├── serial.cpp         # Serial testing implementation
-    ├── wiegand.cpp        # Wiegand testing implementation
-    ├── lcd.cpp            # LCD testing implementation
-    ├── cpu.cpp            # CPU testing implementation
-    ├── emmc.cpp           # eMMC testing implementation
-    ├── speaker.cpp        # Speaker testing implementation
-    └── led.cpp            # LED testing implementation
+    ├── main.c                 # Main program entry point
+    ├── camera.cpp             # Camera testing implementation
+    ├── network.cpp            # Network testing & server implementation
+    ├── serial.cpp             # Serial testing implementation
+    ├── wiegand.cpp            # Wiegand testing implementation
+    ├── lcd.cpp                # LCD testing implementation
+    ├── cpu.cpp                # CPU testing implementation
+    ├── emmc.cpp               # eMMC testing implementation
+    ├── speaker.cpp            # Speaker testing implementation
+    └── led.cpp                # LED testing implementation
 ```
 
 ## Header Organization
@@ -417,7 +652,7 @@ The project uses a modular header structure:
 
 - **`common.h`**: Contains shared structures like `test_result_t` and `test_summary_t`
 - **`camera.h`**: Contains camera-specific structures and function declarations
-- **`network.h`**: Contains network-specific structures and function declarations
+- **`network.h`**: Contains network-specific structures and function declarations, including remote server functionality
 - **`serial.h`**: Contains serial-specific structures and function declarations
 - **`wiegand.h`**: Contains Wiegand-specific structures and function declarations
 - **`lcd.h`**: Contains LCD-specific structures and function declarations
