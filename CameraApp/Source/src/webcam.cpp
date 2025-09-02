@@ -231,12 +231,14 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             int height = static_cast<int>(h * scale_y);
 
                     // Debug: Print detection details for high confidence detections
+        /*
         if (conf > 0.01f) {  // Only print for reasonable confidence
             std::cout << "Detection " << i << ": x=" << x << ", y=" << y 
                      << ", w=" << w << ", h=" << h << ", conf=" << conf
                      << " -> rect(" << left << "," << top << "," << width << "x" << height << ")"
                      << " [aspect=" << (static_cast<float>(width) / height) << "]" << std::endl;
         }
+        */
 
             // Clamp to image bounds
             left = std::max(0, std::min(img_w - 1, left));
@@ -297,10 +299,12 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
         detections = filtered_detections;
         
         // Debug: Show filtering results
+        /*
         if (!detections.empty()) {
             std::cout << "Filtering: " << indices.size() << " NMS detections -> " 
                      << detections.size() << " final detections" << std::endl;
         }
+        */
 
         return detections;
     }
@@ -531,6 +535,7 @@ void WebcamIPCApp::detect_faces(const cv::Mat& frame, std::vector<cv::Rect>& det
             std::vector<cv::Rect> face_detections = postprocess_output_dynamic(frame, output_data, output_shape);
             
             // Debug output
+            /*
             std::cout << "Output shape: [";
             for (size_t i = 0; i < output_shape.size(); ++i) {
                 std::cout << output_shape[i];
@@ -538,6 +543,7 @@ void WebcamIPCApp::detect_faces(const cv::Mat& frame, std::vector<cv::Rect>& det
             }
             std::cout << "], size: " << output_size << std::endl;
             std::cout << "Detected " << face_detections.size() << " faces" << std::endl;
+            */
             
             // Get the actual confidence values from postprocessing
             std::vector<float> actual_confidences;
