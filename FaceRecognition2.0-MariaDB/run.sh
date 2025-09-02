@@ -87,11 +87,11 @@ check_dependencies() {
         missing_deps+=("libssl-dev")
     fi
     
-    # Check for FFmpeg core libraries
+    # Check for essential FFmpeg libraries only
     local ffmpeg_missing=()
     local ffmpeg_found=false
     
-    # Check if FFmpeg is available via pkg-config
+    # Check if essential FFmpeg libraries are available via pkg-config
     if pkg-config --exists libavformat libavcodec libavutil libswscale libswresample; then
         ffmpeg_found=true
     fi
@@ -119,30 +119,6 @@ check_dependencies() {
         ffmpeg_missing+=("libavformat-dev" "libavcodec-dev" "libavutil-dev" "libswscale-dev" "libswresample-dev")
     fi
     
-    # Check for enhanced codec libraries (only if FFmpeg is found)
-    if [ "$ffmpeg_found" = true ]; then
-        # Check x264
-        if ! pkg-config --exists x264 && ! [ -f "/usr/include/x264.h" ] && ! [ -f "/usr/local/include/x264.h" ]; then
-            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libx264-dev"; then
-                ffmpeg_missing+=("libx264-dev")
-            fi
-        fi
-        
-        # Check x265
-        if ! pkg-config --exists x265 && ! [ -f "/usr/include/x265.h" ] && ! [ -f "/usr/local/include/x265.h" ]; then
-            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libx265-dev"; then
-                ffmpeg_missing+=("libx265-dev")
-            fi
-        fi
-        
-        # Check fdk-aac
-        if ! pkg-config --exists fdk-aac && ! [ -f "/usr/include/fdk-aac" ] && ! [ -f "/usr/local/include/fdk-aac" ]; then
-            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libfdk-aac-dev"; then
-                ffmpeg_missing+=("libfdk-aac-dev")
-            fi
-        fi
-    fi
-    
     # Add FFmpeg packages to missing dependencies
     if [ ${#ffmpeg_missing[@]} -gt 0 ]; then
         missing_deps+=("ffmpeg: ${ffmpeg_missing[*]}")
@@ -152,7 +128,7 @@ check_dependencies() {
         print_error "Missing system dependencies: ${missing_deps[*]}"
         echo ""
         print_status "Install dependencies manually using:"
-        echo "  sudo apt update && sudo apt install -y build-essential cmake wget pkg-config libssl-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev libx264-dev libx265-dev libfdk-aac-dev"
+        echo "  sudo apt update && sudo apt install -y build-essential cmake wget pkg-config libssl-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
         echo ""
         print_status "Or use the OpenSSL installation script:"
         echo "  cd Source"
@@ -365,34 +341,14 @@ check_ffmpeg() {
         ffmpeg_status="❌"
     fi
     
-    # Check enhanced codec libraries
-    if pkg-config --exists x264; then
-        echo "  ${ffmpeg_status} H.264 encoding (libx264-dev)"
-    else
-        missing_libs+=("libx264-dev")
-        ffmpeg_status="❌"
-    fi
-    
-    if pkg-config --exists x265; then
-        echo "  ${ffmpeg_status} H.265 encoding (libx265-dev)"
-    else
-        missing_libs+=("libx265-dev")
-        ffmpeg_status="❌"
-    fi
-    
-    if pkg-config --exists fdk-aac; then
-        echo "  ${ffmpeg_status} High-quality AAC (libfdk-aac-dev)"
-    else
-        missing_libs+=("libfdk-aac-dev")
-        ffmpeg_status="❌"
-    fi
+
     
     echo ""
     if [ ${#missing_libs[@]} -eq 0 ]; then
-        print_success "FFmpeg installation complete with all codecs!"
+        print_success "FFmpeg installation complete with essential libraries!"
     else
         print_warning "FFmpeg installation incomplete. Missing: ${missing_libs[*]}"
-        print_status "Run './run.sh deps' to install missing packages."
+        print_status "Install missing packages manually or check README_SETUP.md"
     fi
     echo ""
 }
