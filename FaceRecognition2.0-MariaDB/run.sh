@@ -98,13 +98,13 @@ check_dependencies() {
     if [ ${#missing_deps[@]} -gt 0 ]; then
         print_error "Missing system dependencies: ${missing_deps[*]}"
         echo ""
-        print_status "You can install them automatically using:"
-        echo "  cd Source"
-        echo "  chmod +x install_dependencies.sh"
-        echo "  ./install_dependencies.sh"
-        echo ""
-        print_status "Or install manually:"
+        print_status "Install dependencies manually using:"
         echo "  sudo apt update && sudo apt install -y build-essential cmake wget pkg-config libssl-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev libx264-dev libx265-dev libfdk-aac-dev"
+        echo ""
+        print_status "Or use the OpenSSL installation script:"
+        echo "  cd Source"
+        echo "  chmod +x install_openssl.sh"
+        echo "  ./install_openssl.sh"
         echo ""
         exit 1
     fi
@@ -120,19 +120,96 @@ install_system_dependencies() {
     cd Source
     
     # Check if install_dependencies.sh exists
-    if [ ! -f "install_dependencies.sh" ]; then
-        print_error "install_dependencies.sh not found in Source directory"
-        exit 1
+    if [ -f "install_dependencies.sh" ]; then
+        print_status "Using install_dependencies.sh script..."
+        chmod +x install_dependencies.sh
+        ./install_dependencies.sh || {
+            print_error "System dependency installation failed"
+            exit 1
+        }
+    else
+        print_warning "install_dependencies.sh not found, using manual installation..."
+        print_status "Installing essential build tools and libraries..."
+        
+        # Detect distribution and install dependencies
+        if command -v apt &> /dev/null; then
+            # Ubuntu/Debian
+            sudo apt update
+            sudo apt install -y \
+                build-essential \
+                cmake \
+                wget \
+                pkg-config \
+                libssl-dev \
+                ffmpeg \
+                libavformat-dev \
+                libavcodec-dev \
+                libavutil-dev \
+                libswscale-dev \
+                libswresample-dev \
+                libx264-dev \
+                libx265-dev \
+                libfdk-aac-dev \
+                git \
+                curl \
+                unzip \
+                libjpeg-dev \
+                libpng-dev \
+                libfreetype6-dev \
+                libharfbuzz-dev \
+                libsqlite3-dev \
+                libmysqlclient-dev \
+                libmariadb-dev \
+                libmariadb-dev-compat
+        elif command -v dnf &> /dev/null; then
+            # Fedora/RHEL 8+
+            sudo dnf update -y
+            sudo dnf groupinstall -y "Development Tools"
+            sudo dnf install -y \
+                cmake \
+                wget \
+                pkgconfig \
+                openssl-devel \
+                ffmpeg-devel \
+                git \
+                curl \
+                unzip \
+                libjpeg-devel \
+                libpng-devel \
+                freetype-devel \
+                harfbuzz-devel \
+                sqlite-devel \
+                mariadb-devel \
+                mariadb-connector-c-devel
+        elif command -v pacman &> /dev/null; then
+            # Arch Linux
+            sudo pacman -Syu --noconfirm
+            sudo pacman -S --noconfirm \
+                base-devel \
+                cmake \
+                wget \
+                pkg-config \
+                openssl \
+                ffmpeg \
+                git \
+                curl \
+                unzip \
+                libjpeg-turbo \
+                libpng \
+                freetype2 \
+                harfbuzz \
+                sqlite \
+                mariadb-libs \
+                mariadb-dev
+        else
+            print_error "Unsupported package manager. Please install dependencies manually."
+            print_status "Required packages: build-essential, cmake, wget, pkg-config, libssl-dev, ffmpeg, and FFmpeg development libraries"
+            exit 1
+        fi
+        
+        print_success "System dependencies installed successfully using package manager"
     fi
     
-    # Make the script executable and run it
-    chmod +x install_dependencies.sh
-    ./install_dependencies.sh || {
-        print_error "System dependency installation failed"
-        exit 1
-    }
-    
-    print_success "System dependencies installed successfully"
     cd ..
 }
 
@@ -370,18 +447,24 @@ show_help() {
     echo "  $0 clean-all      # Clean everything"
     echo ""
     echo "Features:"
-    echo "  - Automatic system dependency installation"
+    echo "  - Automatic system dependency installation (multi-distro support)"
+    echo "  - Comprehensive FFmpeg library checking"
     echo "  - Automatic library building from source"
     echo "  - Source cleanup after successful builds"
     echo "  - Database operations with MariaDB"
     echo "  - Web interface with HTTPS support"
     echo "  - Korean input methods"
-    echo "  - Video playback with FFmpeg"
+    echo "  - Video playback with FFmpeg (H.264, H.265, AAC)"
     echo ""
     echo "First time setup:"
-    echo "  1. $0 deps        # Install system dependencies"
+    echo "  1. $0 deps        # Install system dependencies (automatic detection)"
     echo "  2. $0 libs        # Build all libraries"
     echo "  3. $0             # Build and run everything"
+    echo ""
+    echo "Dependency installation:"
+    echo "  - Automatic: $0 deps (detects package manager and installs)"
+    echo "  - Manual: Use your system's package manager"
+    echo "  - OpenSSL: cd Source && ./install_openssl.sh"
     echo ""
 }
 
