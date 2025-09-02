@@ -4,7 +4,8 @@
 set -e
 
 echo "=== Master Library Build Script ==="
-echo "Usage: $0 [freetype|sdl2|lvgl|mariadb|zlib|openssl|all]"
+echo "Usage: $0 [openssl|freetype|sdl2|lvgl|mariadb|zlib|all]"
+echo "Note: OpenSSL is installed first when building all libraries"
 
 # Function to build a specific library
 build_library() {
@@ -26,13 +27,14 @@ build_library() {
 # Check if any arguments provided
 if [ $# -eq 0 ]; then
     echo "No arguments provided. Building all libraries..."
+    echo "Installing OpenSSL system dependencies first..."
+    ./install_openssl.sh
+    echo ""
     build_library "freetype"
     build_library "sdl2"
     build_library "lvgl"
     build_library "mariadb"
     build_library "zlib"
-    echo "Installing OpenSSL system dependencies..."
-    ./install_openssl.sh
     echo "=== All libraries built successfully ==="
     exit 0
 fi
@@ -61,18 +63,20 @@ case "$1" in
         ./install_openssl.sh
         ;;
     "all")
+        echo "Installing OpenSSL system dependencies first..."
+        ./install_openssl.sh
+        echo ""
         build_library "freetype"
         build_library "sdl2"
         build_library "lvgl"
         build_library "mariadb"
         build_library "zlib"
-        echo "Installing OpenSSL system dependencies..."
-        ./install_openssl.sh
         echo "=== All libraries built successfully ==="
         ;;
     *)
         echo "Error: Unknown library '$1'"
-        echo "Available options: freetype, sdl2, lvgl, mariadb, zlib, openssl, all"
+        echo "Available options: openssl, freetype, sdl2, lvgl, mariadb, zlib, all"
+        echo "Note: OpenSSL is installed first when building all libraries"
         exit 1
         ;;
 esac
