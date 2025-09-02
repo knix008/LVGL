@@ -21,13 +21,20 @@ The following development packages are required for building OpenCV:
 ```bash
 sudo apt update && sudo apt install \
     libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev
+    libgstreamer-plugins-base1.0-dev \
+    libgtk-3-dev \
+    libglib2.0-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libatk1.0-dev \
+    libgdk-pixbuf2.0-dev
 ```
 
 **Note**: OpenCV builds its own versions of:
 - **Image codecs**: JPEG, PNG, TIFF, WebP, Zlib
 - **Video codecs**: FFmpeg (libavcodec, libavformat, libavutil, libswscale)
 
+**GTK+3 dependencies** are required for OpenCV's GUI support (`-DWITH_GTK=ON`).
 So system packages for these are not required.
 
 **For comprehensive system dependency information, see [SYSTEM_DEPENDENCIES.md](SYSTEM_DEPENDENCIES.md)**

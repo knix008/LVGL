@@ -253,6 +253,8 @@ CameraApp/
 │   ├── BUILD_SYSTEM.md                         # Build system documentation
 │   ├── SYSTEM_DEPENDENCIES.md                  # System dependencies guide
 │   ├── DEPENDENCIES_QUICK_REFERENCE.md         # Quick dependency reference
+│   ├── LIBRARY_ANALYSIS.md                     # Comprehensive library analysis
+│   ├── LIBRARY_SUMMARY.md                      # Library summary table
 │   └── CMakeLists.txt                          # Build configuration
 ├── .gitignore
 └── README.md

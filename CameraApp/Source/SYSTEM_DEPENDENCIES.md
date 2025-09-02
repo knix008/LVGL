@@ -20,7 +20,13 @@ sudo apt install -y \
     tar \
     pkg-config \
     libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev
+    libgstreamer-plugins-base1.0-dev \
+    libgtk-3-dev \
+    libglib2.0-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libatk1.0-dev \
+    libgdk-pixbuf2.0-dev
 ```
 
 ### CentOS/RHEL/Fedora
