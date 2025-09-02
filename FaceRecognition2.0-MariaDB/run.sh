@@ -57,37 +57,90 @@ check_dependencies() {
     fi
     
     # Check for system libraries
-    if ! pkg-config --exists openssl; then
+    local openssl_found=false
+    
+    # Method 1: Check pkg-config
+    if pkg-config --exists openssl; then
+        openssl_found=true
+    fi
+    
+    # Method 2: Check if OpenSSL headers exist
+    if [ -f "/usr/include/openssl/ssl.h" ] || [ -f "/usr/local/include/openssl/ssl.h" ]; then
+        openssl_found=true
+    fi
+    
+    # Method 3: Check if libssl-dev package is installed (Ubuntu/Debian)
+    if command -v dpkg &> /dev/null; then
+        if dpkg -l | grep -q "libssl-dev"; then
+            openssl_found=true
+        fi
+    fi
+    
+    # Method 4: Check if openssl-devel package is installed (RHEL/CentOS)
+    if command -v rpm &> /dev/null; then
+        if rpm -qa | grep -q "openssl-devel"; then
+            openssl_found=true
+        fi
+    fi
+    
+    if [ "$openssl_found" = false ]; then
         missing_deps+=("libssl-dev")
     fi
     
     # Check for FFmpeg core libraries
     local ffmpeg_missing=()
-    if ! pkg-config --exists libavformat; then
-        ffmpeg_missing+=("libavformat-dev")
-    fi
-    if ! pkg-config --exists libavcodec; then
-        ffmpeg_missing+=("libavcodec-dev")
-    fi
-    if ! pkg-config --exists libavutil; then
-        ffmpeg_missing+=("libavutil-dev")
-    fi
-    if ! pkg-config --exists libswscale; then
-        ffmpeg_missing+=("libswscale-dev")
-    fi
-    if ! pkg-config --exists libswresample; then
-        ffmpeg_missing+=("libswresample-dev")
+    local ffmpeg_found=false
+    
+    # Check if FFmpeg is available via pkg-config
+    if pkg-config --exists libavformat libavcodec libavutil libswscale libswresample; then
+        ffmpeg_found=true
     fi
     
-    # Check for enhanced codec libraries
-    if ! pkg-config --exists x264; then
-        ffmpeg_missing+=("libx264-dev")
+    # Alternative check: look for FFmpeg headers
+    if [ -f "/usr/include/libavformat/avformat.h" ] || [ -f "/usr/local/include/libavformat/avformat.h" ]; then
+        ffmpeg_found=true
     fi
-    if ! pkg-config --exists x265; then
-        ffmpeg_missing+=("libx265-dev")
+    
+    # Check if FFmpeg packages are installed (Ubuntu/Debian)
+    if command -v dpkg &> /dev/null; then
+        if dpkg -l | grep -q "libavformat-dev" && dpkg -l | grep -q "libavcodec-dev"; then
+            ffmpeg_found=true
+        fi
     fi
-    if ! pkg-config --exists fdk-aac; then
-        ffmpeg_missing+=("libfdk-aac-dev")
+    
+    # Check if FFmpeg packages are installed (RHEL/CentOS)
+    if command -v rpm &> /dev/null; then
+        if rpm -qa | grep -q "ffmpeg-devel"; then
+            ffmpeg_found=true
+        fi
+    fi
+    
+    if [ "$ffmpeg_found" = false ]; then
+        ffmpeg_missing+=("libavformat-dev" "libavcodec-dev" "libavutil-dev" "libswscale-dev" "libswresample-dev")
+    fi
+    
+    # Check for enhanced codec libraries (only if FFmpeg is found)
+    if [ "$ffmpeg_found" = true ]; then
+        # Check x264
+        if ! pkg-config --exists x264 && ! [ -f "/usr/include/x264.h" ] && ! [ -f "/usr/local/include/x264.h" ]; then
+            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libx264-dev"; then
+                ffmpeg_missing+=("libx264-dev")
+            fi
+        fi
+        
+        # Check x265
+        if ! pkg-config --exists x265 && ! [ -f "/usr/include/x265.h" ] && ! [ -f "/usr/local/include/x265.h" ]; then
+            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libx265-dev"; then
+                ffmpeg_missing+=("libx265-dev")
+            fi
+        fi
+        
+        # Check fdk-aac
+        if ! pkg-config --exists fdk-aac && ! [ -f "/usr/include/fdk-aac" ] && ! [ -f "/usr/local/include/fdk-aac" ]; then
+            if ! command -v dpkg &> /dev/null || ! dpkg -l | grep -q "libfdk-aac-dev"; then
+                ffmpeg_missing+=("libfdk-aac-dev")
+            fi
+        fi
     fi
     
     # Add FFmpeg packages to missing dependencies
@@ -111,106 +164,6 @@ check_dependencies() {
     
     print_success "All system dependencies are available"
     print_status "Note: All other dependencies (FreeType2, SDL2, MariaDB, LVGL) will be built from source. OpenSSL uses system library."
-}
-
-# Function to install system dependencies
-install_system_dependencies() {
-    print_status "Installing system dependencies..."
-    
-    cd Source
-    
-    # Check if install_dependencies.sh exists
-    if [ -f "install_dependencies.sh" ]; then
-        print_status "Using install_dependencies.sh script..."
-        chmod +x install_dependencies.sh
-        ./install_dependencies.sh || {
-            print_error "System dependency installation failed"
-            exit 1
-        }
-    else
-        print_warning "install_dependencies.sh not found, using manual installation..."
-        print_status "Installing essential build tools and libraries..."
-        
-        # Detect distribution and install dependencies
-        if command -v apt &> /dev/null; then
-            # Ubuntu/Debian
-            sudo apt update
-            sudo apt install -y \
-                build-essential \
-                cmake \
-                wget \
-                pkg-config \
-                libssl-dev \
-                ffmpeg \
-                libavformat-dev \
-                libavcodec-dev \
-                libavutil-dev \
-                libswscale-dev \
-                libswresample-dev \
-                libx264-dev \
-                libx265-dev \
-                libfdk-aac-dev \
-                git \
-                curl \
-                unzip \
-                libjpeg-dev \
-                libpng-dev \
-                libfreetype6-dev \
-                libharfbuzz-dev \
-                libsqlite3-dev \
-                libmysqlclient-dev \
-                libmariadb-dev \
-                libmariadb-dev-compat
-        elif command -v dnf &> /dev/null; then
-            # Fedora/RHEL 8+
-            sudo dnf update -y
-            sudo dnf groupinstall -y "Development Tools"
-            sudo dnf install -y \
-                cmake \
-                wget \
-                pkgconfig \
-                openssl-devel \
-                ffmpeg-devel \
-                git \
-                curl \
-                unzip \
-                libjpeg-devel \
-                libpng-devel \
-                freetype-devel \
-                harfbuzz-devel \
-                sqlite-devel \
-                mariadb-devel \
-                mariadb-connector-c-devel
-        elif command -v pacman &> /dev/null; then
-            # Arch Linux
-            sudo pacman -Syu --noconfirm
-            sudo pacman -S --noconfirm \
-                base-devel \
-                cmake \
-                wget \
-                pkg-config \
-                openssl \
-                ffmpeg \
-                git \
-                curl \
-                unzip \
-                libjpeg-turbo \
-                libpng \
-                freetype2 \
-                harfbuzz \
-                sqlite \
-                mariadb-libs \
-                mariadb-dev
-        else
-            print_error "Unsupported package manager. Please install dependencies manually."
-            print_status "Required packages: build-essential, cmake, wget, pkg-config, libssl-dev, ffmpeg, and FFmpeg development libraries"
-            exit 1
-        fi
-        
-        print_success "System dependencies installed successfully using package manager"
-    fi
-    
-    cd ..
 }
 
 # Function to build all libraries
@@ -321,6 +274,54 @@ clean_all() {
     print_success "All artifacts cleaned. Run './run.sh libs' to rebuild libraries."
 }
 
+# Function to debug dependency checking
+debug_dependencies() {
+    print_status "Debug: Dependency checking information..."
+    echo ""
+    
+    echo "=== System Information ==="
+    echo "Distribution: $(lsb_release -d 2>/dev/null | cut -f2 || echo 'Unknown')"
+    echo "Architecture: $(uname -m)"
+    echo "Package manager: $(command -v apt && echo 'apt' || command -v dnf && echo 'dnf' || command -v yum && echo 'yum' || command -v pacman && echo 'pacman' || echo 'Unknown')"
+    echo ""
+    
+    echo "=== OpenSSL Detection ==="
+    echo "pkg-config openssl: $(pkg-config --exists openssl && echo 'Found' || echo 'Not found')"
+    echo "Header file /usr/include/openssl/ssl.h: $(test -f /usr/include/openssl/ssl.h && echo 'Exists' || echo 'Missing')"
+    echo "Header file /usr/local/include/openssl/ssl.h: $(test -f /usr/local/include/openssl/ssl.h && echo 'Exists' || echo 'Missing')"
+    
+    if command -v dpkg &> /dev/null; then
+        echo "dpkg libssl-dev: $(dpkg -l | grep -q "libssl-dev" && echo 'Installed' || echo 'Not installed')"
+    fi
+    
+    if command -v rpm &> /dev/null; then
+        echo "rpm openssl-devel: $(rpm -qa | grep -q "openssl-devel" && echo 'Installed' || echo 'Not installed')"
+    fi
+    echo ""
+    
+    echo "=== FFmpeg Detection ==="
+    echo "pkg-config FFmpeg: $(pkg-config --exists libavformat libavcodec libavutil libswscale libswresample && echo 'Found' || echo 'Not found')"
+    echo "Header /usr/include/libavformat/avformat.h: $(test -f /usr/include/libavformat/avformat.h && echo 'Exists' || echo 'Missing')"
+    
+    if command -v dpkg &> /dev/null; then
+        echo "dpkg FFmpeg dev packages:"
+        dpkg -l | grep -E "(libavformat-dev|libavcodec-dev|libavutil-dev|libswscale-dev|libswresample-dev)" || echo "  None found"
+    fi
+    
+    if command -v rpm &> /dev/null; then
+        echo "rpm FFmpeg devel: $(rpm -qa | grep -q "ffmpeg-devel" && echo 'Installed' || echo 'Not installed')"
+    fi
+    echo ""
+    
+    echo "=== Build Tools ==="
+    echo "gcc: $(command -v gcc && echo 'Found' || echo 'Missing')"
+    echo "g++: $(command -v g++ && echo 'Found' || echo 'Missing')"
+    echo "cmake: $(command -v cmake && echo 'Found' || echo 'Missing')"
+    echo "make: $(command -v make && echo 'Found' || echo 'Missing')"
+    echo "pkg-config: $(command -v pkg-config && echo 'Found' || echo 'Missing')"
+    echo ""
+}
+
 # Function to check FFmpeg installation specifically
 check_ffmpeg() {
     print_status "Checking FFmpeg installation..."
@@ -429,25 +430,26 @@ show_help() {
     echo "  run, -r, --run              Build all libraries, application and run (default)"
     echo "  build, -b, --build          Build all libraries and application only"
     echo "  libs, -l, --libs            Build all libraries only"
-    echo "  deps, -d, --deps            Install system dependencies only"
+    echo "  mariadb-server, --mariadb-server  Build MariaDB Server from source"
     echo "  check, --check              Check project setup"
     echo "  ffmpeg, --ffmpeg            Check FFmpeg installation specifically"
+    echo "  debug, --debug              Debug dependency checking"
     echo "  clean, -c, --clean          Clean build artifacts"
     echo "  clean-all, --clean-all      Clean all artifacts (libraries + build)"
     echo "  help, -h, --help            Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0                 # Build everything and run"
-    echo "  $0 deps           # Install system dependencies"
     echo "  $0 libs           # Build libraries only"
+    echo "  $0 mariadb-server # Build MariaDB Server from source"
     echo "  $0 build          # Build libraries and application"
     echo "  $0 check          # Check project setup"
     echo "  $0 ffmpeg         # Check FFmpeg installation"
+    echo "  $0 debug          # Debug dependency checking"
     echo "  $0 clean          # Clean build artifacts"
     echo "  $0 clean-all      # Clean everything"
     echo ""
     echo "Features:"
-    echo "  - Automatic system dependency installation (multi-distro support)"
     echo "  - Comprehensive FFmpeg library checking"
     echo "  - Automatic library building from source"
     echo "  - Source cleanup after successful builds"
@@ -457,12 +459,11 @@ show_help() {
     echo "  - Video playback with FFmpeg (H.264, H.265, AAC)"
     echo ""
     echo "First time setup:"
-    echo "  1. $0 deps        # Install system dependencies (automatic detection)"
+    echo "  1. Install system dependencies manually (see README_SETUP.md)"
     echo "  2. $0 libs        # Build all libraries"
     echo "  3. $0             # Build and run everything"
     echo ""
     echo "Dependency installation:"
-    echo "  - Automatic: $0 deps (detects package manager and installs)"
     echo "  - Manual: Use your system's package manager"
     echo "  - OpenSSL: cd Source && ./install_openssl.sh"
     echo ""
@@ -486,14 +487,21 @@ main() {
             check_dependencies
             build_libraries
             ;;
-        "deps"|"-d"|"--deps")
-            install_system_dependencies
+        "mariadb-server"|"--mariadb-server")
+            check_dependencies
+            print_status "Building MariaDB Server from source..."
+            cd Source
+            ./build_mariadb_server.sh
+            cd ..
             ;;
         "check"|"--check")
             check_setup
             ;;
         "ffmpeg"|"--ffmpeg")
             check_ffmpeg
+            ;;
+        "debug"|"--debug")
+            debug_dependencies
             ;;
         "clean"|"-c"|"--clean")
             clean_build

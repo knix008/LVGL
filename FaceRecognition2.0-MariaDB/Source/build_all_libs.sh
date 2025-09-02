@@ -4,7 +4,7 @@
 set -e
 
 echo "=== Master Library Build Script ==="
-echo "Usage: $0 [openssl|freetype|sdl2|lvgl|mariadb|zlib|all]"
+echo "Usage: $0 [openssl|freetype|sdl2|lvgl|mariadb|mariadb-server|zlib|all]"
 echo "Note: OpenSSL is installed first when building all libraries"
 
 # Function to build a specific library
@@ -55,6 +55,10 @@ case "$1" in
     "mariadb")
         build_library "mariadb"
         ;;
+    "mariadb-server")
+        echo "Building MariaDB Server from source..."
+        ./build_mariadb_server.sh
+        ;;
     "zlib")
         build_library "zlib"
         ;;
@@ -75,7 +79,7 @@ case "$1" in
         ;;
     *)
         echo "Error: Unknown library '$1'"
-        echo "Available options: openssl, freetype, sdl2, lvgl, mariadb, zlib, all"
+        echo "Available options: openssl, freetype, sdl2, lvgl, mariadb, mariadb-server, zlib, all"
         echo "Note: OpenSSL is installed first when building all libraries"
         exit 1
         ;;
