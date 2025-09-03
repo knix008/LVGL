@@ -166,7 +166,7 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
 
         if (rows <= 0 || dims < 5) return detections;
 
-        std::cout << "Processing " << rows << " rows with " << dims << " dimensions" << std::endl;
+        /* std::cout << "Processing " << rows << " rows with " << dims << " dimensions" << std::endl; */
 
         auto value_at = [&](int anchor_idx, int c) -> float {
             if (channels_first) {
@@ -189,6 +189,7 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             float conf = value_at(i, 4);
 
             // Debug: Print first few raw values to understand the format
+            /*
             if (i < 3 && conf > 0.001f) {
                 std::cout << "Raw values [" << i << "]: x=" << x << ", y=" << y 
                          << ", w=" << w << ", h=" << h << ", conf=" << conf << std::endl;
@@ -198,6 +199,7 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             if (i < 5) {
                 std::cout << "Row " << i << " confidence: " << conf << std::endl;
             }
+            */
 
             if (conf < CONFIDENCE_THRESHOLD) continue;
 
