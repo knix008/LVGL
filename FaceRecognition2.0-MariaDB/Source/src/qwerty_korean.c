@@ -43,22 +43,70 @@ const char* jongsung_list[28] = {
     "ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"
 };
 
-// Save the current locale
-static char *old_locale_saved = NULL;
+// Direct UTF-8 to Unicode conversion without setlocale
+static wchar_t utf8_to_unicode(const char* utf8_str) {
+    if (utf8_str == NULL || strlen(utf8_str) == 0) return 0;
+    
+    unsigned char* bytes = (unsigned char*)utf8_str;
+    wchar_t result = 0;
+    
+    if (bytes[0] < 0x80) {
+        // 1-byte UTF-8 (ASCII)
+        result = bytes[0];
+    } else if ((bytes[0] & 0xE0) == 0xC0) {
+        // 2-byte UTF-8
+        result = ((bytes[0] & 0x1F) << 6) | (bytes[1] & 0x3F);
+    } else if ((bytes[0] & 0xF0) == 0xE0) {
+        // 3-byte UTF-8 (Korean characters)
+        result = ((bytes[0] & 0x0F) << 12) | ((bytes[1] & 0x3F) << 6) | (bytes[2] & 0x3F);
+    } else if ((bytes[0] & 0xF8) == 0xF0) {
+        // 4-byte UTF-8
+        result = ((bytes[0] & 0x07) << 18) | ((bytes[1] & 0x3F) << 12) | 
+                 ((bytes[2] & 0x3F) << 6) | (bytes[3] & 0x3F);
+    }
+    
+    return result;
+}
+
+// Function to convert Unicode to UTF-8 (public function)
+void unicode_to_utf8(wchar_t* wstr, char* utf8_str, size_t utf8_size) {
+    if (wstr == NULL || utf8_str == NULL || utf8_size == 0) return;
+    
+    size_t utf8_len = 0;
+    size_t wstr_len = wcslen(wstr);
+    
+    for (size_t i = 0; i < wstr_len && utf8_len < utf8_size - 4; i++) {
+        wchar_t wc = wstr[i];
+        
+        // Convert Unicode to UTF-8
+        if (wc < 0x80) {
+            utf8_str[utf8_len++] = (char)wc;
+        } else if (wc < 0x800) {
+            utf8_str[utf8_len++] = 0xC0 | (wc >> 6);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        } else if (wc < 0x10000) {
+            utf8_str[utf8_len++] = 0xE0 | (wc >> 12);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        } else {
+            utf8_str[utf8_len++] = 0xF0 | (wc >> 18);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 12) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        }
+    }
+    
+    utf8_str[utf8_len] = '\0';
+}
 
 void qwerty_korean_init(void) {
-    // Save the current locale
-    char *old_locale_tmp = setlocale(LC_ALL, NULL);
-    old_locale_saved = strdup(old_locale_tmp);
-    setlocale(LC_ALL, "ko_KR.UTF-8");
+    // No locale setup needed - using direct UTF-8 conversion
+    printf("Korean input system initialized (no locale required)\n");
 }
 
 void qwerty_korean_cleanup(void) {
-    if (old_locale_saved) {
-        setlocale(LC_ALL, old_locale_saved);
-        free(old_locale_saved);
-        old_locale_saved = NULL;
-    }
+    // No cleanup needed
+    printf("Korean input system cleaned up\n");
 }
 
 int qwerty_get_index(const char *jamo, const char *list[], int size) {
@@ -81,7 +129,40 @@ void qwerty_print_buffers(char *input_buf, wchar_t *output_buf) {
     printf("\r\033[K");
     printf("Input: [%s] | Output: [", input_buf);
     if (wcslen(output_buf) > 0) {
-        printf("%ls", output_buf);
+        // Convert wide characters to UTF-8 for console display
+        char utf8_output[1024] = {0};
+        size_t utf8_len = 0;
+        
+        for (size_t i = 0; i < wcslen(output_buf) && utf8_len < sizeof(utf8_output) - 4; i++) {
+            wchar_t wc = output_buf[i];
+            
+            // Convert Unicode to UTF-8
+            if (wc < 0x80) {
+                utf8_output[utf8_len++] = (char)wc;
+            } else if (wc < 0x800) {
+                utf8_output[utf8_len++] = 0xC0 | (wc >> 6);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            } else if (wc < 0x10000) {
+                utf8_output[utf8_len++] = 0xE0 | (wc >> 12);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            } else {
+                utf8_output[utf8_len++] = 0xF0 | (wc >> 18);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 12) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            }
+        }
+        
+        // Print UTF-8 string, with fallback to hex if needed
+        printf("%s", utf8_output);
+        
+        // Alternative: If UTF-8 doesn't display properly, you can uncomment this:
+        // printf("(Unicode: ");
+        // for (size_t i = 0; i < wcslen(output_buf); i++) {
+        //     printf("U+%04X ", (unsigned int)output_buf[i]);
+        // }
+        // printf(")");
     }
     printf("]");
     fflush(stdout);
@@ -294,10 +375,8 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
             }
             
             // No jungseong found, display individual choseong
-            mbstate_t ps = {0};
-            wchar_t wc;
-            size_t result = mbrtowc(&wc, cho_jamo, strlen(cho_jamo), &ps);
-            if (result != (size_t)-1 && result != (size_t)-2) {
+            wchar_t wc = utf8_to_unicode(cho_jamo);
+            if (wc != 0) {
                 temp_output[temp_len++] = wc;
             }
             i++;
@@ -306,10 +385,8 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
             const char* jung_jamo = qwerty_get_jamo_buffer(single_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap));
             if (jung_jamo) {
                 // Display individual jungseong
-                mbstate_t ps = {0};
-                wchar_t wc;
-                size_t result = mbrtowc(&wc, jung_jamo, strlen(jung_jamo), &ps);
-                if (result != (size_t)-1 && result != (size_t)-2) {
+                wchar_t wc = utf8_to_unicode(jung_jamo);
+                if (wc != 0) {
                     temp_output[temp_len++] = wc;
                 }
                 i++;
@@ -318,10 +395,8 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
                 const char* jong_jamo = qwerty_get_jamo_buffer(single_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap));
                 if (jong_jamo && strlen(jong_jamo) > 0) {
                     // Display individual jongseong
-                    mbstate_t ps = {0};
-                    wchar_t wc;
-                    size_t result = mbrtowc(&wc, jong_jamo, strlen(jong_jamo), &ps);
-                    if (result != (size_t)-1 && result != (size_t)-2) {
+                    wchar_t wc = utf8_to_unicode(jong_jamo);
+                    if (wc != 0) {
                         temp_output[temp_len++] = wc;
                     }
                 } else {
