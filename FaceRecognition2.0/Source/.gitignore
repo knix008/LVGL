@@ -83,10 +83,6 @@ __pycache__/
 *.old
 *.orig
 
-# Core dumps
-core
-core.*
-
 # IPC socket files
 /tmp/opencv_gui_socket
 *.socket
