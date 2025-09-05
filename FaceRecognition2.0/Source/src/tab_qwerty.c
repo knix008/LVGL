@@ -106,12 +106,14 @@ static void qwerty_close_dialog_cb(lv_event_t* e) {
     }
 }
 
+// Using unicode_to_utf8() from qwerty_korean.c
+
 // Function to update the display using Korean system
 static void update_qwerty_display() {
     if (g_qwerty_display_label) {
-        // Convert wide string to UTF-8 for display
+        // Convert wide string to UTF-8 for display using our custom function
         char display_text[512] = "";
-        wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        unicode_to_utf8(g_qwerty_output_buffer, display_text, sizeof(display_text));
         lv_label_set_text(g_qwerty_display_label, display_text);
     }
 }

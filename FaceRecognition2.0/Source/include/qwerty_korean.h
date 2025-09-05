@@ -48,4 +48,7 @@ void qwerty_korean_init(void);
 void qwerty_korean_cleanup(void);
 void qwerty_process_input(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch);
 
+// UTF-8 conversion functions
+void unicode_to_utf8(wchar_t* wstr, char* utf8_str, size_t utf8_size);
+
 #endif // QWERTY_KOREAN_H 
