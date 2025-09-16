@@ -92,6 +92,22 @@ target_link_libraries(webcam_app
     ${OpenCV_LIBS_DIR}/libopencv_dnn.so
     ${OpenCV_LIBS_DIR}/libopencv_features2d.so
     ${OpenCV_LIBS_DIR}/libopencv_flann.so
+    # System GTK and GLib dependencies (explicit paths to avoid Anaconda conflicts)
+    /lib/x86_64-linux-gnu/libgtk-x11-2.0.so.0
+    /lib/x86_64-linux-gnu/libgdk-x11-2.0.so.0
+    /lib/x86_64-linux-gnu/libgobject-2.0.so.0
+    /lib/x86_64-linux-gnu/libglib-2.0.so.0
+    /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
+    /lib/x86_64-linux-gnu/libcairo.so.2
+    /lib/x86_64-linux-gnu/libpango-1.0.so.0
+    /lib/x86_64-linux-gnu/libatk-1.0.so.0
+    /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
+    /lib/x86_64-linux-gnu/libgio-2.0.so.0
+    /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
+    /lib/x86_64-linux-gnu/libharfbuzz.so.0
+    /lib/x86_64-linux-gnu/libfontconfig.so.1
+    /lib/x86_64-linux-gnu/libfreetype.so.6
+    # System libraries
     pthread dl rt m stdc++
 )
 
@@ -121,7 +137,7 @@ add_custom_command(
 # Custom targets
 add_custom_target(run-webcam
     COMMAND ${CMAKE_COMMAND} -E echo "Starting webcam application..."
-    COMMAND ${CMAKE_COMMAND} -E env LD_LIBRARY_PATH=${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:$ENV{LD_LIBRARY_PATH} ${CMAKE_BINARY_DIR}/webcam_app
+    COMMAND ${CMAKE_COMMAND} -E env LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:$ENV{LD_LIBRARY_PATH} ${CMAKE_BINARY_DIR}/webcam_app
     DEPENDS webcam_app
     COMMENT "Running webcam application"
 )
