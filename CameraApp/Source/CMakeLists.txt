@@ -8,10 +8,16 @@ project(webcam_app CXX)
 # Architecture detection
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
     set(ARCHITECTURE "x64")
+    set(SYSTEM_LIB_DIR "/lib/x86_64-linux-gnu")
+    set(USR_LIB_DIR "/usr/lib/x86_64-linux-gnu")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
     set(ARCHITECTURE "aarch64")
+    set(SYSTEM_LIB_DIR "/lib/aarch64-linux-gnu")
+    set(USR_LIB_DIR "/usr/lib/aarch64-linux-gnu")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7l|armv8l")
     set(ARCHITECTURE "aarch64")
+    set(SYSTEM_LIB_DIR "/lib/aarch64-linux-gnu")
+    set(USR_LIB_DIR "/usr/lib/aarch64-linux-gnu")
 else()
     message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}. Supported: x86_64, aarch64, arm64")
 endif()
@@ -111,20 +117,20 @@ if(BUILD_STATIC)
         ${OpenCV_LIBS_DIR}/libopencv_flann.so
         
         # System GTK+3/GLib dependencies (shared - static not available)
-        /lib/x86_64-linux-gnu/libgtk-3.so.0
-        /lib/x86_64-linux-gnu/libgdk-3.so.0
-        /lib/x86_64-linux-gnu/libgobject-2.0.so.0
-        /lib/x86_64-linux-gnu/libglib-2.0.so.0
-        /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
-        /lib/x86_64-linux-gnu/libcairo.so.2
-        /lib/x86_64-linux-gnu/libpango-1.0.so.0
-        /lib/x86_64-linux-gnu/libatk-1.0.so.0
-        /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
-        /lib/x86_64-linux-gnu/libgio-2.0.so.0
-        /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
-        /lib/x86_64-linux-gnu/libharfbuzz.so.0
-        /lib/x86_64-linux-gnu/libfontconfig.so.1
-        /lib/x86_64-linux-gnu/libfreetype.so.6
+        ${SYSTEM_LIB_DIR}/libgtk-3.so.0
+        ${SYSTEM_LIB_DIR}/libgdk-3.so.0
+        ${SYSTEM_LIB_DIR}/libgobject-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libglib-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libgdk_pixbuf-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libcairo.so.2
+        ${SYSTEM_LIB_DIR}/libpango-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libatk-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libpangocairo-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libgio-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libpangoft2-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libharfbuzz.so.0
+        ${SYSTEM_LIB_DIR}/libfontconfig.so.1
+        ${SYSTEM_LIB_DIR}/libfreetype.so.6
         
         # System libraries (static where possible)
         pthread dl rt m stdc++
@@ -132,7 +138,7 @@ if(BUILD_STATIC)
     
     # Set RPATH for hybrid static build
     set_target_properties(webcam_app PROPERTIES
-        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
+        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:${SYSTEM_LIB_DIR}:${USR_LIB_DIR}"
         BUILD_WITH_INSTALL_RPATH TRUE
         SKIP_BUILD_RPATH FALSE
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -154,20 +160,20 @@ else()
         ${OpenCV_LIBS_DIR}/libopencv_flann.so
         
         # System GTK+3/GLib dependencies (explicit paths to avoid Anaconda conflicts)
-        /lib/x86_64-linux-gnu/libgtk-3.so.0
-        /lib/x86_64-linux-gnu/libgdk-3.so.0
-        /lib/x86_64-linux-gnu/libgobject-2.0.so.0
-        /lib/x86_64-linux-gnu/libglib-2.0.so.0
-        /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
-        /lib/x86_64-linux-gnu/libcairo.so.2
-        /lib/x86_64-linux-gnu/libpango-1.0.so.0
-        /lib/x86_64-linux-gnu/libatk-1.0.so.0
-        /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
-        /lib/x86_64-linux-gnu/libgio-2.0.so.0
-        /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
-        /lib/x86_64-linux-gnu/libharfbuzz.so.0
-        /lib/x86_64-linux-gnu/libfontconfig.so.1
-        /lib/x86_64-linux-gnu/libfreetype.so.6
+        ${SYSTEM_LIB_DIR}/libgtk-3.so.0
+        ${SYSTEM_LIB_DIR}/libgdk-3.so.0
+        ${SYSTEM_LIB_DIR}/libgobject-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libglib-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libgdk_pixbuf-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libcairo.so.2
+        ${SYSTEM_LIB_DIR}/libpango-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libatk-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libpangocairo-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libgio-2.0.so.0
+        ${SYSTEM_LIB_DIR}/libpangoft2-1.0.so.0
+        ${SYSTEM_LIB_DIR}/libharfbuzz.so.0
+        ${SYSTEM_LIB_DIR}/libfontconfig.so.1
+        ${SYSTEM_LIB_DIR}/libfreetype.so.6
         
         # System libraries
         pthread dl rt m stdc++
@@ -183,7 +189,7 @@ if(BUILD_STATIC)
 else()
     # Dynamic builds need RPATH
     set_target_properties(webcam_app PROPERTIES
-        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
+        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:${SYSTEM_LIB_DIR}:${USR_LIB_DIR}"
         BUILD_WITH_INSTALL_RPATH TRUE
         SKIP_BUILD_RPATH FALSE
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

@@ -3,8 +3,15 @@
 # Standalone Webcam Application Runner
 # This script runs the webcam application in standalone mode without IPC dependencies
 
-# Set the LD_LIBRARY_PATH to prioritize system libraries and avoid conflicts
-export LD_LIBRARY_PATH="/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/home/shkwon/Projects/LVGL/CameraApp/Source/opencv/lib:/home/shkwon/Projects/LVGL/CameraApp/Source/onnxruntime-linux-x64-1.16.3/lib:$LD_LIBRARY_PATH"
+# Detect architecture and set appropriate library paths
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+    # ARM64 architecture
+    export LD_LIBRARY_PATH="/lib/aarch64-linux-gnu:/usr/lib/aarch64-linux-gnu:/home/shkwon/Projects/LVGL/CameraApp/Source/opencv/lib:/home/shkwon/Projects/LVGL/CameraApp/Source/onnxruntime-linux-aarch64-1.16.3/lib:$LD_LIBRARY_PATH"
+else
+    # x86_64 architecture
+    export LD_LIBRARY_PATH="/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/home/shkwon/Projects/LVGL/CameraApp/Source/opencv/lib:/home/shkwon/Projects/LVGL/CameraApp/Source/onnxruntime-linux-x64-1.16.3/lib:$LD_LIBRARY_PATH"
+fi
 
 # Remove any existing socket file to avoid conflicts
 rm -f /tmp/webcam_gui_socket

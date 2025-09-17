@@ -8,18 +8,26 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
 - YOLOv8n-face model for accurate face detection
 - ONNX Runtime 1.16.3 for optimized inference
 - Cross-platform support (Linux, Windows, macOS)
+- **Multi-architecture support** (x86_64, ARM64/Apple Silicon)
 - Self-contained build system using CMake
 - **Automated dependency installation** - No manual dependency installation required**
 - Self-contained libraries (OpenCV, ONNX Runtime)
+- **Static linking support** for portable executables
 
 ## Prerequisites
 
 - Linux system (Ubuntu/Debian, CentOS/RHEL/Fedora, Arch Linux)
+- **Architecture support**: x86_64, ARM64 (Apple Silicon), aarch64
 - Webcam device
 - Internet connection (for downloading dependencies)
 - sudo access (for installing system packages)
 
 **All other dependencies are automatically installed by the build system!**
+
+### **Apple Silicon Support**
+- ✅ **Native ARM64 Linux** (Asahi Linux, Ubuntu ARM64)
+- ✅ **Virtualized ARM64** (VMware, Parallels, QEMU)
+- ✅ **Cross-compilation** from x86_64 to ARM64
 
 **For detailed system dependencies, see [SYSTEM_DEPENDENCIES.md](Source/SYSTEM_DEPENDENCIES.md)**
 
@@ -238,11 +246,24 @@ The executable is configured with RPATH, so it should find the libraries automat
 ```bash
 ./run.sh deps      # Install system dependencies only
 ./run.sh build     # Build the application (auto-installs deps)
+./run.sh build-static  # Build with static linking (portable executable)
 ./run.sh run       # Build and run the application
 ./run.sh test      # Run tests
 ./run.sh clean     # Clean build files
 ./run.sh info      # Show build information
 ./run.sh help      # Show help
+```
+
+### 🏗️ **Architecture-Specific Builds**
+```bash
+# Automatic architecture detection (x86_64, ARM64/Apple Silicon)
+./run.sh build          # Detects architecture automatically
+./run.sh build-static   # Static linking for portable executables
+
+# Manual architecture specification (advanced)
+cd Source
+cmake -DCMAKE_SYSTEM_PROCESSOR=aarch64 ..  # Force ARM64
+cmake -DCMAKE_SYSTEM_PROCESSOR=x86_64 ..   # Force x86_64
 ```
 
 ### 🔧 **Source Script Commands**
