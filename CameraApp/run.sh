@@ -35,6 +35,7 @@ show_help() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
+    echo "  deps         Install system dependencies only"
     echo "  build        Build the application (auto-installs dependencies)"
     echo "  run          Build and run the application"
     echo "  test         Run tests"
@@ -43,6 +44,7 @@ show_help() {
     echo "  help         Show this help message"
     echo ""
     echo "Examples:"
+    echo "  $0 deps      # Install system dependencies"
     echo "  $0 build     # Build the application"
     echo "  $0 run       # Build and run the application"
     echo "  $0 clean     # Clean build files"
@@ -68,7 +70,7 @@ chmod +x "$SOURCE_DIR/build_webcam.sh"
 # Main function
 main() {
     case "${1:-help}" in
-        "build"|"run"|"test"|"clean"|"info")
+        "deps"|"build"|"run"|"test"|"clean"|"info")
             print_status "Executing: $1"
             cd "$SOURCE_DIR"
             ./build_webcam.sh "$1"

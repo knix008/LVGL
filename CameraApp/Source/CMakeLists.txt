@@ -24,10 +24,20 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Static linking configuration
+option(BUILD_STATIC "Build with static linking" OFF)
+
 # Compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O2")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+
+# Static linking flags
+if(BUILD_STATIC)
+    # Hybrid static linking - use static libraries where available
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
+    message(STATUS "Building with hybrid static linking enabled")
+endif()
 
 # =============================================================================
 # DEPENDENCIES
@@ -84,47 +94,101 @@ target_include_directories(webcam_app PRIVATE
 )
 
 # Link libraries
-target_link_libraries(webcam_app 
-    # ONNX Runtime
-    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
+if(BUILD_STATIC)
+    # Hybrid static linking - use static libraries where available, shared where not
+    target_link_libraries(webcam_app 
+        # ONNX Runtime (shared - static not available)
+        ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
+        
+        # OpenCV libraries (shared - static not available)
+        ${OpenCV_LIBS_DIR}/libopencv_core.so
+        ${OpenCV_LIBS_DIR}/libopencv_imgproc.so
+        ${OpenCV_LIBS_DIR}/libopencv_highgui.so
+        ${OpenCV_LIBS_DIR}/libopencv_imgcodecs.so
+        ${OpenCV_LIBS_DIR}/libopencv_videoio.so
+        ${OpenCV_LIBS_DIR}/libopencv_dnn.so
+        ${OpenCV_LIBS_DIR}/libopencv_features2d.so
+        ${OpenCV_LIBS_DIR}/libopencv_flann.so
+        
+        # System GTK+3/GLib dependencies (shared - static not available)
+        /lib/x86_64-linux-gnu/libgtk-3.so.0
+        /lib/x86_64-linux-gnu/libgdk-3.so.0
+        /lib/x86_64-linux-gnu/libgobject-2.0.so.0
+        /lib/x86_64-linux-gnu/libglib-2.0.so.0
+        /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
+        /lib/x86_64-linux-gnu/libcairo.so.2
+        /lib/x86_64-linux-gnu/libpango-1.0.so.0
+        /lib/x86_64-linux-gnu/libatk-1.0.so.0
+        /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
+        /lib/x86_64-linux-gnu/libgio-2.0.so.0
+        /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
+        /lib/x86_64-linux-gnu/libharfbuzz.so.0
+        /lib/x86_64-linux-gnu/libfontconfig.so.1
+        /lib/x86_64-linux-gnu/libfreetype.so.6
+        
+        # System libraries (static where possible)
+        pthread dl rt m stdc++
+    )
     
-    # OpenCV libraries
-    ${OpenCV_LIBS_DIR}/libopencv_core.so
-    ${OpenCV_LIBS_DIR}/libopencv_imgproc.so
-    ${OpenCV_LIBS_DIR}/libopencv_highgui.so
-    ${OpenCV_LIBS_DIR}/libopencv_imgcodecs.so
-    ${OpenCV_LIBS_DIR}/libopencv_videoio.so
-    ${OpenCV_LIBS_DIR}/libopencv_dnn.so
-    ${OpenCV_LIBS_DIR}/libopencv_features2d.so
-    ${OpenCV_LIBS_DIR}/libopencv_flann.so
-    
-    # System GTK/GLib dependencies (explicit paths to avoid Anaconda conflicts)
-    /lib/x86_64-linux-gnu/libgtk-x11-2.0.so.0
-    /lib/x86_64-linux-gnu/libgdk-x11-2.0.so.0
-    /lib/x86_64-linux-gnu/libgobject-2.0.so.0
-    /lib/x86_64-linux-gnu/libglib-2.0.so.0
-    /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
-    /lib/x86_64-linux-gnu/libcairo.so.2
-    /lib/x86_64-linux-gnu/libpango-1.0.so.0
-    /lib/x86_64-linux-gnu/libatk-1.0.so.0
-    /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
-    /lib/x86_64-linux-gnu/libgio-2.0.so.0
-    /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
-    /lib/x86_64-linux-gnu/libharfbuzz.so.0
-    /lib/x86_64-linux-gnu/libfontconfig.so.1
-    /lib/x86_64-linux-gnu/libfreetype.so.6
-    
-    # System libraries
-    pthread dl rt m stdc++
-)
+    # Set RPATH for hybrid static build
+    set_target_properties(webcam_app PROPERTIES
+        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+else()
+    # Dynamic linking - use shared libraries
+    target_link_libraries(webcam_app 
+        # ONNX Runtime
+        ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
+        
+        # OpenCV libraries
+        ${OpenCV_LIBS_DIR}/libopencv_core.so
+        ${OpenCV_LIBS_DIR}/libopencv_imgproc.so
+        ${OpenCV_LIBS_DIR}/libopencv_highgui.so
+        ${OpenCV_LIBS_DIR}/libopencv_imgcodecs.so
+        ${OpenCV_LIBS_DIR}/libopencv_videoio.so
+        ${OpenCV_LIBS_DIR}/libopencv_dnn.so
+        ${OpenCV_LIBS_DIR}/libopencv_features2d.so
+        ${OpenCV_LIBS_DIR}/libopencv_flann.so
+        
+        # System GTK+3/GLib dependencies (explicit paths to avoid Anaconda conflicts)
+        /lib/x86_64-linux-gnu/libgtk-3.so.0
+        /lib/x86_64-linux-gnu/libgdk-3.so.0
+        /lib/x86_64-linux-gnu/libgobject-2.0.so.0
+        /lib/x86_64-linux-gnu/libglib-2.0.so.0
+        /lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0
+        /lib/x86_64-linux-gnu/libcairo.so.2
+        /lib/x86_64-linux-gnu/libpango-1.0.so.0
+        /lib/x86_64-linux-gnu/libatk-1.0.so.0
+        /lib/x86_64-linux-gnu/libpangocairo-1.0.so.0
+        /lib/x86_64-linux-gnu/libgio-2.0.so.0
+        /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0
+        /lib/x86_64-linux-gnu/libharfbuzz.so.0
+        /lib/x86_64-linux-gnu/libfontconfig.so.1
+        /lib/x86_64-linux-gnu/libfreetype.so.6
+        
+        # System libraries
+        pthread dl rt m stdc++
+    )
+endif()
 
 # RPATH configuration
-set_target_properties(webcam_app PROPERTIES
-    INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib"
-    BUILD_WITH_INSTALL_RPATH TRUE
-    SKIP_BUILD_RPATH FALSE
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+if(BUILD_STATIC)
+    # Static builds don't need RPATH
+    set_target_properties(webcam_app PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+else()
+    # Dynamic builds need RPATH
+    set_target_properties(webcam_app PROPERTIES
+        INSTALL_RPATH "${OpenCV_LIBS_DIR}:${ONNXRUNTIME_DIR}/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
 
 # Compile definitions
 target_compile_definitions(webcam_app PRIVATE

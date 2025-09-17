@@ -30,18 +30,57 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to install system dependencies
+install_system_dependencies() {
+    print_status "Installing system dependencies..."
+    
+    if [ -f "install_dependencies.sh" ]; then
+        chmod +x install_dependencies.sh
+        ./install_dependencies.sh
+        if [ $? -ne 0 ]; then
+            print_error "Failed to install system dependencies"
+            exit 1
+        fi
+    else
+        print_warning "install_dependencies.sh not found. Please install dependencies manually:"
+        print_error "  sudo apt update && sudo apt install -y cmake make build-essential git wget tar pkg-config libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk-3-dev libglib2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libgdk-pixbuf2.0-dev"
+        exit 1
+    fi
+}
+
 # Function to check dependencies
 check_dependencies() {
     print_status "Checking dependencies..."
     
+    # Check for system dependencies first
+    local missing_deps=()
+    
     if ! command -v cmake &> /dev/null; then
-        print_error "cmake is not installed. Please install cmake first."
-        exit 1
+        missing_deps+=("cmake")
     fi
     
     if ! command -v make &> /dev/null; then
-        print_error "make is not installed. Please install make first."
-        exit 1
+        missing_deps+=("make")
+    fi
+    
+    if ! command -v pkg-config &> /dev/null; then
+        missing_deps+=("pkg-config")
+    fi
+    
+    # Check for GStreamer development packages
+    if ! pkg-config --exists gstreamer-1.0; then
+        missing_deps+=("libgstreamer1.0-dev")
+    fi
+    
+    # Check for GTK+3 development packages
+    if ! pkg-config --exists gtk+-3.0; then
+        missing_deps+=("libgtk-3-dev")
+    fi
+    
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        print_warning "Missing system dependencies: ${missing_deps[*]}"
+        print_status "Installing missing dependencies automatically..."
+        install_system_dependencies
     fi
     
     # Check for local OpenCV installation
@@ -105,12 +144,35 @@ build_application() {
     cd build
     
     # Configure with CMake
-    cmake -DCMAKE_BUILD_TYPE=${build_type} ..
+    if [ "${build_type}" = "Static" ]; then
+        print_status "Configuring for static linking..."
+        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON ..
+    else
+        cmake -DCMAKE_BUILD_TYPE=${build_type} ..
+    fi
     
     # Build
     make -j$(nproc)
     
-    print_success "Build completed successfully"
+    if [ "${build_type}" = "Static" ]; then
+        print_success "Hybrid static build completed successfully"
+        print_status "Executable size: $(du -h webcam_app | cut -f1)"
+        print_status "Checking dependencies..."
+        if command -v ldd &> /dev/null; then
+            echo "Dynamic dependencies:"
+            ldd webcam_app | head -5
+            echo "..."
+        fi
+        print_status "To run the static build, use:"
+        print_status "  ./run_static.sh        # Run with proper library paths"
+        print_status "  ./run_standalone.sh    # Run in simulation mode (no camera/IPC)"
+        print_status "  ./run_camera.sh        # Run with real camera (handles IPC errors)"
+        print_status ""
+        print_status "Or set LD_LIBRARY_PATH manually:"
+        print_status "export LD_LIBRARY_PATH=\"/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/home/shkwon/Projects/LVGL/CameraApp/Source/opencv/lib:/home/shkwon/Projects/LVGL/CameraApp/Source/onnxruntime-linux-x64-1.16.3/lib:\$LD_LIBRARY_PATH\""
+    else
+        print_success "Build completed successfully"
+    fi
 }
 
 # Function to clean build artifacts
@@ -156,6 +218,8 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  build [type]    Build the application (default: Release)"
+    echo "  build-static    Build with static linking"
+    echo "  deps            Install system dependencies only"
     echo "  clean           Clean build artifacts"
     echo "  test            Run tests"
     echo "  run             Run the application"
@@ -167,10 +231,13 @@ show_help() {
     echo "Build types:"
     echo "  Release         Optimized release build (default)"
     echo "  Debug           Debug build with symbols"
+    echo "  Static          Static linking build (standalone executable)"
     echo ""
     echo "Examples:"
+    echo "  $0 deps         # Install system dependencies"
     echo "  $0 build        # Build with Release configuration"
     echo "  $0 build Debug  # Build with Debug configuration"
+    echo "  $0 build-static # Build with static linking"
     echo "  $0 clean        # Clean build artifacts"
     echo "  $0 test         # Run tests"
     echo "  $0 run          # Run the application"
@@ -183,8 +250,14 @@ show_help() {
     echo "  - YOLOv8 face detection model (models/yolov8n-face.onnx)"
     echo ""
     echo "System Dependencies (auto-installed):"
-    echo "  - libgstreamer1.0-dev"
-    echo "  - libgstreamer-plugins-base1.0-dev"
+    echo "  - Build tools: cmake, make, gcc, git, wget, pkg-config"
+    echo "  - GStreamer: libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev"
+    echo "  - GTK+3: libgtk-3-dev, libglib2.0-dev, libcairo2-dev, libpango1.0-dev, libatk1.0-dev, libgdk-pixbuf2.0-dev"
+    echo ""
+    echo "Static Build:"
+    echo "  - Creates standalone executable (~50-100MB)"
+    echo "  - No external dependencies required"
+    echo "  - See STATIC_BUILD_GUIDE.md for details"
 }
 
 # Main function
@@ -193,6 +266,13 @@ main() {
         "build")
             check_dependencies
             build_application "${2:-Release}"
+            ;;
+        "build-static")
+            check_dependencies
+            build_application "Static"
+            ;;
+        "deps")
+            install_system_dependencies
             ;;
         "clean")
             clean_build
