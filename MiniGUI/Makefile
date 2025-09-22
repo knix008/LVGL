@@ -5,13 +5,9 @@ CC = gcc
 CFLAGS = -Wall -g -O2
 LDFLAGS = 
 
-# MiniGUI specific flags
-MINIGUI_CFLAGS = -I/home/shkwon/minigui-local/usr/local/include
-MINIGUI_LIBS = -L/home/shkwon/minigui-local/usr/local/lib -lminigui_sa -ljpeg -lpng16 -lz -ldl -lharfbuzz -lfreetype -lm -lpthread -linput -ldrm -ludev
-
-# Alternative paths for manual installation
-# MINIGUI_CFLAGS = -I/usr/local/include/minigui
-# MINIGUI_LIBS = -L/usr/local/lib -lminigui
+# MiniGUI specific flags (using system installation)
+MINIGUI_CFLAGS = $(shell pkg-config --cflags minigui)
+MINIGUI_LIBS = $(shell pkg-config --libs minigui)
 
 # Target executable
 TARGET = helloworld
