@@ -116,7 +116,7 @@ if(BUILD_STATIC)
         ${OpenCV_LIBS_DIR}/libopencv_features2d.so
         ${OpenCV_LIBS_DIR}/libopencv_flann.so
         
-        # System GTK+3/GLib dependencies (shared - static not available)
+        # System GTK+3/GLib dependencies (GTK+ 3.x only - no GTK+ 2.x)
         ${SYSTEM_LIB_DIR}/libgtk-3.so.0
         ${SYSTEM_LIB_DIR}/libgdk-3.so.0
         ${SYSTEM_LIB_DIR}/libgobject-2.0.so.0
@@ -159,7 +159,7 @@ else()
         ${OpenCV_LIBS_DIR}/libopencv_features2d.so
         ${OpenCV_LIBS_DIR}/libopencv_flann.so
         
-        # System GTK+3/GLib dependencies (explicit paths to avoid Anaconda conflicts)
+        # System GTK+3/GLib dependencies (GTK+ 3.x only - no GTK+ 2.x)
         ${SYSTEM_LIB_DIR}/libgtk-3.so.0
         ${SYSTEM_LIB_DIR}/libgdk-3.so.0
         ${SYSTEM_LIB_DIR}/libgobject-2.0.so.0

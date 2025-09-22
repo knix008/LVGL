@@ -1,6 +1,6 @@
 # CameraApp - Real-time Face Detection
 
-A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime 1.16.3.
+A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime 1.16.3. Features GTK+ 3.x only implementation for stable GUI without version conflicts.
 
 ## Features
 
@@ -13,6 +13,8 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
 - **Automated dependency installation** - No manual dependency installation required**
 - Self-contained libraries (OpenCV, ONNX Runtime)
 - **Static linking support** for portable executables
+- **GTK+ 3.x only implementation** - No GTK version conflicts
+- **Stable GUI** - Resolved GTK+ 2.x vs GTK+ 3.x compatibility issues
 
 ## Prerequisites
 
@@ -85,6 +87,7 @@ The project uses a comprehensive build system with automated dependency manageme
    - Detects CPU architecture (x64/aarch64)
    - Downloads and builds OpenCV 4.8.1 locally
    - Includes self-contained image and video codecs
+   - **GTK+ 3.x only support** - No GTK+ 2.x conflicts
    - Optimized for the target architecture
 
 5. **install_onnxruntime.sh** - ONNX Runtime installer that:
@@ -204,11 +207,12 @@ make
 The automated build process will:
 - **Auto-install system dependencies** (GTK+3, GStreamer, build tools)
 - Auto-install missing ONNX Runtime
-- Auto-build OpenCV locally if missing
+- Auto-build OpenCV locally if missing with **GTK+ 3.x only support**
 - Compile the C++ source code
 - Link against OpenCV and ONNX Runtime libraries
 - Copy model files to the build directory
 - Set up proper RPATH for self-contained execution
+- **Ensure GTK+ 3.x compatibility** - No GTK+ 2.x conflicts
 
 ## Running the Application
 
@@ -355,6 +359,25 @@ If you encounter library not found errors, ensure:
 ./run.sh build
 ```
 
+### 🖥️ **GTK+ GUI Issues**
+The application now uses **GTK+ 3.x only** to avoid version conflicts:
+
+- **No GTK+ 2.x vs GTK+ 3.x conflicts** - Resolved automatically
+- **Stable GUI** - Uses modern GTK+ 3.x libraries only
+- **Automatic GTK+ 3.x detection** - Build system ensures correct version
+
+If you encounter GTK-related issues:
+```bash
+# Ensure GTK+ 3.x development libraries are installed
+./run.sh deps
+
+# Rebuild OpenCV with GTK+ 3.x only
+cd Source
+./build_opencv.sh --clean
+```
+
+**Note**: The application no longer supports GTK+ 2.x to prevent symbol conflicts.
+
 ## Project Structure
 
 ```
@@ -423,6 +446,7 @@ To update to a newer version of ONNX Runtime:
 - **Build Tools**: cmake, make, gcc, git, wget, pkg-config
 - **GStreamer**: libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev
 - **GTK+3**: libgtk-3-dev, libglib2.0-dev, libcairo2-dev, libpango1.0-dev, libatk1.0-dev, libgdk-pixbuf2.0-dev
+- **GTK+ 3.x only**: No GTK+ 2.x dependencies to avoid version conflicts
 
 **Application Dependencies (Auto-installed):**
 - **OpenCV 4.8.1** - Computer vision library (built locally)
