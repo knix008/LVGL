@@ -29,35 +29,74 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to install minimal system dependencies
+install_dependencies() {
+    print_status "Installing minimal system dependencies..."
+    
+    # Update package list
+    print_status "Updating package list..."
+    sudo apt update || {
+        print_error "Failed to update package list"
+        exit 1
+    }
+    
+    # Install only essential build tools and FFmpeg libraries
+    print_status "Installing essential build tools and FFmpeg libraries..."
+    sudo apt install -y \
+        build-essential \
+        cmake \
+        make \
+        pkg-config \
+        wget \
+        curl \
+        git \
+        libavformat-dev \
+        libavcodec-dev \
+        libavutil-dev \
+        libswscale-dev \
+        libswresample-dev || {
+        print_error "Failed to install system dependencies"
+        exit 1
+    }
+    
+    print_success "System dependencies installed successfully"
+    print_status "Note: All other libraries (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source using project build scripts"
+}
+
 # Function to check if required tools are available
 check_dependencies() {
     print_status "Checking system dependencies..."
     
+    # Check for essential tools
+    local missing_tools=()
+    
     if ! command -v cmake &> /dev/null; then
-        print_error "cmake is not installed. Please install cmake first."
-        exit 1
+        missing_tools+=("cmake")
     fi
     
     if ! command -v make &> /dev/null; then
-        print_error "make is not installed. Please install make first."
-        exit 1
+        missing_tools+=("make")
     fi
     
     if ! command -v pkg-config &> /dev/null; then
-        print_error "pkg-config is not installed. Please install pkg-config first."
-        exit 1
+        missing_tools+=("pkg-config")
     fi
     
-    # Check for system libraries that are still needed
+    # Check for FFmpeg libraries
     if ! pkg-config --exists libavformat libavcodec libavutil libswscale libswresample; then
-        print_warning "FFmpeg system libraries not found. Video playback may not work."
-        print_warning "Install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
-    else
-        print_success "FFmpeg system libraries found"
+        missing_tools+=("ffmpeg-dev")
     fi
     
-    print_success "All system dependencies are available"
-    print_status "Note: All other dependencies (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source"
+    # If any tools are missing, install dependencies
+    if [ ${#missing_tools[@]} -ne 0 ]; then
+        print_warning "Missing dependencies: ${missing_tools[*]}"
+        print_status "Installing missing dependencies..."
+        install_dependencies
+    else
+        print_success "All system dependencies are available"
+    fi
+    
+    print_status "Note: All other dependencies (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source using project build scripts"
 }
 
 # Function to build all libraries
@@ -157,6 +196,7 @@ show_help() {
     echo "  run, -r, --run      Build all libraries, application and run (default)"
     echo "  build, -b, --build  Build all libraries and application only"
     echo "  libs, -l, --libs    Build all libraries only"
+    echo "  deps, -d, --deps   Install system dependencies only"
     echo "  clean, -c, --clean  Clean build artifacts"
     echo "  help, -h, --help    Show this help message"
     echo ""
@@ -164,10 +204,12 @@ show_help() {
     echo "  $0                 # Build everything and run"
     echo "  $0 build          # Build libraries and application"
     echo "  $0 libs           # Build libraries only"
+    echo "  $0 deps           # Install system dependencies only"
     echo "  $0 clean          # Clean build artifacts"
     echo ""
     echo "Features:"
-    echo "  - Automatic library building from source"
+    echo "  - Automatic minimal dependency installation"
+    echo "  - Library building from source using project build scripts"
     echo "  - Source cleanup after successful builds"
     echo "  - Database encryption with SQLCipher"
     echo "  - Web interface with HTTPS support"
@@ -193,6 +235,9 @@ main() {
         "libs"|"-l"|"--libs")
             check_dependencies
             build_libraries
+            ;;
+        "deps"|"-d"|"--deps")
+            install_dependencies
             ;;
         "clean"|"-c"|"--clean")
             clean_build
