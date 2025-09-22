@@ -61,8 +61,8 @@ make install_sw
 # Copy to lib directory
 echo "Copying to lib directory..."
 cp -r install/include/* ../${LIB_DIR}/include/
-cp install/lib64/libcrypto.a ../${LIB_DIR}/lib/
-cp install/lib64/libssl.a ../${LIB_DIR}/lib/
+cp install/lib/libcrypto.a ../${LIB_DIR}/lib/
+cp install/lib/libssl.a ../${LIB_DIR}/lib/
 
 # Cleanup build directory only (keep source)
 cd ..
