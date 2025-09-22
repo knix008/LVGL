@@ -1,19 +1,16 @@
 #!/bin/bash
 
-# MiniGUI Application Run Script
-# This script sets up the environment and runs the MiniGUI Hello World application
+# MiniGUI Application Run Script (Quiet Mode)
+# This script runs the MiniGUI Hello World application with suppressed warnings
 
 # Set library path
 export LD_LIBRARY_PATH="$HOME/minigui-local/usr/local/lib:$LD_LIBRARY_PATH"
 
-# Suppress GTK and PNG warnings
+# Suppress all warnings and messages
 export GTK_MODULES=""
 export PNG_SKIP_sRGB_CHECK=1
 export GTK_DEBUG="no-css-cache"
 export MALLOC_CHECK_=0
-
-# Redirect stderr to suppress warnings (optional)
-# exec 2>/dev/null
 
 # Set MiniGUI runtime mode to standalone
 export MG_RUNTIME_MODE="standalone"
@@ -27,15 +24,6 @@ export MG_DEFAULTMODE="800x600-16bpp"
 
 # Set configuration file path
 export MG_CONFIG_FILE="./MiniGUI.cfg"
-
-# Create a virtual display if X11 is not available
-if [ -z "$DISPLAY" ]; then
-    echo "No X11 display found. Starting Xvfb virtual display..."
-    export DISPLAY=":99"
-    Xvfb :99 -screen 0 800x600x16 &
-    XVFB_PID=$!
-    sleep 2
-fi
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,19 +41,9 @@ if [ ! -f "MiniGUI.cfg" ]; then
     exit 1
 fi
 
-echo "Starting MiniGUI Hello World application..."
-echo "Library path: $LD_LIBRARY_PATH"
-echo "GAL engine: $MG_GAL_ENGINE"
-echo "IAL engine: $MG_IAL_ENGINE"
-echo "Display: $DISPLAY"
+echo "Starting MiniGUI Hello World application (quiet mode)..."
 
-# Run the application with suppressed warnings
+# Run the application with stderr redirected to suppress warnings
 ./helloworld 2>/dev/null
-
-# Clean up Xvfb if we started it
-if [ ! -z "$XVFB_PID" ]; then
-    echo "Stopping virtual display..."
-    kill $XVFB_PID
-fi
 
 echo "Application finished."

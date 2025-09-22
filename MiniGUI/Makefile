@@ -2,8 +2,8 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -g -O2
-LDFLAGS = 
+CFLAGS = -Wall -g -O2 -Wno-unused-parameter
+LDFLAGS = -Wl,--as-needed 
 
 # MiniGUI specific flags (using system installation)
 MINIGUI_CFLAGS = $(shell pkg-config --cflags minigui)
