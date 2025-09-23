@@ -29,31 +29,137 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to detect package manager and install dependencies
+install_system_dependencies() {
+    print_status "Installing missing system dependencies..."
+    
+    # Detect package manager
+    local pkg_manager=""
+    local install_cmd=""
+    local update_cmd=""
+    
+    if command -v apt &> /dev/null; then
+        pkg_manager="apt"
+        update_cmd="sudo apt update"
+        install_cmd="sudo apt install -y"
+    elif command -v dnf &> /dev/null; then
+        pkg_manager="dnf"
+        update_cmd="sudo dnf check-update || true"  # Don't fail if no updates
+        install_cmd="sudo dnf install -y"
+    elif command -v yum &> /dev/null; then
+        pkg_manager="yum"
+        update_cmd="sudo yum check-update || true"  # Don't fail if no updates
+        install_cmd="sudo yum install -y"
+    elif command -v pacman &> /dev/null; then
+        pkg_manager="pacman"
+        update_cmd="sudo pacman -Sy"
+        install_cmd="sudo pacman -S --noconfirm"
+    elif command -v apk &> /dev/null; then
+        pkg_manager="apk"
+        update_cmd="sudo apk update"
+        install_cmd="sudo apk add --no-cache"
+    else
+        print_error "No supported package manager found (apt, dnf, yum, pacman, apk)"
+        return 1
+    fi
+    
+    print_status "Using package manager: $pkg_manager"
+    
+    # Define packages to install based on package manager
+    local build_packages=""
+    local ffmpeg_packages=""
+    local openssl_packages=""
+    
+    case $pkg_manager in
+        "apt")
+            build_packages="build-essential cmake wget pkg-config"
+            ffmpeg_packages="libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
+            openssl_packages="libssl-dev"
+            ;;
+        "dnf"|"yum")
+            build_packages="gcc gcc-c++ cmake wget pkgconfig"
+            ffmpeg_packages="ffmpeg-devel"
+            openssl_packages="openssl-devel"
+            ;;
+        "pacman")
+            build_packages="base-devel cmake wget pkgconf"
+            ffmpeg_packages="ffmpeg"
+            openssl_packages="openssl"
+            ;;
+        "apk")
+            build_packages="build-base cmake wget pkgconf"
+            ffmpeg_packages="ffmpeg-dev"
+            openssl_packages="openssl-dev"
+            ;;
+    esac
+    
+    # Update package lists
+    print_status "Updating package lists..."
+    if ! $update_cmd; then
+        print_warning "Package list update failed, continuing with installation..."
+    fi
+    
+    # Install build tools
+    if [ -n "$build_packages" ]; then
+        print_status "Installing build tools: $build_packages"
+        if ! $install_cmd $build_packages; then
+            print_error "Failed to install build tools"
+            return 1
+        fi
+    fi
+    
+    # Install FFmpeg packages
+    if [ -n "$ffmpeg_packages" ]; then
+        print_status "Installing FFmpeg packages: $ffmpeg_packages"
+        if ! $install_cmd $ffmpeg_packages; then
+            print_error "Failed to install FFmpeg packages"
+            return 1
+        fi
+    fi
+    
+    # Install OpenSSL packages
+    if [ -n "$openssl_packages" ]; then
+        print_status "Installing OpenSSL packages: $openssl_packages"
+        if ! $install_cmd $openssl_packages; then
+            print_error "Failed to install OpenSSL packages"
+            return 1
+        fi
+    fi
+    
+    print_success "System dependencies installed successfully"
+}
+
 # Function to check if required tools are available
 check_dependencies() {
     print_status "Checking system dependencies..."
     
     local missing_deps=()
+    local need_install=false
     
     # Check for essential build tools
     if ! command -v gcc &> /dev/null; then
         missing_deps+=("gcc")
+        need_install=true
     fi
     
     if ! command -v g++ &> /dev/null; then
         missing_deps+=("g++")
+        need_install=true
     fi
     
     if ! command -v cmake &> /dev/null; then
         missing_deps+=("cmake")
+        need_install=true
     fi
     
     if ! command -v make &> /dev/null; then
         missing_deps+=("make")
+        need_install=true
     fi
     
     if ! command -v pkg-config &> /dev/null; then
         missing_deps+=("pkg-config")
+        need_install=true
     fi
     
     # Check for system libraries
@@ -85,6 +191,7 @@ check_dependencies() {
     
     if [ "$openssl_found" = false ]; then
         missing_deps+=("libssl-dev")
+        need_install=true
     fi
     
     # Check for essential FFmpeg libraries only
@@ -117,6 +224,7 @@ check_dependencies() {
     
     if [ "$ffmpeg_found" = false ]; then
         ffmpeg_missing+=("libavformat-dev" "libavcodec-dev" "libavutil-dev" "libswscale-dev" "libswresample-dev")
+        need_install=true
     fi
     
     # Add FFmpeg packages to missing dependencies
@@ -124,22 +232,38 @@ check_dependencies() {
         missing_deps+=("ffmpeg: ${ffmpeg_missing[*]}")
     fi
     
-    if [ ${#missing_deps[@]} -gt 0 ]; then
-        print_error "Missing system dependencies: ${missing_deps[*]}"
+    # If dependencies are missing, try to install them automatically
+    if [ "$need_install" = true ]; then
+        print_warning "Missing system dependencies: ${missing_deps[*]}"
         echo ""
-        print_status "Install dependencies manually using:"
-        echo "  sudo apt update && sudo apt install -y build-essential cmake wget pkg-config libssl-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
-        echo ""
-        print_status "Or use the OpenSSL installation script:"
-        echo "  cd Source"
-        echo "  chmod +x install_openssl.sh"
-        echo "  ./install_openssl.sh"
-        echo ""
-        exit 1
+        print_status "Attempting to install missing dependencies automatically..."
+        
+        if install_system_dependencies; then
+            print_success "Dependencies installed successfully, re-checking..."
+            # Re-check dependencies after installation
+            check_dependencies
+            return
+        else
+            print_error "Automatic installation failed. Please install dependencies manually:"
+            echo ""
+            print_status "Ubuntu/Debian:"
+            echo "  sudo apt update && sudo apt install -y build-essential cmake wget pkg-config libssl-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev"
+            echo ""
+            print_status "CentOS/RHEL/Fedora:"
+            echo "  sudo dnf install -y gcc gcc-c++ cmake wget pkgconfig openssl-devel ffmpeg-devel"
+            echo ""
+            print_status "Arch Linux:"
+            echo "  sudo pacman -S --noconfirm base-devel cmake wget pkgconf openssl ffmpeg"
+            echo ""
+            print_status "Alpine Linux:"
+            echo "  sudo apk add --no-cache build-base cmake wget pkgconf openssl-dev ffmpeg-dev"
+            echo ""
+            exit 1
+        fi
     fi
     
     print_success "All system dependencies are available"
-    print_status "Note: All other dependencies (FreeType2, SDL2, MariaDB, LVGL) will be built from source. OpenSSL uses system library."
+    print_status "Note: All other dependencies (FreeType2, SDL2, MariaDB, LVGL, zlib) will be built from source."
 }
 
 # Function to build all libraries
@@ -415,13 +539,14 @@ show_help() {
     echo "  - Video playback with FFmpeg (H.264, H.265, AAC)"
     echo ""
     echo "First time setup:"
-    echo "  1. Install system dependencies manually (see README_SETUP.md)"
-    echo "  2. $0 libs        # Build all libraries"
-    echo "  3. $0             # Build and run everything"
+    echo "  1. $0 libs        # Build all libraries (system deps auto-installed)"
+    echo "  2. $0             # Build and run everything"
     echo ""
-    echo "Dependency installation:"
-    echo "  - Manual: Use your system's package manager"
-    echo "  - OpenSSL: cd Source && ./install_openssl.sh"
+    echo "Automatic dependency installation:"
+    echo "  - System dependencies are automatically installed when missing"
+    echo "  - Supports: Ubuntu/Debian, CentOS/RHEL/Fedora, Arch Linux, Alpine Linux"
+    echo "  - Libraries built from source: FreeType2, SDL2, LVGL, MariaDB, zlib"
+    echo "  - System libraries installed: build tools, FFmpeg, OpenSSL"
     echo ""
 }
 

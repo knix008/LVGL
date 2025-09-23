@@ -140,6 +140,23 @@ build_opencv() {
     
     local missing_deps=()
     
+    # Check for GTK+ 3.x development packages
+    if ! pkg-config --exists gtk+-3.0; then
+        missing_deps+=("libgtk-3-dev")
+    fi
+    
+    if ! pkg-config --exists gdk-3.0; then
+        missing_deps+=("libgdk-3.0-dev")
+    fi
+    
+    if ! pkg-config --exists glib-2.0; then
+        missing_deps+=("libglib2.0-dev")
+    fi
+    
+    if ! pkg-config --exists gobject-2.0; then
+        missing_deps+=("libgobject-2.0-dev")
+    fi
+    
     # Check for development packages (only essential ones that OpenCV can't build itself)
     if ! pkg-config --exists gstreamer-1.0; then
         missing_deps+=("libgstreamer1.0-dev")
@@ -224,6 +241,8 @@ build_opencv() {
         -DWITH_FFMPEG=ON \
         -DWITH_GSTREAMER=ON \
         -DWITH_GTK=ON \
+        -DWITH_GTK_2_X=OFF \
+        -DWITH_GTK_3_X=ON \
         -DWITH_IPP=OFF \
         -DWITH_ITT=OFF \
         -DWITH_JASPER=OFF \

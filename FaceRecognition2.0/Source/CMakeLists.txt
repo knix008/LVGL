@@ -94,14 +94,15 @@ target_link_libraries(main
     ${LVGL_LIBRARY} 
     ${SDL2_LIBRARIES} 
     ${FREETYPE_LIBS} 
-    ${OPENSSL_LIBRARIES}
-    ${FFMPEG_LIBRARIES}
     ${SQLCIPHER_LIBRARY}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libssl.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/lib/libcrypto.a
+    ${FFMPEG_LIBRARIES}
 )
 
 # System libraries for Unix
 if(UNIX)
-    target_link_libraries(main pthread dl m crypto)
+    target_link_libraries(main pthread dl m)
 endif()
 
 # Copy HTML files to build directory

@@ -61,8 +61,20 @@ make install_sw
 # Copy to lib directory
 echo "Copying to lib directory..."
 cp -r install/include/* ../${LIB_DIR}/include/
-cp install/lib64/libcrypto.a ../${LIB_DIR}/lib/
-cp install/lib64/libssl.a ../${LIB_DIR}/lib/
+
+# Check for library files in both lib/ and lib64/ directories
+if [ -f "install/lib/libcrypto.a" ] && [ -f "install/lib/libssl.a" ]; then
+    echo "Found libraries in install/lib/"
+    cp install/lib/libcrypto.a ../${LIB_DIR}/lib/
+    cp install/lib/libssl.a ../${LIB_DIR}/lib/
+elif [ -f "install/lib64/libcrypto.a" ] && [ -f "install/lib64/libssl.a" ]; then
+    echo "Found libraries in install/lib64/"
+    cp install/lib64/libcrypto.a ../${LIB_DIR}/lib/
+    cp install/lib64/libssl.a ../${LIB_DIR}/lib/
+else
+    echo "Error: Could not find OpenSSL libraries in install/lib/ or install/lib64/"
+    exit 1
+fi
 
 # Cleanup build directory only (keep source)
 cd ..
