@@ -19,11 +19,82 @@ echo "=== MiniGUI Local Setup and Run Script ==="
 echo "Working directory: $SCRIPT_DIR"
 echo "Local MiniGUI directory: $MINIGUI_DIR"
 echo ""
+echo "Note: This script will install system packages using sudo."
+echo "You may be prompted for your password during package installation."
+echo ""
 
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
+
+# Install required system packages
+echo "Installing required system packages..."
+echo "This will install development tools and libraries needed for MiniGUI."
+
+# Check if we can install packages
+if command_exists apt-get; then
+    echo "Installing packages using apt-get..."
+    echo "Note: This requires sudo privileges. You may be prompted for your password."
+    if sudo apt-get update && sudo apt-get install -y \
+        git gcc g++ binutils autoconf automake libtool make cmake pkg-config \
+        libgtk2.0-dev libjpeg-dev libpng-dev libfreetype6-dev libinput-dev libdrm-dev \
+        libsqlite3-dev libxml2-dev libssl-dev libx11-dev libxext-dev libxrender-dev \
+        libxrandr-dev libxinerama-dev libxi-dev libxcursor-dev libxfixes-dev \
+        libharfbuzz-dev libpixman-1-dev libwebp-dev libudev-dev libpciaccess-dev \
+        xvfb; then
+        echo "✓ System packages installed"
+    else
+        echo "⚠ Package installation failed. Please install packages manually:"
+        echo "  sudo apt-get update"
+        echo "  sudo apt-get install -y git gcc g++ binutils autoconf automake libtool make cmake pkg-config \\"
+        echo "    libgtk2.0-dev libjpeg-dev libpng-dev libfreetype6-dev libinput-dev libdrm-dev \\"
+        echo "    libsqlite3-dev libxml2-dev libssl-dev libx11-dev libxext-dev libxrender-dev \\"
+        echo "    libxrandr-dev libxinerama-dev libxi-dev libxcursor-dev libxfixes-dev \\"
+        echo "    libharfbuzz-dev libpixman-1-dev libwebp-dev libudev-dev libpciaccess-dev xvfb"
+        echo "Continuing with build process..."
+    fi
+elif command_exists yum; then
+    echo "Installing packages using yum..."
+    echo "Note: This requires sudo privileges. You may be prompted for your password."
+    if sudo yum groupinstall -y "Development Tools" && sudo yum install -y \
+        git gcc gcc-c++ binutils autoconf automake libtool make cmake pkgconfig \
+        gtk2-devel libjpeg-turbo-devel libpng-devel freetype-devel libinput-devel libdrm-devel \
+        sqlite-devel libxml2-devel openssl-devel libX11-devel libXext-devel libXrender-devel \
+        libXrandr-devel libXinerama-devel libXi-devel libXcursor-devel libXfixes-devel \
+        harfbuzz-devel pixman-devel libwebp-devel systemd-devel libpciaccess-devel \
+        xorg-x11-server-Xvfb; then
+        echo "✓ System packages installed"
+    else
+        echo "⚠ Package installation failed. Please install packages manually."
+        echo "Continuing with build process..."
+    fi
+elif command_exists dnf; then
+    echo "Installing packages using dnf..."
+    echo "Note: This requires sudo privileges. You may be prompted for your password."
+    if sudo dnf groupinstall -y "Development Tools" && sudo dnf install -y \
+        git gcc gcc-c++ binutils autoconf automake libtool make cmake pkgconfig \
+        gtk2-devel libjpeg-turbo-devel libpng-devel freetype-devel libinput-devel libdrm-devel \
+        sqlite-devel libxml2-devel openssl-devel libX11-devel libXext-devel libXrender-devel \
+        libXrandr-devel libXinerama-devel libXi-devel libXcursor-devel libXfixes-devel \
+        harfbuzz-devel pixman-devel libwebp-devel systemd-devel libpciaccess-devel \
+        xorg-x11-server-Xvfb; then
+        echo "✓ System packages installed"
+    else
+        echo "⚠ Package installation failed. Please install packages manually."
+        echo "Continuing with build process..."
+    fi
+else
+    echo "Warning: No supported package manager found (apt-get, yum, dnf)."
+    echo "Please install the following packages manually:"
+    echo "  - git, gcc, g++, make, cmake, pkg-config"
+    echo "  - Development libraries: libjpeg, libpng, freetype, libinput, libdrm"
+    echo "  - X11 libraries: libx11, libxext, libxrender, libxrandr, libxinerama, libxi"
+    echo "  - Other: libharfbuzz, libpixman-1, libwebp, libudev, libpciaccess"
+    echo "  - Virtual display: xvfb"
+    echo ""
+    echo "Continuing with build process..."
+fi
 
 # Check for required tools
 echo "Checking for required tools..."
