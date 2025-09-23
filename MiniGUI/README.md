@@ -29,7 +29,7 @@ The application creates a window with:
 
 ### 1. Build MiniGUI
 
-The project includes a local MiniGUI installation script. MiniGUI is built and installed locally in the `$HOME/minigui-local` directory.
+The project includes a local MiniGUI installation script. MiniGUI is built and installed locally in the `minigui-local` directory inside this project.
 
 ```bash
 # Make the installation script executable
@@ -72,7 +72,7 @@ If you prefer to run manually:
 
 ```bash
 # Set environment variables
-export LD_LIBRARY_PATH="$HOME/minigui-local/usr/local/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$(pwd)/minigui-local/usr/local/lib:$LD_LIBRARY_PATH"
 export MG_RUNTIME_MODE="standalone"
 export MG_GAL_ENGINE="pc_xvfb"
 export MG_IAL_ENGINE="pc_xvfb"
@@ -95,12 +95,15 @@ The `MiniGUI.cfg` file contains MiniGUI configuration settings:
 ```
 MiniGUI/
 ├── main.c              # Main application source code
-├── Makefile           # Build configuration
-├── run.sh             # Run script with environment setup
-├── MiniGUI.cfg        # MiniGUI configuration file
-├── install_minigui.sh # MiniGUI installation script
-├── helloworld         # Compiled executable
-└── README.md          # This file
+├── Makefile            # Build configuration
+├── run.sh              # Run script with environment setup
+├── MiniGUI.cfg         # MiniGUI configuration file
+├── install_minigui.sh  # MiniGUI installation script
+├── build-minigui-4.0/  # MiniGUI build scripts and sources (local)
+├── minigui-build/      # Build directory (local)
+├── minigui-local/      # Local MiniGUI install (local)
+├── helloworld          # Compiled executable
+└── README.md           # This file
 ```
 
 ## Application Code
@@ -165,6 +168,6 @@ This project is for educational purposes. MiniGUI has its own licensing terms - 
 ## System Information
 
 - **MiniGUI Version**: 4.0
-- **Build Date**: $(date)
-- **Architecture**: $(uname -m)
-- **OS**: $(uname -s)
+- **Build Date**: (see install_minigui.sh run date)
+- **Architecture**: (see your system)
+- **OS**: (see your system)
