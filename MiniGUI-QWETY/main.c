@@ -190,32 +190,26 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
     
     switch (message) {
         case MSG_CREATE:
-            // Try to load Korean font from assets directory using CreateLogFont with UTF-8 charset
-            korean_font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
+            // Try to load Korean font from assets directory using full path with UTF-8 charset
+            korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-Regular.ttf", "UTF-8", 
                                         FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
                                         FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                         20, 0);
             if (korean_font == NULL) {
                 // Try other Korean fonts from assets
-                korean_font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
+                korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-Bold.ttf", "UTF-8", 
                                             FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
                                             FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                             20, 0);
             }
             if (korean_font == NULL) {
                 // Try the third Korean font
-                korean_font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
+                korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-ExtraBold.ttf", "UTF-8", 
                                             FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
                                             FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                             20, 0);
             }
-            if (korean_font == NULL) {
-                // Fallback to system fonts with UTF-8
-                korean_font = CreateLogFont("ttf", "DejaVu Sans", "UTF-8", 
-                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
-                                            FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                            20, 0);
-            }
+
             if (korean_font == NULL) {
                 // Final fallback to default font
                 korean_font = NULL;
