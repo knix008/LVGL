@@ -1,0 +1,5 @@
+*.o
+korean_input
+build/
+install/
+minigui/
