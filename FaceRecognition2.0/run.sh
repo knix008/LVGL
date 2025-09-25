@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # LVGL Face Recognition Application Runner
-# This script builds and runs the LVGL application with embedded web server
+# This script runs the already built LVGL application
 
 set -e  # Exit on any error
 
@@ -29,130 +29,13 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to install minimal system dependencies
-install_dependencies() {
-    print_status "Installing minimal system dependencies..."
-    
-    # Update package list
-    print_status "Updating package list..."
-    sudo apt update || {
-        print_error "Failed to update package list"
-        exit 1
-    }
-    
-    # Install only essential build tools and FFmpeg libraries
-    print_status "Installing essential build tools and FFmpeg libraries..."
-    sudo apt install -y \
-        build-essential \
-        cmake \
-        make \
-        pkg-config \
-        wget \
-        curl \
-        git \
-        libavformat-dev \
-        libavcodec-dev \
-        libavutil-dev \
-        libswscale-dev \
-        libswresample-dev || {
-        print_error "Failed to install system dependencies"
-        exit 1
-    }
-    
-    print_success "System dependencies installed successfully"
-    print_status "Note: All other libraries (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source using project build scripts"
-}
-
-# Function to check if required tools are available
-check_dependencies() {
-    print_status "Checking system dependencies..."
-    
-    # Check for essential tools
-    local missing_tools=()
-    
-    if ! command -v cmake &> /dev/null; then
-        missing_tools+=("cmake")
-    fi
-    
-    if ! command -v make &> /dev/null; then
-        missing_tools+=("make")
-    fi
-    
-    if ! command -v pkg-config &> /dev/null; then
-        missing_tools+=("pkg-config")
-    fi
-    
-    # Check for FFmpeg libraries
-    if ! pkg-config --exists libavformat libavcodec libavutil libswscale libswresample; then
-        missing_tools+=("ffmpeg-dev")
-    fi
-    
-    # If any tools are missing, install dependencies
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        print_warning "Missing dependencies: ${missing_tools[*]}"
-        print_status "Installing missing dependencies..."
-        install_dependencies
-    else
-        print_success "All system dependencies are available"
-    fi
-    
-    print_status "Note: All other dependencies (FreeType2, SDL2, OpenSSL, SQLCipher, LVGL) will be built from source using project build scripts"
-}
-
-# Function to build all libraries
-build_libraries() {
-    print_status "Building all libraries from source..."
-    
-    cd Source
-    
-    # Check if build_all_libs.sh exists
-    if [ ! -f "build_all_libs.sh" ]; then
-        print_error "build_all_libs.sh not found in Source directory"
+# Function to check if application is built
+check_application() {
+    if [ ! -f "Source/build/main" ]; then
+        print_error "Application not found. Please run './build.sh' first to build the application."
         exit 1
     fi
-    
-    # Make the script executable and run it
-    chmod +x build_all_libs.sh
-    ./build_all_libs.sh all || {
-        print_error "Library build failed"
-        exit 1
-    }
-    
-    print_success "All libraries built successfully from source"
-    print_status "Source directories have been cleaned up to save disk space"
-    cd ..
-}
-
-# Function to build the application
-build_application() {
-    print_status "Building application..."
-    
-    cd Source
-    
-    # Create build directory if it doesn't exist
-    if [ ! -d "build" ]; then
-        print_status "Creating build directory..."
-        mkdir -p build
-    fi
-    
-    cd build
-    
-    # Configure with CMake
-    print_status "Configuring with CMake..."
-    cmake .. || {
-        print_error "CMake configuration failed"
-        exit 1
-    }
-    
-    # Build the application
-    print_status "Building application..."
-    make || {
-        print_error "Build failed"
-        exit 1
-    }
-    
-    print_success "Application built successfully"
-    cd ../..
+    print_success "Application found"
 }
 
 # Function to run the application
@@ -160,12 +43,6 @@ run_application() {
     print_status "Starting LVGL application with web server..."
     
     cd Source/build
-    
-    # Check if the executable exists
-    if [ ! -f "main" ]; then
-        print_error "Executable 'main' not found. Please build the application first."
-        exit 1
-    fi
     
     print_success "Application starting..."
     print_status "Web interface will be available at: http://localhost:8080"
@@ -177,15 +54,6 @@ run_application() {
     ./main
 }
 
-# Function to clean build artifacts
-clean_build() {
-    print_status "Cleaning build artifacts..."
-    cd Source
-    rm -rf build
-    print_success "Build artifacts cleaned"
-    cd ..
-}
-
 # Function to show help
 show_help() {
     echo "LVGL Face Recognition Application Runner"
@@ -193,24 +61,16 @@ show_help() {
     echo "Usage: $0 [OPTION]"
     echo ""
     echo "Options:"
-    echo "  run, -r, --run      Build all libraries, application and run (default)"
-    echo "  build, -b, --build  Build all libraries and application only"
-    echo "  libs, -l, --libs    Build all libraries only"
-    echo "  deps, -d, --deps   Install system dependencies only"
-    echo "  clean, -c, --clean  Clean build artifacts"
+    echo "  run, -r, --run      Run the application (default)"
     echo "  help, -h, --help    Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                 # Build everything and run"
-    echo "  $0 build          # Build libraries and application"
-    echo "  $0 libs           # Build libraries only"
-    echo "  $0 deps           # Install system dependencies only"
-    echo "  $0 clean          # Clean build artifacts"
+    echo "  $0                 # Run the application"
+    echo "  $0 run            # Run the application"
+    echo ""
+    echo "Note: Make sure to run './build.sh' first to build the application"
     echo ""
     echo "Features:"
-    echo "  - Automatic minimal dependency installation"
-    echo "  - Library building from source using project build scripts"
-    echo "  - Source cleanup after successful builds"
     echo "  - Database encryption with SQLCipher"
     echo "  - Web interface with HTTPS support"
     echo "  - Korean input methods"
@@ -222,25 +82,8 @@ show_help() {
 main() {
     case "${1:-run}" in
         "run"|"-r"|"--run")
-            check_dependencies
-            build_libraries
-            build_application
+            check_application
             run_application
-            ;;
-        "build"|"-b"|"--build")
-            check_dependencies
-            build_libraries
-            build_application
-            ;;
-        "libs"|"-l"|"--libs")
-            check_dependencies
-            build_libraries
-            ;;
-        "deps"|"-d"|"--deps")
-            install_dependencies
-            ;;
-        "clean"|"-c"|"--clean")
-            clean_build
             ;;
         "help"|"-h"|"--help")
             show_help

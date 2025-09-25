@@ -17,7 +17,7 @@ mkdir -p ${LIB_DIR}/include
 mkdir -p ${LIB_DIR}/lib
 
 # Download and extract FreeType if not exists
-if [ ! -d "${FREETYPE_SOURCE}" ]; then
+if [ ! -d "${FREETYPE_SOURCE}" ] || [ ! -f "${FREETYPE_SOURCE}/configure" ]; then
     echo "Downloading FreeType ${FREETYPE_VERSION}..."
     if [ ! -f "${FREETYPE_ARCHIVE}" ]; then
         wget "${FREETYPE_URL}" || {
@@ -27,6 +27,7 @@ if [ ! -d "${FREETYPE_SOURCE}" ]; then
     fi
     
     echo "Extracting FreeType..."
+    rm -rf "${FREETYPE_SOURCE}"  # Remove incomplete directory if exists
     tar -xf "${FREETYPE_ARCHIVE}" || {
         echo "Error: Failed to extract FreeType"
         exit 1

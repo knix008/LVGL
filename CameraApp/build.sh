@@ -35,6 +35,7 @@ show_help() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
+    echo "  (no args)    Automatically build the application (default)"
     echo "  deps         Install system dependencies only"
     echo "  build        Build the application (auto-installs dependencies)"
     echo "  build-static Build with static linking (portable executable)"
@@ -45,11 +46,12 @@ show_help() {
     echo "  help         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 deps         # Install system dependencies"
-    echo "  $0 build        # Build the application"
+    echo "  $0            # Automatically build the application"
+    echo "  $0 deps       # Install system dependencies"
+    echo "  $0 build      # Build the application"
     echo "  $0 build-static # Build with static linking"
-    echo "  $0 run          # Build and run the application"
-    echo "  $0 clean        # Clean build files"
+    echo "  $0 run        # Build and run the application"
+    echo "  $0 clean      # Clean build files"
     echo ""
     echo "For more detailed options, see: $SOURCE_DIR/build_webcam.sh --help"
 }
@@ -69,16 +71,35 @@ fi
 # Make sure the build script is executable
 chmod +x "$SOURCE_DIR/build_webcam.sh"
 
+# Make sure this script is executable
+chmod +x "$0"
+
 # Main function
 main() {
-    case "${1:-help}" in
+    case "${1:-build}" in
         "deps"|"build"|"build-static"|"run"|"test"|"clean"|"info")
             print_status "Executing: $1"
             cd "$SOURCE_DIR"
-            ./build_webcam.sh "$1"
+            if ./build_webcam.sh "$1"; then
+                print_success "Command '$1' completed successfully"
+            else
+                print_error "Command '$1' failed with exit code $?"
+                exit 1
+            fi
             ;;
         "help"|"--help"|"-h")
             show_help
+            ;;
+        "")
+            # No arguments provided - automatically build the application
+            print_status "No arguments provided. Automatically building the application..."
+            cd "$SOURCE_DIR"
+            if ./build_webcam.sh "build"; then
+                print_success "Automatic build completed successfully"
+            else
+                print_error "Automatic build failed with exit code $?"
+                exit 1
+            fi
             ;;
         *)
             print_error "Unknown command: $1"

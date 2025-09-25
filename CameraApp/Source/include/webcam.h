@@ -10,7 +10,7 @@
 #include <onnxruntime_cxx_api.h>
 
 // IPC Configuration
-#define SOCKET_PATH "/tmp/webcam_gui_socket"
+#define SOCKET_PATH "/tmp/webcam_ipc_socket"
 #define IPC_BUFFER_SIZE 1024
 
 // IPC message structure

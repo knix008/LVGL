@@ -8,7 +8,7 @@
 #include <string.h>
 #include <time.h> // Required for time and localtime
 
-#define SOCKET_PATH "/tmp/opencv_gui_socket"
+#define SOCKET_PATH "/tmp/webcam_ipc_socket"
 #define IPC_BUFFER_SIZE 1024
 #define IPC_DISPLAY_BUFFER_SIZE 2048  // Larger buffer for display messages with prefixes
 
