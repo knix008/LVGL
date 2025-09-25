@@ -102,7 +102,23 @@ check_dependencies() {
     fi
     
     # Check for ONNX Runtime installation
-    if [ ! -d "onnxruntime-linux-x64-1.16.3" ]; then
+    # Detect architecture for ONNX Runtime
+    local arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64)
+            ONNX_DIR="onnxruntime-linux-x64-1.16.3"
+            ;;
+        aarch64|arm64)
+            ONNX_DIR="onnxruntime-linux-aarch64-1.16.3"
+            ;;
+        *)
+            print_error "Unsupported architecture: $arch"
+            exit 1
+            ;;
+    esac
+    
+    if [ ! -d "$ONNX_DIR" ]; then
         print_warning "ONNX Runtime 1.16.3 not found."
         print_status "Installing ONNX Runtime..."
         if [ -f "install_onnxruntime.sh" ]; then
@@ -114,12 +130,12 @@ check_dependencies() {
         fi
     fi
     
-    if [ ! -f "onnxruntime-linux-x64-1.16.3/lib/libonnxruntime.so" ]; then
+    if [ ! -f "$ONNX_DIR/lib/libonnxruntime.so" ]; then
         print_error "ONNX Runtime library not found. Please run ./install_onnxruntime.sh"
         exit 1
     fi
     
-    if [ ! -f "onnxruntime-linux-x64-1.16.3/include/onnxruntime_c_api.h" ]; then
+    if [ ! -f "$ONNX_DIR/include/onnxruntime_c_api.h" ]; then
         print_error "ONNX Runtime headers not found. Please run ./install_onnxruntime.sh"
         exit 1
     fi
