@@ -41,23 +41,28 @@ A real-time face detection application using OpenCV and YOLOv8 with ONNX Runtime
    cd CameraApp
    ```
 
-2. **Build and run the application (auto-installs all dependencies):**
+2. **🚀 ONE-COMMAND BUILD (Recommended):**
    ```bash
-   ./run.sh build
-   ./run.sh run
+   ./build.sh       # Automatically builds everything - just run this!
+   ./build.sh run   # Then run the application
    ```
 
-   **Or in one command:**
+3. **Alternative: Step-by-step build:**
    ```bash
-   ./run.sh run
+   ./build.sh deps    # Install system dependencies
+   ./build.sh build   # Build the application
+   ./build.sh run     # Run the application
    ```
 
-3. **Alternative: Install dependencies first, then build:**
-   ```bash
-   ./run.sh deps    # Install system dependencies
-   ./run.sh build   # Build the application
-   ./run.sh run     # Run the application
-   ```
+## 🎯 **Automatic Build Feature**
+
+The `build.sh` script includes a powerful automatic build feature:
+
+- **Run without arguments**: `./build.sh` automatically builds the entire application
+- **Auto-dependency management**: Installs missing system dependencies, OpenCV, and ONNX Runtime
+- **Smart detection**: Only rebuilds what's needed
+- **Error handling**: Clear error messages and automatic recovery
+- **Cross-platform**: Works on x86_64, ARM64, and Apple Silicon
 
 ## Build System
 
@@ -65,7 +70,8 @@ The project uses a comprehensive build system with automated dependency manageme
 
 ### 🚀 **Automated Build Scripts**
 
-1. **run.sh** - Root-level convenience script that:
+1. **build.sh** - Root-level convenience script that:
+   - **Automatically builds the application when run without arguments**
    - Provides easy access to all build commands
    - Handles dependency installation automatically
    - Works from the project root directory
@@ -111,7 +117,7 @@ The project includes fully automated scripts that handle **all dependencies**:
 
 ```bash
 # From project root - installs everything automatically
-./run.sh build
+./build.sh
 ```
 
 This single command will:
@@ -127,17 +133,17 @@ If you prefer to install dependencies separately:
 
 1. **Install system dependencies:**
    ```bash
-   ./run.sh deps
+   ./build.sh deps
    ```
 
 2. **Build the application:**
    ```bash
-   ./run.sh build
+   ./build.sh build
    ```
 
 3. **Run the application:**
    ```bash
-   ./run.sh run
+   ./build.sh run
    ```
 
 ### 🛠️ **Manual Installation (Advanced)**
@@ -175,16 +181,16 @@ If you prefer manual installation:
 ### 🚀 **Method 1: Automated Build (Recommended)**
 ```bash
 # From project root - handles everything automatically
-./run.sh build
+./build.sh
 ```
 
 ### 🔧 **Method 2: Step-by-Step Build**
 ```bash
 # Install dependencies first
-./run.sh deps
+./build.sh deps
 
 # Then build
-./run.sh build
+./build.sh build
 ```
 
 ### 🛠️ **Method 3: Manual Build (Advanced)**
@@ -219,13 +225,13 @@ The automated build process will:
 ### 🚀 **Method 1: Automated Run (Recommended)**
 ```bash
 # From project root - builds and runs automatically
-./run.sh run
+./build.sh run
 ```
 
 ### 🔧 **Method 2: Build then Run**
 ```bash
-./run.sh build
-./run.sh run
+./build.sh
+./build.sh run
 ```
 
 ### 🛠️ **Method 3: Manual Run**
@@ -248,21 +254,23 @@ The executable is configured with RPATH, so it should find the libraries automat
 
 ### 🚀 **Root Script Commands (Recommended)**
 ```bash
-./run.sh deps      # Install system dependencies only
-./run.sh build     # Build the application (auto-installs deps)
-./run.sh build-static  # Build with static linking (portable executable)
-./run.sh run       # Build and run the application
-./run.sh test      # Run tests
-./run.sh clean     # Clean build files
-./run.sh info      # Show build information
-./run.sh help      # Show help
+./build.sh         # Automatically build the application (default)
+./build.sh deps    # Install system dependencies only
+./build.sh build   # Build the application (auto-installs deps)
+./build.sh build-static  # Build with static linking (portable executable)
+./build.sh run     # Build and run the application
+./build.sh test    # Run tests
+./build.sh clean   # Clean build files
+./build.sh info    # Show build information
+./build.sh help    # Show help
 ```
 
 ### 🏗️ **Architecture-Specific Builds**
 ```bash
 # Automatic architecture detection (x86_64, ARM64/Apple Silicon)
-./run.sh build          # Detects architecture automatically
-./run.sh build-static   # Static linking for portable executables
+./build.sh              # Detects architecture automatically
+./build.sh build        # Detects architecture automatically
+./build.sh build-static # Static linking for portable executables
 
 # Manual architecture specification (advanced)
 cd Source
@@ -313,7 +321,7 @@ The application uses the following configuration:
 ### 🔧 **System Dependency Issues**
 ```bash
 # Install missing system dependencies
-./run.sh deps
+./build.sh deps
 
 # Or install manually
 cd Source
@@ -334,10 +342,10 @@ chmod +x Source/install_onnxruntime.sh
 
 ### 🔗 **Library Not Found Errors**
 If you encounter library not found errors, ensure:
-1. System dependencies are installed: `./run.sh deps`
+1. System dependencies are installed: `./build.sh deps`
 2. OpenCV is properly built in `Source/opencv/`
 3. ONNX Runtime is available in `Source/onnxruntime-linux-x64-1.16.3/`
-4. Use `./run.sh run` instead of direct execution
+4. Use `./build.sh run` instead of direct execution
 
 ### 📹 **Webcam Access Issues**
 - Ensure your webcam is connected and accessible
@@ -351,12 +359,12 @@ If you encounter library not found errors, ensure:
 ### 🐛 **Build Issues**
 ```bash
 # Clean and rebuild
-./run.sh clean
-./run.sh build
+./build.sh clean
+./build.sh
 
 # Or step by step
-./run.sh deps
-./run.sh build
+./build.sh deps
+./build.sh build
 ```
 
 ### 🖥️ **GTK+ GUI Issues**
@@ -369,7 +377,7 @@ The application now uses **GTK+ 3.x only** to avoid version conflicts:
 If you encounter GTK-related issues:
 ```bash
 # Ensure GTK+ 3.x development libraries are installed
-./run.sh deps
+./build.sh deps
 
 # Rebuild OpenCV with GTK+ 3.x only
 cd Source
@@ -382,7 +390,7 @@ cd Source
 
 ```
 CameraApp/
-├── run.sh                                      # Root convenience script
+├── build.sh                                    # Root build script (auto-builds on run)
 ├── Source/
 │   ├── build/                                    # Build directory
 │   ├── include/                                  # Header files
