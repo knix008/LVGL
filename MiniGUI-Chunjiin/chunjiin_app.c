@@ -248,32 +248,56 @@ void chunjiin_keyboard_update_display(void) {
 }
 
 PLOGFONT chunjiin_load_korean_font(void) {
-    // Try to load Korean font from assets directory
-    PLOGFONT font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
-                                  FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                                  FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                  16, 0);
+    PLOGFONT font = NULL;
     
+    // First try using CreateLogFontByName with system font names (as shown in your example)
+    const char* font_names[] = {
+        "NanumGothic",
+        "Malgun Gothic", 
+        "Dotum",
+        "Gulim",
+        "Batang",
+        NULL
+    };
+    
+    for (int i = 0; font_names[i] != NULL; i++) {
+        font = CreateLogFontByName(font_names[i]);
+        if (font != NULL) {
+            printf("Loaded Korean font: %s\n", font_names[i]);
+            break;
+        }
+    }
+    
+    // If system fonts fail, try loading from assets directory
     if (font == NULL) {
-        // Try Bold variant
-        font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
-                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                            16, 0);
+        font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
+                          FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                          FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                          16, 0);
+        
+        if (font == NULL) {
+            // Try Bold variant
+            font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
+                                FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                16, 0);
+        }
+        
+        if (font == NULL) {
+            // Try ExtraBold variant
+            font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
+                                FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                16, 0);
+        }
+        
+        if (font) {
+            printf("Loaded Korean font from assets directory\n");
+        }
     }
     
     if (font == NULL) {
-        // Try ExtraBold variant
-        font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
-                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                            16, 0);
-    }
-    
-    if (font) {
-        printf("Loaded Korean font for ChunJiIn keyboard\n");
-    } else {
-        printf("Using default font for ChunJiIn keyboard (Korean characters may not display correctly)\n");
+        printf("Warning: Could not load Korean font, Korean characters may not display correctly\n");
     }
     
     return font;
@@ -522,6 +546,12 @@ int ChunJiInMain(int argc, const char* argv[]) {
     if (hMainWnd == HWND_INVALID) {
         printf("Failed to create ChunJiIn main window\n");
         return -1;
+    }
+    
+    // Load and set Korean font for main window (following your example)
+    korean_font = chunjiin_load_korean_font();
+    if (korean_font) {
+        SetWindowFont(hMainWnd, korean_font);
     }
     
     // Show main window

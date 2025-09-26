@@ -53,6 +53,7 @@ static size_t input_len = 0;
 static PLOGFONT korean_font = NULL;
 static BOOL shift_pressed = FALSE;
 
+
 // Signal handler for cleanup
 void cleanup_handler(int sig) {
     printf("Received signal %d, cleaning up...\n", sig);
@@ -141,16 +142,16 @@ static void handle_key_click(int key_id) {
     
     // Only some characters are changed for ㅃ, ㅉ, ㄸ, ㄲ, ㅆ and ㅒ, ㅖ.
     switch (key_id) {
-        case IDC_KEY_Q: key_char = shift_pressed ? 'Q' : 'q'; break;
-        case IDC_KEY_W: key_char = shift_pressed ? 'W' : 'w'; break;
-        case IDC_KEY_E: key_char = shift_pressed ? 'E' : 'e'; break;
-        case IDC_KEY_R: key_char = shift_pressed ? 'R' : 'r'; break;
-        case IDC_KEY_T: key_char = shift_pressed ? 'T' : 't'; break;
-        case IDC_KEY_Y: key_char = shift_pressed ? 'Y' : 'y'; break;
+        case IDC_KEY_Q: key_char = shift_pressed ? 'Q' : 'q'; break; // Here is the changes.
+        case IDC_KEY_W: key_char = shift_pressed ? 'W' : 'w'; break; // Here is the changes.
+        case IDC_KEY_E: key_char = shift_pressed ? 'E' : 'e'; break; // Here is the changes.
+        case IDC_KEY_R: key_char = shift_pressed ? 'R' : 'r'; break; // Here is the changes.
+        case IDC_KEY_T: key_char = shift_pressed ? 'T' : 't'; break; // Here is the changes.
+        case IDC_KEY_Y: key_char = shift_pressed ? 'Y' : 'y'; break; // Here is the changes.
         case IDC_KEY_U: key_char = shift_pressed ? 'u' : 'u'; break;
         case IDC_KEY_I: key_char = shift_pressed ? 'i' : 'i'; break;
-        case IDC_KEY_O: key_char = shift_pressed ? 'O' : 'o'; break;
-        case IDC_KEY_P: key_char = shift_pressed ? 'P' : 'p'; break;
+        case IDC_KEY_O: key_char = shift_pressed ? 'O' : 'o'; break; // Here is the changes.
+        case IDC_KEY_P: key_char = shift_pressed ? 'P' : 'p'; break; // Here is the changes.
         case IDC_KEY_A: key_char = shift_pressed ? 'a' : 'a'; break;
         case IDC_KEY_S: key_char = shift_pressed ? 's' : 's'; break;
         case IDC_KEY_D: key_char = shift_pressed ? 'd' : 'd'; break;
@@ -190,24 +191,24 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
     
     switch (message) {
         case MSG_CREATE:
-            // Try to load Korean font from assets directory using full path with UTF-8 charset
-            korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-Regular.ttf", "UTF-8", 
-                                        FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
-                                        FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                        20, 0);
+            // Load Korean font from MiniGUI font directory (copied from assets)
+            korean_font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
+                                        FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                        FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                        16, 0);
             if (korean_font == NULL) {
-                // Try other Korean fonts from assets
-                korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-Bold.ttf", "UTF-8", 
-                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
-                                            FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                            20, 0);
+                // Try with Bold variant
+                korean_font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
+                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                            16, 0);
             }
             if (korean_font == NULL) {
-                // Try the third Korean font
-                korean_font = CreateLogFont("ttf", "./install/share/fonts/NanumGothic-ExtraBold.ttf", "UTF-8", 
-                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_SETWIDTH_NORMAL,
-                                            FONT_SPACING_CHARCELL, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                            20, 0);
+                // Try with ExtraBold variant
+                korean_font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
+                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                            16, 0);
             }
 
             if (korean_font == NULL) {
@@ -215,7 +216,9 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 korean_font = NULL;
                 printf("Using MiniGUI default font (Korean characters may not display correctly)\n");
             } else {
-                printf("Loaded Korean font from assets directory for Korean character support\n");
+                printf("Loaded Korean font from MiniGUI font directory for Korean character support\n");
+                printf("Font family: %s, charset: %s, size: %d\n", 
+                       korean_font->family, korean_font->charset, korean_font->size);
             }
             
             // Create text box - use static control for Korean output display
@@ -227,6 +230,9 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             // Apply Korean font to text box for Korean character display
             if (korean_font) {
                 SetWindowFont(hTextBox, korean_font);
+                // Force text box to redraw with new font
+                InvalidateRect(hTextBox, NULL, TRUE);
+                UpdateWindow(hTextBox, TRUE);
                 printf("Applied Korean font to text box\n");
             }
             printf("Created text box for Korean output display\n");
@@ -283,6 +289,9 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 for (int i = 0; i < 30; i++) {
                     if (hKeyButtons[i]) {
                         SetWindowFont(hKeyButtons[i], korean_font);
+                        // Force button to redraw with new font
+                        InvalidateRect(hKeyButtons[i], NULL, TRUE);
+                        UpdateWindow(hKeyButtons[i], TRUE);
                     }
                 }
                 printf("Applied Korean font to all buttons\n");
