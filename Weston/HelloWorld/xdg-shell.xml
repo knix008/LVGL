@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="xdg_shell">
+  <copyright>
+    Copyright © 2008-2013 Kristian Høgsberg
+    Copyright © 2013      Rafael Antognolli
+    Copyright © 2013      Jasper St. Pierre
+    Copyright © 2010-2013 Intel Corporation
+  </copyright>
+
+  <interface name="xdg_wm_base" version="4">
+    <description summary="create desktop-style surfaces">
+      This interface is implemented by servers that provide
+      desktop-style user interfaces. It allows clients to associate
+      a xdg_surface with a basic window.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy xdg_wm_base">
+        Destroy this xdg_wm_base object.
+      </description>
+    </request>
+
+    <request name="create_positioner">
+      <description summary="create a positioner object">
+        Create a positioner object. A positioner object is used to position
+        surfaces relative to some parent surface. See the interface description
+        and xdg_surface.get_popup for details.
+      </description>
+      <arg name="id" type="new_id" interface="xdg_positioner"/>
+    </request>
+
+    <request name="get_xdg_surface">
+      <description summary="create a shell surface from a surface">
+        This creates an xdg_surface for the given surface. While xdg_surface
+        is managed by the compositor, to ensure that xdg_surface only represents
+        one surface to the client, it is forbidden to create more than one
+        xdg_surface for any given wl_surface.
+      </description>
+      <arg name="id" type="new_id" interface="xdg_surface"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <request name="pong">
+      <description summary="respond to a ping event">
+        A client must respond to a ping event with a pong request or
+        the client may be deemed unresponsive.
+      </description>
+      <arg name="serial" type="uint" summary="serial number of the ping event"/>
+    </request>
+
+    <event name="ping">
+      <description summary="ping client">
+        The ping event asks the client if it's still alive. The client
+        is supposed to respond with a pong request.
+      </description>
+      <arg name="serial" type="uint" summary="serial number of the ping event"/>
+    </event>
+  </interface>
+
+  <interface name="xdg_positioner" version="4">
+    <description summary="child surface positioner">
+      The xdg_positioner provides a collection of rules for the placement of a
+      child surface relative to a parent surface. Rules can be defined to ensure
+      the child surface remains within the visible area's borders, and to
+      specify how the child surface changes its position, either sliding along
+      an axis, or flipping around a rectangle. These positioner-created rules are
+      constrained by the requirement that a child surface must intersect with or
+      be at least partially visible within its parent surface at all times.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the positioner object">
+        Notify the compositor that the xdg_positioner will no longer be used.
+      </description>
+    </request>
+
+    <request name="set_size">
+      <description summary="set the size of the to-be-positioned surface">
+        Set the size of the surface that is to be positioned.
+      </description>
+      <arg name="width" type="int" summary="width of positioned surface"/>
+      <arg name="height" type="int" summary="height of positioned surface"/>
+    </request>
+
+    <request name="set_anchor_rect">
+      <description summary="set the anchor rectangle within the parent surface">
+        Specify the anchor rectangle within the parent surface that the child
+        surface will be placed relative to. The rectangle is relative to the
+        upper-left corner of the parent surface.
+      </description>
+      <arg name="x" type="int" summary="x position of anchor rectangle"/>
+      <arg name="y" type="int" summary="y position of anchor rectangle"/>
+      <arg name="width" type="int" summary="width of anchor rectangle"/>
+      <arg name="height" type="int" summary="height of anchor rectangle"/>
+    </request>
+
+    <request name="set_anchor">
+      <description summary="set anchor rectangle anchor edges">
+        Defines a set of edges for the anchor rectangle. These are used to
+        derive an anchor point that the child surface will be positioned
+        relative to. If no orthogonal edges are specified (e.g. 'top' and
+        'left'), then the anchor point will be at the specified offset;
+        otherwise, the anchor point will be at the intersection of the
+        specified edges.
+      </description>
+      <arg name="anchor" type="uint" enum="anchor" summary="bit mask of anchor edges"/>
+    </request>
+
+    <request name="set_gravity">
+      <description summary="set child surface gravity">
+        Defines in what direction a surface should be positioned, relative to
+        the anchor point of the anchor rectangle. If no orthogonal gravity is
+        specified (e.g. 'bottom' and 'left'), then the child surface will be
+        moved towards the specified gravity; otherwise, the child surface will
+        be moved towards the specified gravities.
+      </description>
+      <arg name="gravity" type="uint" enum="gravity" summary="bit mask of gravity directions"/>
+    </request>
+
+    <request name="set_constraint_adjustment">
+      <description summary="set the adjustment to be done when constrained">
+        Specify how the window should be positioned if the originally intended
+        position caused the surface to be constrained, meaning at least
+        partially outside positioning boundaries set by the compositor. The
+        adjustment is set by constructing a bitmask describing the adjustment to
+        be made when the surface is constrained on that axis.
+      </description>
+      <arg name="constraint_adjustment" type="uint" enum="constraint_adjustment" summary="bit mask of constraint adjustments"/>
+    </request>
+
+    <request name="set_offset">
+      <description summary="set surface position offset">
+        Specify the surface position offset relative to the position of the
+        anchor on the anchor rectangle.
+      </description>
+      <arg name="x" type="int" summary="surface position x offset"/>
+      <arg name="y" type="int" summary="surface position y offset"/>
+    </request>
+
+    <request name="set_reactive">
+      <description summary="continuously reconstrain the surface">
+        When set reactive, the surface is reconstrained if the conditions used
+        for constraining changed, e.g. the parent window moved.
+      </description>
+    </request>
+
+    <request name="set_parent_size">
+      <description summary="set the parent window geometry the surface is positioned relative to">
+        Set the parent window geometry the surface is positioned relative to.
+        The parent geometry is reported in the parent surface coordinate system.
+      </description>
+      <arg name="parent_width" type="int" summary="parent surface width"/>
+      <arg name="parent_height" type="int" summary="parent surface height"/>
+    </request>
+
+    <request name="set_parent_configure">
+      <description summary="set parent configure this is a response to">
+        Set the serial of an xdg_surface.configure event this positioner will be
+        used in response to. The compositor may use this information together
+        with set_parent_size to determine what future state the popup should be
+        reconstructed using.
+      </description>
+      <arg name="serial" type="uint" summary="serial of the configure event"/>
+    </request>
+
+    <enum name="anchor">
+      <entry name="none" value="0"/>
+      <entry name="top" value="1"/>
+      <entry name="bottom" value="2"/>
+      <entry name="left" value="4"/>
+      <entry name="right" value="8"/>
+    </enum>
+
+    <enum name="gravity">
+      <entry name="none" value="0"/>
+      <entry name="top" value="1"/>
+      <entry name="bottom" value="2"/>
+      <entry name="left" value="4"/>
+      <entry name="right" value="8"/>
+    </enum>
+
+    <enum name="constraint_adjustment">
+      <entry name="none" value="0"/>
+      <entry name="slide_x" value="1"/>
+      <entry name="slide_y" value="2"/>
+      <entry name="flip_x" value="4"/>
+      <entry name="flip_y" value="8"/>
+      <entry name="resize_x" value="16"/>
+      <entry name="resize_y" value="32"/>
+    </enum>
+  </interface>
+
+  <interface name="xdg_surface" version="4">
+    <description summary="desktop user interface surface base interface">
+      An interface that may be implemented by a wl_surface, for
+      implementations that provide a desktop-style user interface.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the xdg_surface">
+        Destroy the xdg_surface object. An xdg_surface must only be destroyed
+        after its role object has been destroyed.
+      </description>
+    </request>
+
+    <request name="get_toplevel">
+      <description summary="assign the xdg_toplevel surface role">
+        This creates an xdg_toplevel object for the given xdg_surface and gives
+        the associated wl_surface the xdg_toplevel role.
+      </description>
+      <arg name="id" type="new_id" interface="xdg_toplevel"/>
+    </request>
+
+    <request name="get_popup">
+      <description summary="assign the xdg_popup surface role">
+        This creates an xdg_popup object for the given xdg_surface and gives
+        the associated wl_surface the xdg_popup role.
+      </description>
+      <arg name="id" type="new_id" interface="xdg_popup"/>
+      <arg name="parent" type="object" interface="xdg_surface"/>
+      <arg name="positioner" type="object" interface="xdg_positioner"/>
+    </request>
+
+    <request name="set_window_geometry">
+      <description summary="set the new window geometry">
+        The window geometry of a surface is its "visible bounds" from the
+        user's perspective. Client-side decorations often have invisible
+        portions where the surface is not drawn, e.g. drop-shadows. The
+        window geometry is set by the compositor to tell the client that
+        the visible area of the window has changed, and is needed for
+        synchronizing window geometry with the frame. The client should
+        respond by updating the content drawn to the surface, but the
+        client is not required to consider the window geometry in its
+        drawing pipeline.
+      </description>
+      <arg name="x" type="int" summary="x coordinate of window geometry"/>
+      <arg name="y" type="int" summary="y coordinate of window geometry"/>
+      <arg name="width" type="int" summary="width of window geometry"/>
+      <arg name="height" type="int" summary="height of window geometry"/>
+    </request>
+
+    <request name="ack_configure">
+      <description summary="ack a configure event">
+        When a configure event is received, if a client commits the
+        surface in response to the configure event, then the client
+        must make an ack_configure request sometime before the commit request,
+        passing along the serial of the configure event.
+      </description>
+      <arg name="serial" type="uint" summary="the serial from the configure event"/>
+    </request>
+
+    <event name="configure">
+      <description summary="suggest a surface change">
+        The configure event marks the end of a configure sequence. A configure
+        sequence is a set of one or more events configuring the state of the
+        xdg_surface, including the final xdg_surface.configure event.
+      </description>
+      <arg name="serial" type="uint" summary="serial of the configure event"/>
+    </event>
+  </interface>
+
+  <interface name="xdg_toplevel" version="4">
+    <description summary="toplevel surface">
+      This interface defines an xdg_surface role which allows a surface to,
+      among other things, set window-like properties such as maximize,
+      fullscreen, and minimize, set application-specific metadata like title and
+      id, and well as trigger user interactive operations such as interactive
+      resize and move.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the xdg_toplevel">
+        This request destroys the role surface and unmaps the surface.
+      </description>
+    </request>
+
+    <request name="set_parent">
+      <description summary="set the parent of this surface">
+        Set the "parent" of this surface. This window should be stacked above
+        a parent. The parent surface must be mapped as a toplevel surface.
+      </description>
+      <arg name="parent" type="object" interface="xdg_toplevel" allow-null="true"/>
+    </request>
+
+    <request name="set_title">
+      <description summary="set surface title">
+        Set a short title for the surface.
+      </description>
+      <arg name="title" type="string" summary="surface title"/>
+    </request>
+
+    <request name="set_app_id">
+      <description summary="set application ID">
+        Set an application identifier for the surface.
+      </description>
+      <arg name="app_id" type="string" summary="application identifier"/>
+    </request>
+
+    <request name="show_window_menu">
+      <description summary="show the window menu">
+        Clients implementing client-side decorations might want to show
+        a context menu when right-clicking on the decorations, for instance
+        through an xdg_popup with xdg_positioner.
+      </description>
+      <arg name="seat" type="object" interface="wl_seat"/>
+      <arg name="serial" type="uint"/>
+    </request>
+
+    <request name="move">
+      <description summary="start an interactive move">
+        Start an interactive, user-driven move of the surface.
+      </description>
+      <arg name="seat" type="object" interface="wl_seat"/>
+      <arg name="serial" type="uint"/>
+    </request>
+
+    <request name="resize">
+      <description summary="start an interactive resize">
+        Start a user-driven, interactive resize of the surface.
+      </description>
+      <arg name="seat" type="object" interface="wl_seat"/>
+      <arg name="serial" type="uint"/>
+      <arg name="edges" type="uint" enum="resize_edge"/>
+    </request>
+
+    <request name="set_max_size">
+      <description summary="set the maximum size">
+        Set a maximum size for the window.
+      </description>
+      <arg name="width" type="int" summary="width in pixels"/>
+      <arg name="height" type="int" summary="height in pixels"/>
+    </request>
+
+    <request name="set_min_size">
+      <description summary="set the minimum size">
+        Set a minimum size for the window.
+      </description>
+      <arg name="width" type="int" summary="width in pixels"/>
+      <arg name="height" type="int" summary="height in pixels"/>
+    </request>
+
+    <request name="set_maximized">
+      <description summary="maximize the window">
+        Maximize the surface.
+      </description>
+    </request>
+
+    <request name="unset_maximized">
+      <description summary="unmaximize the window">
+        Unmaximize the surface.
+      </description>
+    </request>
+
+    <request name="set_fullscreen">
+      <description summary="set the window as fullscreen on an output">
+        Make the surface fullscreen on an output.
+      </description>
+      <arg name="output" type="object" interface="wl_output" allow-null="true"/>
+    </request>
+
+    <request name="unset_fullscreen">
+      <description summary="unset the window as fullscreen">
+        Make the surface no longer fullscreen.
+      </description>
+    </request>
+
+    <request name="set_minimized">
+      <description summary="set the window as minimized">
+        Request that the compositor minimize your surface. There is no
+        way to know if the surface is currently minimized, nor is there
+        any way to unminimize the surface from within the client. The
+        compositor is free to ignore this request.
+      </description>
+    </request>
+
+    <event name="configure">
+      <description summary="suggest a surface change">
+        This configure event asks the client to resize its toplevel surface or
+        to change its state. The configured state should not be applied
+        immediately. See xdg_surface.configure for details.
+      </description>
+      <arg name="width" type="int" summary="window geometry width"/>
+      <arg name="height" type="int" summary="window geometry height"/>
+      <arg name="states" type="array" summary="window state"/>
+    </event>
+
+    <event name="close">
+      <description summary="surface wants to be closed">
+        The close event is sent by the compositor when the user
+        wants the surface to be closed. This should be equivalent to
+        the user clicking the close button in client-side decorations,
+        if your application has any.
+      </description>
+    </event>
+
+    <enum name="resize_edge">
+      <entry name="none" value="0"/>
+      <entry name="top" value="1"/>
+      <entry name="bottom" value="2"/>
+      <entry name="left" value="4"/>
+      <entry name="right" value="8"/>
+      <entry name="top_left" value="5"/>
+      <entry name="bottom_left" value="6"/>
+      <entry name="top_right" value="9"/>
+      <entry name="bottom_right" value="10"/>
+    </enum>
+
+    <enum name="state">
+      <entry name="maximized" value="1"/>
+      <entry name="fullscreen" value="2"/>
+      <entry name="resizing" value="3"/>
+      <entry name="activated" value="4"/>
+    </enum>
+  </interface>
+
+  <interface name="xdg_popup" version="4">
+    <description summary="short-lived, popup surfaces for menus">
+      A popup surface is a short-lived, temporary surface. It can be used to
+      implement for example menus, popovers, tooltips and other similar user
+      interface concepts.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="remove xdg_popup interface">
+        This destroys the popup. Explicitly destroying the xdg_popup
+        object will also dismiss the popup, and unmap the surface.
+      </description>
+    </request>
+
+    <request name="grab">
+      <description summary="make the popup take an explicit grab">
+        This request makes the created popup take an explicit grab on the
+        seat that was used to create the popup. This will be done when the
+        user's finger is lifted.
+      </description>
+      <arg name="seat" type="object" interface="wl_seat"/>
+      <arg name="serial" type="uint"/>
+    </request>
+
+    <request name="reposition">
+      <description summary="reposition the popup">
+        Reposition an already-mapped popup. The popup will be given a new
+        position, specified by the positioner object.
+      </description>
+      <arg name="positioner" type="object" interface="xdg_positioner"/>
+      <arg name="token" type="uint"/>
+    </request>
+
+    <event name="configure">
+      <description summary="configure the popup surface">
+        This event asks the popup surface to configure itself given the
+        configuration. The configured state should not be applied
+        immediately. See xdg_surface.configure for details.
+      </description>
+      <arg name="x" type="int" summary="x position relative to parent surface"/>
+      <arg name="y" type="int" summary="y position relative to parent surface"/>
+      <arg name="width" type="int" summary="window geometry width"/>
+      <arg name="height" type="int" summary="window geometry height"/>
+    </event>
+
+    <event name="popup_done">
+      <description summary="popup interaction is done">
+        The popup_done event is sent out when the popup is dismissed by the
+        compositor. The client should destroy the xdg_popup object at this
+        point.
+      </description>
+    </event>
+
+    <event name="repositioned">
+      <description summary="provide repositioning information">
+        The repositioned event is sent as part of a popup configuration
+        sequence, together with xdg_popup.configure and optionally
+        xdg_surface.configure. The repositioned event specifies where the
+        popup should be positioned relative to the new position of the parent
+        surface.
+      </description>
+      <arg name="token" type="uint" summary="reposition request token"/>
+    </event>
+  </interface>
+</protocol>
