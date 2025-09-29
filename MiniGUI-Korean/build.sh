@@ -11,7 +11,6 @@ cd "$SCRIPT_DIR"
 
 # Local directories
 MINIGUI_DIR="./minigui"
-BUILD_DIR="./build"
 INSTALL_DIR="./install"
 
 echo "=== MiniGUI Local Setup and Run Script ==="
@@ -126,7 +125,6 @@ echo "Using local MiniGUI.cfg configuration..."
 # Create local directories
 echo "Creating local directories..."
 mkdir -p "$MINIGUI_DIR"
-mkdir -p "$BUILD_DIR"
 mkdir -p "$INSTALL_DIR"
 
 # Download MiniGUI source if not already present
