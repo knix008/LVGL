@@ -126,7 +126,29 @@ certs/                          # All certificate files in one location
 
 ### Web Interface
 
-Open your browser and navigate to `http://localhost:8080` to access the web interface.
+Open your browser and navigate to `http://localhost:8080` to access the modern, responsive web interface.
+
+#### **Features:**
+- **Create Certificates**: User-friendly form with validation hints
+- **Certificate List**: View all issued certificates with status
+- **CA Management**: Download CA certificate and CRL
+- **Certificate Revocation**: Revoke certificates with one click
+
+#### **Certificate Creation Requirements:**
+- **Common Name**: Required, unique identifier for the certificate
+- **Email**: Optional, contact email address
+- **Organization**: Required, organization name
+- **Country**: Must be "KR" (South Korea) - currently the only allowed country
+- **State/Province**: Required, state or province name
+- **City**: Required, city name
+- **Key Size**: 2048 or 4096 bits (minimum 2048)
+- **Validity Period**: 1 to 3650 days (maximum 10 years)
+
+#### **Web Interface Benefits:**
+- **Intuitive Design**: Modern, responsive interface
+- **Real-time Validation**: Immediate feedback on form inputs
+- **Error Handling**: Clear error messages and success notifications
+- **Certificate Management**: Full lifecycle management through the browser
 
 ### Cleaning Generated Files
 
