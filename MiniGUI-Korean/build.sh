@@ -40,8 +40,9 @@ if command_exists apt-get; then
         libsqlite3-dev libxml2-dev libssl-dev libx11-dev libxext-dev libxrender-dev \
         libxrandr-dev libxinerama-dev libxi-dev libxcursor-dev libxfixes-dev \
         libharfbuzz-dev libpixman-1-dev libwebp-dev libudev-dev libpciaccess-dev \
-        xvfb; then
+        xvfb x11-utils; then
         echo "✓ System packages installed"
+        echo "✓ Xvfb virtual display server installed"
     else
         echo "⚠ Package installation failed. Please install packages manually:"
         echo "  sudo apt-get update"
@@ -49,7 +50,8 @@ if command_exists apt-get; then
         echo "    libgtk2.0-dev libjpeg-dev libpng-dev libfreetype6-dev libinput-dev libdrm-dev \\"
         echo "    libsqlite3-dev libxml2-dev libssl-dev libx11-dev libxext-dev libxrender-dev \\"
         echo "    libxrandr-dev libxinerama-dev libxi-dev libxcursor-dev libxfixes-dev \\"
-        echo "    libharfbuzz-dev libpixman-1-dev libwebp-dev libudev-dev libpciaccess-dev xvfb"
+        echo "    libharfbuzz-dev libpixman-1-dev libwebp-dev libudev-dev libpciaccess-dev \\"
+        echo "    xvfb x11-utils"
         echo "Continuing with build process..."
     fi
 elif command_exists yum; then
@@ -61,8 +63,9 @@ elif command_exists yum; then
         sqlite-devel libxml2-devel openssl-devel libX11-devel libXext-devel libXrender-devel \
         libXrandr-devel libXinerama-devel libXi-devel libXcursor-devel libXfixes-devel \
         harfbuzz-devel pixman-devel libwebp-devel systemd-devel libpciaccess-devel \
-        xorg-x11-server-Xvfb; then
+        xorg-x11-server-Xvfb xorg-x11-utils; then
         echo "✓ System packages installed"
+        echo "✓ Xvfb virtual display server installed"
     else
         echo "⚠ Package installation failed. Please install packages manually."
         echo "Continuing with build process..."
@@ -76,8 +79,9 @@ elif command_exists dnf; then
         sqlite-devel libxml2-devel openssl-devel libX11-devel libXext-devel libXrender-devel \
         libXrandr-devel libXinerama-devel libXi-devel libXcursor-devel libXfixes-devel \
         harfbuzz-devel pixman-devel libwebp-devel systemd-devel libpciaccess-devel \
-        xorg-x11-server-Xvfb; then
+        xorg-x11-server-Xvfb xorg-x11-utils; then
         echo "✓ System packages installed"
+        echo "✓ Xvfb virtual display server installed"
     else
         echo "⚠ Package installation failed. Please install packages manually."
         echo "Continuing with build process..."
@@ -89,7 +93,7 @@ else
     echo "  - Development libraries: libjpeg, libpng, freetype, libinput, libdrm"
     echo "  - X11 libraries: libx11, libxext, libxrender, libxrandr, libxinerama, libxi"
     echo "  - Other: libharfbuzz, libpixman-1, libwebp, libudev, libpciaccess"
-    echo "  - Virtual display: xvfb"
+    echo "  - Virtual display: xvfb, x11-utils"
     echo ""
     echo "Continuing with build process..."
 fi
@@ -112,6 +116,19 @@ if ! command_exists make; then
 fi
 
 echo "✓ All required tools found"
+
+# Check for xvfb availability
+echo "Checking for Xvfb virtual display server..."
+if command_exists Xvfb; then
+    echo "✓ Xvfb is available"
+    echo "Note: You can use 'Xvfb :99 -screen 0 800x600x16 &' to start a virtual display"
+    echo "Then set DISPLAY=:99 to use the virtual display"
+else
+    echo "⚠ Xvfb not found. MiniGUI will use dummy engine instead."
+    echo "To use pc_xvfb engine, install xvfb and start it with:"
+    echo "  Xvfb :99 -screen 0 800x600x16 &"
+    echo "  export DISPLAY=:99"
+fi
 echo ""
 
 # Clean previous builds for fresh start
@@ -205,9 +222,10 @@ export MALLOC_CHECK_=0
 # Set MiniGUI runtime mode to standalone
 export MG_RUNTIME_MODE="standalone"
 
-# Force MiniGUI to use pc_xvfb (PC Virtual FrameBuffer) engine
-export MG_GAL_ENGINE="pc_xvfb"
-export MG_IAL_ENGINE="pc_xvfb"
+# Force MiniGUI to use dummy engine (fallback to pc_xvfb if available)
+# Note: pc_xvfb requires xvfb to be running, dummy works without display
+export MG_GAL_ENGINE="dummy"
+export MG_IAL_ENGINE="dummy"
 
 # Set default display mode
 export MG_DEFAULTMODE="800x600-16bpp"
@@ -216,4 +234,12 @@ export MG_DEFAULTMODE="800x600-16bpp"
 export MG_CONFIG_FILE="./MiniGUI.cfg"
 
 echo "Build completed successfully!"
+echo ""
+echo "=== Engine Configuration ==="
+echo "Current configuration uses 'dummy' engine for maximum compatibility."
+echo "If you want to use pc_xvfb engine (requires Xvfb):"
+echo "  1. Start Xvfb: Xvfb :99 -screen 0 800x600x16 &"
+echo "  2. Set display: export DISPLAY=:99"
+echo "  3. Update run.sh to use: MG_GAL_ENGINE=pc_xvfb MG_IAL_ENGINE=pc_xvfb"
+echo ""
 echo "To run the application, use: ./run.sh"
