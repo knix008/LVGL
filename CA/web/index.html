@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Authority Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            border-bottom-color: #3498db;
+            color: #3498db;
+        }
+        
+        .tab:hover {
+            background: #f8f9fa;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        .certificate-list {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+        }
+        
+        .certificate-item {
+            background: white;
+            border: 1px solid #ecf0f1;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .certificate-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .certificate-item p {
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status.valid {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+        
+        .status.revoked {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .error {
+            background: #fadbd8;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #d5f4e6;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Certificate Authority</h1>
+            <p>Manage your digital certificates with ease</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('create')">Create Certificate</div>
+                <div class="tab" onclick="showTab('list')">Certificate List</div>
+                <div class="tab" onclick="showTab('ca')">CA Certificate</div>
+            </div>
+            
+            <!-- Create Certificate Tab -->
+            <div id="create" class="tab-content active">
+                <h2>Create New Certificate</h2>
+                <form id="certForm">
+                    <div class="form-group">
+                        <label for="commonName">Common Name (CN):</label>
+                        <input type="text" id="commonName" name="commonName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" name="email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="organization">Organization:</label>
+                        <input type="text" id="organization" name="organization" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="country">Country (2-letter code):</label>
+                        <input type="text" id="country" name="country" maxlength="2" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="state">State/Province:</label>
+                        <input type="text" id="state" name="state" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="city">City:</label>
+                        <input type="text" id="city" name="city" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="keySize">Key Size:</label>
+                        <select id="keySize" name="keySize">
+                            <option value="2048">2048 bits</option>
+                            <option value="4096" selected>4096 bits</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="validityDays">Validity Period (days):</label>
+                        <input type="number" id="validityDays" name="validityDays" value="365" min="1" max="3650">
+                    </div>
+                    
+                    <button type="submit" class="btn">Create Certificate</button>
+                </form>
+            </div>
+            
+            <!-- Certificate List Tab -->
+            <div id="list" class="tab-content">
+                <h2>Certificate List</h2>
+                <button class="btn" onclick="loadCertificates()">Refresh List</button>
+                <div id="certificateList" class="certificate-list">
+                    <div class="loading">Loading certificates...</div>
+                </div>
+            </div>
+            
+            <!-- CA Certificate Tab -->
+            <div id="ca" class="tab-content">
+                <h2>CA Certificate</h2>
+                <button class="btn" onclick="downloadCACert()">Download CA Certificate</button>
+                <button class="btn" onclick="downloadCRL()">Download CRL</button>
+                <div id="caInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Load data for specific tabs
+            if (tabName === 'list') {
+                loadCertificates();
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(messageDiv, content.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+        
+        document.getElementById('certForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/certificates`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Certificate created successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        });
+        
+        async function loadCertificates() {
+            const listDiv = document.getElementById('certificateList');
+            listDiv.innerHTML = '<div class="loading">Loading certificates...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/certificates`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayCertificates(data.certificates);
+                } else {
+                    listDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                listDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function displayCertificates(certificates) {
+            const listDiv = document.getElementById('certificateList');
+            
+            if (certificates.length === 0) {
+                listDiv.innerHTML = '<div class="loading">No certificates found</div>';
+                return;
+            }
+            
+            let html = '';
+            certificates.forEach(cert => {
+                const createdDate = new Date(cert.created_at * 1000).toLocaleDateString();
+                const expiresDate = new Date(cert.expires_at * 1000).toLocaleDateString();
+                
+                html += `
+                    <div class="certificate-item">
+                        <h3>${cert.common_name}</h3>
+                        <p><strong>Serial Number:</strong> ${cert.serial_number}</p>
+                        <p><strong>Email:</strong> ${cert.email}</p>
+                        <p><strong>Status:</strong> <span class="status ${cert.status}">${cert.status}</span></p>
+                        <p><strong>Created:</strong> ${createdDate}</p>
+                        <p><strong>Expires:</strong> ${expiresDate}</p>
+                        ${cert.status === 'valid' ? `<button class="btn btn-danger" onclick="revokeCertificate('${cert.serial_number}')">Revoke</button>` : ''}
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = html;
+        }
+        
+        async function revokeCertificate(serialNumber) {
+            if (!confirm('Are you sure you want to revoke this certificate?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/certificates/${serialNumber}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Certificate revoked successfully!', 'success');
+                    loadCertificates();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function downloadCACert() {
+            window.open(`${API_BASE}/ca`, '_blank');
+        }
+        
+        function downloadCRL() {
+            window.open(`${API_BASE}/crl`, '_blank');
+        }
+        
+        // Load certificates on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCertificates();
+        });
+    </script>
+</body>
+</html>

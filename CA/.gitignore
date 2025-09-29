@@ -1,0 +1,84 @@
+# ===========================================
+# Certificate Authority Server - .gitignore
+# ===========================================
+
+# Build artifacts and executables
+build/
+*.o
+*.so
+*.a
+*.exe
+ca_server
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
+
+# CA files (CRITICAL: Never commit these!)
+certs/ca.crt
+certs/ca.key
+certs/ca.db
+certs/ca.crl
+
+# Client certificates and keys (sensitive)
+certs/*.crt
+certs/*.pem
+certs/*.key
+
+# Logs and temporary files
+*.log
+*.tmp
+/tmp/
+*.pid
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vimrc
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Test artifacts
+test_output/
+*.test
+/tmp/cert_response.json
+/tmp/cert_list.json
+/tmp/ca.crt
+/tmp/ca.crl
+
+# Backup and archive files
+*.bak
+*.backup
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# Package managers
+node_modules/
+package-lock.json
+yarn.lock
+
+# Documentation builds
+docs/_build/
+site/
