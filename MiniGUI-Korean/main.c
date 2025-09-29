@@ -49,9 +49,9 @@ static PLOGFONT noto_serif_cjk_regular_logfont = NULL;
 
 // Font names for display - Korean TTF fonts
 static const char* font_names[] = {
-    "NanumGothic-Regular.ttf (Korean TTF)",
-    "NanumGothic-Bold.ttf (Korean TTF Bold)",
-    "NanumGothic-ExtraBold.ttf (Korean TTF ExtraBold)",
+    "NanumSquareRound (Korean TTF)",
+    "NanumSquareRound Bold (Korean TTF Bold)",
+    "NanumBarunGothic (Korean TTF)",
     NULL
 };
 
@@ -249,19 +249,22 @@ int MiniGUIMain(int args, const char* arg[])
     
     // Get current working directory for font paths
     char cwd[512];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        printf("Warning: Could not get current working directory\n");
+        strcpy(cwd, "."); // Use current directory as fallback
+    }
     
     // Try system font names first
-    noto_sans_cjk_regular_logfont = CreateLogFont("ttf", "NanumGothic", "UTF-8", 
+    noto_sans_cjk_regular_logfont = CreateLogFont("ttf", "NanumSquareRound", "UTF-8", 
         FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
         FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
     if (noto_sans_cjk_regular_logfont) {
-        printf("✓ NanumGothic system font created successfully\n");
+        printf("✓ NanumSquareRound system font created successfully\n");
     } else {
-        printf("✗ Failed to create NanumGothic system font\n");
+        printf("✗ Failed to create NanumSquareRound system font\n");
         
         // Try with absolute path as fallback
-        char font_path_regular[512];
+        char font_path_regular[1024];
         snprintf(font_path_regular, sizeof(font_path_regular), "%s/assets/fonts/NanumGothic-Regular.ttf", cwd);
         noto_sans_cjk_regular_logfont = CreateLogFont("ttf", font_path_regular, "UTF-8", 
             FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
@@ -274,23 +277,23 @@ int MiniGUIMain(int args, const char* arg[])
     }
     
     // Try to create bold font
-    noto_sans_cjk_bold_logfont = CreateLogFont("ttf", "NanumGothic", "UTF-8", 
+    noto_sans_cjk_bold_logfont = CreateLogFont("ttf", "NanumSquareRound", "UTF-8", 
         FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
         FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
     if (noto_sans_cjk_bold_logfont) {
-        printf("✓ NanumGothic Bold system font created successfully\n");
+        printf("✓ NanumSquareRound Bold system font created successfully\n");
     } else {
-        printf("✗ Failed to create NanumGothic Bold system font\n");
+        printf("✗ Failed to create NanumSquareRound Bold system font\n");
     }
     
     // Try to create extra bold font
-    noto_serif_cjk_regular_logfont = CreateLogFont("ttf", "NanumGothic", "UTF-8", 
+    noto_serif_cjk_regular_logfont = CreateLogFont("ttf", "NanumBarunGothic", "UTF-8", 
         FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
         FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
     if (noto_serif_cjk_regular_logfont) {
-        printf("✓ NanumGothic ExtraBold system font created successfully\n");
+        printf("✓ NanumBarunGothic system font created successfully\n");
     } else {
-        printf("✗ Failed to create NanumGothic ExtraBold system font\n");
+        printf("✗ Failed to create NanumBarunGothic system font\n");
     }
     
     printf("Korean font creation completed.\n");
