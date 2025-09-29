@@ -8,11 +8,14 @@ A complete Certificate Authority (CA) server implementation with REST API and we
 - **Certificate Management**: Issue, revoke, and list digital certificates
 - **CRL Support**: Generate and maintain Certificate Revocation Lists
 - **REST API**: Full HTTP API for programmatic access
-- **Web Interface**: Modern, responsive web UI for certificate management
+- **Web Interface**: Modern, responsive web UI with real-time validation
 - **Database Storage**: SQLite-based certificate storage and tracking
+- **Unified Directory**: All certificates and keys in one organized location
 - **Modern Cryptography**: OpenSSL 3.0+ compatible with EVP_PKEY API
 - **Clean Build**: Zero warnings with professional-grade code quality
 - **Automated Setup**: One-command build with dependency installation
+- **JSON Processing**: Includes `jq` for advanced JSON manipulation
+- **Troubleshooting**: Comprehensive error handling and debug support
 
 ## Prerequisites
 
@@ -149,6 +152,44 @@ Open your browser and navigate to `http://localhost:8080` to access the modern, 
 - **Real-time Validation**: Immediate feedback on form inputs
 - **Error Handling**: Clear error messages and success notifications
 - **Certificate Management**: Full lifecycle management through the browser
+
+### REST API
+
+The CA server provides a comprehensive REST API for programmatic access:
+
+#### **Endpoints:**
+- `GET /api/certificates` - List all certificates
+- `GET /api/certificates/{id}` - Get certificate details
+- `POST /api/certificates` - Create new certificate
+- `DELETE /api/certificates/{id}` - Revoke certificate
+- `GET /api/crl` - Get Certificate Revocation List
+- `GET /api/ca` - Get CA certificate
+
+#### **Certificate Creation Example:**
+```bash
+curl -X POST http://localhost:8080/api/certificates \
+  -H "Content-Type: application/json" \
+  -d '{
+    "common_name": "example.com",
+    "email": "admin@example.com",
+    "organization": "Example Corp",
+    "country": "KR",
+    "state": "Seoul",
+    "city": "Seoul",
+    "key_size": 2048,
+    "validity_days": 365
+  }'
+```
+
+#### **List Certificates Example:**
+```bash
+curl http://localhost:8080/api/certificates
+```
+
+#### **Download CA Certificate:**
+```bash
+curl http://localhost:8080/api/ca -o ca.crt
+```
 
 ### Cleaning Generated Files
 
@@ -319,6 +360,57 @@ CA/
 10. **Backup**: Regularly backup the entire `certs/` directory
 11. **Git Security**: The `.gitignore` file excludes sensitive CA files from version control
 12. **Code Quality**: Zero warnings build ensures robust implementation
+
+## Troubleshooting
+
+### Common Issues
+
+#### **"Invalid certificate request" Error**
+- **Cause**: Incorrect field names or validation failures
+- **Solution**: Ensure country is "KR", key size ≥ 2048, validity ≤ 3650 days
+- **Web Interface**: Use the form hints and validation messages
+
+#### **"Address already in use" Error**
+- **Cause**: Port 8080 is already in use by another process
+- **Solution**: 
+  ```bash
+  # Kill existing CA server
+  pkill -f ca_server
+  
+  # Or use a different port
+  ./build/ca_server -p 8081
+  ```
+
+#### **"Failed to load CA certificate" Error**
+- **Cause**: CA certificate doesn't exist or is corrupted
+- **Solution**: Delete `certs/` directory and restart server to regenerate CA
+
+#### **Web Interface Not Loading**
+- **Cause**: Server not running or port blocked
+- **Solution**: 
+  ```bash
+  # Check if server is running
+  pgrep -f ca_server
+  
+  # Start server if not running
+  ./build/ca_server
+  ```
+
+#### **Certificate Creation Fails**
+- **Cause**: Validation errors or file permission issues
+- **Solution**: 
+  - Check country code is "KR"
+  - Ensure key size ≥ 2048
+  - Verify validity period ≤ 3650 days
+  - Check file permissions on `certs/` directory
+
+### Debug Mode
+
+Enable verbose logging by setting environment variables:
+```bash
+export CA_DEBUG=1
+./build/ca_server
+```
 
 ## Development
 
