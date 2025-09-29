@@ -110,6 +110,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    // Generate initial CRL if it doesn't exist
+    FILE *crl_fp = fopen(config.crl_path, "r");
+    if (!crl_fp) {
+        printf("CRL not found. Generating initial CRL...\n");
+        if (ca_generate_crl(&config) != 0) {
+            fprintf(stderr, "Failed to generate initial CRL\n");
+            return 1;
+        }
+        printf("Initial CRL generated successfully\n");
+    } else {
+        fclose(crl_fp);
+        printf("Using existing CRL: %s\n", config.crl_path);
+    }
+    
     // Initialize HTTP server
     if (http_server_init(&server, config.port, &config) != 0) {
         fprintf(stderr, "Failed to initialize HTTP server\n");

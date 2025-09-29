@@ -6,7 +6,7 @@ A complete Certificate Authority (CA) server implementation with REST API and we
 
 - **Root CA Generation**: Create and manage your own Certificate Authority
 - **Certificate Management**: Issue, revoke, and list digital certificates
-- **CRL Support**: Generate and maintain Certificate Revocation Lists
+- **CRL Support**: Automatic generation and maintenance of Certificate Revocation Lists
 - **REST API**: Full HTTP API for programmatic access
 - **Web Interface**: Modern, responsive web UI with real-time validation
 - **Database Storage**: SQLite-based certificate storage and tracking
@@ -16,6 +16,7 @@ A complete Certificate Authority (CA) server implementation with REST API and we
 - **Automated Setup**: One-command build with dependency installation
 - **JSON Processing**: Includes `jq` for advanced JSON manipulation
 - **Troubleshooting**: Comprehensive error handling and debug support
+- **Easy Management**: Intelligent `run.sh` script for server operations
 
 ## Prerequisites
 
@@ -50,6 +51,42 @@ cd CA
 
 # Install system-wide (optional)
 sudo make install
+```
+
+## Running the Server
+
+### Quick Start
+```bash
+# Start the CA server (recommended)
+./run.sh
+
+# Start in foreground mode
+./run.sh --foreground
+
+# Check server status
+./run.sh --check
+
+# Stop the server
+./run.sh --stop
+```
+
+### Run Script Features
+The `run.sh` script provides intelligent server management:
+
+- **Automatic Setup**: Creates necessary directories and validates configuration
+- **Conflict Prevention**: Checks for existing servers and prevents multiple instances
+- **Professional Interface**: Colored output and clear status information
+- **Multiple Modes**: Background, foreground, status check, and stop operations
+- **Error Handling**: Comprehensive validation and user-friendly error messages
+
+### Manual Server Start
+If you prefer to start the server manually:
+```bash
+# Start server directly
+./build/ca_server
+
+# Start with custom port
+./build/ca_server -p 8081
 ```
 
 ### Build Features
@@ -134,8 +171,9 @@ Open your browser and navigate to `http://localhost:8080` to access the modern, 
 #### **Features:**
 - **Create Certificates**: User-friendly form with validation hints
 - **Certificate List**: View all issued certificates with status
-- **CA Management**: Download CA certificate and CRL
+- **CA Management**: Download CA certificate and CRL with proper filenames
 - **Certificate Revocation**: Revoke certificates with one click
+- **Automatic CRL**: CRL is automatically generated and maintained
 
 #### **Certificate Creation Requirements:**
 - **Common Name**: Required, unique identifier for the certificate
@@ -152,6 +190,8 @@ Open your browser and navigate to `http://localhost:8080` to access the modern, 
 - **Real-time Validation**: Immediate feedback on form inputs
 - **Error Handling**: Clear error messages and success notifications
 - **Certificate Management**: Full lifecycle management through the browser
+- **Professional Downloads**: Files download with proper names (ca.crt, ca.crl)
+- **Automatic Setup**: CRL is generated automatically on server startup
 
 ### REST API
 
@@ -190,6 +230,26 @@ curl http://localhost:8080/api/certificates
 ```bash
 curl http://localhost:8080/api/ca -o ca.crt
 ```
+
+#### **Download CRL:**
+```bash
+curl http://localhost:8080/api/crl -o ca.crl
+```
+
+### Download Features
+
+The CA server provides professional download functionality:
+
+#### **Automatic File Naming:**
+- **CA Certificate**: Downloads as `ca.crt`
+- **CRL**: Downloads as `ca.crl`
+- **Proper Extensions**: Files have correct extensions for easy identification
+- **Content-Disposition Headers**: Browsers use suggested filenames
+
+#### **CRL Management:**
+- **Automatic Generation**: CRL is created automatically on server startup
+- **Real-time Updates**: CRL is updated when certificates are revoked
+- **Standard Format**: X.509 CRL format for maximum compatibility
 
 ### Cleaning Generated Files
 
@@ -329,6 +389,7 @@ CA/
 │   └── ca_server        # Executable
 ├── CMakeLists.txt        # Build configuration
 ├── build.sh             # Build script
+├── run.sh               # Server management script
 ├── test_ca.sh           # Test script
 └── README.md            # This file
 ```
@@ -403,6 +464,21 @@ CA/
   - Ensure key size ≥ 2048
   - Verify validity period ≤ 3650 days
   - Check file permissions on `certs/` directory
+
+#### **"CRL not found" Error**
+- **Cause**: CRL file doesn't exist or server startup issue
+- **Solution**: 
+  - Restart the server (CRL is generated automatically on startup)
+  - Check if `certs/ca.crl` exists
+  - Verify server logs for CRL generation messages
+
+#### **Server Management Issues**
+- **Cause**: Multiple server instances or management confusion
+- **Solution**: 
+  - Use `./run.sh --check` to check server status
+  - Use `./run.sh --stop` to stop all servers
+  - Use `./run.sh` to start server with conflict prevention
+  - The run script automatically handles multiple instances
 
 ### Debug Mode
 

@@ -442,7 +442,17 @@ int api_get_crl(int client_socket, ca_config_t *config) {
     crl_data[size] = '\0';
     fclose(fp);
     
-    send_http_response(client_socket, 200, "application/x-pem-file", crl_data);
+    // Send CRL with proper filename
+    char header[512];
+    snprintf(header, sizeof(header), 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: application/x-pem-file\r\n"
+        "Content-Disposition: attachment; filename=\"ca.crl\"\r\n"
+        "Content-Length: %ld\r\n"
+        "\r\n", size);
+    
+    send(client_socket, header, strlen(header), 0);
+    send(client_socket, crl_data, size, 0);
     free(crl_data);
     return 0;
 }
@@ -471,7 +481,17 @@ int api_get_ca_certificate(int client_socket, ca_config_t *config) {
     cert_data[size] = '\0';
     fclose(fp);
     
-    send_http_response(client_socket, 200, "application/x-pem-file", cert_data);
+    // Send CA certificate with proper filename
+    char header[512];
+    snprintf(header, sizeof(header), 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: application/x-pem-file\r\n"
+        "Content-Disposition: attachment; filename=\"ca.crt\"\r\n"
+        "Content-Length: %ld\r\n"
+        "\r\n", size);
+    
+    send(client_socket, header, strlen(header), 0);
+    send(client_socket, cert_data, size, 0);
     free(cert_data);
     return 0;
 }
