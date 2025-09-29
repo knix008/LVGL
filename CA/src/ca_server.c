@@ -54,8 +54,22 @@ int ca_generate_root_ca(ca_config_t *config) {
         return -1;
     }
     
-    if (EVP_PKEY_CTX_set_rsa_keygen_bits(pkey_ctx, config->key_size) <= 0) {
-        fprintf(stderr, "Failed to set RSA key size\n");
+    // Try different key sizes in order of preference
+    int key_sizes[] = {config->key_size, 2048, 1024};
+    int key_size_count = sizeof(key_sizes) / sizeof(key_sizes[0]);
+    int key_generated = 0;
+    
+    for (int i = 0; i < key_size_count && !key_generated; i++) {
+        if (EVP_PKEY_CTX_set_rsa_keygen_bits(pkey_ctx, key_sizes[i]) > 0) {
+            printf("Using RSA key size: %d bits\n", key_sizes[i]);
+            key_generated = 1;
+        } else {
+            printf("Failed to set RSA key size %d, trying next size\n", key_sizes[i]);
+        }
+    }
+    
+    if (!key_generated) {
+        fprintf(stderr, "Failed to set any RSA key size\n");
         EVP_PKEY_CTX_free(pkey_ctx);
         return -1;
     }
@@ -156,8 +170,22 @@ int ca_sign_certificate(cert_request_t *request, ca_config_t *config, char *cert
         return -1;
     }
     
-    if (EVP_PKEY_CTX_set_rsa_keygen_bits(pkey_ctx, request->key_size) <= 0) {
-        fprintf(stderr, "Failed to set RSA key size\n");
+    // Try different key sizes in order of preference for client certificates
+    int key_sizes[] = {request->key_size, 2048, 1024};
+    int key_size_count = sizeof(key_sizes) / sizeof(key_sizes[0]);
+    int key_generated = 0;
+    
+    for (int i = 0; i < key_size_count && !key_generated; i++) {
+        if (EVP_PKEY_CTX_set_rsa_keygen_bits(pkey_ctx, key_sizes[i]) > 0) {
+            printf("Using RSA key size for client certificate: %d bits\n", key_sizes[i]);
+            key_generated = 1;
+        } else {
+            printf("Failed to set RSA key size %d for client certificate, trying next size\n", key_sizes[i]);
+        }
+    }
+    
+    if (!key_generated) {
+        fprintf(stderr, "Failed to set any RSA key size for client certificate\n");
         EVP_PKEY_CTX_free(pkey_ctx);
         return -1;
     }

@@ -328,21 +328,27 @@ int api_create_certificate(int client_socket, const char *body, ca_config_t *con
     
     if (json_object_object_get_ex(json, "common_name", &obj)) {
         strncpy(request.common_name, json_object_get_string(obj), sizeof(request.common_name) - 1);
+        request.common_name[sizeof(request.common_name) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "email", &obj)) {
         strncpy(request.email, json_object_get_string(obj), sizeof(request.email) - 1);
+        request.email[sizeof(request.email) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "organization", &obj)) {
         strncpy(request.organization, json_object_get_string(obj), sizeof(request.organization) - 1);
+        request.organization[sizeof(request.organization) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "country", &obj)) {
         strncpy(request.country, json_object_get_string(obj), sizeof(request.country) - 1);
+        request.country[sizeof(request.country) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "state", &obj)) {
         strncpy(request.state, json_object_get_string(obj), sizeof(request.state) - 1);
+        request.state[sizeof(request.state) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "city", &obj)) {
         strncpy(request.city, json_object_get_string(obj), sizeof(request.city) - 1);
+        request.city[sizeof(request.city) - 1] = '\0';
     }
     if (json_object_object_get_ex(json, "key_size", &obj)) {
         request.key_size = json_object_get_int(obj);
