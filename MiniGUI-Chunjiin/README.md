@@ -2,6 +2,25 @@
 
 A complete Korean input system based on the ChunJiIn (천지인) principle, implemented with MiniGUI for embedded systems.
 
+## ✨ Korean Character Display
+
+This application **fully displays Korean characters** in the MiniGUI interface:
+
+- **Button labels**: ㅣ, ㆍ, ㅡ, ㄱ,ㅋ, ㄴ,ㄹ, ㄷ,ㅌ, ㅂ,ㅍ, ㅅ,ㅎ, ㅈ,ㅊ, ㅇ,ㅁ
+- **Text input**: Real-time Korean text composition in the textbox
+- **TrueType fonts**: NanumGothic fonts (Regular, Bold, ExtraBold) included
+- **Proper encoding**: UTF-8 throughout the application
+
+**Quick Test:**
+```bash
+./test_korean_display.sh
+```
+
+This will start the application and show font loading status. You should see:
+```
+✓ Loaded NanumGothic TrueType font (size 20) for Korean characters
+```
+
 ## Overview
 
 The ChunJiIn input system is based on the traditional Korean philosophical concept of "천지인" (Heaven, Earth, Human), using three fundamental elements to create all Korean characters:
@@ -41,14 +60,30 @@ The ChunJiIn input system is based on the traditional Korean philosophical conce
 ## Building
 
 ### Prerequisites
-- MiniGUI development environment
-- Korean fonts (included in assets/)
+- MiniGUI development environment with FreeType support
+- Korean fonts (NanumGothic included in assets/)
 - GCC compiler with C99 support
+- System packages: libjpeg, libpng, libfreetype, libharfbuzz
+
+### First-Time Setup
+
+If MiniGUI is not installed, use the build script to download and build MiniGUI locally:
+
+```bash
+./build.sh
+```
+
+This will:
+- Download MiniGUI source from GitHub
+- Build MiniGUI in standalone mode with Korean support
+- Install MiniGUI locally in `./install/`
+- Copy Korean fonts to the MiniGUI font directory
+- Build the ChunJiIn application
 
 ### Build Commands
 
 ```bash
-# Build ChunJiIn application
+# Build ChunJiIn application (after MiniGUI is installed)
 make all
 
 # Clean build files
@@ -56,6 +91,9 @@ make clean
 
 # Show help
 make help
+
+# Check if MiniGUI is installed
+make check-minigui
 ```
 
 ## Usage
@@ -86,14 +124,33 @@ The ChunJiIn system uses a simplified keyboard layout with three fundamental ele
 ### Running Applications
 
 #### ChunJiIn Keypad Application
+
+**Standard Run:**
 ```bash
+./run.sh
+```
+
+**Direct Run (if environment is already configured):**
+```bash
+export LD_LIBRARY_PATH="./install/lib:$LD_LIBRARY_PATH"
+export MG_CONFIG_FILE="./MiniGUI.cfg"
 ./chunjiin_app
 ```
+
+**Test Korean Character Display:**
+```bash
+./test_korean_display.sh
+```
+
+#### Application Features
 - Full MiniGUI interface with ChunJiIn keyboard
 - 5-row layout with ChunJiIn fundamental elements
+- **Korean character display** on all buttons (ㅣ, ㆍ, ㅡ, ㄱ,ㅋ, etc.)
+- **Real-time Korean text input** in the textbox
 - Visual feedback for input states
-- Korean font support
+- TrueType Korean font support (NanumGothic)
 - Press Escape or Q to quit
+- Press F1 for help
 
 ## ChunJiIn Input Examples
 
@@ -239,34 +296,119 @@ The ChunJiIn system uses a sophisticated state machine to track syllable formati
 - Automatic cleanup on exit
 
 ### Font Support
-- NanumGothic font family for Korean characters
-- Automatic font loading and fallback
-- Proper character encoding (UTF-8)
+- **NanumGothic TrueType fonts** for Korean character display
+  - NanumGothic-Regular.ttf (primary)
+  - NanumGothic-Bold.ttf (fallback)
+  - NanumGothic-ExtraBold.ttf (fallback)
+- **Automatic font loading** with multiple fallback methods
+- **UTF-8 character encoding** throughout
+- **MiniGUI TrueType font configuration** in MiniGUI.cfg
+- Fonts loaded at size 20px for optimal readability
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Korean characters not displaying**
-   - Ensure Korean fonts are copied to MiniGUI font directory
-   - Check locale settings (ko_KR.UTF-8)
-   - Verify font loading in application
+#### 1. Korean characters not displaying in MiniGUI windows
 
-2. **Input not working**
-   - Check MiniGUI installation
-   - Verify keyboard focus
+**Symptoms:** Buttons and textbox show boxes, question marks, or empty spaces instead of Korean characters.
 
-3. **Build errors**
-   - Ensure MiniGUI is properly installed
-   - Check compiler and linker flags
-   - Verify all source files are present
+**Solutions:**
+
+a. **Check MiniGUI.cfg TrueType font configuration:**
+   ```bash
+   # Verify [truetypefonts] section in MiniGUI.cfg
+   cat MiniGUI.cfg | grep -A 10 "truetypefonts"
+   ```
+   Should show:
+   ```ini
+   [truetypefonts]
+   font_number=3
+   name0=ttf-NanumGothic-rrncnn-0-0-UTF-8
+   fontfile0=./install/share/fonts/NanumGothic-Regular.ttf
+   ```
+
+b. **Verify font files exist:**
+   ```bash
+   ls -lh ./install/share/fonts/
+   ```
+   Should show NanumGothic-Regular.ttf, NanumGothic-Bold.ttf, and NanumGothic-ExtraBold.ttf
+
+c. **Check font loading messages:**
+   Run `./test_korean_display.sh` and look for:
+   ```
+   ✓ Loaded NanumGothic TrueType font (size 20) for Korean characters
+   ```
+
+d. **Verify MiniGUI FreeType support:**
+   ```bash
+   ldd ./install/lib/libminigui_sa.so | grep freetype
+   ```
+   Should show libfreetype linked
+
+e. **Rebuild if necessary:**
+   ```bash
+   make clean && make
+   ```
+
+**Note:** The Korean characters ARE in the source code ([chunjiin_app.c](chunjiin_app.c)). If your editor cannot display them, that's an editor font issue, not an application issue. The MiniGUI application will display them correctly when running.
+
+#### 2. MiniGUI fails to initialize
+
+**Error:** `make_devfont: invalid font type`
+
+**Solution:** Check that font names in MiniGUI.cfg use the correct format:
+- Correct: `ttf-NanumGothic-rrncnn-0-0-UTF-8`
+- Incorrect: `NanumGothic-Regular`
+
+#### 3. Application won't start - library not found
+
+**Error:** `error while loading shared libraries: libminigui_sa.so`
+
+**Solution:**
+```bash
+export LD_LIBRARY_PATH="./install/lib:$LD_LIBRARY_PATH"
+```
+Or use `./run.sh` which sets this automatically.
+
+#### 4. Input not working
+
+**Symptoms:** Clicking buttons doesn't produce text
+
+**Solutions:**
+- Check MiniGUI installation is complete
+- Verify keyboard focus is on the application window
+- Check terminal for error messages
+
+#### 5. Build errors
+
+**Error:** `cannot find -lminigui_sa`
+
+**Solution:** MiniGUI needs to be built first:
+```bash
+./build.sh
+```
+
+**Error:** Compiler errors about missing headers
+
+**Solution:** Ensure all prerequisites are installed (see Building section)
 
 ### Debug Information
 
-Enable debug output by setting environment variables:
+Watch for font loading messages when starting the application:
 ```bash
-export CHUNJIIN_DEBUG=1
-./chunjiin_app
+./chunjiin_app 2>&1 | grep -i font
+```
+
+Check MiniGUI configuration:
+```bash
+echo "MG_CONFIG_FILE: $MG_CONFIG_FILE"
+cat $MG_CONFIG_FILE | grep -A 10 "truetypefonts"
+```
+
+Verify font file permissions:
+```bash
+ls -lh ./install/share/fonts/*.ttf
 ```
 
 ## License

@@ -249,58 +249,63 @@ void chunjiin_keyboard_update_display(void) {
 
 PLOGFONT chunjiin_load_korean_font(void) {
     PLOGFONT font = NULL;
-    
-    // First try using CreateLogFontByName with system font names (as shown in your example)
+
+    printf("Attempting to load Korean TrueType font...\n");
+
+    // Method 1: Try the configured TrueType font name from MiniGUI.cfg
+    font = CreateLogFont("ttf", "NanumGothic", "UTF-8",
+                      FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                      FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                      20, 0);
+
+    if (font != NULL) {
+        printf("✓ Loaded NanumGothic TrueType font (size 20) for Korean characters\n");
+        return font;
+    }
+
+    // Method 2: Try with CreateLogFontByName
+    font = CreateLogFontByName("ttf-NanumGothic-rrncnn-20-0-UTF-8");
+    if (font != NULL) {
+        printf("✓ Loaded configured NanumGothic font for Korean characters\n");
+        return font;
+    }
+
+    // Method 3: Try Bold variant
+    font = CreateLogFont("ttf", "NanumGothic-bold", "UTF-8",
+                        FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                        FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                        20, 0);
+
+    if (font != NULL) {
+        printf("✓ Loaded NanumGothic-Bold TrueType font for Korean characters\n");
+        return font;
+    }
+
+    // Method 4: Try system fonts
     const char* font_names[] = {
+        "Noto Sans CJK KR",
         "NanumGothic",
-        "Malgun Gothic", 
+        "Malgun Gothic",
         "Dotum",
-        "Gulim",
-        "Batang",
         NULL
     };
-    
+
     for (int i = 0; font_names[i] != NULL; i++) {
         font = CreateLogFontByName(font_names[i]);
         if (font != NULL) {
-            printf("Loaded Korean font: %s\n", font_names[i]);
-            break;
+            printf("✓ Loaded system Korean font: %s\n", font_names[i]);
+            return font;
         }
     }
-    
-    // If system fonts fail, try loading from assets directory
-    if (font == NULL) {
-        font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
-                          FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                          FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                          16, 0);
-        
-        if (font == NULL) {
-            // Try Bold variant
-            font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
-                                FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                                FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                16, 0);
-        }
-        
-        if (font == NULL) {
-            // Try ExtraBold variant
-            font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
-                                FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                                FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                16, 0);
-        }
-        
-        if (font) {
-            printf("Loaded Korean font from assets directory\n");
-        }
-    }
-    
-    if (font == NULL) {
-        printf("Warning: Could not load Korean font, Korean characters may not display correctly\n");
-    }
-    
-    return font;
+
+    printf("⚠ Warning: Could not load Korean font, Korean characters may not display correctly\n");
+    printf("  Please check:\n");
+    printf("  1. TrueType fonts in ./install/share/fonts/\n");
+    printf("  2. MiniGUI.cfg [truetypefonts] section (should have ttf-NanumGothic-...)\n");
+    printf("  3. Font file paths are correct\n");
+    printf("  4. MiniGUI FreeType support is enabled\n");
+
+    return NULL;
 }
 
 // ============================================================================

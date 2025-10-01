@@ -3,3 +3,5 @@ chunjiin_app
 build/
 install/
 minigui/
+.claude/
+
