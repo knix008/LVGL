@@ -412,7 +412,7 @@ static LRESULT ChunJiInAppWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             SetBkMode(hdc, BM_TRANSPARENT);
             
             // Display title
-            TextOut(hdc, 20, 5, "ChunJiIn Korean Input System");
+            //TextOut(hdc, 20, 5, "ChunJiIn Korean Input System");
             
             // Display current text
             if (display_buffer[0] != L'\0') {
