@@ -18,6 +18,8 @@
 #include <ctime>
 #include <memory>
 #include <algorithm>
+#include <iomanip>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -36,9 +38,9 @@ private:
     std::string last_update;
     std::vector<Json::Value> update_history;
 
+    int port;
     SSL_CTX* ssl_ctx;
     int server_socket;
-    int port;
 
     std::string get_timestamp() {
         time_t now = time(nullptr);
@@ -49,6 +51,58 @@ private:
 
     void log(const std::string& level, const std::string& message) {
         std::cout << "[" << get_timestamp() << "] " << level << " - " << message << std::endl;
+    }
+
+    void show_progress_bar(size_t current, size_t total, int bar_width = 50) {
+        float progress = (float)current / (float)total;
+        int pos = bar_width * progress;
+
+        std::cout << "\r[" << get_timestamp() << "] PROGRESS - [";
+        for (int i = 0; i < bar_width; ++i) {
+            if (i < pos) std::cout << "=";
+            else if (i == pos) std::cout << ">";
+            else std::cout << " ";
+        }
+        std::cout << "] " << int(progress * 100.0) << "% ";
+        std::cout << "(" << current / (1024 * 1024) << " MB / "
+                  << total / (1024 * 1024) << " MB)";
+        std::cout << std::flush;
+
+        // Print newline when complete
+        if (current >= total) {
+            std::cout << std::endl;
+        }
+    }
+
+    std::string save_firmware_file(const std::string& data, const std::string& version) {
+        // Create received_firmwares directory if it doesn't exist
+        const std::string dir = "received_firmwares";
+        struct stat st;
+        if (stat(dir.c_str(), &st) == -1) {
+            mkdir(dir.c_str(), 0755);
+        }
+
+        // Create filename with timestamp and version
+        std::string timestamp = get_timestamp();
+        // Replace colons in timestamp for filename compatibility
+        std::replace(timestamp.begin(), timestamp.end(), ':', '-');
+
+        std::ostringstream filename;
+        filename << dir << "/firmware_" << version << "_" << timestamp << ".bin";
+
+        // Save file
+        std::ofstream file(filename.str(), std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to create firmware file: " + filename.str());
+        }
+
+        file.write(data.c_str(), data.length());
+        file.close();
+
+        log("INFO", "Firmware saved: " + filename.str() + " (" +
+            std::to_string(data.length()) + " bytes)");
+
+        return filename.str();
     }
 
     SSL_CTX* create_ssl_context() {
@@ -166,7 +220,7 @@ private:
     }
 
     std::string handle_update_firmware(const std::string& body,
-                                      const std::map<std::string, std::string>& headers) {
+                                      const std::map<std::string, std::string>& /* headers */) {
         log("INFO", "Processing firmware update request");
 
         try {
@@ -195,12 +249,25 @@ private:
 
             log("INFO", "Firmware update: version=" + new_version + ", url=" + firmware_url);
 
+            // Save firmware data if present in the request body
+            std::string saved_file;
+            if (body.length() > 1024) { // If body is larger than 1KB, save it
+                try {
+                    saved_file = save_firmware_file(body, new_version);
+                } catch (const std::exception& e) {
+                    log("WARNING", "Failed to save firmware file: " + std::string(e.what()));
+                }
+            }
+
             // Create update record
             Json::Value update_record;
             update_record["timestamp"] = get_timestamp();
             update_record["firmware_url"] = firmware_url;
             update_record["version"] = new_version;
             update_record["previous_version"] = current_firmware_version;
+            if (!saved_file.empty()) {
+                update_record["saved_file"] = saved_file;
+            }
 
             // Update device state
             std::string previous_version = current_firmware_version;
@@ -345,8 +412,16 @@ private:
         size_t body_start = headers_end_pos + 4;
         size_t body_received = request_data.length() - body_start;
 
+        // Show initial progress for large files
+        bool show_progress = content_length > 1024 * 1024; // Show for files > 1MB
+        if (show_progress && body_received < content_length) {
+            log("INFO", "Receiving firmware upload: " +
+                std::to_string(content_length / (1024 * 1024)) + " MB");
+        }
+
         if (content_length > 0 && body_received < content_length) {
             size_t remaining = content_length - body_received;
+            size_t last_update = 0;
 
             while (remaining > 0) {
                 size_t to_read = std::min(remaining, BUFFER_SIZE);
@@ -354,6 +429,7 @@ private:
 
                 if (bytes <= 0) {
                     int err = SSL_get_error(ssl, bytes);
+                    if (show_progress) std::cout << std::endl; // Clear progress bar
                     log("ERROR", "SSL_read error while reading body: " + std::to_string(err));
                     return;
                 }
@@ -362,19 +438,21 @@ private:
                 remaining -= bytes;
                 total_bytes += bytes;
 
-                // Log progress for large files
-                if (content_length > 1024 * 1024) { // Log for files > 1MB
-                    size_t received_mb = (total_bytes - body_start) / (1024 * 1024);
-                    size_t total_mb = content_length / (1024 * 1024);
-                    if (received_mb % 10 == 0) { // Log every 10MB
-                        log("INFO", "Receiving firmware: " + std::to_string(received_mb) +
-                            " MB / " + std::to_string(total_mb) + " MB");
+                // Show progress bar for large files
+                if (show_progress) {
+                    size_t received = total_bytes - body_start;
+                    // Update every 1MB or when complete
+                    if (received - last_update >= 1024 * 1024 || remaining == 0) {
+                        show_progress_bar(received, content_length);
+                        last_update = received;
                     }
                 }
             }
         }
 
-        log("INFO", "Received " + std::to_string(total_bytes) + " bytes total");
+        if (!show_progress) {
+            log("INFO", "Received " + std::to_string(total_bytes) + " bytes total");
+        }
 
         // Parse request
         std::string method, path, body;

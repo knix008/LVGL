@@ -5,7 +5,22 @@
 
 set -e
 
-UPLOADER="./firmware_uploader"
+# Detect if we're in project root or build directory
+if [ -f "firmware_uploader" ]; then
+    # Running from build directory
+    UPLOADER="./firmware_uploader"
+    BUILD_DIR="."
+elif [ -f "build/firmware_uploader" ]; then
+    # Running from project root
+    UPLOADER="build/firmware_uploader"
+    BUILD_DIR="build"
+else
+    echo -e "\033[0;31mError: firmware_uploader not found!\033[0m"
+    echo "Please build the project first:"
+    echo "  ./build.sh"
+    exit 1
+fi
+
 HOST="localhost"
 PORT="8443"
 
@@ -20,16 +35,6 @@ echo -e "${BLUE}============================================${NC}"
 echo -e "${BLUE}Firmware Upload Test Script${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
-
-# Check if uploader exists
-if [ ! -f "$UPLOADER" ]; then
-    echo -e "${RED}Error: firmware_uploader not found!${NC}"
-    echo "Please build the project first:"
-    echo "  cd build"
-    echo "  cmake .."
-    echo "  make"
-    exit 1
-fi
 
 # Function to create test firmware file
 create_test_firmware() {

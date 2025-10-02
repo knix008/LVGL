@@ -11,6 +11,92 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to show usage
+show_usage() {
+    echo "Build Script for Device Simulator & Firmware Uploader"
+    echo ""
+    echo "Usage: $0 [command]"
+    echo ""
+    echo "Commands:"
+    echo "  (none)    Build the project (default)"
+    echo "  clean     Clean build artifacts and certificates"
+    echo "  rebuild   Clean and rebuild everything"
+    echo "  help      Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0              # Build the project"
+    echo "  $0 clean        # Clean everything"
+    echo "  $0 rebuild      # Clean and rebuild"
+    echo ""
+}
+
+# Function to clean the project
+clean_project() {
+    echo -e "${BLUE}============================================${NC}"
+    echo -e "${BLUE}Cleaning Project${NC}"
+    echo -e "${BLUE}============================================${NC}"
+    echo ""
+
+    # Stop any running simulator
+    if pgrep -x "device_simulator" > /dev/null; then
+        echo -e "${YELLOW}Stopping running device simulator...${NC}"
+        pkill -9 device_simulator 2>/dev/null || true
+        echo -e "${GREEN}✓ Stopped device simulator${NC}"
+    fi
+
+    # Remove build directory
+    if [ -d "build" ]; then
+        echo -e "${YELLOW}Removing build directory...${NC}"
+        rm -rf build
+        echo -e "${GREEN}✓ Removed build/${NC}"
+    fi
+
+    # Remove certificates
+    if [ -d "certs" ]; then
+        echo -e "${YELLOW}Removing certificates...${NC}"
+        rm -rf certs
+        echo -e "${GREEN}✓ Removed certs/${NC}"
+    fi
+
+    # Remove test files
+    if [ -d "test_firmwares" ]; then
+        echo -e "${YELLOW}Removing test firmware directory...${NC}"
+        rm -rf test_firmwares
+        echo -e "${GREEN}✓ Removed test_firmwares/${NC}"
+    fi
+
+    # Remove other generated files
+    echo -e "${YELLOW}Removing temporary files...${NC}"
+    rm -f test_firmware*.bin 2>/dev/null || true
+    rm -f *.bin 2>/dev/null || true
+    rm -f *.log 2>/dev/null || true
+    echo -e "${GREEN}✓ Removed temporary files${NC}"
+
+    echo ""
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "${GREEN}✓ Clean Complete!${NC}"
+    echo -e "${GREEN}============================================${NC}"
+    echo ""
+}
+
+# Parse command line arguments
+if [ "$1" = "clean" ]; then
+    clean_project
+    exit 0
+elif [ "$1" = "rebuild" ]; then
+    clean_project
+    echo ""
+    # Continue to build
+elif [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    show_usage
+    exit 0
+elif [ -n "$1" ]; then
+    echo -e "${RED}Error: Unknown command '$1'${NC}"
+    echo ""
+    show_usage
+    exit 1
+fi
+
 echo -e "${BLUE}============================================${NC}"
 echo -e "${BLUE}Building Device Simulator & Firmware Uploader${NC}"
 echo -e "${BLUE}============================================${NC}"

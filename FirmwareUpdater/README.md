@@ -146,7 +146,10 @@ brew install cmake openssl jsoncpp pkg-config
 
 **Using build script (recommended):**
 ```bash
-./build.sh
+./build.sh              # Build the project
+./build.sh clean        # Clean everything
+./build.sh rebuild      # Clean and rebuild
+./build.sh help         # Show help
 ```
 
 **Or manually:**
@@ -198,39 +201,61 @@ cd build
 ### Using run.sh (Recommended)
 
 ```bash
-# Start with default settings
+# Start simulator
 ./run.sh
+./run.sh start
+
+# Stop simulator
+./run.sh stop
+
+# Check status
+./run.sh status
+
+# Restart simulator
+./run.sh restart
 
 # Custom configuration
-./run.sh --device-id DEVICE-001 --port 9443 --version 1.0.0
+./run.sh start --device-id DEVICE-001 --port 9443 --version 1.0.0
 
 # Show help
-./run.sh --help
+./run.sh help
 ```
 
-The `run.sh` script:
-- Checks if the build exists
-- Generates certificates if needed
-- Detects port conflicts
-- Sets up proper paths automatically
+The `run.sh` script provides:
+- **start** - Start the device simulator (default)
+- **stop** - Stop the running simulator gracefully
+- **status** - Check if simulator is running (shows PID and port)
+- **restart** - Stop and restart the simulator
+- Automatic certificate generation if needed
+- Port conflict detection
+- Proper path setup
 
 ### Manual Usage
 
 ```bash
 cd build
 ./device_simulator --cert ../certs/device.crt --key ../certs/device.key
+
+# Stop manually
+pkill device_simulator
 ```
 
 ### Command Line Options
 
 ```bash
-./run.sh [options]
+./run.sh [command] [options]
 
-Options:
+Commands:
+  start             Start the device simulator (default)
+  stop              Stop the running device simulator
+  status            Check if simulator is running
+  restart           Restart the device simulator
+  help              Show help message
+
+Options (for start/restart):
   --device-id ID    Device ID (default: DEVICE-SIM-001)
   --port PORT       Port to listen on (default: 8443)
   --version VER     Initial firmware version (default: 1.0.0)
-  --help            Show help message
 ```
 
 ## Firmware Uploader Usage

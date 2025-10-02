@@ -24,7 +24,10 @@ cd build
 |--------|-------------|
 | `./install_dependencies.sh` | Install required packages (Ubuntu/Debian/macOS) |
 | `./build.sh` | Build both device_simulator and firmware_uploader |
-| `./run.sh` | Run the device simulator with proper configuration |
+| `./run.sh start` | Start the device simulator |
+| `./run.sh stop` | Stop the device simulator |
+| `./run.sh status` | Check if simulator is running |
+| `./run.sh restart` | Restart the simulator |
 | `./generate_certs.sh` | Generate TLS 1.3 certificates |
 | `./test_upload.sh` | Run automated firmware upload tests |
 
@@ -61,11 +64,50 @@ cd build
 - **Status:** `https://localhost:8443/api/v1.0/status`
 - **Health Check:** `https://localhost:8443/api/v1.0/health`
 
-## Stop the Simulator
+## Simulator Control
 
+**Start:**
+```bash
+./run.sh
+./run.sh start
+```
+
+**Stop:**
+```bash
+./run.sh stop
+```
+
+**Check status:**
+```bash
+./run.sh status
+```
+
+**Restart:**
+```bash
+./run.sh restart
+```
+
+**Or manually:**
 ```bash
 pkill device_simulator
 # or press Ctrl+C in the terminal running it
+```
+
+## Build Commands
+
+**Build project:**
+```bash
+./build.sh
+```
+
+**Clean everything:**
+```bash
+./build.sh clean
+```
+
+**Clean and rebuild:**
+```bash
+./build.sh rebuild
 ```
 
 ## Troubleshooting
@@ -75,14 +117,8 @@ pkill device_simulator
 ./run.sh --port 9443
 ```
 
-**Rebuild everything:**
+**Start fresh:**
 ```bash
-rm -rf build
-./build.sh
-```
-
-**Clean and rebuild:**
-```bash
-rm -rf build certs
+./build.sh clean
 ./build.sh
 ```
