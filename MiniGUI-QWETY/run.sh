@@ -20,22 +20,10 @@ if [ ! -f "./install/lib/libminigui_sa.so" ]; then
 fi
 
 # Set up environment variables for MiniGUI
-export LD_LIBRARY_PATH="./install/lib"
-export FREETYPE_FONT_PATH="./install/share/fonts"
-export MG_RUNTIME_MODE="standalone"
-export MG_GAL_ENGINE="pc_xvfb"
-export MG_IAL_ENGINE="pc_xvfb"
-export MG_DEFAULTMODE="800x600-16bpp"
-export MG_CONFIG_FILE="./MiniGUI.cfg"
+export LD_LIBRARY_PATH="./install/lib:$LD_LIBRARY_PATH"
 
 echo "Environment configured:"
 echo "  LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-echo "  FREETYPE_FONT_PATH: $FREETYPE_FONT_PATH"
-echo "  MG_RUNTIME_MODE: $MG_RUNTIME_MODE"
-echo "  MG_GAL_ENGINE: $MG_GAL_ENGINE"
-echo "  MG_IAL_ENGINE: $MG_IAL_ENGINE"
-echo "  MG_DEFAULTMODE: $MG_DEFAULTMODE"
-echo "  MG_CONFIG_FILE: $MG_CONFIG_FILE"
 echo ""
 
 echo "Starting Korean Input Application..."
