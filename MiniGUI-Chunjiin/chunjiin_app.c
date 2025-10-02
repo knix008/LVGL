@@ -256,7 +256,7 @@ PLOGFONT chunjiin_load_korean_font(void) {
     font = CreateLogFont("ttf", "NanumGothic", "UTF-8",
                       FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                       FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                      20, 0);
+                      16, 0);
 
     if (font != NULL) {
         printf("✓ Loaded NanumGothic TrueType font (size 20) for Korean characters\n");
@@ -274,7 +274,7 @@ PLOGFONT chunjiin_load_korean_font(void) {
     font = CreateLogFont("ttf", "NanumGothic-bold", "UTF-8",
                         FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                         FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                        20, 0);
+                        16, 0);
 
     if (font != NULL) {
         printf("✓ Loaded NanumGothic-Bold TrueType font for Korean characters\n");
