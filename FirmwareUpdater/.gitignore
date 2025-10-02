@@ -139,3 +139,7 @@ vgcore.*
 *.orig
 *.rej
 *.patch
+Firmware.bin
+received_firmwares/
+test_firmwares/
+test_firmware*.bin

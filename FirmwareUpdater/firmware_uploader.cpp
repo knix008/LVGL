@@ -109,6 +109,34 @@ private:
         return Json::writeString(writer, request);
     }
 
+    std::string create_multipart_request(const std::string& version, const std::string& firmware_url, 
+                                       const std::string& file_content, const std::string& filename) {
+        std::string boundary = "FormBoundaryFirmwareUpload123456789";
+        std::ostringstream body;
+        
+        // Add JSON metadata part
+        body << "--" << boundary << "\r\n";
+        body << "Content-Disposition: form-data; name=\"metadata\"\r\n";
+        body << "Content-Type: application/json\r\n\r\n";
+        
+        Json::Value metadata;
+        metadata["version"] = version;
+        metadata["firmware_url"] = firmware_url;
+        metadata["filename"] = filename;
+        Json::StreamWriterBuilder writer;
+        body << Json::writeString(writer, metadata);
+        body << "\r\n";
+        
+        // Add file content part
+        body << "--" << boundary << "\r\n";
+        body << "Content-Disposition: form-data; name=\"firmware\"; filename=\"" << filename << "\"\r\n";
+        body << "Content-Type: application/octet-stream\r\n\r\n";
+        body << file_content;
+        body << "\r\n--" << boundary << "--\r\n";
+        
+        return body.str();
+    }
+
     std::string create_http_request(const std::string& path, const std::string& body,
                                    const std::string& content_type = "application/json") {
         std::ostringstream request;
@@ -309,8 +337,16 @@ public:
         log("INFO", "File size: " + std::to_string(file_size) + " bytes (" +
             std::to_string(file_size_mb) + " MB)");
 
-        // Create JSON body with file data
-        std::string json_body = create_json_request(version, "file://" + filepath);
+        // Extract filename from path
+        std::string filename = filepath;
+        size_t last_slash = filename.find_last_of("/\\");
+        if (last_slash != std::string::npos) {
+            filename = filename.substr(last_slash + 1);
+        }
+
+        // Create multipart body with file data
+        std::string multipart_body = create_multipart_request(version, "file://" + filepath, file_content, filename);
+        std::string boundary = "FormBoundaryFirmwareUpload123456789";
 
         // Initialize OpenSSL
         SSL_load_error_strings();
@@ -340,8 +376,9 @@ public:
             }
             log("INFO", "TLS 1.3 handshake successful");
 
-            // Create and send request
-            std::string http_request = create_http_request("/api/v1.0/updatefirmware", json_body);
+            // Create and send HTTP request with multipart content
+            std::string content_type = "multipart/form-data; boundary=" + boundary;
+            std::string http_request = create_http_request("/api/v1.0/updatefirmware", multipart_body, content_type);
 
             send_data(ssl, http_request, "firmware data");
 

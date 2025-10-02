@@ -6,24 +6,51 @@ A C++ device simulator that exposes an HTTPS API for firmware updates using TLS 
 
 - **TLS 1.3 Only**: Secure communication using the latest TLS protocol
 - **HTTPS API**: RESTful endpoints for firmware updates and device status
+- **Multipart File Upload**: Direct firmware file upload with metadata
+- **Firmware Storage**: Automatically saves uploaded firmware files to disk
 - **JSON Support**: Request/response handling with JSON format
 - **Large Firmware Support**: Handles firmware files up to 2GB
 - **Progress Logging**: Real-time progress tracking for large firmware transfers
 - **Size Validation**: Automatic rejection of firmware exceeding size limits
+- **Binary File Support**: Correctly handles binary firmware files without corruption
 
 ## API Endpoints
 
 ### POST /api/v1.0/updatefirmware
-Update device firmware with version and URL.
+Update device firmware with version and URL, or upload firmware file directly.
 
 **Maximum firmware size: 2GB**
 
+#### Method 1: JSON Request (URL only)
 **Request:**
 ```json
 {
     "version": "2.0.0",
     "firmware_url": "https://example.com/firmware.bin"
 }
+```
+
+#### Method 2: Multipart File Upload (Firmware file + metadata)
+**Request:**
+```
+Content-Type: multipart/form-data; boundary=FormBoundary...
+
+--FormBoundary...
+Content-Disposition: form-data; name="metadata"
+Content-Type: application/json
+
+{
+    "version": "2.0.0",
+    "firmware_url": "file://firmware.bin",
+    "filename": "firmware.bin"
+}
+
+--FormBoundary...
+Content-Disposition: form-data; name="firmware"; filename="firmware.bin"
+Content-Type: application/octet-stream
+
+[binary firmware data]
+--FormBoundary...--
 ```
 
 **Success Response (200 OK):**
@@ -34,7 +61,9 @@ Update device firmware with version and URL.
     "device_id": "DEVICE-SIM-001",
     "previous_version": "1.0.0",
     "new_version": "2.0.0",
-    "update_timestamp": "2025-10-02T10:30:45"
+    "update_timestamp": "2025-10-02T10:30:45",
+    "saved_file": "received_firmwares/firmware_2.0.0_2025-10-02T15-29-34_firmware.bin",
+    "firmware_size": 107527151
 }
 ```
 
@@ -303,15 +332,25 @@ Options:
 Run the automated test script to test various firmware sizes:
 
 ```bash
-# Basic tests (1KB, 1MB)
-./test_upload.sh
-
-# Full tests (includes 10MB)
-./test_upload.sh --full
-
-# All tests (includes 100MB)
-./test_upload.sh --full --large
+# From project root or build directory
+cd build
+./test_upload.sh              # Basic tests (1KB, 1MB)
+./test_upload.sh --full       # Full tests (includes 10MB)
+./test_upload.sh --full --large  # All tests (includes 100MB)
 ```
+
+The test script will:
+1. Check device status
+2. Upload firmware via URL (JSON mode)
+3. Upload firmware files of various sizes
+4. Display final device status
+5. Clean up test files automatically
+
+**Test output includes:**
+- Progress bars for large file uploads (>1MB)
+- MD5 checksum verification
+- Firmware storage confirmation
+- Upload success/failure status
 
 ## Testing the API
 
@@ -368,11 +407,40 @@ response = requests.post(url, json=data, verify=False)
 print(json.dumps(response.json(), indent=2))
 ```
 
-## Firmware Size Limits
+## Firmware Upload & Storage
+
+### Upload Methods
+
+The device simulator supports two upload methods:
+
+1. **JSON Request (URL only)**: Send firmware URL in JSON payload
+2. **Multipart File Upload**: Upload firmware binary directly with metadata
+
+### Firmware Storage
+
+When firmware is uploaded via multipart file upload:
+- Firmware files are automatically saved to `received_firmwares/` directory
+- Filename format: `firmware_<version>_<timestamp>_<original_filename>`
+- Example: `firmware_2.0.0_2025-10-02T15-43-24_Firmware.bin`
+- Files are saved with exact binary integrity (MD5 checksum verified)
+- The directory is created automatically if it doesn't exist
+- Location: Project root directory (`received_firmwares/`)
+
+**Verify uploaded firmware integrity:**
+```bash
+# Compare MD5 checksums of original and uploaded firmware
+md5sum original_firmware.bin received_firmwares/firmware_*.bin
+
+# Example output (checksums should match):
+# b50662fd7e58a33a00f1bcdbed24105d  Firmware.bin
+# b50662fd7e58a33a00f1bcdbed24105d  received_firmwares/firmware_2.0.0_2025-10-02T15-43-24_Firmware.bin
+```
+
+### Size Limits
 
 - **Maximum firmware size**: 2GB (2,147,483,648 bytes)
 - Firmware transfers exceeding this limit will be rejected with HTTP 413 (Payload Too Large)
-- Progress is logged every 10MB for large firmware transfers
+- Progress is logged every 1MB for large firmware transfers (>1MB)
 - The simulator handles streaming reception of large files efficiently
 
 ## TLS Configuration
@@ -411,9 +479,11 @@ FirmwareUpdater/
 │   ├── device_simulator     # Compiled server
 │   ├── firmware_uploader    # Compiled client
 │   └── test_upload.sh       # Test script (copied)
-└── certs/                   # Generated certificates (after running generate_certs.sh)
-    ├── device.crt          # SSL certificate
-    └── device.key          # Private key
+├── certs/                   # Generated certificates (after running generate_certs.sh)
+│   ├── device.crt          # SSL certificate
+│   └── device.key          # Private key
+└── received_firmwares/      # Uploaded firmware storage (auto-created)
+    └── firmware_*.bin       # Saved firmware files with version and timestamp
 ```
 
 ## Troubleshooting

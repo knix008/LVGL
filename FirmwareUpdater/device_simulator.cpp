@@ -74,7 +74,8 @@ private:
         }
     }
 
-    std::string save_firmware_file(const std::string& data, const std::string& version) {
+    std::string save_firmware_file(const std::string& data, const std::string& version,
+                                   const std::string& original_filename = "firmware.bin") {
         // Create received_firmwares directory if it doesn't exist
         const std::string dir = "received_firmwares";
         struct stat st;
@@ -87,22 +88,22 @@ private:
         // Replace colons in timestamp for filename compatibility
         std::replace(timestamp.begin(), timestamp.end(), ':', '-');
 
-        std::ostringstream filename;
-        filename << dir << "/firmware_" << version << "_" << timestamp << ".bin";
+        std::ostringstream fullname;
+        fullname << dir << "/firmware_" << version << "_" << timestamp << "_" << original_filename;
 
         // Save file
-        std::ofstream file(filename.str(), std::ios::binary);
+        std::ofstream file(fullname.str(), std::ios::binary);
         if (!file.is_open()) {
-            throw std::runtime_error("Failed to create firmware file: " + filename.str());
+            throw std::runtime_error("Failed to create firmware file: " + fullname.str());
         }
 
         file.write(data.c_str(), data.length());
         file.close();
 
-        log("INFO", "Firmware saved: " + filename.str() + " (" +
+        log("INFO", "Firmware saved: " + fullname.str() + " (" +
             std::to_string(data.length()) + " bytes)");
 
-        return filename.str();
+        return fullname.str();
     }
 
     SSL_CTX* create_ssl_context() {
@@ -173,6 +174,67 @@ private:
         return sock;
     }
 
+    struct MultipartData {
+        std::string firmware_data;
+        Json::Value metadata;
+    };
+
+    MultipartData parse_multipart_body(const std::string& body, const std::string& boundary) {
+        MultipartData result;
+
+        std::string delimiter = "--" + boundary;
+        std::string end_delimiter = "--" + boundary + "--";
+
+        size_t pos = 0;
+        while (pos < body.length()) {
+            // Find next part delimiter
+            size_t part_start = body.find(delimiter, pos);
+            if (part_start == std::string::npos) break;
+
+            part_start += delimiter.length();
+
+            // Skip CRLF after delimiter
+            if (part_start + 2 <= body.length() &&
+                body[part_start] == '\r' && body[part_start + 1] == '\n') {
+                part_start += 2;
+            }
+
+            // Find headers end (empty line)
+            size_t headers_end = body.find("\r\n\r\n", part_start);
+            if (headers_end == std::string::npos) break;
+
+            // Parse part headers
+            std::string part_headers = body.substr(part_start, headers_end - part_start);
+            size_t content_start = headers_end + 4;
+
+            // Find next delimiter to get content end
+            size_t content_end = body.find("\r\n" + delimiter, content_start);
+            if (content_end == std::string::npos) {
+                content_end = body.find(delimiter, content_start);
+                if (content_end == std::string::npos) break;
+            }
+
+            // Extract content
+            std::string content = body.substr(content_start, content_end - content_start);
+
+            // Check if this is metadata or firmware
+            if (part_headers.find("name=\"metadata\"") != std::string::npos) {
+                // Parse JSON metadata
+                Json::CharReaderBuilder reader;
+                std::string errs;
+                std::istringstream content_stream(content);
+                Json::parseFromStream(reader, content_stream, &result.metadata, &errs);
+            } else if (part_headers.find("name=\"firmware\"") != std::string::npos) {
+                // This is the firmware binary data
+                result.firmware_data = content;
+            }
+
+            pos = content_end;
+        }
+
+        return result;
+    }
+
     std::string parse_http_request(const std::string& request, std::string& method,
                                    std::string& path, std::map<std::string, std::string>& headers) {
         std::istringstream stream(request);
@@ -197,10 +259,14 @@ private:
             }
         }
 
-        // Get body
-        std::string body;
-        std::getline(stream, body, '\0');
-        return body;
+        // Get body by finding where headers end in the original request
+        // Using substr to preserve binary data (getline stops at \0)
+        size_t body_start = request.find("\r\n\r\n");
+        if (body_start != std::string::npos) {
+            body_start += 4; // Skip past \r\n\r\n
+            return request.substr(body_start);
+        }
+        return "";
     }
 
     std::string create_json_response(int status_code, const std::string& status_text,
@@ -220,20 +286,58 @@ private:
     }
 
     std::string handle_update_firmware(const std::string& body,
-                                      const std::map<std::string, std::string>& /* headers */) {
+                                      const std::map<std::string, std::string>& headers) {
         log("INFO", "Processing firmware update request");
 
         try {
-            Json::CharReaderBuilder reader;
             Json::Value request_data;
-            std::string errs;
+            std::string firmware_data;
+            std::string filename = "firmware.bin";
 
-            std::istringstream body_stream(body);
-            if (!Json::parseFromStream(reader, body_stream, &request_data, &errs)) {
-                Json::Value error_response;
-                error_response["status"] = "error";
-                error_response["message"] = "Invalid JSON: " + errs;
-                return create_json_response(400, "Bad Request", error_response);
+            // Check if this is a multipart request
+            auto ct_it = headers.find("Content-Type");
+            if (ct_it != headers.end() && ct_it->second.find("multipart/form-data") != std::string::npos) {
+                // Extract boundary
+                std::string content_type = ct_it->second;
+                size_t boundary_pos = content_type.find("boundary=");
+                if (boundary_pos == std::string::npos) {
+                    Json::Value error_response;
+                    error_response["status"] = "error";
+                    error_response["message"] = "Missing boundary in multipart request";
+                    return create_json_response(400, "Bad Request", error_response);
+                }
+
+                std::string boundary = content_type.substr(boundary_pos + 9);
+                // Remove any quotes around boundary
+                if (!boundary.empty() && boundary[0] == '"') {
+                    boundary = boundary.substr(1, boundary.length() - 2);
+                }
+
+                log("INFO", "Parsing multipart request with boundary: " + boundary);
+
+                // Parse multipart body
+                MultipartData multipart = parse_multipart_body(body, boundary);
+                firmware_data = multipart.firmware_data;
+                request_data = multipart.metadata;
+
+                // Get filename from metadata if present
+                if (request_data.isMember("filename")) {
+                    filename = request_data["filename"].asString();
+                }
+
+                log("INFO", "Extracted firmware data: " + std::to_string(firmware_data.length()) + " bytes");
+            } else {
+                // Parse as regular JSON request
+                Json::CharReaderBuilder reader;
+                std::string errs;
+
+                std::istringstream body_stream(body);
+                if (!Json::parseFromStream(reader, body_stream, &request_data, &errs)) {
+                    Json::Value error_response;
+                    error_response["status"] = "error";
+                    error_response["message"] = "Invalid JSON: " + errs;
+                    return create_json_response(400, "Bad Request", error_response);
+                }
             }
 
             // Check required fields
@@ -249,11 +353,11 @@ private:
 
             log("INFO", "Firmware update: version=" + new_version + ", url=" + firmware_url);
 
-            // Save firmware data if present in the request body
+            // Save firmware data if present
             std::string saved_file;
-            if (body.length() > 1024) { // If body is larger than 1KB, save it
+            if (!firmware_data.empty()) {
                 try {
-                    saved_file = save_firmware_file(body, new_version);
+                    saved_file = save_firmware_file(firmware_data, new_version, filename);
                 } catch (const std::exception& e) {
                     log("WARNING", "Failed to save firmware file: " + std::string(e.what()));
                 }
@@ -283,6 +387,10 @@ private:
             response["previous_version"] = previous_version;
             response["new_version"] = new_version;
             response["update_timestamp"] = last_update;
+            if (!saved_file.empty()) {
+                response["saved_file"] = saved_file;
+                response["firmware_size"] = static_cast<Json::UInt64>(firmware_data.length());
+            }
 
             log("INFO", "Firmware update successful: " + previous_version + " -> " + new_version);
 

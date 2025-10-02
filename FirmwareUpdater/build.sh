@@ -65,6 +65,13 @@ clean_project() {
         echo -e "${GREEN}✓ Removed test_firmwares/${NC}"
     fi
 
+    # Remove received firmwares
+    if [ -d "received_firmwares" ]; then
+        echo -e "${YELLOW}Removing received firmware directory...${NC}"
+        rm -rf received_firmwares
+        echo -e "${GREEN}✓ Removed received_firmwares/${NC}"
+    fi
+
     # Remove other generated files
     echo -e "${YELLOW}Removing temporary files...${NC}"
     rm -f test_firmware*.bin 2>/dev/null || true
