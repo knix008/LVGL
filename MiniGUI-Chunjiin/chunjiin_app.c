@@ -240,11 +240,10 @@ void chunjiin_keyboard_update_display(void) {
     utf8_buffer[utf8_len] = '\0';
     printf("utf8_buffer: %s\n", utf8_buffer);
     
-    if (utf8_len > 0) {
-        SetWindowText(hTextBox, utf8_buffer);
-        InvalidateRect(hTextBox, NULL, TRUE);
-        UpdateWindow(hTextBox, TRUE);
-    }
+    // Always update the textbox, even if the buffer is empty (to clear it)
+    SetWindowText(hTextBox, utf8_buffer);
+    InvalidateRect(hTextBox, NULL, TRUE);
+    UpdateWindow(hTextBox, TRUE);
 }
 
 PLOGFONT chunjiin_load_korean_font(void) {
