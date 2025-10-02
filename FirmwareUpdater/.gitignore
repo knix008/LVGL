@@ -1,0 +1,141 @@
+# ============================================
+# Build Directories
+# ============================================
+build/
+cmake-build-*/
+out/
+dist/
+
+# ============================================
+# Compiled Binaries and Object Files
+# ============================================
+device_simulator
+firmware_uploader
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# ============================================
+# Certificates and Keys (Security)
+# ============================================
+certs/
+*.pem
+*.crt
+*.key
+*.csr
+*.p12
+*.pfx
+
+# ============================================
+# Test Files and Temporary Data
+# ============================================
+received_firmwares/
+test_firmwares/
+test_firmware*.bin
+*.bin
+*.hex
+*.elf
+*.map
+
+# ============================================
+# IDE and Editor Files
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (CLion, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================
+# CMake Generated Files
+# ============================================
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+*.cmake
+!CMakeLists.txt
+
+# CMake build artifacts
+install_manifest.txt
+compile_commands.json
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# ============================================
+# Documentation Build Artifacts
+# ============================================
+docs/_build/
+docs/html/
+docs/latex/
+
+# ============================================
+# Logs and Debugging
+# ============================================
+*.log
+*.logs
+core
+core.*
+vgcore.*
+
+# ============================================
+# Package Management
+# ============================================
+*.tar
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# ============================================
+# Other
+# ============================================
+.cache/
+*.bak
+*.orig
+*.rej
+*.patch
