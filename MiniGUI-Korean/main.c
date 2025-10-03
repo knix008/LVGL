@@ -39,19 +39,16 @@ static const char* korean_texts[] = {
 static int current_text = 0;
 static int current_font = 0;
 
-// Global variables to store created logical fonts
-static PLOGFONT noto_sans_cjk_regular_logfont = NULL;
-static PLOGFONT noto_sans_cjk_bold_logfont = NULL;
-static PLOGFONT noto_serif_cjk_regular_logfont = NULL;
+// Global variables to store three Korean fonts
+static PLOGFONT korean_font_regular = NULL;
+static PLOGFONT korean_font_bold = NULL;
+static PLOGFONT korean_font_extrabold = NULL;
 
-
-
-
-// Font names for display - Korean TTF fonts
+// Font names for display
 static const char* font_names[] = {
-    "NanumSquareRound (Korean TTF)",
-    "NanumSquareRound Bold (Korean TTF Bold)",
-    "NanumBarunGothic (Korean TTF)",
+    "NanumGothic Regular",
+    "NanumGothic Bold", 
+    "NanumGothic ExtraBold",
     NULL
 };
 
@@ -72,119 +69,87 @@ static LRESULT KoreanWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             FillBox(hdc, 0, 0, RECTW(rect), RECTH(rect));
             printf("Background filled\n");
             
-            // Use pre-created logical fonts from main
+            // Apply the appropriate Korean font based on current_font
             PLOGFONT selected_font = NULL;
-            
-            if (current_font == 0) {
-                // Use pre-created NotoSansCJK-Regular logical font
-                if (noto_sans_cjk_regular_logfont) {
-                    selected_font = noto_sans_cjk_regular_logfont;
-                    printf("✓ Using pre-created NotoSansCJK-Regular logical font\n");
-                } else {
-                    printf("✗ Pre-created NotoSansCJK-Regular not available, using system font 5\n");
-                    selected_font = GetSystemFont(5);
-                }
-            } else if (current_font == 1) {
-                // Use pre-created NotoSansCJK-Bold logical font
-                if (noto_sans_cjk_bold_logfont) {
-                    selected_font = noto_sans_cjk_bold_logfont;
-                    printf("✓ Using pre-created NotoSansCJK-Bold logical font\n");
-                } else {
-                    printf("✗ Pre-created NotoSansCJK-Bold not available, using system font 5\n");
-                    selected_font = GetSystemFont(5);
-                }
+            if (current_font == 0 && korean_font_regular) {
+                selected_font = korean_font_regular;
+                printf("✓ Using NanumGothic Regular font\n");
+            } else if (current_font == 1 && korean_font_bold) {
+                selected_font = korean_font_bold;
+                printf("✓ Using NanumGothic Bold font\n");
+            } else if (current_font == 2 && korean_font_extrabold) {
+                selected_font = korean_font_extrabold;
+                printf("✓ Using NanumGothic ExtraBold font\n");
             } else {
-                // Use pre-created NotoSerifCJK-Regular logical font
-                if (noto_serif_cjk_regular_logfont) {
-                    selected_font = noto_serif_cjk_regular_logfont;
-                    printf("✓ Using pre-created NotoSerifCJK-Regular logical font\n");
-                } else {
-                    printf("✗ Pre-created NotoSerifCJK-Regular not available, using system font 5\n");
-                    selected_font = GetSystemFont(5);
-                }
+                // Fallback to any available font
+                selected_font = korean_font_regular ? korean_font_regular : 
+                               (korean_font_bold ? korean_font_bold : korean_font_extrabold);
+                printf("✓ Using fallback Korean font\n");
             }
             
-            // Apply the selected font
             if (selected_font) {
                 SelectFont(hdc, selected_font);
-                printf("✓ Font selected successfully\n");
+                printf("✓ Korean font selected successfully\n");
             } else {
-                // Ultimate fallback
-                SelectFont(hdc, GetSystemFont(0));
-                printf("Using ultimate fallback system font 0\n");
+                printf("We cannot using korean fonts now!!!\n");
+                break;
             }
             
             // Display current Korean text using direct UTF-8
             if (korean_texts[current_text]) {
-                SetTextColor(hdc, PIXEL_black);
-                
                 // Debug: Print to console
                 printf("Displaying Korean text: %s\n", korean_texts[current_text]);
                 
-                // First, draw some visible rectangles to ensure the window is working
-                SetBkColor(hdc, PIXEL_red);
-                FillBox(hdc, 10, 10, 100, 30);
-                SetBkColor(hdc, PIXEL_green);
-                FillBox(hdc, 120, 10, 100, 30);
-                SetBkColor(hdc, PIXEL_blue);
-                FillBox(hdc, 230, 10, 100, 30);
-                
-                // Try very simple text rendering with high contrast
-                SetBkColor(hdc, PIXEL_black);
-                SetTextColor(hdc, PIXEL_lightwhite);
-                printf("Rendering text: TEST, Hello, World\n");
-                TextOut(hdc, 20, 50, "TEST");
-                TextOut(hdc, 20, 80, "Hello");
-                TextOut(hdc, 20, 110, "World");
-                
-                // Try Korean text with high contrast
-                SetBkColor(hdc, PIXEL_yellow);
-                SetTextColor(hdc, PIXEL_black);
-                TextOut(hdc, 20, 140, "안녕하세요");
-                TextOut(hdc, 20, 170, "한국어");
-                TextOut(hdc, 20, 200, "테스트");
-                
-                // Try with system font
-                SelectFont(hdc, GetSystemFont(0));
-                SetBkColor(hdc, PIXEL_lightgray);
-                SetTextColor(hdc, PIXEL_black);
-                TextOut(hdc, 20, 230, "System Font Test");
-                TextOut(hdc, 20, 260, "안녕하세요");
-                
-                // Try with different font sizes and positions
+                // Clear background
                 SetBkColor(hdc, PIXEL_lightwhite);
-                SetTextColor(hdc, PIXEL_red);
-                TextOut(hdc, 20, 290, korean_texts[current_text]);
-                
-                // Add more visible elements
-                SetBkColor(hdc, PIXEL_lightgray);
-                FillBox(hdc, 10, 250, 200, 20);
                 SetTextColor(hdc, PIXEL_black);
-                TextOut(hdc, 20, 255, "Status: Korean Font Test");
                 
-                // Display Korean text with different approaches
+                // Display the main Korean text prominently in the center
+                RECT text_rect;
+                text_rect.left = 50;
+                text_rect.top = 80;
+                text_rect.right = RECTW(rect) - 50;
+                text_rect.bottom = 150;
+                
+                // Draw a subtle border around the text area
+                SetBkColor(hdc, PIXEL_lightgray);
+                FillBox(hdc, text_rect.left - 10, text_rect.top - 10, 
+                       text_rect.right - text_rect.left + 20, 
+                       text_rect.bottom - text_rect.top + 20);
+                
+                // Display the current Korean text from korean_texts array
+                SetBkColor(hdc, PIXEL_lightwhite);
+                SetTextColor(hdc, PIXEL_black);
+                DrawText(hdc, korean_texts[current_text], -1, &text_rect, 
+                        DT_CENTER | DT_VCENTER | DT_WORDBREAK);
+                
+                // Display text index information
+                char index_info[100];
+                snprintf(index_info, sizeof(index_info), "Text %d of %d", 
+                        current_text + 1, 
+                        (int)(sizeof(korean_texts)/sizeof(korean_texts[0]) - 1));
+                        
+                RECT index_rect;
+                index_rect.left = 50;
+                index_rect.top = 160;
+                index_rect.right = RECTW(rect) - 50;
+                index_rect.bottom = 180;
+                
                 SetTextColor(hdc, PIXEL_darkblue);
-                TextOutLen(hdc, 50, 230, "안녕하세요", strlen("안녕하세요"));
-                TextOutLen(hdc, 50, 260, "한국어", strlen("한국어"));
-                TextOutLen(hdc, 50, 290, "테스트", strlen("테스트"));
-                
-                // Draw some rectangles to make sure the window is visible
-                SetBkColor(hdc, PIXEL_red);
-                FillBox(hdc, 10, 320, 50, 20);
-                SetBkColor(hdc, PIXEL_green);
-                FillBox(hdc, 70, 320, 50, 20);
-                SetBkColor(hdc, PIXEL_blue);
-                FillBox(hdc, 130, 320, 50, 20);
+                DrawText(hdc, index_info, -1, &index_rect, DT_CENTER | DT_SINGLELINE);
             }
             
-            // Display font information
+            // Display font information more prominently
             SetTextColor(hdc, PIXEL_darkblue);
             rect.top = rect.bottom - 80;
             rect.bottom = rect.bottom - 50;
             if (font_names[current_font]) {
                 char font_info[256];
-                snprintf(font_info, sizeof(font_info), "Current Font: %s", font_names[current_font]);
+                snprintf(font_info, sizeof(font_info), "Font: %s (Index: %d)", 
+                        font_names[current_font], current_font);
                 DrawText(hdc, font_info, -1, &rect, DT_CENTER | DT_SINGLELINE);
+            } else {
+                DrawText(hdc, "Current Font: System Default", -1, &rect, DT_CENTER | DT_SINGLELINE);
             }
             
             // Display instruction text at bottom
@@ -214,6 +179,7 @@ static LRESULT KoreanWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
                     if (font_names[current_font] == NULL) {
                         current_font = 0;
                     }
+                    printf("Font switched to: %s (Index: %d)\n", font_names[current_font], current_font);
                     InvalidateRect(hWnd, NULL, TRUE);
                     break;
                     
@@ -226,6 +192,19 @@ static LRESULT KoreanWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             break;
 
         case MSG_CLOSE:
+            // Clean up all Korean fonts before closing
+            if (korean_font_regular) {
+                DestroyLogFont(korean_font_regular);
+                korean_font_regular = NULL;
+            }
+            if (korean_font_bold) {
+                DestroyLogFont(korean_font_bold);
+                korean_font_bold = NULL;
+            }
+            if (korean_font_extrabold) {
+                DestroyLogFont(korean_font_extrabold);
+                korean_font_extrabold = NULL;
+            }
             DestroyMainWindow(hWnd);
             PostQuitMessage(hWnd);
             return 0;
@@ -244,59 +223,51 @@ int MiniGUIMain(int args, const char* arg[])
     setlocale(LC_ALL, "ko_KR.UTF-8");
     printf("Locale set to: %s\n", setlocale(LC_ALL, NULL));
     
-    // Create Korean fonts using system fonts and file paths
-    printf("Creating Korean fonts...\n");
+    // Create all three Korean fonts from install/share/fonts
+    printf("Creating Korean fonts using fonts from install/share/fonts...\n");
     
-    // Get current working directory for font paths
-    char cwd[512];
-    if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        printf("Warning: Could not get current working directory\n");
-        strcpy(cwd, "."); // Use current directory as fallback
-    }
-    
-    // Try system font names first
-    noto_sans_cjk_regular_logfont = CreateLogFont("ttf", "NanumSquareRound", "UTF-8", 
-        FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
-        FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
-    if (noto_sans_cjk_regular_logfont) {
-        printf("✓ NanumSquareRound system font created successfully\n");
+    // Load NanumGothic-Regular
+    korean_font_regular = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
+                                        FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                        FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                        16, 0);
+    if (korean_font_regular) {
+        printf("✓ Loaded NanumGothic-Regular successfully\n");
     } else {
-        printf("✗ Failed to create NanumSquareRound system font\n");
-        
-        // Try with absolute path as fallback
-        char font_path_regular[1024];
-        snprintf(font_path_regular, sizeof(font_path_regular), "%s/assets/fonts/NanumGothic-Regular.ttf", cwd);
-        noto_sans_cjk_regular_logfont = CreateLogFont("ttf", font_path_regular, "UTF-8", 
-            FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
-            FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
-        if (noto_sans_cjk_regular_logfont) {
-            printf("✓ NanumGothic-Regular logical font created successfully from %s\n", font_path_regular);
-        } else {
-            printf("✗ Failed to create NanumGothic-Regular logical font from %s\n", font_path_regular);
-        }
+        printf("✗ Failed to load NanumGothic-Regular\n");
     }
     
-    // Try to create bold font
-    noto_sans_cjk_bold_logfont = CreateLogFont("ttf", "NanumSquareRound", "UTF-8", 
-        FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
-        FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
-    if (noto_sans_cjk_bold_logfont) {
-        printf("✓ NanumSquareRound Bold system font created successfully\n");
+    // Load NanumGothic-Bold
+    korean_font_bold = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
+                                     FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                     FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                     16, 0);
+    if (korean_font_bold) {
+        printf("✓ Loaded NanumGothic-Bold successfully\n");
     } else {
-        printf("✗ Failed to create NanumSquareRound Bold system font\n");
+        printf("✗ Failed to load NanumGothic-Bold\n");
     }
     
-    // Try to create extra bold font
-    noto_serif_cjk_regular_logfont = CreateLogFont("ttf", "NanumBarunGothic", "UTF-8", 
-        FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE, 
-        FONT_OTHER_AUTOSCALE, FONT_DECORATE_NONE, FONT_RENDER_GREY, 24, 0);
-    if (noto_serif_cjk_regular_logfont) {
-        printf("✓ NanumBarunGothic system font created successfully\n");
+    // Load NanumGothic-ExtraBold
+    korean_font_extrabold = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
+                                          FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                          FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                          16, 0);
+    if (korean_font_extrabold) {
+        printf("✓ Loaded NanumGothic-ExtraBold successfully\n");
     } else {
-        printf("✗ Failed to create NanumBarunGothic system font\n");
+        printf("✗ Failed to load NanumGothic-ExtraBold\n");
     }
     
-    printf("Korean font creation completed.\n");
+    // Check if at least one font loaded successfully
+    if (!korean_font_regular && !korean_font_bold && !korean_font_extrabold) {
+        printf("✗ Failed to load any Korean fonts!\n");
+    } else {
+        printf("✓ Korean font loading completed. Available fonts: Regular=%s, Bold=%s, ExtraBold=%s\n",
+               korean_font_regular ? "Yes" : "No",
+               korean_font_bold ? "Yes" : "No", 
+               korean_font_extrabold ? "Yes" : "No");
+    }
 
 #ifdef _MGRM_PROCESSES
     JoinLayer(NAME_DEF_LAYER, arg[0], 0, 0);

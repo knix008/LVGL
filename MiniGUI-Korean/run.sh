@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Korean Input Application Runner
-# This script runs the Korean QWERTY input application
+# Korean Font Display Application Runner
+# This script runs the Korean font display application
 
-echo "Starting Korean QWERTY Input Application..."
+echo "Starting Korean Font Display Application..."
 
 # Check if the application exists
 if [ ! -f "./korean_display" ]; then
-    echo "Error: korean_input executable not found!"
+    echo "Error: korean_display executable not found!"
     echo "Please run 'make' first to build the application."
     exit 1
 fi
@@ -38,7 +38,7 @@ echo "  MG_DEFAULTMODE: $MG_DEFAULTMODE"
 echo "  MG_CONFIG_FILE: $MG_CONFIG_FILE"
 echo ""
 
-echo "Starting Korean Input Application..."
+echo "Starting Korean Font Display Application..."
 echo "Press Ctrl+C to exit the application."
 echo ""
 
@@ -46,4 +46,4 @@ echo ""
 ./korean_display
 
 echo ""
-echo "Korean Input Application has exited."
+echo "Korean Font Display Application has exited."
