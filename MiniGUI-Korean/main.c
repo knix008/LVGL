@@ -227,36 +227,36 @@ int MiniGUIMain(int args, const char* arg[])
     printf("Creating Korean fonts using fonts from install/share/fonts...\n");
     
     // Load NanumGothic-Regular
-    korean_font_regular = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8", 
-                                        FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+    korean_font_regular = CreateLogFont("ttf", "NanumGothic", "UTF-8",
+                                        FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                         FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                         16, 0);
     if (korean_font_regular) {
-        printf("✓ Loaded NanumGothic-Regular successfully\n");
+        printf("✓ Loaded NanumGothic Regular successfully\n");
     } else {
-        printf("✗ Failed to load NanumGothic-Regular\n");
+        printf("✗ Failed to load NanumGothic Regular\n");
     }
-    
+
     // Load NanumGothic-Bold
-    korean_font_bold = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8", 
-                                     FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+    korean_font_bold = CreateLogFont("ttf", "NanumGothic", "UTF-8",
+                                     FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                      FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                      16, 0);
     if (korean_font_bold) {
-        printf("✓ Loaded NanumGothic-Bold successfully\n");
+        printf("✓ Loaded NanumGothic Bold successfully\n");
     } else {
-        printf("✗ Failed to load NanumGothic-Bold\n");
+        printf("✗ Failed to load NanumGothic Bold\n");
     }
-    
-    // Load NanumGothic-ExtraBold
-    korean_font_extrabold = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8", 
-                                          FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+
+    // Load NanumGothic-ExtraBold (using BLACK weight for extra bold)
+    korean_font_extrabold = CreateLogFont("ttf", "NanumGothic", "UTF-8",
+                                          FONT_WEIGHT_BLACK, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                           FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                           16, 0);
     if (korean_font_extrabold) {
-        printf("✓ Loaded NanumGothic-ExtraBold successfully\n");
+        printf("✓ Loaded NanumGothic ExtraBold successfully\n");
     } else {
-        printf("✗ Failed to load NanumGothic-ExtraBold\n");
+        printf("✗ Failed to load NanumGothic ExtraBold\n");
     }
     
     // Check if at least one font loaded successfully
