@@ -4,7 +4,7 @@
 #include "lvgl.h"
 
 // Number tab functions
-void create_number_tab(lv_obj_t * parent);
+lv_obj_t* create_number_tab(lv_obj_t * parent);
 
 // Number tab callbacks
 void keypad_number_cb(lv_event_t * e);

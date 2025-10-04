@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Static variables for English T9 input
 static char english_buffer[256] = "";
@@ -36,9 +37,24 @@ static const char* english_char_maps[] = {
     " "       // Button 0 - space
 };
 
+// Actual character mappings (uppercase)
+static const char* english_char_maps_upper[] = {
+    "ABC",    // Button 1
+    "DEF",    // Button 2
+    "GHI",    // Button 3
+    "JKL",    // Button 4
+    "MNO",    // Button 5
+    "PQR",    // Button 6
+    "STU",    // Button 7
+    "VWX",    // Button 8
+    "YZ",     // Button 9
+    " "       // Button 0 - space
+};
+
 // Track current button press counts for T9 cycling
 static int button_press_counts[10] = {0};
 static int last_button_pressed = -1;
+static bool shift_active = false;  // Track shift state
 
 // Update display function
 static void update_english_display(void) {
@@ -54,7 +70,8 @@ static void english_button_cb(lv_event_t * e) {
         int* button_index = (int*)lv_event_get_user_data(e);
         int btn_idx = *button_index;
 
-        const char* chars = english_char_maps[btn_idx];
+        // Choose character set based on shift state
+        const char* chars = shift_active ? english_char_maps_upper[btn_idx] : english_char_maps[btn_idx];
         int char_count = strlen(chars);
 
         if (char_count == 0) return;
@@ -120,6 +137,33 @@ static void english_clear_cb(lv_event_t * e) {
         english_buffer[0] = '\0';
         update_english_display();
         last_button_pressed = -1;
+        shift_active = false;  // Reset shift state when clearing
+        for (int i = 0; i < 10; i++) {
+            button_press_counts[i] = 0;
+        }
+    }
+}
+
+// Shift callback - toggle between uppercase and lowercase
+static void english_shift_cb(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        shift_active = !shift_active;
+        
+        // Update the shift button appearance
+        lv_obj_t * btn = lv_event_get_target(e);
+        lv_obj_t * label = lv_obj_get_child(btn, 0);
+        
+        if (shift_active) {
+            lv_label_set_text(label, "SHIFT");
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x4CAF50), 0); // Green when active
+        } else {
+            lv_label_set_text(label, "shift");
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x808080), 0); // Gray when inactive
+        }
+        
+        // Reset button tracking when shift changes
+        last_button_pressed = -1;
         for (int i = 0; i < 10; i++) {
             button_press_counts[i] = 0;
         }
@@ -184,6 +228,7 @@ void english_close_dialog_cb(lv_event_t * e) {
 
         // Reset tracking
         last_button_pressed = -1;
+        shift_active = false;  // Reset shift state
         for (int i = 0; i < 10; i++) {
             button_press_counts[i] = 0;
         }
@@ -200,6 +245,7 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     // Reset buffer and tracking
     english_buffer[0] = '\0';
     last_button_pressed = -1;
+    shift_active = false;  // Reset shift state
     for (int i = 0; i < 10; i++) {
         button_press_counts[i] = 0;
     }
@@ -281,13 +327,23 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, english_backspace_cb, LV_EVENT_CLICKED, NULL);
 
-    // Row 5: Clear and Enter buttons
+    // Row 5: Shift, Clear, and Enter buttons
     int row5_y = start_y + 4 * (btn_height + btn_spacing);
 
-    // Clear button (left)
+    // Shift button (left)
+    lv_obj_t * shift_btn = lv_btn_create(tab);
+    lv_obj_set_size(shift_btn, btn_width, btn_height);
+    lv_obj_align(shift_btn, LV_ALIGN_TOP_MID, -(btn_width + btn_spacing), row5_y);
+    lv_obj_t * shift_label = lv_label_create(shift_btn);
+    lv_label_set_text(shift_label, "shift");
+    lv_obj_center(shift_label);
+    lv_obj_set_style_bg_color(shift_btn, lv_color_hex(0x808080), 0); // Gray when inactive
+    lv_obj_add_event_cb(shift_btn, english_shift_cb, LV_EVENT_CLICKED, NULL);
+
+    // Clear button (center)
     lv_obj_t * clear_btn = lv_btn_create(tab);
     lv_obj_set_size(clear_btn, btn_width, btn_height);
-    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(btn_width / 2 + btn_spacing / 2), row5_y);
+    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, 0, row5_y);
     lv_obj_t * clear_label = lv_label_create(clear_btn);
     lv_label_set_text(clear_label, "Clear");
     lv_obj_center(clear_label);
@@ -296,7 +352,7 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     // Enter button (right)
     lv_obj_t * enter_btn = lv_btn_create(tab);
     lv_obj_set_size(enter_btn, btn_width, btn_height);
-    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, (btn_width / 2 + btn_spacing / 2), row5_y);
+    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, (btn_width + btn_spacing), row5_y);
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);

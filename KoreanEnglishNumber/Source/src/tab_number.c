@@ -104,9 +104,14 @@ void keypad_close_dialog_cb(lv_event_t * e) {
 }
 
 // Create Number tab
-void create_number_tab(lv_obj_t * parent) {
+lv_obj_t* create_number_tab(lv_obj_t * parent) {
+    // Create tab container (same as other modes)
+    lv_obj_t* tab = lv_obj_create(parent);
+    lv_obj_set_size(tab, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_pad_all(tab, 10, 0);
+
     // Display area for entered numbers (same position as other modes)
-    lv_obj_t * keypad_display = lv_label_create(parent);
+    lv_obj_t * keypad_display = lv_label_create(tab);
     lv_label_set_text(keypad_display, "0");
     lv_obj_set_size(keypad_display, 280, 50);  // Same size as other modes
     lv_obj_align(keypad_display, LV_ALIGN_TOP_MID, 0, 5);  // Same position as other modes
@@ -126,7 +131,7 @@ void create_number_tab(lv_obj_t * parent) {
 
     // Row 1: 1, 2, 3
     for (int i = 0; i < 3; i++) {
-        lv_obj_t * btn = lv_btn_create(parent);
+        lv_obj_t * btn = lv_btn_create(tab);
         lv_obj_set_size(btn, btn_width, btn_height);
         lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y);
         lv_obj_t * label = lv_label_create(btn);
@@ -139,7 +144,7 @@ void create_number_tab(lv_obj_t * parent) {
 
     // Row 2: 4, 5, 6
     for (int i = 0; i < 3; i++) {
-        lv_obj_t * btn = lv_btn_create(parent);
+        lv_obj_t * btn = lv_btn_create(tab);
         lv_obj_set_size(btn, btn_width, btn_height);
         lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y + (btn_height + btn_spacing));
         lv_obj_t * label = lv_label_create(btn);
@@ -152,7 +157,7 @@ void create_number_tab(lv_obj_t * parent) {
 
     // Row 3: 7, 8, 9
     for (int i = 0; i < 3; i++) {
-        lv_obj_t * btn = lv_btn_create(parent);
+        lv_obj_t * btn = lv_btn_create(tab);
         lv_obj_set_size(btn, btn_width, btn_height);
         lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y + 2 * (btn_height + btn_spacing));
         lv_obj_t * label = lv_label_create(btn);
@@ -164,7 +169,7 @@ void create_number_tab(lv_obj_t * parent) {
     }
 
     // Row 4: Clear, 0, Back
-    lv_obj_t * clear_btn = lv_btn_create(parent);
+    lv_obj_t * clear_btn = lv_btn_create(tab);
     lv_obj_set_size(clear_btn, btn_width, btn_height);
     lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(btn_width + btn_spacing), start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * clear_label = lv_label_create(clear_btn);
@@ -173,7 +178,7 @@ void create_number_tab(lv_obj_t * parent) {
     lv_obj_add_event_cb(clear_btn, keypad_clear_cb, LV_EVENT_CLICKED, NULL);
 
     // 0 button in center
-    lv_obj_t * zero_btn = lv_btn_create(parent);
+    lv_obj_t * zero_btn = lv_btn_create(tab);
     lv_obj_set_size(zero_btn, btn_width, btn_height);
     lv_obj_align(zero_btn, LV_ALIGN_TOP_MID, 0, start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * zero_label = lv_label_create(zero_btn);
@@ -182,7 +187,7 @@ void create_number_tab(lv_obj_t * parent) {
     lv_obj_add_event_cb(zero_btn, keypad_number_cb, LV_EVENT_CLICKED, NULL);
 
     // Backspace button
-    lv_obj_t * backspace_btn = lv_btn_create(parent);
+    lv_obj_t * backspace_btn = lv_btn_create(tab);
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
     lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, (btn_width + btn_spacing), start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * backspace_label = lv_label_create(backspace_btn);
@@ -191,11 +196,13 @@ void create_number_tab(lv_obj_t * parent) {
     lv_obj_add_event_cb(backspace_btn, keypad_backspace_cb, LV_EVENT_CLICKED, NULL);
 
     // Row 5: Enter button (centered, wider)
-    lv_obj_t * enter_btn = lv_btn_create(parent);
+    lv_obj_t * enter_btn = lv_btn_create(tab);
     lv_obj_set_size(enter_btn, 120, 60);
     lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, 0, start_y + 4 * (btn_height + btn_spacing));
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, keypad_enter_cb, LV_EVENT_CLICKED, NULL);
+    
+    return tab;
 } 
