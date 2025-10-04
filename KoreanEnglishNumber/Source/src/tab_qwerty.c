@@ -271,27 +271,27 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     lv_obj_set_size(tab, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_pad_all(tab, 10, 0);
     
-    // Create display label
+    // Create display label for 320x640
     g_qwerty_display_label = lv_label_create(tab);
-    lv_obj_set_size(g_qwerty_display_label, 400, 60); // Match ChunJiIn size
-    lv_obj_align(g_qwerty_display_label, LV_ALIGN_TOP_MID, 0, 10); // Match ChunJiIn position
-    lv_obj_set_style_bg_color(g_qwerty_display_label, lv_color_hex(0x00FF00), 0); // Green background like ChunJiIn
-    lv_obj_set_style_bg_opa(g_qwerty_display_label, LV_OPA_COVER, 0); // Make background fully opaque
-    lv_obj_set_style_bg_main_stop(g_qwerty_display_label, 0, 0); // Ensure main color is applied
-    lv_obj_set_style_bg_grad_color(g_qwerty_display_label, lv_color_hex(0x00FF00), 0); // Set gradient color to same green
-    lv_obj_set_style_bg_grad_dir(g_qwerty_display_label, LV_GRAD_DIR_NONE, 0); // No gradient, solid color
-    lv_obj_set_style_border_color(g_qwerty_display_label, lv_color_make(128, 128, 128), 0); // Gray border
-    lv_obj_set_style_border_width(g_qwerty_display_label, 3, 0); // Thicker border like ChunJiIn
-    lv_obj_set_style_pad_all(g_qwerty_display_label, 15, 0); // More padding like ChunJiIn
-    lv_obj_set_style_text_font(g_qwerty_display_label, get_korean_font_small(), 0); // Apply small Korean font like ChunJiIn
-    lv_obj_set_style_text_color(g_qwerty_display_label, lv_color_make(0, 0, 0), 0); // Black text for better contrast
+    lv_obj_set_size(g_qwerty_display_label, 280, 50); // Adjusted for 320x640
+    lv_obj_align(g_qwerty_display_label, LV_ALIGN_TOP_MID, 0, 5);
+    lv_obj_set_style_bg_color(g_qwerty_display_label, lv_color_hex(0x00FF00), 0);
+    lv_obj_set_style_bg_opa(g_qwerty_display_label, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_main_stop(g_qwerty_display_label, 0, 0);
+    lv_obj_set_style_bg_grad_color(g_qwerty_display_label, lv_color_hex(0x00FF00), 0);
+    lv_obj_set_style_bg_grad_dir(g_qwerty_display_label, LV_GRAD_DIR_NONE, 0);
+    lv_obj_set_style_border_color(g_qwerty_display_label, lv_color_make(128, 128, 128), 0);
+    lv_obj_set_style_border_width(g_qwerty_display_label, 2, 0);
+    lv_obj_set_style_pad_all(g_qwerty_display_label, 10, 0);
+    lv_obj_set_style_text_font(g_qwerty_display_label, get_korean_font_small(), 0);
+    lv_obj_set_style_text_color(g_qwerty_display_label, lv_color_make(0, 0, 0), 0);
     lv_label_set_text(g_qwerty_display_label, "");
-    
-    // Button dimensions and spacing - further reduced size
-    int btn_width = 50;
-    int btn_height = 30;
-    int btn_spacing = 5;
-    int start_y = 100;
+
+    // Button dimensions for 320x640 - compact QWERTY
+    int btn_width = 28;
+    int btn_height = 50;
+    int btn_spacing = 3;
+    int start_y = 70;
     
     // Create QWERTY keyboard layout
     for (int row = 0; row < 3; row++) {
@@ -303,9 +303,9 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
             }
         }
         
-        // Calculate center offset for this row (moved 5px to the right)
+        // Calculate center offset for this row
         int total_width = valid_keys * btn_width + (valid_keys - 1) * btn_spacing;
-        int center_offset = -total_width / 2 + 25;
+        int center_offset = -total_width / 2;
         
         int key_index = 0;
         for (int col = 0; col < 10; col++) {
@@ -334,41 +334,40 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
         }
     }
     
-    // Create special keys row
-    int special_start_y = start_y + 3 *(btn_height + btn_spacing);
-    
-    // Calculate center positions for special keys row
-    int shift_width = 60;
-    int space_width = 120;
-    int backspace_width = 50;
-    int enter_width = 60;
-    int special_spacing = 20;
-    int x_offset = 30;
-    
+    // Create special keys row for 320x640
+    int special_start_y = start_y + 3 * (btn_height + btn_spacing);
+
+    // Calculate center positions for special keys row - compact for 320 width
+    int shift_width = 50;
+    int space_width = 100;
+    int backspace_width = 45;
+    int enter_width = 50;
+    int special_spacing = 5;
+
     // Calculate total width and center offset
     int total_special_width = shift_width + special_spacing + space_width + special_spacing + backspace_width + special_spacing + enter_width;
-    int special_center_offset = -total_special_width / 2 + x_offset;
+    int special_center_offset = -total_special_width / 2;
 
     // Shift key
     lv_obj_t* shift_btn = lv_btn_create(tab);
     lv_obj_set_size(shift_btn, shift_width, btn_height);
-    lv_obj_align(shift_btn, LV_ALIGN_TOP_MID, special_center_offset + special_spacing, special_start_y);
+    lv_obj_align(shift_btn, LV_ALIGN_TOP_MID, special_center_offset, special_start_y);
     lv_obj_t* shift_label = lv_label_create(shift_btn);
     lv_label_set_text(shift_label, "Shift");
     lv_obj_set_style_text_font(shift_label, font, 0);
     lv_obj_center(shift_label);
     lv_obj_add_event_cb(shift_btn, qwerty_shift_cb, LV_EVENT_CLICKED, NULL);
-    
+
     // Space key
     lv_obj_t* space_btn = lv_btn_create(tab);
     lv_obj_set_size(space_btn, space_width, btn_height);
-    lv_obj_align(space_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing + x_offset + 15, special_start_y);
+    lv_obj_align(space_btn, LV_ALIGN_TOP_MID, special_center_offset + shift_width + special_spacing, special_start_y);
     lv_obj_t* space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
     lv_obj_set_style_text_font(space_label, font, 0);
     lv_obj_center(space_label);
     lv_obj_add_event_cb(space_btn, qwerty_space_cb, LV_EVENT_CLICKED, NULL);
-    
+
     // Backspace key
     lv_obj_t* backspace_btn = lv_btn_create(tab);
     lv_obj_set_size(backspace_btn, backspace_width, btn_height);
@@ -378,7 +377,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     lv_obj_set_style_text_font(backspace_label, font, 0);
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, qwerty_backspace_cb, LV_EVENT_CLICKED, NULL);
-    
+
     // Enter key
     lv_obj_t* enter_btn = lv_btn_create(tab);
     lv_obj_set_size(enter_btn, enter_width, btn_height);

@@ -105,89 +105,95 @@ void keypad_close_dialog_cb(lv_event_t * e) {
 
 // Create Number tab
 void create_number_tab(lv_obj_t * parent) {
-    // Tab 4: Number Keypad
-    lv_obj_t * keypad_label = lv_label_create(parent);
-    lv_label_set_text(keypad_label, "Number Keypad");
-    lv_obj_align(keypad_label, LV_ALIGN_TOP_MID, 0, 10);
-
-    // Display area for entered numbers
+    // Display area for entered numbers (same position as other modes)
     lv_obj_t * keypad_display = lv_label_create(parent);
     lv_label_set_text(keypad_display, "0");
-    lv_obj_set_style_bg_color(keypad_display, lv_color_hex(0x00FF00), 0); // Green background like QWERTY tab
+    lv_obj_set_size(keypad_display, 280, 50);  // Same size as other modes
+    lv_obj_align(keypad_display, LV_ALIGN_TOP_MID, 0, 5);  // Same position as other modes
+    lv_obj_set_style_bg_color(keypad_display, lv_color_hex(0x00FF00), 0); // Green background
     lv_obj_set_style_bg_opa(keypad_display, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_main_stop(keypad_display, 0, 0); // Ensure main color is applied
-    lv_obj_set_style_bg_grad_color(keypad_display, lv_color_hex(0x00FF00), 0); // Set gradient color to same green
-    lv_obj_set_style_bg_grad_dir(keypad_display, LV_GRAD_DIR_NONE, 0); // No gradient, solid color
-    lv_obj_set_style_border_color(keypad_display, lv_color_make(128, 128, 128), 0); // Gray border like QWERTY tab
-    lv_obj_set_style_border_width(keypad_display, 3, 0); // Thicker border like QWERTY tab
-    lv_obj_set_style_pad_all(keypad_display, 15, 0); // More padding like QWERTY tab
-    lv_obj_set_size(keypad_display, 400, 60); // Match QWERTY tab size
-    lv_obj_align(keypad_display, LV_ALIGN_TOP_MID, 0, 10); // Match QWERTY tab position
+    lv_obj_set_style_border_color(keypad_display, lv_color_make(128, 128, 128), 0);
+    lv_obj_set_style_border_width(keypad_display, 2, 0);
+    lv_obj_set_style_pad_all(keypad_display, 10, 0);
+    lv_obj_set_style_text_color(keypad_display, lv_color_make(0, 0, 0), 0);  // Black text
     keypad_display_label = keypad_display;
 
-    // Create number buttons in a 3x4 grid layout
-    const char * number_labels[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
-    int btn_width = 60;  // Increased from 50 to 80
-    int btn_height = 40; // Increased from 30 to 50
-    int btn_spacing = 8; // Increased from 5 to 8
-    int grid_width = 3 * btn_width + 2 * btn_spacing; // Total width of 3 buttons with spacing
-    int grid_height = 4 * btn_height + 3 * btn_spacing; // Total height of 4 rows with spacing
-    
-    // Calculate center offsets to position the grid in the center
-    int center_x_offset = -(grid_width / 3);
-    int center_y_offset = -120; // Move up from center for better positioning
+    // Standard button dimensions (same for all modes)
+    int btn_width = 85;
+    int btn_height = 70;
+    int btn_spacing = 8;
+    int start_y = 70;  // Standard start position for all modes
 
-    for (int i = 0; i < 10; i++) {
+    // Row 1: 1, 2, 3
+    for (int i = 0; i < 3; i++) {
         lv_obj_t * btn = lv_btn_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        
-        // Position buttons in a 3x4 grid (1-9 in 3x3, 0 at bottom center)
-        int row, col;
-        if (i == 9) { // 0 button
-            row = 3;
-            col = 1;
-        } else {
-            row = i / 3;
-            col = i % 3;
-        }
-        
-        // Calculate relative position from center
-        int rel_x = center_x_offset + col * (btn_width + btn_spacing);
-        int rel_y = center_y_offset + row * (btn_height + btn_spacing);
-        
-        lv_obj_align(btn, LV_ALIGN_CENTER, rel_x, rel_y);
-
-        lv_obj_t * btn_label = lv_label_create(btn);
-        lv_label_set_text(btn_label, number_labels[i]);
-        lv_obj_center(btn_label);
-
+        lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y);
+        lv_obj_t * label = lv_label_create(btn);
+        char num[2] = {0};
+        num[0] = '1' + i;
+        lv_label_set_text(label, num);
+        lv_obj_center(label);
         lv_obj_add_event_cb(btn, keypad_number_cb, LV_EVENT_CLICKED, NULL);
     }
 
-    int y_offset = 50;
-    // Function buttons
+    // Row 2: 4, 5, 6
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t * btn = lv_btn_create(parent);
+        lv_obj_set_size(btn, btn_width, btn_height);
+        lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y + (btn_height + btn_spacing));
+        lv_obj_t * label = lv_label_create(btn);
+        char num[2] = {0};
+        num[0] = '4' + i;
+        lv_label_set_text(label, num);
+        lv_obj_center(label);
+        lv_obj_add_event_cb(btn, keypad_number_cb, LV_EVENT_CLICKED, NULL);
+    }
+
+    // Row 3: 7, 8, 9
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t * btn = lv_btn_create(parent);
+        lv_obj_set_size(btn, btn_width, btn_height);
+        lv_obj_align(btn, LV_ALIGN_TOP_MID, (i - 1) * (btn_width + btn_spacing), start_y + 2 * (btn_height + btn_spacing));
+        lv_obj_t * label = lv_label_create(btn);
+        char num[2] = {0};
+        num[0] = '7' + i;
+        lv_label_set_text(label, num);
+        lv_obj_center(label);
+        lv_obj_add_event_cb(btn, keypad_number_cb, LV_EVENT_CLICKED, NULL);
+    }
+
+    // Row 4: Clear, 0, Back
     lv_obj_t * clear_btn = lv_btn_create(parent);
     lv_obj_set_size(clear_btn, btn_width, btn_height);
-    lv_obj_align(clear_btn, LV_ALIGN_CENTER, center_x_offset, center_y_offset + 3 * (btn_height + btn_spacing) + y_offset);
-    
+    lv_obj_align(clear_btn, LV_ALIGN_TOP_MID, -(btn_width + btn_spacing), start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * clear_label = lv_label_create(clear_btn);
     lv_label_set_text(clear_label, "Clear");
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(clear_btn, keypad_clear_cb, LV_EVENT_CLICKED, NULL);
 
+    // 0 button in center
+    lv_obj_t * zero_btn = lv_btn_create(parent);
+    lv_obj_set_size(zero_btn, btn_width, btn_height);
+    lv_obj_align(zero_btn, LV_ALIGN_TOP_MID, 0, start_y + 3 * (btn_height + btn_spacing));
+    lv_obj_t * zero_label = lv_label_create(zero_btn);
+    lv_label_set_text(zero_label, "0");
+    lv_obj_center(zero_label);
+    lv_obj_add_event_cb(zero_btn, keypad_number_cb, LV_EVENT_CLICKED, NULL);
+
+    // Backspace button
     lv_obj_t * backspace_btn = lv_btn_create(parent);
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
-    lv_obj_align(backspace_btn, LV_ALIGN_CENTER, center_x_offset + btn_width + btn_spacing, center_y_offset + 3 * (btn_height + btn_spacing) + y_offset);
-    
+    lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, (btn_width + btn_spacing), start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * backspace_label = lv_label_create(backspace_btn);
-    lv_label_set_text(backspace_label, "Back");
+    lv_label_set_text(backspace_label, "back");
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, keypad_backspace_cb, LV_EVENT_CLICKED, NULL);
 
+    // Row 5: Enter button (centered, wider)
     lv_obj_t * enter_btn = lv_btn_create(parent);
-    lv_obj_set_size(enter_btn, btn_width, btn_height);
-    lv_obj_align(enter_btn, LV_ALIGN_CENTER, center_x_offset + 2 * (btn_width + btn_spacing), center_y_offset + 3 * (btn_height + btn_spacing) + y_offset);
-    
+    lv_obj_set_size(enter_btn, 120, 60);
+    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID, 0, start_y + 4 * (btn_height + btn_spacing));
     lv_obj_t * enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_center(enter_label);

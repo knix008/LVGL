@@ -62,9 +62,9 @@ set_target_properties(lvgl_lib PROPERTIES
 set(MAIN_SOURCES
     src/main.c
     src/ui_components.c
-    src/ui_callbacks.c
     src/tab_number.c
     src/tab_chunjiin.c
+    src/tab_english.c
     src/tab_qwerty.c
     src/qwerty_korean.c
     src/chunjiin_input.c

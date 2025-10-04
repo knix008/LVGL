@@ -215,22 +215,22 @@ lv_obj_t* create_chunjiin_tab(lv_obj_t* parent) {
     lv_obj_set_size(tab, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_pad_all(tab, 10, 0);
 
-    // Create display label
+    // Create display label for 320x640 screen
     g_current_char_label = lv_label_create(tab);
-    lv_obj_set_size(g_current_char_label, 200, 60); // Original size
-    lv_obj_align(g_current_char_label, LV_ALIGN_TOP_MID, 0, 10); // Original position
+    lv_obj_set_size(g_current_char_label, 280, 50); // Smaller for narrow screen
+    lv_obj_align(g_current_char_label, LV_ALIGN_TOP_MID, 0, 5); // Closer to top
     lv_obj_set_style_bg_color(g_current_char_label, lv_color_make(0, 255, 0), 0); // Green background
     lv_obj_set_style_bg_opa(g_current_char_label, LV_OPA_COVER, 0); // Make background fully opaque
     lv_obj_set_style_border_color(g_current_char_label, lv_color_make(128, 128, 128), 0); // Gray border
-    lv_obj_set_style_border_width(g_current_char_label, 3, 0); // Thicker border
-    lv_obj_set_style_pad_all(g_current_char_label, 15, 0); // More padding
+    lv_obj_set_style_border_width(g_current_char_label, 2, 0); // Thinner border
+    lv_obj_set_style_pad_all(g_current_char_label, 10, 0); // Less padding
     lv_obj_set_style_text_font(g_current_char_label, korean_font, 0); // Apply Korean font
     lv_obj_set_style_text_color(g_current_char_label, lv_color_make(0, 0, 0), 0); // Black text for better contrast
     lv_label_set_text(g_current_char_label, ""); // Initial empty text
 
-    // Button dimensions and spacing
-    int btn_width = 60, btn_height = 40, btn_spacing = 10;
-    int start_y = 90;
+    // Standard button dimensions for 320x640 screen (same for all modes)
+    int btn_width = 85, btn_height = 70, btn_spacing = 8;
+    int start_y = 70;  // Standard start position for all modes
 
     // Row 1: 천지인 (vowels) - reordered: ㅣ, ㆍ, ㅡ
     lv_obj_t* vbar_btn = lv_btn_create(tab);
@@ -322,9 +322,9 @@ lv_obj_t* create_chunjiin_tab(lv_obj_t* parent) {
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, backspace_cb, LV_EVENT_CLICKED, NULL);
 
-    // Row 5: Enter button (centered)
+    // Row 5: Enter button (centered, wider for easier touch)
     lv_obj_t* complete_btn = lv_btn_create(tab);
-    lv_obj_set_size(complete_btn, 80, 40);
+    lv_obj_set_size(complete_btn, 120, 60);
     lv_obj_align(complete_btn, LV_ALIGN_TOP_MID, 0, start_y + 4 * (btn_height + btn_spacing));
     lv_obj_t* complete_label = lv_label_create(complete_btn);
     lv_label_set_text(complete_label, "Enter");
