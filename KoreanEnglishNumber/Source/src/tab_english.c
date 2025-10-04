@@ -4,13 +4,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdbool.h>
 
 // Static variables for English T9 input
 static char english_buffer[256] = "";
 static lv_obj_t * english_display_label = NULL;
 
-// Button labels for T9-style English input
+// Button labels for T9-style English input (lowercase)
 static const char* english_button_labels[] = {
+    "abc",    // Button 1
+    "def",    // Button 2
+    "ghi",    // Button 3
+    "jkl",    // Button 4
+    "mno",    // Button 5
+    "pqr",    // Button 6
+    "stu",    // Button 7
+    "vwx",    // Button 8
+    "yz",     // Button 9
+    "Space"   // Button 0
+};
+
+// Button labels for T9-style English input (uppercase)
+static const char* english_button_labels_upper[] = {
     "ABC",    // Button 1
     "DEF",    // Button 2
     "GHI",    // Button 3
@@ -56,10 +71,38 @@ static int button_press_counts[10] = {0};
 static int last_button_pressed = -1;
 static bool shift_active = false;  // Track shift state
 
+// Store references to button labels for updating when shift changes
+static lv_obj_t * english_button_label_refs[9] = {NULL}; // Only 9 main buttons (0-8)
+static lv_obj_t * shift_button_ref = NULL; // Reference to shift button for updating appearance
+
 // Update display function
 static void update_english_display(void) {
     if (english_display_label) {
         lv_label_set_text(english_display_label, english_buffer);
+    }
+}
+
+// Update button labels based on shift state
+static void update_button_labels(void) {
+    for (int i = 0; i < 9; i++) {
+        if (english_button_label_refs[i] != NULL) {
+            const char* label_text = shift_active ? english_button_labels_upper[i] : english_button_labels[i];
+            lv_label_set_text(english_button_label_refs[i], label_text);
+        }
+    }
+}
+
+// Update shift button appearance based on shift state
+static void update_shift_button(void) {
+    if (shift_button_ref != NULL) {
+        lv_obj_t * label = lv_obj_get_child(shift_button_ref, 0);
+        if (shift_active) {
+            lv_label_set_text(label, "SHIFT");
+            lv_obj_set_style_bg_color(shift_button_ref, lv_color_hex(0x4CAF50), 0); // Green when active
+        } else {
+            lv_label_set_text(label, "shift");
+            lv_obj_set_style_bg_color(shift_button_ref, lv_color_hex(0x808080), 0); // Gray when inactive
+        }
     }
 }
 
@@ -138,6 +181,8 @@ static void english_clear_cb(lv_event_t * e) {
         update_english_display();
         last_button_pressed = -1;
         shift_active = false;  // Reset shift state when clearing
+        update_button_labels(); // Update button labels to reflect shift reset
+        update_shift_button();  // Update shift button appearance
         for (int i = 0; i < 10; i++) {
             button_press_counts[i] = 0;
         }
@@ -150,17 +195,9 @@ static void english_shift_cb(lv_event_t * e) {
     if (code == LV_EVENT_CLICKED) {
         shift_active = !shift_active;
         
-        // Update the shift button appearance
-        lv_obj_t * btn = lv_event_get_target(e);
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
-        
-        if (shift_active) {
-            lv_label_set_text(label, "SHIFT");
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x4CAF50), 0); // Green when active
-        } else {
-            lv_label_set_text(label, "shift");
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x808080), 0); // Gray when inactive
-        }
+        // Update all button labels and shift button appearance
+        update_button_labels();
+        update_shift_button();
         
         // Reset button tracking when shift changes
         last_button_pressed = -1;
@@ -192,12 +229,12 @@ static void english_enter_cb(lv_event_t * e) {
         // Title label
         lv_obj_t * title_label = lv_label_create(dialog);
         lv_label_set_text(title_label, "English Input Result");
-        lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(title_label, get_korean_font_small(), 0); // Use Korean font for consistency
         lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
 
         // Result text label
         lv_obj_t * popup_result_label = lv_label_create(dialog);
-        lv_obj_set_style_text_font(popup_result_label, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(popup_result_label, get_korean_font_small(), 0); // Use Korean font for mixed text
         lv_obj_set_style_text_color(popup_result_label, lv_color_hex(0x00AA00), 0);
         lv_obj_align(popup_result_label, LV_ALIGN_CENTER, 0, 0);
 
@@ -229,6 +266,8 @@ void english_close_dialog_cb(lv_event_t * e) {
         // Reset tracking
         last_button_pressed = -1;
         shift_active = false;  // Reset shift state
+        update_button_labels(); // Update button labels to reflect shift reset
+        update_shift_button();  // Update shift button appearance
         for (int i = 0; i < 10; i++) {
             button_press_counts[i] = 0;
         }
@@ -249,6 +288,12 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     for (int i = 0; i < 10; i++) {
         button_press_counts[i] = 0;
     }
+    
+    // Initialize button label references
+    for (int i = 0; i < 9; i++) {
+        english_button_label_refs[i] = NULL;
+    }
+    shift_button_ref = NULL;
 
     // Create tab container
     lv_obj_t* tab = lv_obj_create(parent);
@@ -265,6 +310,7 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     lv_obj_set_style_border_width(english_display_label, 2, 0);
     lv_obj_set_style_pad_all(english_display_label, 10, 0);
     lv_obj_set_style_text_color(english_display_label, lv_color_make(0, 0, 0), 0);
+    lv_obj_set_style_text_font(english_display_label, get_korean_font_small(), 0); // Use Korean font for mixed text support
     lv_label_set_text(english_display_label, "");
 
     // Standard button dimensions (same for all modes)
@@ -287,8 +333,11 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
         lv_obj_align(btn, LV_ALIGN_TOP_MID, x, y);
 
         lv_obj_t * label = lv_label_create(btn);
-        lv_label_set_text(label, english_button_labels[i]);
+        lv_label_set_text(label, english_button_labels[i]); // Start with lowercase
         lv_obj_center(label);
+        
+        // Store label reference for updating when shift changes
+        english_button_label_refs[i] = label;
 
         int* btn_idx = malloc(sizeof(int));
         *btn_idx = i;
@@ -323,7 +372,8 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
     lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, (btn_width + btn_spacing), row4_y);
     lv_obj_t * backspace_label = lv_label_create(backspace_btn);
-    lv_label_set_text(backspace_label, "back");
+    lv_label_set_text(backspace_label, "←");
+    lv_obj_set_style_text_font(backspace_label, get_korean_font_small(), 0); // Use Korean font for symbols
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, english_backspace_cb, LV_EVENT_CLICKED, NULL);
 
@@ -339,6 +389,9 @@ lv_obj_t* create_english_tab(lv_obj_t* parent) {
     lv_obj_center(shift_label);
     lv_obj_set_style_bg_color(shift_btn, lv_color_hex(0x808080), 0); // Gray when inactive
     lv_obj_add_event_cb(shift_btn, english_shift_cb, LV_EVENT_CLICKED, NULL);
+    
+    // Store shift button reference for updating appearance
+    shift_button_ref = shift_btn;
 
     // Clear button (center)
     lv_obj_t * clear_btn = lv_btn_create(tab);

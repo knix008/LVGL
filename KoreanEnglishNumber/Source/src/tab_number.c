@@ -47,12 +47,12 @@ void keypad_enter_cb(lv_event_t * e) {
         // Title label
         lv_obj_t * title_label = lv_label_create(dialog);
         lv_label_set_text(title_label, "Number Input Result");
-        lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(title_label, get_korean_font_small(), 0); // Use Korean font for consistency
         lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
         
         // Result text label
         lv_obj_t * popup_result_label = lv_label_create(dialog);
-        lv_obj_set_style_text_font(popup_result_label, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(popup_result_label, get_korean_font_small(), 0); // Use Korean font for consistency
         lv_obj_set_style_text_color(popup_result_label, lv_color_hex(0x00AA00), 0); // Green text
         lv_obj_align(popup_result_label, LV_ALIGN_CENTER, 0, 0);
         
@@ -121,6 +121,7 @@ lv_obj_t* create_number_tab(lv_obj_t * parent) {
     lv_obj_set_style_border_width(keypad_display, 2, 0);
     lv_obj_set_style_pad_all(keypad_display, 10, 0);
     lv_obj_set_style_text_color(keypad_display, lv_color_make(0, 0, 0), 0);  // Black text
+    lv_obj_set_style_text_font(keypad_display, get_korean_font_small(), 0); // Use Korean font for consistency
     keypad_display_label = keypad_display;
 
     // Standard button dimensions (same for all modes)
@@ -191,7 +192,8 @@ lv_obj_t* create_number_tab(lv_obj_t * parent) {
     lv_obj_set_size(backspace_btn, btn_width, btn_height);
     lv_obj_align(backspace_btn, LV_ALIGN_TOP_MID, (btn_width + btn_spacing), start_y + 3 * (btn_height + btn_spacing));
     lv_obj_t * backspace_label = lv_label_create(backspace_btn);
-    lv_label_set_text(backspace_label, "back");
+    lv_label_set_text(backspace_label, "←");
+    lv_obj_set_style_text_font(backspace_label, get_korean_font_small(), 0); // Use Korean font for symbols
     lv_obj_center(backspace_label);
     lv_obj_add_event_cb(backspace_btn, keypad_backspace_cb, LV_EVENT_CLICKED, NULL);
 
