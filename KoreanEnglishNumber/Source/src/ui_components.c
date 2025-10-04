@@ -44,8 +44,7 @@ static void init_freetype_and_fonts(void) {
             printf("- Font size: 24px\n");
             printf("- Render mode: Bitmap\n");
         } else {
-            printf("Failed to load Korean font, falling back to built-in font\n");
-            korean_font = (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
+            printf("Failed to load Korean font, will use built-in font fallback\n");
         }
         
         // Create smaller Korean font for compact UI elements
@@ -56,20 +55,27 @@ static void init_freetype_and_fonts(void) {
         if (korean_font_small != NULL) {
             printf("Small Korean font (16px) loaded successfully\n");
         } else {
-            printf("Failed to load small Korean font, using regular font\n");
-            korean_font_small = korean_font;
+            printf("Failed to load small Korean font, will use built-in font fallback\n");
         }
     }
 }
 
 // Function to get the Korean font
 lv_font_t * get_korean_font(void) {
-    return korean_font;
+    // Ensure fonts are initialized
+    if (korean_font == NULL) {
+        init_freetype_and_fonts();
+    }
+    return korean_font ? korean_font : (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
 }
 
 // Function to get the small Korean font
 lv_font_t * get_korean_font_small(void) {
-    return korean_font_small;
+    // Ensure fonts are initialized
+    if (korean_font_small == NULL) {
+        init_freetype_and_fonts();
+    }
+    return korean_font_small ? korean_font_small : (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
 }
 
 // Function to switch input mode

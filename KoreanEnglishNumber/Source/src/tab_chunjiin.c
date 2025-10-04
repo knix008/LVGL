@@ -182,8 +182,6 @@ static void space_cb(lv_event_t * e) {
     }
 }
 
-
-
 // 키보드 이벤트 콜백 함수
 static void keyboard_event_cb(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -208,7 +206,8 @@ static void keyboard_event_cb(lv_event_t * e) {
 // 천지인 탭 생성 함수
 lv_obj_t* create_chunjiin_tab(lv_obj_t* parent) {
     initialize();
-    lv_font_t * korean_font = get_korean_font_small(); // Get font
+    lv_font_t * korean_font = get_korean_font_small(); // Get font (now with built-in fallback)
+    printf("[ChunJiIn] Using Korean font: %p\n", (void*)korean_font);
 
     // Create tab object (parent container)
     lv_obj_t* tab = lv_obj_create(parent);
