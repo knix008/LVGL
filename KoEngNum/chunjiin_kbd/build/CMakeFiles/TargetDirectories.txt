@@ -1,0 +1,7 @@
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/chunjiin_keyboard.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/edit_cache.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/rebuild_cache.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/list_install_components.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/install.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/install/local.dir
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/build/CMakeFiles/install/strip.dir
