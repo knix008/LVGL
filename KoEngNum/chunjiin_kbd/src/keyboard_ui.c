@@ -5,6 +5,7 @@
 
 #include "keyboard_ui.h"
 #include "english_input.h"
+#include "number_input.h"
 #include "lv_freetype.h"
 #include <stdio.h>
 #include <string.h>
@@ -86,15 +87,22 @@ static void append_char(uint32_t codepoint) {
 
 /* Update display for Korean mode - shows accumulated + composing */
 static void update_korean_display() {
-    char display_text[2048];
+    char display_text[4096];  /* Large enough for output_buffer + chunjiin_text */
     char chunjiin_text[2048];
 
     /* Get current text from chunjiin engine */
     chunjiin_get_current_text_utf8(chunjiin_text, sizeof(chunjiin_text));
 
-    /* Combine output_buffer + chunjiin_text */
-    snprintf(display_text, sizeof(display_text), "%s%s", output_buffer, chunjiin_text);
-    lv_textarea_set_text(text_area, display_text);
+    /* Combine output_buffer + chunjiin_text safely */
+    size_t output_size = strlen(output_buffer);
+    size_t chunjiin_size = strlen(chunjiin_text);
+
+    if (output_size + chunjiin_size < sizeof(display_text)) {
+        memcpy(display_text, output_buffer, output_size);
+        memcpy(display_text + output_size, chunjiin_text, chunjiin_size);
+        display_text[output_size + chunjiin_size] = '\0';
+        lv_textarea_set_text(text_area, display_text);
+    }
 }
 
 /* Button click handler */
@@ -247,13 +255,21 @@ static void btn_event_cb(lv_event_t* e) {
             append_char(c);
         }
     } else if (current_mode == INPUT_MODE_NUMBER) {
-        /* Direct number input */
+        /* Number input - extract key from button text */
+        char key = 0;
         if (txt[0] >= '0' && txt[0] <= '9') {
-            append_char(txt[0]);
+            key = txt[0];
         } else if (strcmp(txt, "*") == 0) {
-            append_char('*');
+            key = '*';
         } else if (strcmp(txt, "#") == 0) {
-            append_char('#');
+            key = '#';
+        }
+
+        if (key) {
+            char c = number_process_key(key);
+            if (c != 0) {
+                append_char(c);
+            }
         }
     }
 }
@@ -358,6 +374,11 @@ void keyboard_ui_init(void) {
     lv_label_set_text(mode_label, "한글");
     lv_obj_center(mode_label);
 
+    /* Set Korean font for mode label if loaded */
+    if (korean_font_btn != NULL) {
+        lv_obj_set_style_text_font(mode_label, korean_font_btn, 0);
+    }
+
     /* Create text display area */
     text_area = lv_textarea_create(scr);
     lv_obj_set_size(text_area, 380, 150);
@@ -381,6 +402,20 @@ void keyboard_ui_init(void) {
     if (korean_font_btn != NULL) {
         lv_obj_set_style_text_font(btn_matrix, korean_font_btn, 0);
     }
+
+    /* Button colors - normal state */
+    lv_obj_set_style_bg_color(btn_matrix, lv_color_hex(0x4A90E2), LV_PART_ITEMS);  // Blue background
+    lv_obj_set_style_bg_opa(btn_matrix, LV_OPA_COVER, LV_PART_ITEMS);
+    lv_obj_set_style_text_color(btn_matrix, lv_color_hex(0xFFFFFF), LV_PART_ITEMS);  // White text
+
+    /* Button colors - pressed state */
+    lv_obj_set_style_bg_color(btn_matrix, lv_color_hex(0x2E5F8A), LV_PART_ITEMS | LV_STATE_PRESSED);  // Darker blue
+    lv_obj_set_style_bg_opa(btn_matrix, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_PRESSED);
+
+    /* Button border */
+    lv_obj_set_style_border_width(btn_matrix, 2, LV_PART_ITEMS);
+    lv_obj_set_style_border_color(btn_matrix, lv_color_hex(0x2E5F8A), LV_PART_ITEMS);
+    lv_obj_set_style_border_opa(btn_matrix, LV_OPA_50, LV_PART_ITEMS);
 }
 
 void keyboard_set_mode(input_mode_t mode) {

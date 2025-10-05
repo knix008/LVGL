@@ -70700,6 +70700,7 @@ CMakeFiles/chunjiin_keyboard.dir/src/keyboard_ui.c.o: /home/shkwon/Projects/LVGL
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/chunjiin_input.h \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/english_input.h \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/keyboard_ui.h \
+  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/number_input.h \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/lv_version.h \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/lvgl.h \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lv_conf.h \
@@ -71659,6 +71660,10 @@ CMakeFiles/chunjiin_keyboard.dir/src/main.c.o: /home/shkwon/Projects/LVGL/KoEngN
   /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h \
   /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h
 
+CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.o: /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/src/number_input.c \
+  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/number_input.h \
+  /usr/include/stdc-predef.h
+
 
 /usr/include/x86_64-linux-gnu/bits/unistd_ext.h:
 
@@ -71711,6 +71716,8 @@ CMakeFiles/chunjiin_keyboard.dir/src/main.c.o: /home/shkwon/Projects/LVGL/KoEngN
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/widgets/line/lv_line.c:
 
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/widgets/led/lv_led.c:
+
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/src/number_input.c:
 
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/widgets/label/lv_label.c:
 
@@ -73437,6 +73444,8 @@ CMakeFiles/chunjiin_keyboard.dir/src/main.c.o: /home/shkwon/Projects/LVGL/KoEngN
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/libs/qrcode/qrcodegen.c:
 
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/libs/libpng/lv_libpng.h:
+
+/home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/number_input.h:
 
 /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/src/libs/lodepng/lv_lodepng.h:
 

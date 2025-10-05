@@ -845,6 +845,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/chunjiin_keyboard.dir/src/keyboard_ui.c.o.d"
   "CMakeFiles/chunjiin_keyboard.dir/src/main.c.o"
   "CMakeFiles/chunjiin_keyboard.dir/src/main.c.o.d"
+  "CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.o"
+  "CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.o.d"
   "chunjiin_keyboard"
   "chunjiin_keyboard.pdb"
 )

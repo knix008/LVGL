@@ -71122,6 +71122,7 @@ CMakeFiles/chunjiin_keyboard.dir/src/keyboard_ui.c.o
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/chunjiin_input.h
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/english_input.h
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/keyboard_ui.h
+ /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/number_input.h
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/lv_version.h
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lvgl/lvgl.h
  /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/lv_conf.h
@@ -72081,4 +72082,9 @@ CMakeFiles/chunjiin_keyboard.dir/src/main.c.o
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h
  /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h
+
+CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.o
+ /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/src/number_input.c
+ /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/number_input.h
+ /usr/include/stdc-predef.h
 

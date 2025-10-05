@@ -35,6 +35,7 @@ set(APP_SOURCES
     src/main.c
     src/chunjiin_input.c
     src/english_input.c
+    src/number_input.c
     src/keyboard_ui.c
 )
 

@@ -10326,6 +10326,30 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/chunjiin_keyboard.dir/build.make CMakeFiles/chunjiin_keyboard.dir/src/main.c.s
 .PHONY : src/main.c.s
 
+src/number_input.o: src/number_input.c.o
+.PHONY : src/number_input.o
+
+# target to build an object file
+src/number_input.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chunjiin_keyboard.dir/build.make CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.o
+.PHONY : src/number_input.c.o
+
+src/number_input.i: src/number_input.c.i
+.PHONY : src/number_input.i
+
+# target to preprocess a source file
+src/number_input.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chunjiin_keyboard.dir/build.make CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.i
+.PHONY : src/number_input.c.i
+
+src/number_input.s: src/number_input.c.s
+.PHONY : src/number_input.s
+
+# target to generate assembly for a file
+src/number_input.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chunjiin_keyboard.dir/build.make CMakeFiles/chunjiin_keyboard.dir/src/number_input.c.s
+.PHONY : src/number_input.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -11608,6 +11632,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/number_input.o"
+	@echo "... src/number_input.i"
+	@echo "... src/number_input.s"
 .PHONY : help
 
 

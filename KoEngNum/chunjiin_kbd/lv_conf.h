@@ -17,8 +17,6 @@
 #define LV_COLOR_DEPTH 32
 
 /* Feature usage */
-#define LV_USE_PERF_MONITOR     1
-#define LV_USE_MEM_MONITOR      1
 #define LV_USE_LOG              1
 
 /* Driver usage */
