@@ -38,5 +38,6 @@
 #define LV_USE_TEXTAREA         1
 #define LV_USE_KEYBOARD         1
 #define LV_USE_BTNMATRIX        1
+#define LV_USE_MSGBOX           1
 
 #endif /* LV_CONF_H */

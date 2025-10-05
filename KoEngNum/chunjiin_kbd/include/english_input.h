@@ -9,9 +9,10 @@
 /**
  * @brief Process English T9 key press
  * @param key The numeric key ('0'-'9', '*', '#')
+ * @param is_replacement Output parameter: 1 if should replace last char, 0 if new char
  * @return The character to output, or 0 if no character
  */
-char english_process_key(char key);
+char english_process_key(char key, int* is_replacement);
 
 /**
  * @brief Reset English input state

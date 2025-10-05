@@ -23,29 +23,37 @@ static char output_buffer[1024] = {0};
 static int output_len = 0;
 static char temp_char[8] = {0};
 
-/* Button labels - 10 key layout for Korean */
+/* Button labels - 12 key layout matching number mode */
 static const char* korean_btn_map[] = {
-    "#\nㅣ", "*\nㆍ", "0\nㅡ", "\n",
-    "1\nㄱㅋ", "2\nㄴㄹ", "3\nㄷㅌ", "\n",
-    "4\nㅂㅍ", "5\nㅅㅎ", "6\nㅈㅊ", "\n",
-    "8\n", "7\nㅇㅁ", "9\n", "\n",
-    "Space", "Enter", "←", ""
+    "ㅣ", "ㆍ", "ㅡ", "\n",
+    "ㄱㅋ", "ㄴㄹ", "ㄷㅌ", "\n",
+    "ㅂㅍ", "ㅅㅎ", "ㅈㅊ", "\n",
+    "Space", "ㅇㅁ", "←", "\n",
+    "Enter", "", ""
 };
 
 static const char* english_btn_map[] = {
-    "1\n.,!?", "2\nabc", "3\ndef", "\n",
-    "4\nghi", "5\njkl", "6\nmno", "\n",
-    "7\npqrs", "8\ntuv", "9\nwxyz", "\n",
-    "*\n+", "0\nSpc", "#\n", "\n",
-    "Shift", "Enter", "←", ""
+    ".,!?", "abc", "def", "\n",
+    "ghi", "jkl", "mno", "\n",
+    "pqrs", "tuv", "wxyz", "\n",
+    "Space", "Shift", "←", "\n",
+    "Enter", "", ""
+};
+
+static const char* english_btn_map_upper[] = {
+    ".,!?", "ABC", "DEF", "\n",
+    "GHI", "JKL", "MNO", "\n",
+    "PQRS", "TUV", "WXYZ", "\n",
+    "Space", "Shift", "←", "\n",
+    "Enter", "", ""
 };
 
 static const char* number_btn_map[] = {
     "1", "2", "3", "\n",
     "4", "5", "6", "\n",
     "7", "8", "9", "\n",
-    "*", "0", "#", "\n",
-    "Space", "Enter", "←", ""
+    "Space", "0", "←", "\n",
+    "Enter", "", ""
 };
 
 /* UTF-8 encoding helper */
@@ -162,8 +170,8 @@ static void btn_event_cb(lv_event_t* e) {
 
     /* Enter */
     if (strcmp(txt, "Enter") == 0) {
+        /* Finalize Korean composing text if needed */
         if (current_mode == INPUT_MODE_KOREAN) {
-            /* Finalize any composing text */
             char chunjiin_text[2048];
             chunjiin_get_current_text_utf8(chunjiin_text, sizeof(chunjiin_text));
 
@@ -174,18 +182,30 @@ static void btn_event_cb(lv_event_t* e) {
                 output_len += len;
                 output_buffer[output_len] = '\0';
             }
-
-            /* Add newline */
-            if (output_len + 1 < sizeof(output_buffer) - 1) {
-                output_buffer[output_len++] = '\n';
-                output_buffer[output_len] = '\0';
-            }
-
-            /* Reset chunjiin */
             chunjiin_reset();
+        }
+
+        /* Show popup with current text */
+        if (output_len > 0) {
+            lv_obj_t* mbox = lv_msgbox_create(NULL);
+            lv_msgbox_add_title(mbox, "Input Result");
+            lv_obj_t* text_label = lv_msgbox_add_text(mbox, output_buffer);
+            lv_msgbox_add_close_button(mbox);
+
+            /* Apply Korean font to message box text if available */
+            if (korean_font != NULL && text_label != NULL) {
+                lv_obj_set_style_text_font(text_label, korean_font, 0);
+            }
+        }
+
+        /* Clear output buffer and display */
+        output_buffer[0] = '\0';
+        output_len = 0;
+
+        if (current_mode == INPUT_MODE_KOREAN) {
             update_korean_display();
         } else {
-            append_char('\n');
+            lv_textarea_set_text(text_area, "");
         }
         return;
     }
@@ -196,14 +216,16 @@ static void btn_event_cb(lv_event_t* e) {
         int current_shift = english_get_shift();
         english_set_shift(!current_shift);
 
-        /* Update button color - Shift button is at index 12 in English mode */
+        /* Update button color and labels - Shift button is at index 10 in English mode (row 4, col 2) */
         if (current_mode == INPUT_MODE_ENGLISH) {
             if (!current_shift) {
-                /* Shift is now ON - highlight button */
-                lv_btnmatrix_set_btn_ctrl(btn_matrix, 12, LV_BTNMATRIX_CTRL_CHECKED);
+                /* Shift is now ON - show uppercase labels and highlight button */
+                lv_btnmatrix_set_map(btn_matrix, english_btn_map_upper);
+                lv_btnmatrix_set_btn_ctrl(btn_matrix, 10, LV_BTNMATRIX_CTRL_CHECKED);
             } else {
-                /* Shift is now OFF - normal button */
-                lv_btnmatrix_clear_btn_ctrl(btn_matrix, 12, LV_BTNMATRIX_CTRL_CHECKED);
+                /* Shift is now OFF - show lowercase labels and normal button */
+                lv_btnmatrix_set_map(btn_matrix, english_btn_map);
+                lv_btnmatrix_clear_btn_ctrl(btn_matrix, 10, LV_BTNMATRIX_CTRL_CHECKED);
             }
         }
         return;
@@ -240,52 +262,55 @@ static void btn_event_cb(lv_event_t* e) {
     if (current_mode == INPUT_MODE_KOREAN) {
         /* Map button text to letter key */
         char key = 0;
-        if (strstr(txt, "1\n") == txt) key = 'g';      // ㄱㅋ
-        else if (strstr(txt, "2\n") == txt) key = 'n'; // ㄴㄹ
-        else if (strstr(txt, "3\n") == txt) key = 'd'; // ㄷㅌ
-        else if (strstr(txt, "4\n") == txt) key = 'b'; // ㅂㅍ
-        else if (strstr(txt, "5\n") == txt) key = 's'; // ㅅㅎ
-        else if (strstr(txt, "6\n") == txt) key = 'j'; // ㅈㅊ
-        else if (strstr(txt, "7\n") == txt) key = 'm'; // ㅇㅁ
-        else if (strstr(txt, "#\n") == txt) key = 'i'; // ㅣ
-        else if (strstr(txt, "*\n") == txt) key = 'a'; // ㆍ
-        else if (strstr(txt, "0\n") == txt) key = 'e'; // ㅡ
+        if (strcmp(txt, "ㄱㅋ") == 0) key = 'g';      // ㄱㅋ
+        else if (strcmp(txt, "ㄴㄹ") == 0) key = 'n'; // ㄴㄹ
+        else if (strcmp(txt, "ㄷㅌ") == 0) key = 'd'; // ㄷㅌ
+        else if (strcmp(txt, "ㅂㅍ") == 0) key = 'b'; // ㅂㅍ
+        else if (strcmp(txt, "ㅅㅎ") == 0) key = 's'; // ㅅㅎ
+        else if (strcmp(txt, "ㅈㅊ") == 0) key = 'j'; // ㅈㅊ
+        else if (strcmp(txt, "ㅇㅁ") == 0) key = 'm'; // ㅇㅁ
+        else if (strcmp(txt, "ㅣ") == 0) key = 'i';   // ㅣ
+        else if (strcmp(txt, "ㆍ") == 0) key = 'a';   // ㆍ
+        else if (strcmp(txt, "ㅡ") == 0) key = 'e';   // ㅡ
 
         if (key) {
             chunjiin_process_input(key);
             update_korean_display();
         }
     } else if (current_mode == INPUT_MODE_ENGLISH) {
-        /* English T9 - map button to number key */
+        /* English T9 - map button text to number key (handle both lowercase and uppercase) */
         char key = '0';
-        if (strstr(txt, "1\n") == txt) key = '1';
-        else if (strstr(txt, "2\n") == txt) key = '2';
-        else if (strstr(txt, "3\n") == txt) key = '3';
-        else if (strstr(txt, "4\n") == txt) key = '4';
-        else if (strstr(txt, "5\n") == txt) key = '5';
-        else if (strstr(txt, "6\n") == txt) key = '6';
-        else if (strstr(txt, "7\n") == txt) key = '7';
-        else if (strstr(txt, "8\n") == txt) key = '8';
-        else if (strstr(txt, "9\n") == txt) key = '9';
-        else if (strstr(txt, "0\n") == txt) key = '0';
+        if (strcmp(txt, ".,!?") == 0) key = '1';
+        else if (strcmp(txt, "abc") == 0 || strcmp(txt, "ABC") == 0) key = '2';
+        else if (strcmp(txt, "def") == 0 || strcmp(txt, "DEF") == 0) key = '3';
+        else if (strcmp(txt, "ghi") == 0 || strcmp(txt, "GHI") == 0) key = '4';
+        else if (strcmp(txt, "jkl") == 0 || strcmp(txt, "JKL") == 0) key = '5';
+        else if (strcmp(txt, "mno") == 0 || strcmp(txt, "MNO") == 0) key = '6';
+        else if (strcmp(txt, "pqrs") == 0 || strcmp(txt, "PQRS") == 0) key = '7';
+        else if (strcmp(txt, "tuv") == 0 || strcmp(txt, "TUV") == 0) key = '8';
+        else if (strcmp(txt, "wxyz") == 0 || strcmp(txt, "WXYZ") == 0) key = '9';
+        else if (strcmp(txt, "Spc") == 0) key = '0';
+        else if (strcmp(txt, "+") == 0) append_char('+');
 
-        char c = english_process_key(key);
-        if (c != 0) {
-            append_char(c);
+        if (key != '0' || strcmp(txt, "Spc") == 0) {
+            int is_replacement = 0;
+            char c = english_process_key(key, &is_replacement);
+            if (c != 0) {
+                if (is_replacement && output_len > 0) {
+                    /* Replace last character - remove it first */
+                    int i = output_len - 1;
+                    while (i > 0 && (output_buffer[i] & 0xC0) == 0x80) i--;
+                    output_buffer[i] = '\0';
+                    output_len = i;
+                }
+                /* Add the new/replacement character */
+                append_char(c);
+            }
         }
     } else if (current_mode == INPUT_MODE_NUMBER) {
-        /* Number input - extract key from button text */
-        char key = 0;
+        /* Number input - only 0-9 digits */
         if (txt[0] >= '0' && txt[0] <= '9') {
-            key = txt[0];
-        } else if (strcmp(txt, "*") == 0) {
-            key = '*';
-        } else if (strcmp(txt, "#") == 0) {
-            key = '#';
-        }
-
-        if (key) {
-            char c = number_process_key(key);
+            char c = number_process_key(txt[0]);
             if (c != 0) {
                 append_char(c);
             }

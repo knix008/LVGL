@@ -28,8 +28,9 @@ static int shift_enabled = 0;  /* 0 = lowercase, 1 = uppercase */
 
 #define TIMEOUT_MS 1000
 
-char english_process_key(char key) {
+char english_process_key(char key, int* is_replacement) {
     if (key < '0' || key > '9') {
+        if (is_replacement) *is_replacement = 0;
         return 0;
     }
 
@@ -41,12 +42,14 @@ char english_process_key(char key) {
 
     /* Check if this is a repeat of the same key within timeout */
     if (key == last_key && (current_time - last_press_time) < 2) {
-        /* Cycle to next character */
+        /* Cycle to next character - this should REPLACE the last character */
         current_index = (current_index + 1) % chars_len;
+        if (is_replacement) *is_replacement = 1;
     } else {
         /* New key or timeout - start from first character */
         current_index = 0;
         last_key = key;
+        if (is_replacement) *is_replacement = 0;
     }
 
     last_press_time = current_time;
