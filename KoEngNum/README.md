@@ -1,31 +1,107 @@
 # Korean English Number Input System
 
-A comprehensive multi-mode input system for Korean, English, and Number entry built with LVGL (Light and Versatile Graphics Library) and SDL2. Features modern UI design with consistent Korean font support across all input modes.
+A comprehensive multi-mode input system for Korean, English, and Number entry built with LVGL (Light and Versatile Graphics Library) and SDL2. This project includes two implementations:
 
-## Features
+1. **chunjiin_kbd/** - Compact phone-style keyboard (400x640)
+2. **Source/** - Full-featured tabbed interface (320x640)
 
-- **Three Input Modes:**
-  - **Korean (KOR)**: ChunJiIn (천지인) input method for Korean characters
-  - **English (ENG)**: T9-style phone keypad with uppercase/lowercase support
-  - **Number (123)**: Standard number pad with numeric input
+## Projects Overview
 
-- **Enhanced UI Features:**
-  - **Portrait Display Optimized**: 320 x 640 window size for mobile-like experience
-  - **Mode Switching**: Easy toggle between input modes via top-right button
-  - **Unified Korean Font Support**: Consistent NanumGothic font across all modes
-  - **Shift Functionality**: Dynamic uppercase/lowercase in English mode
-  - **Visual Feedback**: Button labels change based on input state
-  - **Popup Results**: Display input results with styled dialogs
+### 1. Chunjiin Keyboard (chunjiin_kbd/)
 
-- **Technical Features:**
-  - **FreeType Integration**: High-quality Korean font rendering
-  - **Memory Optimized**: Efficient font caching and resource management
-  - **Consistent Positioning**: Aligned button layouts across all modes
-  - **Unicode Support**: Proper Korean character composition and display
+A compact, mobile-style keyboard optimized for phone-like input experience.
 
-## Screenshot
+**Features:**
+- **Three Input Modes**: Korean (Chunjiin), English (T9), Number pad
+- **Compact Design**: 400x640 window optimized for vertical display
+- **Korean Font Support**: NanumGothic font for all button labels and text
+- **T9 English Input**: Character cycling with uppercase/lowercase toggle
+- **Visual Feedback**: Color-coded buttons (blue default, orange for Shift)
+- **Popup Results**: Enter button shows input result in popup dialog
+- **Character Replacement**: Smart T9 input replaces characters on repeated button press
 
-The application displays a compact keyboard interface optimized for narrow screens.
+**Input Modes:**
+- **Korean Mode**: Chunjiin (천지인) method with real-time composition
+  - Vowels: ㅣ, ㆍ, ㅡ (Heaven, Earth, Human)
+  - Consonants: ㄱㅋ, ㄴㄹ, ㄷㅌ, ㅂㅍ, ㅅㅎ, ㅈㅊ, ㅇㅁ
+  - Controls: Space, Enter, Backspace (←)
+
+- **English Mode**: T9 phone-style input
+  - Letter groups: .,!?, abc, def, ghi, jkl, mno, pqrs, tuv, wxyz
+  - Shift key toggles uppercase/lowercase (visual feedback)
+  - Character cycling: Click same button to cycle (a→b→c→a)
+  - Character replacement instead of addition
+
+- **Number Mode**: Standard numeric keypad (0-9)
+  - Simple digit input
+  - Space, 0, Backspace on row 4
+  - Enter on row 5
+
+**Quick Start:**
+```bash
+cd chunjiin_kbd
+./build.sh
+./run.sh
+```
+
+**Project Structure:**
+```
+chunjiin_kbd/
+├── src/
+│   ├── main.c              # Application entry point
+│   ├── keyboard_ui.c       # Main keyboard UI and mode switching
+│   ├── chunjiin_input.c    # Korean Chunjiin input logic (822 lines)
+│   ├── english_input.c     # T9 English input with shift
+│   └── number_input.c      # Number pad input
+├── include/
+│   ├── keyboard_ui.h       # Keyboard API and mode definitions
+│   ├── chunjiin_input.h    # Chunjiin input API
+│   ├── english_input.h     # English input API
+│   └── number_input.h      # Number input API
+├── fonts/
+│   └── NanumGothic.ttf     # Korean font
+├── build.sh                # Build script
+├── run.sh                  # Run script
+└── CMakeLists.txt          # Build configuration
+```
+
+### 2. Tabbed Interface (Source/)
+
+Full-featured interface with tabbed mode switching and enhanced UI.
+
+**Features:**
+- **Portrait Display Optimized**: 320 x 640 window size for mobile-like experience
+- **Mode Switching**: Easy toggle between input modes via top-right button
+- **Unified Korean Font Support**: Consistent NanumGothic font across all modes
+- **Shift Functionality**: Dynamic uppercase/lowercase in English mode
+- **Visual Feedback**: Button labels change based on input state
+- **Popup Results**: Display input results with styled dialogs
+- **FreeType Integration**: High-quality Korean font rendering
+- **Memory Optimized**: Efficient font caching and resource management
+
+**Quick Start:**
+```bash
+cd Source
+./build.sh
+./run.sh
+```
+
+**Project Structure:**
+```
+Source/
+├── assets/               # Font files (NanumGothic TrueType fonts)
+├── src/
+│   ├── main.c            # Application entry point
+│   ├── ui_components.c   # Main UI, mode switching, font management
+│   ├── chunjiin_input.c  # ChunJiIn input logic
+│   ├── tab_chunjiin.c    # Korean input UI
+│   ├── tab_english.c     # English T9 input UI
+│   └── tab_number.c      # Number pad UI
+├── include/              # Header files
+├── build.sh              # Build script
+├── run.sh                # Run script
+└── CMakeLists.txt        # CMake configuration
+```
 
 ## Requirements
 
@@ -47,8 +123,15 @@ sudo apt-get update
 sudo apt-get install build-essential cmake pkg-config libsdl2-dev libfreetype-dev
 ```
 
-### 2. Build the Project
+### 2. Build a Project
 
+**Chunjiin Keyboard:**
+```bash
+cd chunjiin_kbd
+./build.sh
+```
+
+**Tabbed Interface:**
 ```bash
 cd Source
 ./build.sh
@@ -57,20 +140,21 @@ cd Source
 **Build Script Options:**
 ```bash
 ./build.sh          # Normal build
-./build.sh clean    # Clean all build artifacts and executables  
+./build.sh clean    # Clean all build artifacts and executables
 ./build.sh help     # Show available commands
 ```
 
-The build script will:
-- Install any missing dependencies (with sudo)
-- Configure the project with CMake
-- Build LVGL library
-- Build the main application
-
 ## Usage
 
-### Running the Application
+### Running the Applications
 
+**Chunjiin Keyboard:**
+```bash
+cd chunjiin_kbd
+./run.sh
+```
+
+**Tabbed Interface:**
 ```bash
 cd Source
 ./run.sh
@@ -78,19 +162,31 @@ cd Source
 
 Or run directly:
 ```bash
-cd Source/build
-./main
+cd chunjiin_kbd/build && ./chunjiin_keyboard
+# or
+cd Source/build && ./main
 ```
 
-### Input Modes
+## Key Features Comparison
 
-#### Korean ChunJiIn Mode (KOR)
+| Feature | Chunjiin Keyboard | Tabbed Interface |
+|---------|------------------|------------------|
+| Window Size | 400x640 | 320x640 |
+| UI Style | Button matrix | Tabbed layout |
+| Mode Switching | Integrated | Top-right button |
+| Korean Font | Yes (buttons + text) | Yes (unified) |
+| T9 English | Yes (with replacement) | Yes (basic) |
+| Shift Visual | Yes (orange color) | Yes (green color) |
+| Popup Results | Yes | Yes |
+| Modular Design | Separate input modules | Tab-based modules |
 
-The ChunJiIn (천지인) input method uses three basic vowel strokes combined with consonant groups:
+## Korean Input Method
+
+Both implementations use the **Chunjiin (천지인)** input method:
 
 **Basic Vowel Elements:**
 - **ㅣ** (vertical bar) - "천" (Heaven)
-- **ㆍ** (dot) - "지" (Earth)  
+- **ㆍ** (dot) - "지" (Earth)
 - **ㅡ** (horizontal bar) - "인" (Human)
 
 **Consonant Groups:**
@@ -102,238 +198,18 @@ The ChunJiIn (천지인) input method uses three basic vowel strokes combined wi
 - **ㅈㅊ** (J/C) - ㅈ → ㅊ → ㅉ
 - **ㅇㅁ** (O/M) - ㅇ → ㅁ
 
-**Layout:**
-```
-[ㅣ]  [ㆍ]  [ㅡ]
-[ㄱㅋ][ㄴㄹ][ㄷㅌ]
-[ㅂㅍ][ㅅㅎ][ㅈㅊ]
-[Space][ㅇㅁ][←]
-    [Enter]
-```
-
 **Features:**
 - **Real-time Composition**: Characters form as you type
 - **Syllable Building**: Automatically combines consonants and vowels
 - **Backspace Support**: Removes last input element
-- **Unicode Display**: Proper Korean character rendering with Korean fonts
-
-#### English T9 Mode (ENG)
-
-Phone-style T9 input with enhanced uppercase/lowercase support:
-
-**Layout:**
-```
-[abc][def][ghi]
-[jkl][mno][pqr]
-[stu][vwx][yz]
-[Next][Space][←]
-[shift][Clear][Enter]
-```
-
-**Features:**
-- **Dynamic Button Labels**: Button labels change based on shift state
-  - Normal mode: `abc`, `def`, `ghi`, etc. (lowercase)
-  - Shift mode: `ABC`, `DEF`, `GHI`, etc. (uppercase)
-- **Shift Toggle**: Press "shift" button to toggle between upper/lowercase
-- **Visual Feedback**: Shift button changes color when active (gray → green)
-- **T9 Cycling**: Click a button repeatedly to cycle through its letters
-- **Character Finalization**: Press "Next" to finalize the current character
-- **Text Operations**:
-  - Press "Space" to add a space
-  - Press "←" to delete the last character
-  - Press "Clear" to reset input and shift state
-  - Press "Enter" to confirm input
-
-**Usage Example:**
-1. Type "Hello": Press `ghi` twice (h), press `def` twice (e), press `jkl` three times (l), press `jkl` three times (l), press `mno` three times (o)
-2. For uppercase: Press "shift" first, then the letter buttons show uppercase labels
-
-#### Number Mode (123)
-
-Standard number pad layout:
-
-```
-[1][2][3]
-[4][5][6]
-[7][8][9]
-[Clear][0][←]
-   [Enter]
-```
-
-### Mode Switching
-
-Click the button in the top-right corner to cycle through modes:
-- **KOR** → **ENG** → **123** → **KOR**
-
-Each mode maintains its own state and provides consistent visual feedback.
-
-## Enhanced Features
-
-### Shift Functionality (English Mode)
-
-The English mode includes advanced shift support:
-
-**Visual Indicators:**
-- **Button Labels**: Change dynamically based on shift state
-  - Normal: `abc`, `def`, `ghi` (lowercase)
-  - Shift: `ABC`, `DEF`, `GHI` (uppercase)
-- **Shift Button**: Color changes to indicate state
-  - Inactive: Gray background, "shift" text
-  - Active: Green background, "SHIFT" text
-
-**State Management:**
-- Automatic reset when clearing text
-- Persistent during character input
-- Reset when switching modes or closing dialogs
-
-### Font Consistency
-
-All input modes use the same Korean font system:
-
-**Features:**
-- **Unified Appearance**: Consistent text rendering across modes
-- **Symbol Support**: Proper display of special characters (←, Korean characters)
-- **Mixed Text Support**: English mode can display Korean if needed
-- **Memory Efficient**: Single font loading shared across modes
-
-### Button Layout Alignment
-
-All modes use consistent button positioning:
-
-**Standards:**
-- **Display Area**: 280x50px at top with 5px margin
-- **Button Dimensions**: 85x70px with 8px spacing
-- **Start Position**: 70px from top (consistent across modes)
-- **Container Padding**: 10px all around
-
-This ensures visual consistency when switching between input modes.
-
-## Project Structure
-
-```
-Source/
-├── assets/               # Font files (NanumGothic TrueType fonts)
-│   ├── NanumGothic-Regular.ttf
-│   ├── NanumGothic-Bold.ttf
-│   └── NanumGothic-ExtraBold.ttf
-├── build/               # Build output directory
-├── docs/                # Documentation
-│   └── korean-font-integration.md
-├── include/             # Header files
-│   ├── chunjiin_input.h
-│   ├── font_config.h
-│   ├── qwerty_korean.h
-│   ├── tab_chunjiin.h
-│   ├── tab_english.h
-│   ├── tab_number.h
-│   └── ui_components.h
-├── lvgl/                # LVGL library (submodule)
-├── src/                 # Source files
-│   ├── chunjiin_input.c  # ChunJiIn input logic
-│   ├── main.c            # Application entry point
-│   ├── qwerty_korean.c   # Korean QWERTY logic
-│   ├── tab_chunjiin.c    # Korean input UI
-│   ├── tab_english.c     # English T9 input UI
-│   ├── tab_number.c      # Number pad UI
-│   └── ui_components.c   # Main UI, mode switching, and font management
-├── build.sh             # Build script
-├── cmake_help.sh        # CMake helper script
-├── install_freetype_deps.sh  # Dependency installer
-├── run.sh               # Run script
-└── CMakeLists.txt       # CMake configuration
-```
-
-## Configuration
-
-### Font Settings
-
-Korean font configuration is centralized in `src/ui_components.c` with settings in `include/font_config.h`:
-
-```c
-#define FONT_PATH(filename) "../assets/" filename
-#define KOREAN_FONT_REGULAR "NanumGothic-Regular.ttf"
-#define DEFAULT_FONT_SIZE 24
-#define KOREAN_FONT_RENDER_MODE LV_FREETYPE_FONT_RENDER_MODE_BITMAP
-```
-
-**Font Features:**
-- **Dual Size Support**: 24px (main) and 16px (small) fonts
-- **Memory Optimized**: 256 glyph cache, configurable memory limits
-- **Fallback Support**: Automatic fallback to built-in CJK fonts
-- **Consistent Rendering**: Same font used across all input modes
-
-### Font Architecture
-
-The application uses a centralized font loading system:
-- **Loading**: `init_freetype_and_fonts()` in `ui_components.c`
-- **Access**: `get_korean_font()` and `get_korean_font_small()` functions
-- **Usage**: All modes use Korean fonts for consistent appearance
-- **Symbols**: Backspace arrows (←) rendered with Korean font for consistency
-
-### Window Size
-
-Window size is set in `src/main.c`:
-
-```c
-lv_display_t * disp = lv_sdl_window_create(320, 640);
-```
-
-## Building from Source
-
-### Manual Build Steps
-
-1. Create build directory:
-```bash
-mkdir -p build
-cd build
-```
-
-2. Configure with CMake:
-```bash
-cmake ..
-```
-
-3. Build:
-```bash
-make -j$(nproc)
-```
-
-4. Run:
-```bash
-./main
-```
-
-### Clean Build
-
-The build script supports cleaning all build artifacts:
-
-```bash
-# Clean all build files and executables
-./build.sh clean
-
-# Then rebuild
-./build.sh
-```
-
-**Clean Command Features:**
-- Removes entire `build/` directory
-- Removes any executables in source directory
-- Cleans all CMake cache and build artifacts
-- Safe to run multiple times
-
-**Build Script Usage:**
-```bash
-./build.sh          # Normal build
-./build.sh clean    # Clean all build artifacts
-./build.sh help     # Show help message
-```
+- **Unicode Display**: Proper Korean character rendering
 
 ## Troubleshooting
 
 ### Font Not Loading
 
 If Korean characters don't display:
-- Check that `assets/NanumGothic-Regular.ttf` exists
+- Check that font file exists (`fonts/NanumGothic.ttf` or `assets/NanumGothic-Regular.ttf`)
 - The application falls back to built-in CJK fonts automatically
 - Verify `LV_FONT_SOURCE_HAN_SANS_SC_16_CJK` is enabled in `lvgl/lv_conf.h`
 
@@ -352,7 +228,7 @@ If you encounter build errors:
 # Clean build using build script
 ./build.sh clean
 
-# Reinstall dependencies  
+# Reinstall dependencies
 sudo apt-get install build-essential cmake pkg-config libsdl2-dev libfreetype-dev
 
 # Rebuild
@@ -367,64 +243,52 @@ rm -rf build
 
 ## Development
 
-### Korean Font Integration
+### Adding New Features
 
-The application uses a centralized font management system in `ui_components.c`:
+Both projects share similar architecture and can be extended:
 
-```c
-// Font access functions
-lv_font_t * get_korean_font(void);      // 24px font
-lv_font_t * get_korean_font_small(void); // 16px font
+1. **Create Input Module**: Add new input logic in `src/your_input.c`
+2. **Update UI**: Modify keyboard UI or add new tab
+3. **Font Support**: Use centralized font management functions
+4. **Build Configuration**: Update `CMakeLists.txt`
 
-// Usage in UI components
-lv_obj_set_style_text_font(label, get_korean_font_small(), 0);
-```
+### Font Integration
 
-**Benefits:**
-- **Consistency**: All modes use the same font rendering
-- **Performance**: Single font loading, shared across components
-- **Maintainability**: Centralized font configuration
-- **Unicode Support**: Proper Korean character composition
+Both projects use NanumGothic font:
 
-### Button Layout Customization
+**Chunjiin Keyboard:**
+- Font loaded via FreeType in `keyboard_ui.c`
+- Applied to buttons, mode label, and text area
+- Path: `../fonts/NanumGothic.ttf`
 
-Button layouts are defined in each tab file with consistent dimensions:
+**Tabbed Interface:**
+- Centralized font loading in `ui_components.c`
+- Access via `get_korean_font()` functions
+- Path: `../assets/NanumGothic-Regular.ttf`
 
-```c
-// Standard dimensions (320x640 optimized)
-int btn_width = 85;
-int btn_height = 70; 
-int btn_spacing = 8;
-int start_y = 70;  // Consistent across all modes
-```
+## Technical Details
 
-**Layout Files:**
-- `src/tab_chunjiin.c` - Korean ChunJiIn layout
-- `src/tab_english.c` - English T9 with shift support
-- `src/tab_number.c` - Number pad layout
+### Chunjiin Input Processing
 
-### Adding New Input Modes
+The Chunjiin implementation uses a state machine:
+- **STATE_START**: Initial state, waiting for first input
+- **STATE_CHOSEONG**: Processing initial consonant
+- **STATE_JUNGSEONG**: Processing vowel
+- **STATE_JONGSEONG**: Processing final consonant
 
-1. **Create Header**: `include/tab_yourmode.h`
-2. **Implement UI**: `src/tab_yourmode.c`
-   ```c
-   lv_obj_t* create_yourmode_tab(lv_obj_t* parent) {
-       // Create tab container
-       lv_obj_t* tab = lv_obj_create(parent);
-       lv_obj_set_size(tab, LV_PCT(100), LV_PCT(100));
-       lv_obj_set_style_pad_all(tab, 10, 0);
-       
-       // Use Korean font for consistency
-       lv_obj_set_style_text_font(label, get_korean_font_small(), 0);
-       
-       return tab;
-   }
-   ```
-3. **Update CMake**: Add to `CMakeLists.txt` MAIN_SOURCES
-4. **Update Mode Logic**: 
-   - Add enum to `ui_components.c`
-   - Add case to `switch_input_mode()` function
-   - Update mode cycling logic
+**Unicode Composition:**
+- Base: 0xAC00 (가)
+- Formula: base + (choseong × 588) + (jungseong × 28) + jongseong
+- Result: Proper Korean syllable characters
+
+### T9 English Input
+
+Character cycling with smart replacement:
+- Track last pressed key and timestamp
+- Cycle through character group: a→b→c→a
+- Replace last character if same key within 2 seconds
+- Add new character if different key or timeout
+- Uppercase conversion when Shift is active
 
 ## License
 
@@ -438,13 +302,26 @@ This project uses LVGL which is licensed under the MIT License.
 
 ## Version History
 
+### Chunjiin Keyboard (chunjiin_kbd/)
+
+- **v1.0** - Initial Release
+  - Compact button matrix design (400x640)
+  - Three input modes: Korean, English, Number
+  - Korean font integration for all UI elements
+  - T9 English with character replacement
+  - Shift visual feedback (orange highlight)
+  - Enter button popup dialog
+  - Modular input processing (separate files)
+
+### Tabbed Interface (Source/)
+
 - **v2.0** - Major Feature Update
-  - **Enhanced English Mode**: Added shift functionality with dynamic button labels
-  - **Font Integration**: Unified Korean font support across all modes
-  - **Visual Improvements**: Consistent button positioning and styling
-  - **Symbol Support**: Proper backspace arrow (←) display in all modes
-  - **UI Polish**: Green shift button when active, improved popup dialogs
-  - **Documentation**: Comprehensive font integration documentation
+  - Enhanced English Mode with shift functionality
+  - Font Integration: Unified Korean font support
+  - Visual Improvements: Consistent button positioning
+  - Symbol Support: Proper backspace arrow (←) display
+  - UI Polish: Green shift button when active
+  - Documentation: Comprehensive font integration docs
 
 - **v1.0** - Initial Release
   - Korean ChunJiIn input method
