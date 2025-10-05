@@ -5,6 +5,7 @@
 
 #include "english_input.h"
 #include <time.h>
+#include <ctype.h>
 
 /* T9 character mappings */
 static const char* key_chars[] = {
@@ -23,6 +24,7 @@ static const char* key_chars[] = {
 static char last_key = 0;
 static int current_index = 0;
 static time_t last_press_time = 0;
+static int shift_enabled = 0;  /* 0 = lowercase, 1 = uppercase */
 
 #define TIMEOUT_MS 1000
 
@@ -48,7 +50,22 @@ char english_process_key(char key) {
     }
 
     last_press_time = current_time;
-    return chars[current_index];
+    char result = chars[current_index];
+
+    /* Apply shift (uppercase) if enabled */
+    if (shift_enabled && result >= 'a' && result <= 'z') {
+        result = toupper(result);
+    }
+
+    return result;
+}
+
+void english_set_shift(int enabled) {
+    shift_enabled = enabled;
+}
+
+int english_get_shift(void) {
+    return shift_enabled;
 }
 
 void english_reset(void) {

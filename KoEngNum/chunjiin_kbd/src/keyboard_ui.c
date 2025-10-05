@@ -25,10 +25,10 @@ static char temp_char[8] = {0};
 
 /* Button labels - 10 key layout for Korean */
 static const char* korean_btn_map[] = {
-    "#\nㅣ", "*\n·", "0\nㅡ", "\n",
-    "1\nㄱㄲ", "2\nㄴㄷㄸ", "3\nㄹㅁ", "\n",
-    "4\nㅂㅃㅅ", "5\nㅆㅇ", "6\nㅈㅉㅊ", "\n",
-    "7\nㅋㅌ", "8\nㅍㅎ", "9\n", "\n",
+    "#\nㅣ", "*\nㆍ", "0\nㅡ", "\n",
+    "1\nㄱㅋ", "2\nㄴㄹ", "3\nㄷㅌ", "\n",
+    "4\nㅂㅍ", "5\nㅅㅎ", "6\nㅈㅊ", "\n",
+    "8\n", "7\nㅇㅁ", "9\n", "\n",
     "Space", "Enter", "←", ""
 };
 
@@ -37,7 +37,7 @@ static const char* english_btn_map[] = {
     "4\nghi", "5\njkl", "6\nmno", "\n",
     "7\npqrs", "8\ntuv", "9\nwxyz", "\n",
     "*\n+", "0\nSpc", "#\n", "\n",
-    "Space", "←", "Enter", ""
+    "Shift", "Enter", "←", ""
 };
 
 static const char* number_btn_map[] = {
@@ -45,7 +45,7 @@ static const char* number_btn_map[] = {
     "4", "5", "6", "\n",
     "7", "8", "9", "\n",
     "*", "0", "#", "\n",
-    "Space", "←", "Enter", ""
+    "Space", "Enter", "←", ""
 };
 
 /* UTF-8 encoding helper */
@@ -190,6 +190,25 @@ static void btn_event_cb(lv_event_t* e) {
         return;
     }
 
+    /* Shift (English mode only) */
+    if (strcmp(txt, "Shift") == 0) {
+        /* Toggle shift mode */
+        int current_shift = english_get_shift();
+        english_set_shift(!current_shift);
+
+        /* Update button color - Shift button is at index 12 in English mode */
+        if (current_mode == INPUT_MODE_ENGLISH) {
+            if (!current_shift) {
+                /* Shift is now ON - highlight button */
+                lv_btnmatrix_set_btn_ctrl(btn_matrix, 12, LV_BTNMATRIX_CTRL_CHECKED);
+            } else {
+                /* Shift is now OFF - normal button */
+                lv_btnmatrix_clear_btn_ctrl(btn_matrix, 12, LV_BTNMATRIX_CTRL_CHECKED);
+            }
+        }
+        return;
+    }
+
     /* Space */
     if (strcmp(txt, "Space") == 0) {
         if (current_mode == INPUT_MODE_KOREAN) {
@@ -221,12 +240,12 @@ static void btn_event_cb(lv_event_t* e) {
     if (current_mode == INPUT_MODE_KOREAN) {
         /* Map button text to letter key */
         char key = 0;
-        if (strstr(txt, "1\n") == txt) key = 'g';      // ㄱㅋㄲ
+        if (strstr(txt, "1\n") == txt) key = 'g';      // ㄱㅋ
         else if (strstr(txt, "2\n") == txt) key = 'n'; // ㄴㄹ
-        else if (strstr(txt, "3\n") == txt) key = 'd'; // ㄷㅌㄸ
-        else if (strstr(txt, "4\n") == txt) key = 'b'; // ㅂㅍㅃ
-        else if (strstr(txt, "5\n") == txt) key = 's'; // ㅅㅎㅆ
-        else if (strstr(txt, "6\n") == txt) key = 'j'; // ㅈㅊㅉ
+        else if (strstr(txt, "3\n") == txt) key = 'd'; // ㄷㅌ
+        else if (strstr(txt, "4\n") == txt) key = 'b'; // ㅂㅍ
+        else if (strstr(txt, "5\n") == txt) key = 's'; // ㅅㅎ
+        else if (strstr(txt, "6\n") == txt) key = 'j'; // ㅈㅊ
         else if (strstr(txt, "7\n") == txt) key = 'm'; // ㅇㅁ
         else if (strstr(txt, "#\n") == txt) key = 'i'; // ㅣ
         else if (strstr(txt, "*\n") == txt) key = 'a'; // ㆍ
@@ -323,6 +342,12 @@ static void mode_btn_cb(lv_event_t* e) {
     current_mode = (current_mode + 1) % 3;
     keyboard_set_mode(current_mode);
 
+    /* Clear checked state from all buttons when switching modes */
+    /* This prevents the Shift button state in English mode from affecting other modes */
+    for (int i = 0; i < 16; i++) {
+        lv_btnmatrix_clear_btn_ctrl(btn_matrix, i, LV_BTNMATRIX_CTRL_CHECKED);
+    }
+
     /* Update display to show accumulated output */
     if (current_mode == INPUT_MODE_KOREAN) {
         update_korean_display();
@@ -411,6 +436,10 @@ void keyboard_ui_init(void) {
     /* Button colors - pressed state */
     lv_obj_set_style_bg_color(btn_matrix, lv_color_hex(0x2E5F8A), LV_PART_ITEMS | LV_STATE_PRESSED);  // Darker blue
     lv_obj_set_style_bg_opa(btn_matrix, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_PRESSED);
+
+    /* Button colors - checked state (for Shift button) */
+    lv_obj_set_style_bg_color(btn_matrix, lv_color_hex(0xFF8C00), LV_PART_ITEMS | LV_STATE_CHECKED);  // Orange when active
+    lv_obj_set_style_bg_opa(btn_matrix, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_CHECKED);
 
     /* Button border */
     lv_obj_set_style_border_width(btn_matrix, 2, LV_PART_ITEMS);

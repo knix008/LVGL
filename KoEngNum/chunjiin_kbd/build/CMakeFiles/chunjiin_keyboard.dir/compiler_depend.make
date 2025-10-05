@@ -70669,6 +70669,7 @@ CMakeFiles/chunjiin_keyboard.dir/src/chunjiin_input.c.o: /home/shkwon/Projects/L
 
 CMakeFiles/chunjiin_keyboard.dir/src/english_input.c.o: /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/src/english_input.c \
   /home/shkwon/Projects/LVGL/KoEngNum/chunjiin_kbd/include/english_input.h \
+  /usr/include/ctype.h \
   /usr/include/features-time64.h \
   /usr/include/features.h \
   /usr/include/stdc-predef.h \

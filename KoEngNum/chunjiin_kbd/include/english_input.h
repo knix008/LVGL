@@ -18,4 +18,16 @@ char english_process_key(char key);
  */
 void english_reset(void);
 
+/**
+ * @brief Set shift mode (uppercase/lowercase)
+ * @param enabled 1 for uppercase, 0 for lowercase
+ */
+void english_set_shift(int enabled);
+
+/**
+ * @brief Get current shift mode
+ * @return 1 if uppercase, 0 if lowercase
+ */
+int english_get_shift(void);
+
 #endif /* ENGLISH_INPUT_H */
