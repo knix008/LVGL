@@ -74,10 +74,10 @@ void lv_example_tab_menu(void) {
     // Create a screen
     lv_obj_t * scr = lv_scr_act();
     
-    // Create tabview - larger for 1024x768 screen
+    // Create tabview - for 800x400 screen (full width to match title bar)
     lv_obj_t * tabview = lv_tabview_create(scr);
-    lv_obj_set_size(tabview, 1000, 730);  // Larger tabview for bigger screen
-    lv_obj_align(tabview, LV_ALIGN_TOP_MID, 0, 10);
+    lv_obj_set_size(tabview, 800, 400);
+    lv_obj_align(tabview, LV_ALIGN_TOP_MID, 0, 0);
 
     // Tab bar size
     lv_tabview_set_tab_bar_size(tabview, 40);

@@ -7,7 +7,7 @@
 cd Source/build
 
 # Check if executable exists
-if [ ! -f "main" ]; then
+if [ ! -f "KorEngNumQWerty" ]; then
     echo "Executable not found. Building application..."
     cd ..
     if [ ! -d "build" ]; then
@@ -24,9 +24,9 @@ if [ "$1" = "build" ]; then
 fi
 
 # Run the application
-if [ -f "main" ]; then
+if [ -f "KorEngNumQWerty" ]; then
     echo "Running Korean/English/Number QWERTY Keypad..."
-    ./main
+    ./KorEngNumQWerty
 else
     echo "Error: Executable not found. Please build first with './build.sh'"
     exit 1

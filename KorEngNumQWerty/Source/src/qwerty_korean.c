@@ -118,15 +118,24 @@ int qwerty_is_mappable_character(char ch) {
 
 // Input handling functions
 void qwerty_handle_backspace(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
+    // First, try to remove from the input buffer (for ongoing composition)
     if (*input_len > 0) {
+        // Remove one character from input buffer
         input_buffer[--(*input_len)] = '\0';
-        input_buffer[*input_len] = '\0';
         
-        // Clear output buffer
+        // Clear output buffer and recompose from remaining input
         output_buffer[0] = L'\0';
         
-        // Call the main Korean character composition logic
-        qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
+        // If there are still characters in input buffer, recompose them
+        if (*input_len > 0) {
+            qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
+        }
+    } else {
+        // If input buffer is empty, remove the last character from output buffer
+        size_t output_len = wcslen(output_buffer);
+        if (output_len > 0) {
+            output_buffer[output_len - 1] = L'\0';
+        }
     }
 }
 
@@ -141,13 +150,18 @@ void qwerty_handle_enter(char* input_buffer, size_t* input_len, wchar_t* output_
 }
 
 void qwerty_handle_space(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
-    if (*input_len < MAX_OUTPUT_LEN - 1) {
-        input_buffer[(*input_len)++] = ' ';
-        input_buffer[*input_len] = '\0';
-    }
+    // Get current output length
+    size_t output_len = wcslen(output_buffer);
+    
     // Add space to output buffer
-    output_buffer[*input_len-1] = L' ';
-    output_buffer[*input_len] = L'\0';
+    if (output_len < MAX_OUTPUT_LEN - 1) {
+        output_buffer[output_len] = L' ';
+        output_buffer[output_len + 1] = L'\0';
+    }
+    
+    // Clear input buffer after adding space since space ends Korean composition
+    input_buffer[0] = '\0';
+    *input_len = 0;
 }
 
 void qwerty_handle_character(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch) {
@@ -327,9 +341,14 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
                         temp_output[temp_len++] = wc;
                     }
                 } else {
-                    // Not a Korean character, keep it in the input buffer
-                    // and start a new Korean syllable after it
-                    // For now, we'll just advance past it
+                    // Not a Korean character, add it directly to output
+                    if (current_char == ' ') {
+                        temp_output[temp_len++] = L' ';
+                    } else {
+                        // For other characters, convert to wide char
+                        wchar_t wc = (wchar_t)current_char;
+                        temp_output[temp_len++] = wc;
+                    }
                 }
                 i++;
             }

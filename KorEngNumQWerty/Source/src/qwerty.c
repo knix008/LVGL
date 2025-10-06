@@ -14,10 +14,15 @@ typedef enum {
     INPUT_MODE_NUMBER
 } InputMode;
 
-// QWERTY Korean input system - using qwerty_korean.c functions
+// Unified output buffer - all modes use wide char for Korean support
 static char g_qwerty_input_buffer[MAX_OUTPUT_LEN] = "";
 static size_t g_qwerty_input_len = 0;
 static wchar_t g_qwerty_output_buffer[MAX_OUTPUT_LEN] = L"";
+static size_t g_qwerty_output_len = 0;
+
+// Korean composition tracking
+static wchar_t g_korean_temp_buffer[MAX_OUTPUT_LEN];
+static size_t g_korean_start_pos = 0;  // Position where Korean input started
 
 // Current input mode
 static InputMode g_current_mode = INPUT_MODE_KOREAN;
@@ -54,8 +59,8 @@ static const char* qwerty_keys_english_upper[3][10] = {
 // Number and symbol layout
 static const char* qwerty_keys_number[3][10] = {
     {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
-    {"-", "/", ":", ";", "(", ")", "$", "&", "@", "\""},
-    {".", ",", "?", "!", "'", "", "", "", "", ""}
+    {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")"},
+    {"+", "=", "[", "]", "{", "}", "|", "\\", ";", ":"}
 };
 
 // Global UI elements
@@ -109,18 +114,12 @@ static char map_korean_to_english(const char* korean_char) {
     return '\0';
 }
 
-// Update display with current text
+// Update display with current text - unified output from wide char buffer
 static void update_qwerty_display(void) {
     if (g_qwerty_display_label) {
-        if (g_current_mode == INPUT_MODE_KOREAN) {
-            // Use wide character output for Korean
-            char display_text[512] = "";
-            wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
-            lv_label_set_text(g_qwerty_display_label, display_text);
-        } else {
-            // Use regular input buffer for English/Numbers
-            lv_label_set_text(g_qwerty_display_label, g_qwerty_input_buffer);
-        }
+        char display_text[512] = "";
+        wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        lv_label_set_text(g_qwerty_display_label, display_text);
     }
 }
 
@@ -161,13 +160,13 @@ static void update_keyboard_layout(void) {
         const char* mode_text = "";
         switch (g_current_mode) {
             case INPUT_MODE_KOREAN:
-                mode_text = g_shift_mode ? "한글 (Shift)" : "한글";
+                mode_text = "한글";
                 break;
             case INPUT_MODE_ENGLISH_LOWER:
-                mode_text = "English (abc)";
+                mode_text = "English";
                 break;
             case INPUT_MODE_ENGLISH_UPPER:
-                mode_text = "English (ABC)";
+                mode_text = "English";
                 break;
             case INPUT_MODE_NUMBER:
                 mode_text = "123";
@@ -178,15 +177,34 @@ static void update_keyboard_layout(void) {
 
     // Update shift button appearance
     if (g_shift_btn) {
-        if (g_shift_mode && g_current_mode == INPUT_MODE_KOREAN) {
-            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(100, 150, 255), 0);
+        lv_obj_t* shift_label = lv_obj_get_child(g_shift_btn, 0);
+        
+        if ((g_shift_mode && g_current_mode == INPUT_MODE_KOREAN) || 
+            (g_current_mode == INPUT_MODE_ENGLISH_UPPER)) {
+            // Orange color when shift is active (Korean shift mode or English uppercase)
+            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(255, 140, 0), 0);
+            if (g_current_mode == INPUT_MODE_KOREAN) {
+                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for double consonants
+            } else {
+                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for uppercase
+            }
+        } else if (g_current_mode == INPUT_MODE_NUMBER) {
+            // Disabled/dimmed color for number mode (shift not applicable)
+            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(150, 150, 150), 0);
+            lv_label_set_text(shift_label, "⇧Shift");
         } else {
+            // Default color for inactive shift
             lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(200, 200, 200), 0);
+            if (g_current_mode == INPUT_MODE_KOREAN) {
+                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for normal consonants
+            } else {
+                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for lowercase
+            }
         }
     }
 }
 
-// Key press callback
+// Key press callback - unified to append to wide char buffer
 static void qwerty_key_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
@@ -197,17 +215,30 @@ static void qwerty_key_cb(lv_event_t* e) {
     if (!key_text || strlen(key_text) == 0) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
-        // Korean mode - use qwerty_korean system
+        // Korean mode - use qwerty_korean system with temp buffer
         char input_char = map_korean_to_english(key_text);
         if (input_char != '\0') {
+            // Process Korean input into temporary buffer
             qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                               g_qwerty_output_buffer, input_char);
+                               g_korean_temp_buffer, input_char);
+
+            // Merge: existing content + new Korean composition
+            // Copy existing content up to Korean start position
+            size_t korean_len = wcslen(g_korean_temp_buffer);
+
+            // Build final output: [existing][korean_composition]
+            if (g_korean_start_pos + korean_len < MAX_OUTPUT_LEN) {
+                wcscpy(g_qwerty_output_buffer + g_korean_start_pos, g_korean_temp_buffer);
+                g_qwerty_output_len = g_korean_start_pos + korean_len;
+            }
         }
     } else {
-        // English/Number mode - direct append
-        if (g_qwerty_input_len < MAX_OUTPUT_LEN - 1) {
-            strncat(g_qwerty_input_buffer, key_text, 1);
-            g_qwerty_input_len++;
+        // English/Number mode - convert to wide char and append to unified buffer
+        if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
+            wchar_t wc;
+            mbtowc(&wc, key_text, MB_CUR_MAX);
+            g_qwerty_output_buffer[g_qwerty_output_len++] = wc;
+            g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
         }
     }
 
@@ -222,8 +253,54 @@ static void mode_switch_cb(lv_event_t* e) {
     if (target_mode) {
         g_current_mode = *target_mode;
         g_shift_mode = false;  // Reset shift when changing modes
+        
+        // If switching to English mode, start with lowercase
+        if (g_current_mode == INPUT_MODE_ENGLISH_UPPER) {
+            g_current_mode = INPUT_MODE_ENGLISH_LOWER;
+        }
+        
         update_keyboard_layout();
     }
+}
+
+// Cycle mode callback (Korean -> English -> Number -> Korean)
+static void cycle_mode_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+
+    // When leaving Korean mode, finalize any pending composition
+    if (g_current_mode == INPUT_MODE_KOREAN && g_qwerty_input_len > 0) {
+        // Finalize the current Korean character by processing space
+        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
+                           g_korean_temp_buffer, ' ');
+        // Merge finalized Korean into output
+        size_t korean_len = wcslen(g_korean_temp_buffer);
+        if (g_korean_start_pos + korean_len < MAX_OUTPUT_LEN) {
+            wcscpy(g_qwerty_output_buffer + g_korean_start_pos, g_korean_temp_buffer);
+            g_qwerty_output_len = g_korean_start_pos + korean_len;
+        }
+    }
+
+    switch (g_current_mode) {
+        case INPUT_MODE_KOREAN:
+            g_current_mode = INPUT_MODE_ENGLISH_LOWER;
+            break;
+        case INPUT_MODE_ENGLISH_LOWER:
+        case INPUT_MODE_ENGLISH_UPPER:
+            g_current_mode = INPUT_MODE_NUMBER;
+            break;
+        case INPUT_MODE_NUMBER:
+            g_current_mode = INPUT_MODE_KOREAN;
+            // Set Korean start position to current output length
+            g_korean_start_pos = g_qwerty_output_len;
+            // Reset Korean composition buffers
+            memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+            memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+            g_qwerty_input_len = 0;
+            break;
+    }
+    g_shift_mode = false;
+    update_keyboard_layout();
+    update_qwerty_display();
 }
 
 // Shift callback
@@ -231,71 +308,79 @@ static void shift_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
+        // Korean mode: toggle shift mode for double consonants/vowels
         g_shift_mode = !g_shift_mode;
         update_keyboard_layout();
     } else if (g_current_mode == INPUT_MODE_ENGLISH_LOWER) {
+        // English lowercase -> uppercase
         g_current_mode = INPUT_MODE_ENGLISH_UPPER;
         update_keyboard_layout();
     } else if (g_current_mode == INPUT_MODE_ENGLISH_UPPER) {
+        // English uppercase -> lowercase
         g_current_mode = INPUT_MODE_ENGLISH_LOWER;
         update_keyboard_layout();
     }
+    // Note: Shift does nothing in number mode
 }
 
-// Space callback
+// Space callback - unified buffer
 static void space_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
         qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
                            g_qwerty_output_buffer, ' ');
+        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
     } else {
-        if (g_qwerty_input_len < MAX_OUTPUT_LEN - 1) {
-            strcat(g_qwerty_input_buffer, " ");
-            g_qwerty_input_len++;
+        if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
+            g_qwerty_output_buffer[g_qwerty_output_len++] = L' ';
+            g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
         }
     }
     update_qwerty_display();
 }
 
-// Backspace callback
+// Backspace callback - unified buffer
 static void backspace_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
         qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
                            g_qwerty_output_buffer, 0x7f);
+        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
     } else {
-        if (g_qwerty_input_len > 0) {
-            g_qwerty_input_buffer[--g_qwerty_input_len] = '\0';
+        if (g_qwerty_output_len > 0) {
+            g_qwerty_output_buffer[--g_qwerty_output_len] = L'\0';
         }
     }
     update_qwerty_display();
 }
 
-// Enter callback
+// Enter callback - unified buffer
 static void enter_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
         qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
                            g_qwerty_output_buffer, '\n');
+        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
     } else {
-        if (g_qwerty_input_len < MAX_OUTPUT_LEN - 1) {
-            strcat(g_qwerty_input_buffer, "\n");
-            g_qwerty_input_len++;
+        if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
+            g_qwerty_output_buffer[g_qwerty_output_len++] = L'\n';
+            g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
         }
     }
     update_qwerty_display();
 }
 
-// Clear callback
+// Clear callback - unified buffer
 static void clear_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
     memset(g_qwerty_output_buffer, 0, sizeof(g_qwerty_output_buffer));
     g_qwerty_input_len = 0;
+    g_qwerty_output_len = 0;
     update_qwerty_display();
 }
 
@@ -312,57 +397,45 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     // Reset buffers
     memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
     memset(g_qwerty_output_buffer, 0, sizeof(g_qwerty_output_buffer));
+    memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
     g_qwerty_input_len = 0;
+    g_qwerty_output_len = 0;
+    g_korean_start_pos = 0;
     g_current_mode = INPUT_MODE_KOREAN;
     g_shift_mode = false;
 
-    // Get font - use larger font for better Korean character visibility
-    lv_font_t* font = get_korean_font();
-    if (font == NULL) font = get_korean_font_small();
+    // Get fonts - use 16px for buttons
+    lv_font_t* font = get_korean_font_small();  // 16px font for buttons
     if (font == NULL) font = (lv_font_t*)&lv_font_montserrat_14;
+
+    // Larger font for display area
+    lv_font_t* display_font = get_korean_font();
+    if (display_font == NULL) display_font = font;
 
     // Create main container
     lv_obj_t* tab = lv_obj_create(parent);
     lv_obj_set_size(tab, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_pad_all(tab, 10, 0);
 
-    // Top row: Mode buttons, current mode label, and clear button
-    int top_row_y = 10;
+    // Layout parameters
+    int top_row_y = 5;
     int mode_btn_width = 70;
     int mode_btn_height = 30;
-    int mode_btn_spacing = 8;
+    int side_margin = 65;  // Margin from edges
+    int display_height = 60;  // Increased height from 50 to 60
 
-    // Korean mode button (left)
-    lv_obj_t* btn_korean = lv_btn_create(tab);
-    lv_obj_set_size(btn_korean, mode_btn_width, mode_btn_height);
-    lv_obj_align(btn_korean, LV_ALIGN_TOP_LEFT, 20, top_row_y);
-    lv_obj_t* label_korean = lv_label_create(btn_korean);
-    lv_label_set_text(label_korean, "한글");
-    lv_obj_set_style_text_font(label_korean, font, 0);
-    lv_obj_center(label_korean);
-    lv_obj_add_event_cb(btn_korean, mode_switch_cb, LV_EVENT_CLICKED, &mode_korean);
+    // Mode cycle button (left)
+    lv_obj_t* btn_mode = lv_btn_create(tab);
+    lv_obj_set_size(btn_mode, mode_btn_width, mode_btn_height);
+    lv_obj_align(btn_mode, LV_ALIGN_TOP_LEFT, side_margin, top_row_y);
+    lv_obj_set_style_radius(btn_mode, 4, 0);  // Rectangular shape
+    lv_obj_t* label_mode = lv_label_create(btn_mode);
+    lv_label_set_text(label_mode, "Mode");
+    lv_obj_set_style_text_font(label_mode, font, 0);
+    lv_obj_center(label_mode);
+    lv_obj_add_event_cb(btn_mode, cycle_mode_cb, LV_EVENT_CLICKED, NULL);
 
-    // English mode button
-    lv_obj_t* btn_english = lv_btn_create(tab);
-    lv_obj_set_size(btn_english, mode_btn_width, mode_btn_height);
-    lv_obj_align(btn_english, LV_ALIGN_TOP_LEFT, 20 + mode_btn_width + mode_btn_spacing, top_row_y);
-    lv_obj_t* label_english = lv_label_create(btn_english);
-    lv_label_set_text(label_english, "Eng");
-    lv_obj_set_style_text_font(label_english, font, 0);
-    lv_obj_center(label_english);
-    lv_obj_add_event_cb(btn_english, mode_switch_cb, LV_EVENT_CLICKED, &mode_eng_lower);
-
-    // Number mode button
-    lv_obj_t* btn_number = lv_btn_create(tab);
-    lv_obj_set_size(btn_number, mode_btn_width, mode_btn_height);
-    lv_obj_align(btn_number, LV_ALIGN_TOP_LEFT, 20 + 2 * (mode_btn_width + mode_btn_spacing), top_row_y);
-    lv_obj_t* label_number = lv_label_create(btn_number);
-    lv_label_set_text(label_number, "123");
-    lv_obj_set_style_text_font(label_number, font, 0);
-    lv_obj_center(label_number);
-    lv_obj_add_event_cb(btn_number, mode_switch_cb, LV_EVENT_CLICKED, &mode_number);
-
-    // Current mode label (center)
+    // Current mode label (center top)
     g_mode_label = lv_label_create(tab);
     lv_obj_align(g_mode_label, LV_ALIGN_TOP_MID, 0, top_row_y + 5);
     lv_obj_set_style_text_font(g_mode_label, font, 0);
@@ -370,43 +443,76 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
 
     // Clear button (right)
     lv_obj_t* top_clear_btn = lv_btn_create(tab);
-    lv_obj_set_size(top_clear_btn, 80, mode_btn_height);
-    lv_obj_align(top_clear_btn, LV_ALIGN_TOP_RIGHT, -20, top_row_y);
+    lv_obj_set_size(top_clear_btn, mode_btn_width, mode_btn_height);
+    lv_obj_align(top_clear_btn, LV_ALIGN_TOP_RIGHT, -side_margin, top_row_y);
+    lv_obj_set_style_radius(top_clear_btn, 4, 0);  // Rectangular shape
     lv_obj_t* top_clear_label = lv_label_create(top_clear_btn);
     lv_label_set_text(top_clear_label, "Clear");
     lv_obj_set_style_text_font(top_clear_label, font, 0);
     lv_obj_center(top_clear_label);
     lv_obj_add_event_cb(top_clear_btn, clear_cb, LV_EVENT_CLICKED, NULL);
 
-    // Create display area - below the top buttons
+    // Create display area - stretches between Mode and Clear buttons with percentage width
+    int display_y = top_row_y + mode_btn_height + 5;
     g_qwerty_display_label = lv_label_create(tab);
-    lv_obj_set_size(g_qwerty_display_label, 700, 60);
-    lv_obj_align(g_qwerty_display_label, LV_ALIGN_TOP_MID, 0, 50);
+    lv_obj_set_height(g_qwerty_display_label, display_height);
+    lv_obj_set_width(g_qwerty_display_label, LV_PCT(82));  // 82% width for responsive sizing
+    lv_obj_align(g_qwerty_display_label, LV_ALIGN_TOP_MID, 0, display_y);
     lv_obj_set_style_bg_color(g_qwerty_display_label, lv_color_make(255, 255, 255), 0);
     lv_obj_set_style_bg_opa(g_qwerty_display_label, LV_OPA_COVER, 0);
     lv_obj_set_style_border_color(g_qwerty_display_label, lv_color_make(150, 150, 150), 0);
     lv_obj_set_style_border_width(g_qwerty_display_label, 2, 0);
-    lv_obj_set_style_pad_all(g_qwerty_display_label, 12, 0);
-    lv_obj_set_style_text_font(g_qwerty_display_label, font, 0);
+    lv_obj_set_style_pad_all(g_qwerty_display_label, 8, 0);
+    lv_obj_set_style_text_font(g_qwerty_display_label, display_font, 0);
     lv_obj_set_style_text_color(g_qwerty_display_label, lv_color_make(0, 0, 0), 0);
-    lv_obj_set_style_radius(g_qwerty_display_label, 8, 0);
+    lv_obj_set_style_radius(g_qwerty_display_label, 4, 0);
     lv_label_set_text(g_qwerty_display_label, "");
 
-    // Keyboard layout - mobile-style proportions
-    int btn_width = 68;
-    int btn_height = 50;
+    // Keyboard layout - larger buttons for bigger window
+    int btn_width = 55;
+    int btn_height = 42;
     int btn_spacing = 4;
-    int start_y = 125;
+    int start_y = display_y + display_height + 10;
+
+    // Align keyboard with textbox left edge (textbox is at side_margin) + 10px right shift
+    int keyboard_left = side_margin + 10;
 
     // Create QWERTY keyboard buttons (3 rows)
     for (int row = 0; row < 3; row++) {
+        // For row 2 (third row), we'll add Shift at start and Backspace at end
+        int shift_width = (row == 2) ? 85 : 0;
+        int back_width = (row == 2) ? 85 : 0;
+
         int valid_keys = 0;
         for (int col = 0; col < 10; col++) {
             if (strlen(qwerty_keys_korean[row][col]) > 0) valid_keys++;
         }
 
-        int total_width = valid_keys * btn_width + (valid_keys - 1) * btn_spacing;
-        int center_offset = -total_width / 2;
+        // Row 1 (second row) is centered but shifted right, others aligned left
+        bool is_centered = (row == 1);
+        int current_x;
+
+        if (is_centered) {
+            int total_width = valid_keys * btn_width + (valid_keys - 1) * btn_spacing;
+            current_x = -total_width / 2 + 25; // Shift the second row 35px to the right (15px original + 10px additional)
+        } else {
+            current_x = keyboard_left;
+        }
+
+        // Add Shift button at start of row 2
+        if (row == 2) {
+            g_shift_btn = lv_btn_create(tab);
+            lv_obj_set_size(g_shift_btn, shift_width, btn_height);
+            lv_obj_align(g_shift_btn, is_centered ? LV_ALIGN_TOP_MID : LV_ALIGN_TOP_LEFT,
+                        current_x, start_y + row * (btn_height + btn_spacing));
+            lv_obj_set_style_radius(g_shift_btn, 6, 0);
+            lv_obj_t* shift_label = lv_label_create(g_shift_btn);
+            lv_label_set_text(shift_label, "Shift");
+            lv_obj_set_style_text_font(shift_label, font, 0);
+            lv_obj_center(shift_label);
+            lv_obj_add_event_cb(g_shift_btn, shift_cb, LV_EVENT_CLICKED, NULL);
+            current_x += shift_width + btn_spacing;
+        }
 
         int key_index = 0;
         for (int col = 0; col < 10; col++) {
@@ -414,9 +520,8 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
 
             lv_obj_t* btn = lv_btn_create(tab);
             lv_obj_set_size(btn, btn_width, btn_height);
-            lv_obj_align(btn, LV_ALIGN_TOP_MID,
-                        center_offset + key_index * (btn_width + btn_spacing),
-                        start_y + row * (btn_height + btn_spacing));
+            lv_obj_align(btn, is_centered ? LV_ALIGN_TOP_MID : LV_ALIGN_TOP_LEFT,
+                        current_x, start_y + row * (btn_height + btn_spacing));
             lv_obj_set_style_radius(btn, 6, 0);
             lv_obj_set_style_shadow_width(btn, 2, 0);
             lv_obj_set_style_shadow_opa(btn, LV_OPA_30, 0);
@@ -429,36 +534,38 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
             lv_obj_add_event_cb(btn, qwerty_key_cb, LV_EVENT_CLICKED, NULL);
             g_qwerty_buttons[row][col] = btn;
 
+            current_x += btn_width + btn_spacing;
             key_index++;
+        }
+
+        // Add Backspace button at end of row 2
+        if (row == 2) {
+            lv_obj_t* back_btn = lv_btn_create(tab);
+            lv_obj_set_size(back_btn, back_width, btn_height);
+            lv_obj_align(back_btn, is_centered ? LV_ALIGN_TOP_MID : LV_ALIGN_TOP_LEFT,
+                        current_x, start_y + row * (btn_height + btn_spacing));
+            lv_obj_set_style_radius(back_btn, 6, 0);
+            lv_obj_t* back_label = lv_label_create(back_btn);
+            lv_label_set_text(back_label, "←");
+            lv_obj_set_style_text_font(back_label, font, 0);
+            lv_obj_center(back_label);
+            lv_obj_add_event_cb(back_btn, backspace_cb, LV_EVENT_CLICKED, NULL);
         }
     }
 
-    // Bottom special keys row - only Shift, Space, Backspace, Enter (Clear moved to top)
-    int special_y = start_y + 3 * (btn_height + btn_spacing) + 8;
-    int shift_width = 100;
-    int space_width = 280;
-    int back_width = 100;
-    int enter_width = 100;
-
-    int total_special = shift_width + space_width + back_width + enter_width + 3 * btn_spacing;
-    int special_offset = -total_special / 2;
-
-    // Shift button
-    g_shift_btn = lv_btn_create(tab);
-    lv_obj_set_size(g_shift_btn, shift_width, btn_height);
-    lv_obj_align(g_shift_btn, LV_ALIGN_TOP_MID, special_offset, special_y);
-    lv_obj_set_style_radius(g_shift_btn, 6, 0);
-    lv_obj_t* shift_label = lv_label_create(g_shift_btn);
-    lv_label_set_text(shift_label, "Shift");
-    lv_obj_set_style_text_font(shift_label, font, 0);
-    lv_obj_center(shift_label);
-    lv_obj_add_event_cb(g_shift_btn, shift_cb, LV_EVENT_CLICKED, NULL);
+    // Bottom special keys row - Space and Enter, centered horizontally
+    int special_y = start_y + 3 * (btn_height + btn_spacing) + 4;
+    int space_width = 5 * btn_width + 4 * btn_spacing;  // 5 button widths + 4 gaps = 291px
+    int enter_width = 2 * btn_width + btn_spacing;      // 2 button widths + 1 gap = 114px
+    
+    // Calculate total width and center position for the 4th row
+    int total_4th_row_width = space_width + btn_spacing + enter_width;
+    int center_start_x = (800 - total_4th_row_width) / 2 - 32;  // Center in 800px window
 
     // Space button
     lv_obj_t* space_btn = lv_btn_create(tab);
     lv_obj_set_size(space_btn, space_width, btn_height);
-    lv_obj_align(space_btn, LV_ALIGN_TOP_MID,
-                special_offset + shift_width + btn_spacing, special_y);
+    lv_obj_align(space_btn, LV_ALIGN_TOP_LEFT, center_start_x, special_y);
     lv_obj_set_style_radius(space_btn, 6, 0);
     lv_obj_t* space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
@@ -466,29 +573,20 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     lv_obj_center(space_label);
     lv_obj_add_event_cb(space_btn, space_cb, LV_EVENT_CLICKED, NULL);
 
-    // Backspace button
-    lv_obj_t* back_btn = lv_btn_create(tab);
-    lv_obj_set_size(back_btn, back_width, btn_height);
-    lv_obj_align(back_btn, LV_ALIGN_TOP_MID,
-                special_offset + shift_width + space_width + 2 * btn_spacing, special_y);
-    lv_obj_set_style_radius(back_btn, 6, 0);
-    lv_obj_t* back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "←");
-    lv_obj_set_style_text_font(back_label, font, 0);
-    lv_obj_center(back_label);
-    lv_obj_add_event_cb(back_btn, backspace_cb, LV_EVENT_CLICKED, NULL);
-
     // Enter button
     lv_obj_t* enter_btn = lv_btn_create(tab);
     lv_obj_set_size(enter_btn, enter_width, btn_height);
-    lv_obj_align(enter_btn, LV_ALIGN_TOP_MID,
-                special_offset + shift_width + space_width + back_width + 3 * btn_spacing, special_y);
+    lv_obj_align(enter_btn, LV_ALIGN_TOP_LEFT,
+                center_start_x + space_width + btn_spacing, special_y);
     lv_obj_set_style_radius(enter_btn, 6, 0);
     lv_obj_t* enter_label = lv_label_create(enter_btn);
     lv_label_set_text(enter_label, "Enter");
     lv_obj_set_style_text_font(enter_label, font, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(enter_btn, enter_cb, LV_EVENT_CLICKED, NULL);
+
+    // Initialize keyboard layout and shift button colors
+    update_keyboard_layout();
 
     return tab;
 }

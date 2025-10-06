@@ -11,8 +11,8 @@ int main(void)
 {
     lv_init();
 
-    // Initialize SDL display driver - larger window
-    lv_display_t * disp = lv_sdl_window_create(1024, 768);
+    // Initialize SDL display driver - 800x400 window
+    lv_display_t * disp = lv_sdl_window_create(800, 400);
     if (disp == NULL) {
         printf("Failed to create SDL window!\n");
         return -1;

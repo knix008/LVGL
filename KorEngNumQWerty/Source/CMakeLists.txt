@@ -1,133 +1,210 @@
+# ==============================================================================
+# Korean/English/Number QWERTY Keypad - CMake Build Configuration
+# ==============================================================================
+
 cmake_minimum_required(VERSION 3.10)
-project(main C)
+project(KorEngNumQWerty
+    VERSION 1.0.0
+    DESCRIPTION "Korean/English/Number QWERTY Virtual Keyboard"
+    LANGUAGES C
+)
+
+# ==============================================================================
+# Build Configuration
+# ==============================================================================
 
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Force rebuild on every make
-set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
-set(LVGL_DIR "lvgl")
-set(LV_DRIVERS_DIR "lvgl/src/drivers")
-set(SQLCIPHER_DIR "sqlcipher")
+# Compiler flags
+set(CMAKE_C_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-# Create lib directory
+# ==============================================================================
+# Directory Paths
+# ==============================================================================
+
+set(LVGL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lvgl")
+set(LV_DRIVERS_DIR "${LVGL_DIR}/src/drivers")
 set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
+
+# Create output directories
 file(MAKE_DIRECTORY ${LIB_DIR})
 
-include_directories(
-    ${LVGL_DIR}
-    ${LVGL_DIR}/src
-    ${LVGL_DIR}/src/libs
-    ${LVGL_DIR}/src/libs/freetype
-    ${LV_DRIVERS_DIR}
-    ${LV_DRIVERS_DIR}/sdl
-    ${SQLCIPHER_DIR}/src
-)
+# ==============================================================================
+# Dependencies - SDL2
+# ==============================================================================
 
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
+if(SDL2_FOUND)
+    message(STATUS "Found SDL2: ${SDL2_LIBRARIES}")
+endif()
 
-# Find FreeType
+# ==============================================================================
+# Dependencies - FreeType
+# ==============================================================================
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FREETYPE REQUIRED freetype2)
-include_directories(${FREETYPE_INCLUDE_DIRS})
+if(FREETYPE_FOUND)
+    message(STATUS "Found FreeType: ${FREETYPE_LIBRARIES}")
+endif()
 
-add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
+# ==============================================================================
+# LVGL Library Build
+# ==============================================================================
 
-# SQLCipher compile definitions
-add_compile_definitions(
-    SQLITE_HAS_CODEC=1
-    SQLITE_EXTRA_INIT=sqlcipher_extra_init
-    SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
-    SQLITE_THREADSAFE=1
-    SQLITE_TEMP_STORE=2
-    SQLITE_ENABLE_FTS5=1
-    SQLITE_ENABLE_JSON1=1
-    SQLITE_ENABLE_RTREE=1
-    SQLITE_ENABLE_UNLOCK_NOTIFY=1
-    SQLITE_ENABLE_DBSTAT_VTAB=1
-    SQLITE_ENABLE_LOAD_EXTENSION=1
-    SQLCIPHER_CRYPTO_OPENSSL=1
-    SQLCIPHER_OMIT_LOG=1
-)
-
-# Create LVGL static library
+# Collect LVGL source files
 file(GLOB_RECURSE LVGL_SOURCES
     ${LVGL_DIR}/src/*.c
 )
+
+# Collect LVGL SDL driver sources
 file(GLOB LV_DRIVERS_SOURCES
     ${LV_DRIVERS_DIR}/sdl/*.c
 )
 
-# Create LVGL library
-add_library(lvgl_lib STATIC ${LVGL_SOURCES} ${LV_DRIVERS_SOURCES})
-target_include_directories(lvgl_lib PUBLIC 
+# Create LVGL static library
+add_library(lvgl_lib STATIC
+    ${LVGL_SOURCES}
+    ${LV_DRIVERS_SOURCES}
+)
+
+# LVGL include directories
+target_include_directories(lvgl_lib PUBLIC
     ${LVGL_DIR}
     ${LVGL_DIR}/src
     ${LVGL_DIR}/src/libs
     ${LVGL_DIR}/src/libs/freetype
     ${LV_DRIVERS_DIR}
     ${LV_DRIVERS_DIR}/sdl
+    ${SDL2_INCLUDE_DIRS}
+    ${FREETYPE_INCLUDE_DIRS}
 )
 
-# Set output directory for LVGL library
+# LVGL compile definitions
+target_compile_definitions(lvgl_lib PUBLIC
+    $<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>
+)
+
+# Set LVGL library output directory
 set_target_properties(lvgl_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR}
     LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${LIB_DIR}
 )
 
-# Explicitly list all source files to ensure proper dependency tracking
-set(MAIN_SOURCES
+# ==============================================================================
+# Application Build
+# ==============================================================================
+
+# Application source files
+set(APP_SOURCES
     src/main.c
     src/ui_components.c
     src/qwerty.c
     src/qwerty_korean.c
 )
 
-# Create main executable (without SQLCipher for now)
-add_executable(main ${MAIN_SOURCES})
+# Application header files (for IDE)
+set(APP_HEADERS
+    include/ui_components.h
+    include/ui_callbacks.h
+    include/qwerty.h
+    include/qwerty_korean.h
+    include/font_config.h
+)
 
-# Add include directories
-target_include_directories(main PRIVATE include sqlcipher sqlite lvgl)
+# Create main executable
+add_executable(main ${APP_SOURCES} ${APP_HEADERS})
 
-# Link against LVGL library and other dependencies
-target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES})
+# Application include directories
+target_include_directories(main PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${LVGL_DIR}
+)
 
-if(UNIX)
-    target_link_libraries(main pthread dl m crypto)
+# Link libraries
+target_link_libraries(main PRIVATE
+    lvgl_lib
+    ${SDL2_LIBRARIES}
+    ${FREETYPE_LIBRARIES}
+)
+
+# Platform-specific libraries
+if(UNIX AND NOT APPLE)
+    target_link_libraries(main PRIVATE pthread dl m)
+elseif(APPLE)
+    target_link_libraries(main PRIVATE pthread dl)
 endif()
 
-# Force rebuild of main sources when any source file changes
-foreach(source_file ${MAIN_SOURCES})
-    set_source_files_properties(${source_file} PROPERTIES HEADER_FILE_ONLY FALSE)
-endforeach()
+# Set executable output name
+set_target_properties(main PROPERTIES
+    OUTPUT_NAME "KorEngNumQWerty"
+)
 
-# Add custom clean target to ensure complete cleanup
+# ==============================================================================
+# Custom Targets
+# ==============================================================================
+
+# Clean all build files including LVGL library
 add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/CMakeFiles
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeCache.txt
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/cmake_install.cmake
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/Makefile
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/main
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.o
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.d
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/KorEngNumQWerty
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${LIB_DIR}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Cleaning all build files"
 )
 
-# Add custom target to clean only main sources (keep LVGL library)
+# Clean only main executable (keep LVGL library)
 add_custom_target(clean-main
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/main
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.o
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeFiles/main.dir/src/*.d
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/KorEngNumQWerty
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMENT "Cleaning main application files (keeping LVGL library)"
+    COMMENT "Cleaning main executable only (keeping LVGL library)"
 )
 
-# Test executable disabled - source files not available
-# set(TEST_SOURCES
-#     src/test_chunjiin_input.c
-#     src/chunjiin_input.c
-# )
-# add_executable(test_chunjiin ${TEST_SOURCES})
+# Rebuild main executable
+add_custom_target(rebuild-main
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean-main
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target main
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Rebuilding main executable"
+)
+
+# ==============================================================================
+# Installation (Optional)
+# ==============================================================================
+
+install(TARGETS main
+    RUNTIME DESTINATION bin
+)
+
+# Install fonts
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets/
+    DESTINATION share/KorEngNumQWerty/assets
+    FILES_MATCHING PATTERN "*.ttf"
+)
+
+# ==============================================================================
+# Build Summary
+# ==============================================================================
+
+message(STATUS "")
+message(STATUS "==================================================")
+message(STATUS "  Korean/English/Number QWERTY Keypad")
+message(STATUS "==================================================")
+message(STATUS "  Version: ${PROJECT_VERSION}")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  C Compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "  Install Prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "==================================================")
+message(STATUS "")
