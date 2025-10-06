@@ -17,11 +17,11 @@ typedef enum {
 // Unified output buffer - all modes use wide char for Korean support
 static char g_qwerty_input_buffer[MAX_OUTPUT_LEN] = "";
 static size_t g_qwerty_input_len = 0;
-static wchar_t g_qwerty_output_buffer[MAX_OUTPUT_LEN] = L"";
+static wchar_t g_qwerty_output_buffer[MAX_OUTPUT_LEN] = {L'\0'};
 static size_t g_qwerty_output_len = 0;
 
 // Korean composition tracking
-static wchar_t g_korean_temp_buffer[MAX_OUTPUT_LEN];
+static wchar_t g_korean_temp_buffer[MAX_OUTPUT_LEN] = {L'\0'};
 static size_t g_korean_start_pos = 0;  // Position where Korean input started
 
 // Current input mode
@@ -215,21 +215,24 @@ static void qwerty_key_cb(lv_event_t* e) {
     if (!key_text || strlen(key_text) == 0) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
-        // Korean mode - use qwerty_korean system with temp buffer
+        // Korean mode - compose character and append to unified buffer
         char input_char = map_korean_to_english(key_text);
         if (input_char != '\0') {
-            // Process Korean input into temporary buffer
-            qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                               g_korean_temp_buffer, input_char);
+            // Add to input buffer for composition
+            if (g_qwerty_input_len < MAX_OUTPUT_LEN - 1) {
+                g_qwerty_input_buffer[g_qwerty_input_len++] = input_char;
+                g_qwerty_input_buffer[g_qwerty_input_len] = '\0';
+            }
 
-            // Merge: existing content + new Korean composition
-            // Copy existing content up to Korean start position
+            // Compose the Korean character from input buffer
+            qwerty_compose_korean_characters(g_qwerty_input_buffer, g_qwerty_input_len, g_korean_temp_buffer);
+
+            // Replace the Korean composition section (from start pos to end)
             size_t korean_len = wcslen(g_korean_temp_buffer);
-
-            // Build final output: [existing][korean_composition]
             if (g_korean_start_pos + korean_len < MAX_OUTPUT_LEN) {
                 wcscpy(g_qwerty_output_buffer + g_korean_start_pos, g_korean_temp_buffer);
                 g_qwerty_output_len = g_korean_start_pos + korean_len;
+                g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
             }
         }
     } else {
@@ -269,15 +272,11 @@ static void cycle_mode_cb(lv_event_t* e) {
 
     // When leaving Korean mode, finalize any pending composition
     if (g_current_mode == INPUT_MODE_KOREAN && g_qwerty_input_len > 0) {
-        // Finalize the current Korean character by processing space
-        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                           g_korean_temp_buffer, ' ');
-        // Merge finalized Korean into output
-        size_t korean_len = wcslen(g_korean_temp_buffer);
-        if (g_korean_start_pos + korean_len < MAX_OUTPUT_LEN) {
-            wcscpy(g_qwerty_output_buffer + g_korean_start_pos, g_korean_temp_buffer);
-            g_qwerty_output_len = g_korean_start_pos + korean_len;
-        }
+        // Korean composition is already in the output buffer
+        // Just clear the input buffers
+        memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+        memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+        g_qwerty_input_len = 0;
     }
 
     switch (g_current_mode) {
@@ -290,7 +289,7 @@ static void cycle_mode_cb(lv_event_t* e) {
             break;
         case INPUT_MODE_NUMBER:
             g_current_mode = INPUT_MODE_KOREAN;
-            // Set Korean start position to current output length
+            // Set Korean start position to current output length (append mode)
             g_korean_start_pos = g_qwerty_output_len;
             // Reset Korean composition buffers
             memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
@@ -328,49 +327,109 @@ static void space_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     if (g_current_mode == INPUT_MODE_KOREAN) {
-        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                           g_qwerty_output_buffer, ' ');
-        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
-    } else {
-        if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
-            g_qwerty_output_buffer[g_qwerty_output_len++] = L' ';
-            g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
+        // Finalize any pending Korean composition
+        if (g_qwerty_input_len > 0) {
+            // Korean composition is already in the output buffer
+            // Just clear the input buffer and update the start position
+            memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+            memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+            g_qwerty_input_len = 0;
         }
     }
+
+    // Add space to unified buffer (for all modes)
+    if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
+        g_qwerty_output_buffer[g_qwerty_output_len++] = L' ';
+        g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
+    }
+
+    // Update Korean start position to after the space
+    if (g_current_mode == INPUT_MODE_KOREAN) {
+        g_korean_start_pos = g_qwerty_output_len;
+    }
+
     update_qwerty_display();
 }
 
-// Backspace callback - unified buffer
+// Backspace callback - unified buffer (removes one character at a time)
 static void backspace_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
-    if (g_current_mode == INPUT_MODE_KOREAN) {
-        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                           g_qwerty_output_buffer, 0x7f);
-        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
-    } else {
-        if (g_qwerty_output_len > 0) {
-            g_qwerty_output_buffer[--g_qwerty_output_len] = L'\0';
+    // Simply remove the last character from the unified output buffer
+    if (g_qwerty_output_len > 0) {
+        g_qwerty_output_buffer[--g_qwerty_output_len] = L'\0';
+
+        // If we're in Korean mode, also clear the Korean input buffer
+        // since the display no longer matches the composition state
+        if (g_current_mode == INPUT_MODE_KOREAN) {
+            memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+            memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+            g_qwerty_input_len = 0;
+            g_korean_start_pos = g_qwerty_output_len;
         }
     }
     update_qwerty_display();
 }
 
-// Enter callback - unified buffer
+// Popup close callback
+static void popup_close_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+
+    lv_obj_t* popup = (lv_obj_t*)lv_event_get_user_data(e);
+    if (popup) {
+        lv_obj_del(popup);
+    }
+}
+
+// Enter callback - show popup and clear textbox
 static void enter_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
+    // Finalize any pending Korean composition
     if (g_current_mode == INPUT_MODE_KOREAN) {
-        qwerty_process_input(g_qwerty_input_buffer, &g_qwerty_input_len,
-                           g_qwerty_output_buffer, '\n');
-        g_qwerty_output_len = wcslen(g_qwerty_output_buffer);
-    } else {
-        if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
-            g_qwerty_output_buffer[g_qwerty_output_len++] = L'\n';
-            g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
+        if (g_qwerty_input_len > 0) {
+            // Korean composition is already in the output buffer
+            // Just clear the input buffer
+            memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+            memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+            g_qwerty_input_len = 0;
         }
     }
-    update_qwerty_display();
+
+    // Only show popup if there's text entered
+    if (g_qwerty_output_len > 0) {
+        // Convert wide char buffer to UTF-8 for display
+        char display_text[512] = "";
+        wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+
+        // Get Korean font for the popup text
+        lv_font_t* display_font = get_korean_font();
+        if (display_font == NULL) display_font = (lv_font_t*)&lv_font_montserrat_14;
+
+        // Create popup message box
+        lv_obj_t* popup = lv_msgbox_create(lv_scr_act());
+        lv_msgbox_add_title(popup, "Entered Text");
+        lv_obj_t* text_obj = lv_msgbox_add_text(popup, display_text);
+        lv_obj_t* close_btn = lv_msgbox_add_close_button(popup);
+
+        // Apply Korean font to the text content
+        if (text_obj) {
+            lv_obj_set_style_text_font(text_obj, display_font, 0);
+        }
+
+        lv_obj_add_event_cb(close_btn, popup_close_cb, LV_EVENT_CLICKED, popup);
+        lv_obj_center(popup);
+
+        // Clear all buffers after showing popup
+        memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
+        memset(g_qwerty_output_buffer, 0, sizeof(g_qwerty_output_buffer));
+        memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
+        g_qwerty_input_len = 0;
+        g_qwerty_output_len = 0;
+        g_korean_start_pos = 0;
+
+        update_qwerty_display();
+    }
 }
 
 // Clear callback - unified buffer
