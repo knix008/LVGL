@@ -355,4 +355,4 @@ LV_FONT_CUSTOM_DECLARE
 } /*extern "C"*/
 #endif
 
-#endif /*LV_FONT_H*/
+#endif /*USE_FONT*/

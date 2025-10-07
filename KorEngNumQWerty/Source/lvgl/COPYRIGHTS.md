@@ -52,9 +52,3 @@ For the licenses, see the corresponding `LICENSE.txt` file in each library’s f
 - Path: src/stdlib/builtin
 - Source: https://github.com/mpaland/printf
 
-**LVGL's XML format**
-- Path:
-    - docs/src/details/auxiliary-modules/xml
-    - src/others/xml
-    - xmls
-

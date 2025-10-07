@@ -443,7 +443,7 @@ Fetch (do_fetch)
 
 
 
-Unpack (do_unpack)
+Unpack (do_upack)
    .. code-block:: bash
 
       bitbake lvgl -c unpack

@@ -229,11 +229,6 @@ void lv_event_stop_bubbling(lv_event_t * e)
     e->stop_bubbling = 1;
 }
 
-void lv_event_stop_trickling(lv_event_t * e)
-{
-    e->stop_trickling = 1;
-}
-
 void lv_event_stop_processing(lv_event_t * e)
 {
     e->stop_processing = 1;

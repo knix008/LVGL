@@ -203,7 +203,7 @@ menu "LVGL configuration"
 		config LV_DRAW_THREAD_STACK_SIZE
 			int "Stack size of draw thread in bytes"
 			default 8192
-			depends on !LV_OS_NONE
+			depends on LV_USE_OS > 0
 			help
 				If FreeType or ThorVG is enabled, it is recommended to set it to 32KB or more.
 
@@ -211,7 +211,7 @@ menu "LVGL configuration"
 			int "Thread priority for the drawing thread"
 			range 0 4
 			default 3
-			depends on !LV_OS_NONE
+			depends on LV_USE_OS > 0
 			help
 				Thread priority controls the relative importance of the drawing threads.
 				Values correspond to lv_thread_prio_t enum in lv_os.h:
@@ -378,7 +378,7 @@ menu "LVGL configuration"
 
 		config LV_USE_VGLITE_DRAW_THREAD
 			bool "Use additional draw thread for VG-Lite processing"
-			depends on LV_USE_DRAW_VGLITE && !LV_OS_NONE
+			depends on LV_USE_DRAW_VGLITE && LV_USE_OS > 0
 			default y
 
 		config LV_USE_VGLITE_DRAW_ASYNC
@@ -392,7 +392,7 @@ menu "LVGL configuration"
 			bool "Enable VGLite asserts"
 			depends on LV_USE_DRAW_VGLITE
 			default n
-
+			
 		config LV_USE_VGLITE_CHECK_ERROR
 			bool "Enable VGLite error checks"
 			depends on LV_USE_DRAW_VGLITE
@@ -414,7 +414,7 @@ menu "LVGL configuration"
 
 		config LV_USE_PXP_DRAW_THREAD
 			bool "Use additional draw thread for PXP processing"
-			depends on LV_USE_DRAW_PXP && !LV_OS_NONE
+			depends on LV_USE_DRAW_PXP && LV_USE_OS > 0
 			default y
 
 		config LV_USE_PXP_ASSERT
@@ -434,7 +434,7 @@ menu "LVGL configuration"
 
 		config LV_USE_G2D_DRAW_THREAD
 			bool "Use additional draw thread for G2D processing"
-			depends on LV_USE_DRAW_G2D && !LV_OS_NONE
+			depends on LV_USE_DRAW_G2D && LV_USE_OS > 0
 			default y
 
 		config LV_USE_G2D_ASSERT
@@ -527,16 +527,6 @@ menu "LVGL configuration"
 			bool "Draw using cached OpenGLES textures"
 			default n
 			depends on LV_USE_OPENGLES
-
-		config LV_USE_PPA
-		bool "Use Espressif's PPA accelerator for ESP SoCs"
-		default n
-
-		config LV_USE_PPA_IMG
-		bool "Use Espressif's PPA accelerator for Image draw"
-		default n
-		depends on LV_USE_PPA
-
 	endmenu
 
 	menu "Feature Configuration"
@@ -1100,9 +1090,6 @@ menu "LVGL configuration"
 		config LV_USE_ARC
 			bool "Arc"
 			default y if !LV_CONF_MINIMAL
-		config LV_USE_ARCLABEL
-			bool "Arc Label"
-			default y if !LV_CONF_MINIMAL
 		config LV_USE_BAR
 			bool "Bar"
 			default y if !LV_CONF_MINIMAL
@@ -1468,11 +1455,6 @@ menu "LVGL configuration"
 			depends on LV_USE_TINY_TTF
 		config LV_TINY_TTF_CACHE_GLYPH_CNT
 			bool "Tiny ttf cache entries count"
-			default 128
-			depends on LV_USE_TINY_TTF
-
-		config LV_TINY_TTF_CACHE_KERNING_CNT
-			bool "Tiny ttf kerning cache entries count"
 			default 256
 			depends on LV_USE_TINY_TTF
 
@@ -1728,8 +1710,6 @@ menu "LVGL configuration"
 		config LV_USE_TEST_SCREENSHOT_COMPARE
 			bool "Enable `lv_test_screenshot_compare`. Requires libpng and a few MB of extra RAM."
 			depends on LV_USE_TEST
-		config LV_USE_TRANSLATION
-			bool "Enable text translation support"
 		config LV_USE_XML
 			bool "Enable loading XML UIs runtime"
 		config LV_USE_COLOR_FILTER
@@ -1740,7 +1720,7 @@ menu "LVGL configuration"
 			default 9 # LVGL_VERSION_MAJOR
 		config LVGL_VERSION_MINOR
 			int
-			default 4 # LVGL_VERSION_MINOR
+			default 3 # LVGL_VERSION_MINOR
 		config LVGL_VERSION_PATCH
 			int
 			default 0 # LVGL_VERSION_PATCH
@@ -1980,7 +1960,7 @@ menu "LVGL configuration"
 
 		config LV_USE_NUTTX_LIBUV
 			bool "Use uv loop to replace default timer loop and other fb/indev timers"
-			depends on LV_USE_NUTTX
+			depends on LV_USE_NUTTX && LIBUV
 			default n
 
 		config LV_USE_NUTTX_CUSTOM_INIT
@@ -2033,19 +2013,6 @@ menu "LVGL configuration"
 			help
 				Set to 0 to disable cursor, or set to a value greater than 0 to set the cursor size in pixels.
 
-		config LV_USE_NUTTX_MOUSE
-			bool "Use NuttX mouse driver"
-			depends on LV_USE_NUTTX
-			default n
-
-		config LV_USE_NUTTX_MOUSE_MOVE_STEP
-			int "Mouse movement step (pixels)"
-			depends on LV_USE_NUTTX_MOUSE
-			range 1 10
-			default 1
-			help
-				Set the step size of the mouse movement in pixels.
-
 		config LV_USE_LINUX_DRM
 			bool "Use Linux DRM device"
 			default n
@@ -2091,10 +2058,6 @@ menu "LVGL configuration"
 		config LV_USE_GENERIC_MIPI
 			bool "Generic MIPI driver"
 			default y if LV_USE_ST7735 || LV_USE_ST7789 || LV_USE_ST7796 || LV_USE_ILI9341
-
-		config LV_USE_NXP_ELCDIF
-			bool "Use NXP ELCDIF to generate display"
-			default n
 
 		config LV_USE_RENESAS_GLCDC
 			bool "Use Renesas GLCDC driver"

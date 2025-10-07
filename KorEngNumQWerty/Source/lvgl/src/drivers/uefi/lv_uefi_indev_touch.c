@@ -1,5 +1,5 @@
 /**
- * @file lv_uefi_indev_touch.c
+ * @file lv_uefi_indev.c
  *
  */
 

@@ -110,8 +110,8 @@ this field.  The possible "json_type" values are:
     - ``"quals"``: array of any qualifiers present, e.g. "const"
 
 
-- ``"forward_decl"``: Describes a forward declaration. There are structures in
-  LVGL that are considered to be private and that is what these describe.
+- ``"forward_decl"``: Describes a forward declaration.  There are structures in
+  LVGL that are considered to be private and that is what these desccribe.
 
   Fields:
     - ``"name"``: name of forward declaration

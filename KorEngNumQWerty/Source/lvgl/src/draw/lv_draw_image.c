@@ -1,5 +1,5 @@
 /**
- * @file lv_draw_image.c
+ * @file lv_draw_img.c
  *
  */
 

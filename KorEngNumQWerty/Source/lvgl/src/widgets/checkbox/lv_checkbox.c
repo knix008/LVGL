@@ -1,5 +1,5 @@
 /**
- * @file lv_checkbox.c
+ * @file lv_cb.c
  *
  */
 

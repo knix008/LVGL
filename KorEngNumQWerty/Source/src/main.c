@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <SDL2/SDL.h>
 #include "lvgl.h"
 #include "lv_drivers.h"
 #include "ui_components.h"
@@ -30,12 +31,7 @@ int main(void)
     printf("Initializing FreeType...\n");
     lv_freetype_init(256);
     printf("FreeType initialized successfully.\n");
-
-    // SQLCipher demonstration disabled - files not available
-    // printf("Running SQLCipher demonstration...\n");
-    // sqlite_demo();
-
-    // Initialize UI with tab menu
+    
     lv_example_tab_menu();
 
     printf("Tab menu GUI created successfully. Window should appear now.\n");

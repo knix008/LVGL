@@ -19,4 +19,4 @@ Auxiliary Modules
     observer/index
     snapshot
     test
-    translation
+    xml/index

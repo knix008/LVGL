@@ -302,8 +302,7 @@ static void LV_ATTRIBUTE_FAST_MEM argb8888_image_blend(lv_draw_sw_blend_image_ds
                              *darker color when blending the same color to the background.*/
                             if(dest_buf_c32[x].red != color_argb.red ||
                                dest_buf_c32[x].green != color_argb.green ||
-                               dest_buf_c32[x].blue != color_argb.blue ||
-                               dest_buf_c32[x].alpha != color_argb.alpha) {
+                               dest_buf_c32[x].blue != color_argb.blue) {
 
                                 color_argb.red   = (color_argb.red   * color_argb.alpha) >> 8;
                                 color_argb.green = (color_argb.green * color_argb.alpha) >> 8;
@@ -335,8 +334,7 @@ static void LV_ATTRIBUTE_FAST_MEM argb8888_image_blend(lv_draw_sw_blend_image_ds
                              *darker color when blending the same color to the background.*/
                             if(dest_buf_c32[x].red != color_argb.red ||
                                dest_buf_c32[x].green != color_argb.green ||
-                               dest_buf_c32[x].blue != color_argb.blue ||
-                               dest_buf_c32[x].alpha != color_argb.alpha) {
+                               dest_buf_c32[x].blue != color_argb.blue) {
                                 color_argb.alpha = alpha;
                                 color_argb.red   = (color_argb.red   * color_argb.alpha) >> 8;
                                 color_argb.green = (color_argb.green * color_argb.alpha) >> 8;
@@ -368,8 +366,7 @@ static void LV_ATTRIBUTE_FAST_MEM argb8888_image_blend(lv_draw_sw_blend_image_ds
                              *darker color when blending the same color to the background.*/
                             if(dest_buf_c32[x].red != color_argb.red ||
                                dest_buf_c32[x].green != color_argb.green ||
-                               dest_buf_c32[x].blue != color_argb.blue ||
-                               dest_buf_c32[x].alpha != color_argb.alpha) {
+                               dest_buf_c32[x].blue != color_argb.blue) {
                                 color_argb.alpha = alpha;
                                 color_argb.red   = (color_argb.red   * color_argb.alpha) >> 8;
                                 color_argb.green = (color_argb.green * color_argb.alpha) >> 8;
@@ -402,8 +399,7 @@ static void LV_ATTRIBUTE_FAST_MEM argb8888_image_blend(lv_draw_sw_blend_image_ds
                              *darker color when blending the same color to the background.*/
                             if(dest_buf_c32[x].red != color_argb.red ||
                                dest_buf_c32[x].green != color_argb.green ||
-                               dest_buf_c32[x].blue != color_argb.blue ||
-                               dest_buf_c32[x].alpha != color_argb.alpha) {
+                               dest_buf_c32[x].blue != color_argb.blue) {
                                 color_argb.alpha = alpha;
                                 color_argb.red   = (color_argb.red   * color_argb.alpha) >> 8;
                                 color_argb.green = (color_argb.green * color_argb.alpha) >> 8;

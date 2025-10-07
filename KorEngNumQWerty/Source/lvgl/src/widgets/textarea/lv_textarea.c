@@ -1,5 +1,5 @@
 /**
- * @file lv_textarea.c
+ * @file lv_ta.c
  *
  */
 

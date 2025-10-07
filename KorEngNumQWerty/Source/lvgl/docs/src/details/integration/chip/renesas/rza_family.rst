@@ -6,8 +6,6 @@ Supported boards in the RZ/A Family:
 
 - **RZ/A3M**
 
-
-
 Run the Project
 ***************
 
@@ -23,8 +21,6 @@ Run the Project
 - Follow the instructions in the project README.md to
   build and flash the project to the board.
 
-
-
 Modify the project
 ******************
 
@@ -35,7 +31,7 @@ Open a demo
 The entry point is contained in ``src/LVGL_thread_entry.c``.
 
 You can disable the LVGL demos (``lv_demo_benchmark()``) (or just comment them out)
-and call some ``lv_example_...()`` functions, or add your own custom code.
+and call some ``lv_example_...()`` functions, or add your custom code.
 
 
 Configuration
@@ -43,8 +39,7 @@ Configuration
 
 Edit ``lv_conf.h`` to configure LVGL.
 
-It will automatically run any demo that is enabled in ``lv_conf.h``. You can see
-``lv_conf.defaults`` for a summary of the configs which have been changed from the defaults.
+It will automatically run any demo that is enabled in ``lv_conf.h``. You can see ``lv_conf.defaults`` for a summary of the configs which have been changed from the defaults.
 
 
 Support

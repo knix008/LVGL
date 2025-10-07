@@ -1,5 +1,5 @@
 /**
- * @file lv_vg_lite_utils.c
+ * @file vg_lite_utils.c
  *
  */
 
@@ -39,8 +39,6 @@
 #define FEATURE_ENUM_TO_STRING(e) \
     case (gcFEATURE_BIT_VG_##e):  \
     return #e
-
-#define LV_VG_LITE_IMAGE_FLAGS_TILED LV_IMAGE_FLAGS_USER1
 
 /**********************
  *      TYPEDEFS
@@ -160,7 +158,7 @@ const char * lv_vg_lite_error_string(vg_lite_error_t error)
         default:
             break;
     }
-    return "UNKNOWN_ERROR";
+    return "UNKNOW_ERROR";
 }
 
 const char * lv_vg_lite_feature_string(vg_lite_feature_t feature)
@@ -215,7 +213,7 @@ const char * lv_vg_lite_feature_string(vg_lite_feature_t feature)
         default:
             break;
     }
-    return "UNKNOWN_FEATURE";
+    return "UNKNOW_FEATURE";
 }
 
 const char * lv_vg_lite_buffer_format_string(vg_lite_buffer_format_t format)
@@ -273,7 +271,7 @@ const char * lv_vg_lite_buffer_format_string(vg_lite_buffer_format_t format)
         default:
             break;
     }
-    return "UNKNOWN_BUFFER_FORMAT";
+    return "UNKNOW_BUFFER_FORMAT";
 }
 
 const char * lv_vg_lite_vlc_op_string(uint8_t vlc_op)
@@ -301,7 +299,7 @@ const char * lv_vg_lite_vlc_op_string(uint8_t vlc_op)
         default:
             break;
     }
-    return "UNKNOWN_VLC_OP";
+    return "UNKNOW_VLC_OP";
 }
 
 static void path_data_print_cb(void * user_data, uint8_t op_code, const float * data, uint32_t len)
@@ -785,9 +783,7 @@ void lv_vg_lite_buffer_from_draw_buf(vg_lite_buffer_t * buffer, const lv_draw_bu
 
     width = lv_vg_lite_width_align(width);
 
-    lv_vg_lite_buffer_init(buffer, ptr,
-                           width, height, stride, format,
-                           lv_draw_buf_has_flag(draw_buf, LV_VG_LITE_IMAGE_FLAGS_TILED));
+    lv_vg_lite_buffer_init(buffer, ptr, width, height, stride, format, false);
 
     /* Alpha image need to be multiplied by color */
     if(LV_COLOR_FORMAT_IS_ALPHA_ONLY(draw_buf->header.cf)) {

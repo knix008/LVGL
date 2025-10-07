@@ -78,6 +78,7 @@ struct _lv_obj_t {
     uint16_t is_deleting : 1;
 };
 
+
 /**********************
  * GLOBAL PROTOTYPES
  **********************/

@@ -38,8 +38,8 @@ static void init_freetype_and_fonts(void) {
             printf("- Font size: 24px\n");
             printf("- Render mode: Bitmap\n");
         } else {
-            printf("Failed to load Korean font, falling back to built-in font\n");
-            korean_font = (lv_font_t*)&lv_font_source_han_sans_sc_16_cjk;
+            printf("Failed to load Korean font, falling back to default font\n");
+            korean_font = (lv_font_t*)lv_font_get_default();
         }
         
         // Create smaller Korean font for compact UI elements

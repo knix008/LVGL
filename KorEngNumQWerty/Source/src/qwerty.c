@@ -380,19 +380,27 @@ static void backspace_cb(lv_event_t* e) {
 static void popup_close_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
+    printf("[DEBUG] Popup close button clicked\n");
     lv_obj_t* popup = (lv_obj_t*)lv_event_get_user_data(e);
     if (popup) {
+        printf("[DEBUG] Deleting popup object\n");
         lv_obj_del(popup);
+        printf("[DEBUG] Popup deleted successfully\n");
+    } else {
+        printf("[ERROR] Popup object is NULL!\n");
     }
 }
 
 // Enter callback - show popup and clear textbox
 static void enter_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    
+    printf("[DEBUG] Enter key pressed - buffer length: %zu\n", g_qwerty_output_len);
 
     // Finalize any pending Korean composition
     if (g_current_mode == INPUT_MODE_KOREAN) {
         if (g_qwerty_input_len > 0) {
+            printf("[DEBUG] Finalizing Korean composition\n");
             // Korean composition is already in the output buffer
             // Just clear the input buffer
             memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
@@ -403,19 +411,58 @@ static void enter_cb(lv_event_t* e) {
 
     // Only show popup if there's text entered
     if (g_qwerty_output_len > 0) {
-        // Convert wide char buffer to UTF-8 for display
+        // Convert wide char buffer to UTF-8 for display with proper bounds checking
         char display_text[512] = "";
-        wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        size_t converted = wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        if (converted == (size_t)-1) {
+            // Conversion failed, use a safe fallback
+            snprintf(display_text, sizeof(display_text), "Text conversion error");
+        } else {
+            display_text[converted] = '\0';  // Ensure null termination
+        }
 
         // Get Korean font for the popup text
         lv_font_t* display_font = get_korean_font();
-        if (display_font == NULL) display_font = (lv_font_t*)&lv_font_montserrat_14;
+        if (display_font == NULL) {
+            display_font = (lv_font_t*)lv_font_get_default();  // Cast to remove const qualifier
+        }
 
-        // Create popup message box
-        lv_obj_t* popup = lv_msgbox_create(lv_scr_act());
-        lv_msgbox_add_title(popup, "Entered Text");
-        lv_obj_t* text_obj = lv_msgbox_add_text(popup, display_text);
-        lv_obj_t* close_btn = lv_msgbox_add_close_button(popup);
+        // Create popup message box using manual approach instead of lv_msgbox
+        printf("[DEBUG] Creating popup with text: %s\n", display_text);
+        
+        // Create a modal background
+        lv_obj_t* popup = lv_obj_create(lv_scr_act());
+        if (popup == NULL) {
+            printf("[ERROR] Failed to create popup!\n");
+            return;
+        }
+        
+        lv_obj_set_size(popup, 400, 200);
+        lv_obj_center(popup);
+        lv_obj_add_flag(popup, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+        
+        // Add title
+        lv_obj_t* title = lv_label_create(popup);
+        lv_label_set_text(title, "Entered Text");
+        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
+        
+        // Add text content
+        lv_obj_t* text_obj = lv_label_create(popup);
+        lv_label_set_text(text_obj, display_text);
+        lv_obj_align(text_obj, LV_ALIGN_CENTER, 0, -10);
+        lv_label_set_long_mode(text_obj, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(text_obj, 350);
+        
+        // Add close button
+        lv_obj_t* close_btn = lv_btn_create(popup);
+        lv_obj_set_size(close_btn, 80, 40);
+        lv_obj_align(close_btn, LV_ALIGN_BOTTOM_MID, 0, -10);
+        
+        lv_obj_t* close_label = lv_label_create(close_btn);
+        lv_label_set_text(close_label, "Close");
+        lv_obj_center(close_label);
+        
+        printf("[DEBUG] Popup created successfully\n");
 
         // Apply Korean font to the text content
         if (text_obj) {
@@ -426,14 +473,19 @@ static void enter_cb(lv_event_t* e) {
         lv_obj_center(popup);
 
         // Clear all buffers after showing popup
+        printf("[DEBUG] Clearing buffers after popup creation\n");
         memset(g_qwerty_input_buffer, 0, sizeof(g_qwerty_input_buffer));
         memset(g_qwerty_output_buffer, 0, sizeof(g_qwerty_output_buffer));
         memset(g_korean_temp_buffer, 0, sizeof(g_korean_temp_buffer));
         g_qwerty_input_len = 0;
         g_qwerty_output_len = 0;
         g_korean_start_pos = 0;
-
+        
+        printf("[DEBUG] Updating display after buffer clear\n");
         update_qwerty_display();
+        printf("[DEBUG] Enter callback completed successfully\n");
+    } else {
+        printf("[DEBUG] No text to display - buffer is empty\n");
     }
 }
 

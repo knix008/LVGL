@@ -4,13 +4,13 @@
 
 .. toctree:: :maxdepth: 2
 
-    buildroot/index
     freertos
     mqx
     nuttx
     px5
     qnx
     rt-thread
-    torizon_os
     yocto/index
+    buildroot/index
     zephyr
+    torizon_os

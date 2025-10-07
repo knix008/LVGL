@@ -60,7 +60,6 @@ void lv_xml_component_init(void)
 
     lv_xml_component_scope_t * global_scope = lv_ll_ins_head(&component_scope_ll);
     lv_memzero(global_scope, sizeof(lv_xml_component_scope_t));
-
     lv_xml_component_scope_init(global_scope);
     global_scope->name = lv_strdup("globals");
 
@@ -93,6 +92,7 @@ lv_obj_t * lv_xml_component_process(lv_xml_parser_state_t * state, const char * 
     state->item = item;
     lv_widget_processor_t * extended_proc = lv_xml_widget_get_extended_widget_processor(scope->extends);
     extended_proc->apply_cb(state, attrs);
+
 
 #if LV_USE_OBJ_NAME
     /*Set a default indexed name*/
@@ -172,7 +172,7 @@ lv_result_t lv_xml_component_register_from_data(const char * name, const char * 
         if(!scope->view_def) {
             LV_LOG_WARN("Failed to extract view content");
             /* Clean up and return error */
-            lv_xml_component_unregister(name);
+            lv_free(scope);
             return LV_RESULT_INVALID;
         }
     }
@@ -456,12 +456,9 @@ static void process_subject_element(lv_xml_parser_state_t * state, const char * 
         return;
     }
 
-    lv_subject_t * subject = lv_zalloc(sizeof(lv_subject_t));
+    lv_subject_t * subject = lv_malloc(sizeof(lv_subject_t));
 
     if(lv_streq(type, "int")) lv_subject_init_int(subject, lv_xml_atoi(value));
-#if LV_USE_FLOAT
-    else if(lv_streq(type, "float")) lv_subject_init_float(subject, lv_xml_atof(value));
-#endif
     else if(lv_streq(type, "color")) lv_subject_init_color(subject, lv_xml_to_color(value));
     else if(lv_streq(type, "string")) {
         /*Simple solution for now. Will be improved later*/
@@ -476,8 +473,6 @@ static void process_subject_element(lv_xml_parser_state_t * state, const char * 
 static void process_grad_element(lv_xml_parser_state_t * state, const char * tag_name, const char ** attrs)
 {
     lv_xml_grad_t * grad = lv_ll_ins_tail(&state->scope.gradient_ll);
-    lv_memzero(grad, sizeof(lv_xml_grad_t));
-
     grad->name = lv_strdup(lv_xml_get_value_of(attrs, "name"));
     lv_grad_dsc_t * dsc = &grad->grad_dsc;
     lv_memzero(dsc, sizeof(lv_grad_dsc_t));
@@ -632,8 +627,6 @@ static void process_grad_stop_element(lv_xml_parser_state_t * state, const char 
 static void process_prop_element(lv_xml_parser_state_t * state, const char ** attrs)
 {
     lv_xml_param_t * prop = lv_ll_ins_tail(&state->scope.param_ll);
-    lv_memzero(prop, sizeof(lv_xml_param_t));
-
     prop->name = lv_strdup(lv_xml_get_value_of(attrs, "name"));
     const char * def = lv_xml_get_value_of(attrs, "default");
     if(def) prop->def = lv_strdup(def);
@@ -659,7 +652,6 @@ static void start_metadata_handler(void * user_data, const char * name, const ch
     }
 
     if(lv_streq(name, "widget")) state->scope.is_widget = 1;
-    else if(lv_streq(name, "screen")) state->scope.is_screen = 1;
 
     /* Process elements based on current context */
     switch(state->section) {
