@@ -29,6 +29,9 @@ static InputMode g_current_mode = INPUT_MODE_KOREAN;
 static bool g_shift_mode = false;
 static bool g_number_shift_active = false;  // Track shift state in number mode
 
+// Forward declarations
+static void show_buffer_limit_popup(void);
+
 // Korean QWERTY keyboard layout
 static const char* qwerty_keys_korean[3][10] = {
     {"ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"},
@@ -126,7 +129,17 @@ static char map_korean_to_english(const char* korean_char) {
 static void update_qwerty_display(void) {
     if (g_qwerty_display_label) {
         char display_text[512] = "";
-        wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        
+        // Safely convert with bounds checking
+        size_t converted = wcstombs(display_text, g_qwerty_output_buffer, sizeof(display_text) - 1);
+        if (converted == (size_t)-1) {
+            // Conversion failed, show error message
+            snprintf(display_text, sizeof(display_text), "[Text conversion error]");
+            printf("[ERROR] wcstombs conversion failed in update_qwerty_display\n");
+        } else {
+            display_text[converted] = '\0';  // Ensure null termination
+        }
+        
         lv_label_set_text(g_qwerty_display_label, display_text);
     }
 }
@@ -215,15 +228,28 @@ static void qwerty_key_cb(lv_event_t* e) {
 
     if (!key_text || strlen(key_text) == 0) return;
 
+    // Check buffer limits before processing input
+    if (g_qwerty_output_len >= MAX_OUTPUT_LEN - 1) {
+        printf("[WARNING] Output buffer limit reached (%d chars). Input ignored.\n", MAX_OUTPUT_LEN - 1);
+        // Show warning popup
+        show_buffer_limit_popup();
+        return;
+    }
+
     if (g_current_mode == INPUT_MODE_KOREAN) {
         // Korean mode - compose character and append to unified buffer
         char input_char = map_korean_to_english(key_text);
         if (input_char != '\0') {
-            // Add to input buffer for composition
-            if (g_qwerty_input_len < MAX_OUTPUT_LEN - 1) {
-                g_qwerty_input_buffer[g_qwerty_input_len++] = input_char;
-                g_qwerty_input_buffer[g_qwerty_input_len] = '\0';
+            // Check Korean input buffer limit
+            if (g_qwerty_input_len >= MAX_OUTPUT_LEN - 1) {
+                printf("[WARNING] Korean input buffer limit reached. Input ignored.\n");
+                show_buffer_limit_popup();
+                return;
             }
+            
+            // Add to input buffer for composition
+            g_qwerty_input_buffer[g_qwerty_input_len++] = input_char;
+            g_qwerty_input_buffer[g_qwerty_input_len] = '\0';
 
             // Compose the Korean character from input buffer
             qwerty_compose_korean_characters(g_qwerty_input_buffer, g_qwerty_input_len, g_korean_temp_buffer);
@@ -234,6 +260,12 @@ static void qwerty_key_cb(lv_event_t* e) {
                 wcscpy(g_qwerty_output_buffer + g_korean_start_pos, g_korean_temp_buffer);
                 g_qwerty_output_len = g_korean_start_pos + korean_len;
                 g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
+            } else {
+                printf("[WARNING] Korean composition would exceed buffer limit. Input ignored.\n");
+                // Revert the input buffer change
+                g_qwerty_input_buffer[--g_qwerty_input_len] = '\0';
+                show_buffer_limit_popup();
+                return;
             }
         }
     } else {
@@ -243,6 +275,10 @@ static void qwerty_key_cb(lv_event_t* e) {
             mbtowc(&wc, key_text, MB_CUR_MAX);
             g_qwerty_output_buffer[g_qwerty_output_len++] = wc;
             g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
+        } else {
+            printf("[WARNING] Output buffer full. Cannot add more characters.\n");
+            show_buffer_limit_popup();
+            return;
         }
     }
 
@@ -331,6 +367,13 @@ static void shift_cb(lv_event_t* e) {
 static void space_cb(lv_event_t* e) {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
+    // Check buffer limit before adding space
+    if (g_qwerty_output_len >= MAX_OUTPUT_LEN - 1) {
+        printf("[WARNING] Cannot add space - buffer limit reached.\n");
+        show_buffer_limit_popup();
+        return;
+    }
+
     if (g_current_mode == INPUT_MODE_KOREAN) {
         // Finalize any pending Korean composition
         if (g_qwerty_input_len > 0) {
@@ -343,10 +386,8 @@ static void space_cb(lv_event_t* e) {
     }
 
     // Add space to unified buffer (for all modes)
-    if (g_qwerty_output_len < MAX_OUTPUT_LEN - 1) {
-        g_qwerty_output_buffer[g_qwerty_output_len++] = L' ';
-        g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
-    }
+    g_qwerty_output_buffer[g_qwerty_output_len++] = L' ';
+    g_qwerty_output_buffer[g_qwerty_output_len] = L'\0';
 
     // Update Korean start position to after the space
     if (g_current_mode == INPUT_MODE_KOREAN) {
@@ -389,6 +430,50 @@ static void popup_close_cb(lv_event_t* e) {
     } else {
         printf("[ERROR] Popup object is NULL!\n");
     }
+}
+
+// Show buffer limit warning popup
+static void show_buffer_limit_popup(void) {
+    // Create a simple warning popup
+    lv_obj_t* popup = lv_obj_create(lv_scr_act());
+    if (popup == NULL) {
+        printf("[ERROR] Failed to create buffer limit popup!\n");
+        return;
+    }
+    
+    lv_obj_set_size(popup, 300, 150);
+    lv_obj_center(popup);
+    lv_obj_add_flag(popup, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    lv_obj_set_style_bg_color(popup, lv_color_make(255, 200, 200), 0); // Light red background
+    
+    // Add warning title
+    lv_obj_t* title = lv_label_create(popup);
+    lv_label_set_text(title, "Buffer Limit Reached");
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
+    
+    // Add warning message
+    lv_obj_t* text_obj = lv_label_create(popup);
+    char warning_msg[64];
+    snprintf(warning_msg, sizeof(warning_msg), "Maximum %d characters reached.\nCannot add more text.", MAX_OUTPUT_LEN - 1);
+    lv_label_set_text(text_obj, warning_msg);
+    lv_obj_align(text_obj, LV_ALIGN_CENTER, 0, -10);
+    lv_label_set_long_mode(text_obj, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(text_obj, 250);
+    lv_obj_set_style_text_align(text_obj, LV_TEXT_ALIGN_CENTER, 0);
+    
+    // Add close button
+    lv_obj_t* close_btn = lv_btn_create(popup);
+    lv_obj_set_size(close_btn, 80, 30);
+    lv_obj_align(close_btn, LV_ALIGN_BOTTOM_MID, 0, -10);
+    
+    lv_obj_t* close_label = lv_label_create(close_btn);
+    lv_label_set_text(close_label, "OK");
+    lv_obj_center(close_label);
+    
+    // Set close callback
+    lv_obj_add_event_cb(close_btn, popup_close_cb, LV_EVENT_CLICKED, popup);
+    
+    printf("[DEBUG] Buffer limit warning popup created\n");
 }
 
 // Enter callback - show popup and clear textbox
