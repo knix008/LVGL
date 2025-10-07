@@ -27,6 +27,7 @@ static size_t g_korean_start_pos = 0;  // Position where Korean input started
 // Current input mode
 static InputMode g_current_mode = INPUT_MODE_KOREAN;
 static bool g_shift_mode = false;
+static bool g_number_shift_active = false;  // Track shift state in number mode
 
 // Korean QWERTY keyboard layout
 static const char* qwerty_keys_korean[3][10] = {
@@ -56,11 +57,18 @@ static const char* qwerty_keys_english_upper[3][10] = {
     {"Z", "X", "C", "V", "B", "N", "M", "", "", ""}
 };
 
-// Number and symbol layout
+// Number and symbol layout (normal)
 static const char* qwerty_keys_number[3][10] = {
     {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
     {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")"},
     {"+", "=", "[", "]", "{", "}", "|", "\\", ";", ":"}
+};
+
+// Number and symbol layout (shifted - numbers stay same, special chars change)
+static const char* qwerty_keys_number_shifted[3][10] = {
+    {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},  // Numbers stay the same
+    {"~", "`", "<", ">", "/", "?", "(", ")", "°", "•"},  // Different special chars
+    {"-", "_", "\"", "'", ",", ".", "/", "]", "{", "}"}  // Different special chars (/ instead of [)
 };
 
 // Global UI elements
@@ -139,7 +147,7 @@ static void update_keyboard_layout(void) {
             current_layout = qwerty_keys_english_upper;
             break;
         case INPUT_MODE_NUMBER:
-            current_layout = qwerty_keys_number;
+            current_layout = g_number_shift_active ? qwerty_keys_number_shifted : qwerty_keys_number;
             break;
     }
 
@@ -178,28 +186,21 @@ static void update_keyboard_layout(void) {
     // Update shift button appearance
     if (g_shift_btn) {
         lv_obj_t* shift_label = lv_obj_get_child(g_shift_btn, 0);
-        
-        if ((g_shift_mode && g_current_mode == INPUT_MODE_KOREAN) || 
-            (g_current_mode == INPUT_MODE_ENGLISH_UPPER)) {
-            // Orange color when shift is active (Korean shift mode or English uppercase)
+
+        if ((g_shift_mode && g_current_mode == INPUT_MODE_KOREAN) ||
+            (g_current_mode == INPUT_MODE_ENGLISH_UPPER) ||
+            (g_number_shift_active && g_current_mode == INPUT_MODE_NUMBER)) {
+            // Orange color when shift is active in any mode
             lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(255, 140, 0), 0);
-            if (g_current_mode == INPUT_MODE_KOREAN) {
-                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for double consonants
-            } else {
-                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for uppercase
-            }
+            lv_label_set_text(shift_label, "⇧Shift");
         } else if (g_current_mode == INPUT_MODE_NUMBER) {
-            // Disabled/dimmed color for number mode (shift not applicable)
-            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(150, 150, 150), 0);
+            // Set dark gray button color for inactive shift in number mode
+            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(192, 192, 192), 0);
             lv_label_set_text(shift_label, "⇧Shift");
         } else {
-            // Default color for inactive shift
-            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(200, 200, 200), 0);
-            if (g_current_mode == INPUT_MODE_KOREAN) {
-                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for normal consonants
-            } else {
-                lv_label_set_text(shift_label, "⇧Shift");  // Show it's for lowercase
-            }
+            // Set dark gray button color for inactive shift
+            lv_obj_set_style_bg_color(g_shift_btn, lv_color_make(192, 192, 192), 0);
+            lv_label_set_text(shift_label, "⇧Shift");
         }
     }
 }
@@ -298,6 +299,7 @@ static void cycle_mode_cb(lv_event_t* e) {
             break;
     }
     g_shift_mode = false;
+    g_number_shift_active = false;  // Reset number shift when changing modes
     update_keyboard_layout();
     update_qwerty_display();
 }
@@ -318,8 +320,11 @@ static void shift_cb(lv_event_t* e) {
         // English uppercase -> lowercase
         g_current_mode = INPUT_MODE_ENGLISH_LOWER;
         update_keyboard_layout();
+    } else if (g_current_mode == INPUT_MODE_NUMBER) {
+        // Number mode: toggle shift to show different special characters
+        g_number_shift_active = !g_number_shift_active;
+        update_keyboard_layout();
     }
-    // Note: Shift does nothing in number mode
 }
 
 // Space callback - unified buffer
@@ -462,6 +467,7 @@ lv_obj_t* create_qwerty_tab(lv_obj_t* parent) {
     g_korean_start_pos = 0;
     g_current_mode = INPUT_MODE_KOREAN;
     g_shift_mode = false;
+    g_number_shift_active = false;
 
     // Get fonts - use 16px for buttons
     lv_font_t* font = get_korean_font_small();  // 16px font for buttons
