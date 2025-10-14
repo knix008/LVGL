@@ -1,0 +1,42 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+qwerty
+
+# LVGL library (can be cloned with setup.sh)
+lvgl/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Generated font files (keep the directory, but ignore generated fonts)
+# Users should generate their own based on their font files
+assets/*.c
+!assets/korean_font_placeholder.c
+!assets/font_example.h
+
+# Build directories
+build/
+dist/
+bin/
+
+# Debug files
+*.log
+*.dSYM/
+
