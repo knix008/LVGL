@@ -1,91 +1,67 @@
-# Makefile for Korean QWERTY Input System on MiniGUI
-
-# Program name
-TARGET = qwerty
-
-# Source files
-SOURCES = main.c qwerty-korean.c
-OBJECTS = $(SOURCES:.c=.o)
+# MiniGUI Application Makefile
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -O2 -g
-LDFLAGS =
+CFLAGS = -Wall -g -O2 -Wno-unused-parameter
+LDFLAGS = -Wl,--as-needed
 
-# MiniGUI configuration
-MINIGUI_CFLAGS = $(shell pkg-config --cflags minigui)
-MINIGUI_LIBS = $(shell pkg-config --libs minigui)
+# Local MiniGUI installation paths
+MINIGUI_CFLAGS = -I./install/include
+MINIGUI_LIBS = -L./install/lib -lminigui_sa -ljpeg -lpng16 -lz -ldl -lharfbuzz -lfreetype -lm -lpthread -linput -ldrm -ludev
 
-# Include paths
-INCLUDES = -I. $(MINIGUI_CFLAGS)
+# Target executable
+TARGET = korean_input
 
-# Libraries
-LIBS = $(MINIGUI_LIBS) -lm
+# Source files
+SOURCES = main.c qwerty.c
 
-# Font directory (for installation)
-FONT_DIR = /usr/local/share/minigui/fonts
-ASSET_DIR = assets
+# Object files
+OBJECTS = $(SOURCES:.c=.o)
 
 # Default target
-all: $(TARGET)
+all: copy-fonts $(TARGET)
 
-# Link the executable
+# Copy Korean fonts to MiniGUI font directory
+copy-fonts:
+	@echo "Copying Korean fonts to MiniGUI font directory..."
+	@mkdir -p ./install/share/fonts
+	@if [ -d "assets" ]; then \
+		cp assets/*.ttf ./install/share/fonts/ 2>/dev/null && echo "✓ Korean fonts copied to ./install/share/fonts/"; \
+	else \
+		echo "Warning: assets directory not found - fonts not copied"; \
+	fi
+
+# Build the executable
 $(TARGET): $(OBJECTS)
-	@echo "Linking $(TARGET)..."
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
-	@echo "Build complete: $(TARGET)"
+	$(CC) $(OBJECTS) -o $(TARGET) $(MINIGUI_LIBS) $(LDFLAGS)
 
 # Compile source files
 %.o: %.c
-	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(MINIGUI_CFLAGS) -c $< -o $@
 
-# Clean build artifacts
+# Clean build files
 clean:
-	@echo "Cleaning build artifacts..."
 	rm -f $(OBJECTS) $(TARGET)
-	@echo "Clean complete"
+	rm -f ./install/share/fonts/*.ttf
 
-# Install fonts to MiniGUI font directory
-install-fonts:
-	@echo "Installing Korean fonts..."
-	@if [ ! -d "$(FONT_DIR)" ]; then \
-		echo "Creating font directory: $(FONT_DIR)"; \
-		sudo mkdir -p $(FONT_DIR); \
-	fi
-	@if [ -d "$(ASSET_DIR)" ]; then \
-		echo "Copying fonts from $(ASSET_DIR)/ to $(FONT_DIR)/"; \
-		sudo cp -v $(ASSET_DIR)/*.ttf $(FONT_DIR)/ 2>/dev/null || echo "No TTF fonts found in $(ASSET_DIR)"; \
+# Check if MiniGUI is installed locally
+check-minigui:
+	@echo "Checking local MiniGUI installation..."
+	@if [ -f "./install/lib/libminigui_sa.so" ]; then \
+		echo "✓ MiniGUI found locally"; \
 	else \
-		echo "Warning: $(ASSET_DIR) directory not found"; \
+		echo "✗ MiniGUI not found locally - run ./build.sh to build it"; \
+		exit 1; \
 	fi
-	@echo "Font installation complete"
-
-# Run the program
-run: $(TARGET)
-	@echo "Running $(TARGET)..."
-	./$(TARGET)
-
-# Show MiniGUI configuration
-show-config:
-	@echo "=== MiniGUI Configuration ==="
-	@echo "CFLAGS: $(MINIGUI_CFLAGS)"
-	@echo "LIBS: $(MINIGUI_LIBS)"
-	@pkg-config --modversion minigui 2>/dev/null || echo "MiniGUI not found via pkg-config"
 
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  all            - Build the program (default)"
-	@echo "  clean          - Remove build artifacts"
-	@echo "  run            - Build and run the program"
-	@echo "  install-fonts  - Install Korean fonts to MiniGUI font directory"
-	@echo "  show-config    - Show MiniGUI configuration"
-	@echo "  help           - Show this help message"
+	@echo "  all          - Build the application (default)"
+	@echo "  clean        - Remove build files"
+	@echo "  check-minigui - Check if MiniGUI is installed locally"
+	@echo "  help         - Show this help"
+	@echo ""
+	@echo "Note: Run './build.sh' first to download and build MiniGUI locally"
 
-# Phony targets
-.PHONY: all clean run install-fonts show-config help
-
-# Dependencies
-main.o: main.c qwerty.h
-qwerty-korean.o: qwerty-korean.c qwerty.h
+.PHONY: all clean check-minigui help

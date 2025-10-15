@@ -83,10 +83,11 @@
 #define MAX_OUTPUT_LEN 1024
 
 // Global variables
-static HWND hMainWnd;
-static HWND hTextBox;
-static HWND hKeyButtons[80];
+static HWND hMainWnd = HWND_INVALID;
+static HWND hTextBox = HWND_INVALID;
+static HWND hKeyButtons[80] = {HWND_INVALID}; // Initialize all to invalid
 static PLOGFONT korean_font = NULL;
+static BOOL korean_font_needs_destroy = FALSE; // Track if we need to destroy the font
 static QwertyState qwerty_state;
 static wchar_t display_buffer[MAX_OUTPUT_LEN] = {0};
 static size_t display_len = 0;
@@ -101,15 +102,47 @@ static void wchar_to_utf8(const wchar_t *wstr, char *utf8, size_t utf8_size) {
     }
 }
 
+// Comprehensive cleanup function
+static void cleanup_resources(void) {
+    printf("Cleaning up all resources...\n");
+    
+    // Clean up font first
+    if (korean_font && korean_font_needs_destroy) {
+        DestroyLogFont(korean_font);
+        korean_font = NULL;
+        korean_font_needs_destroy = FALSE;
+    }
+    
+    // Clean up text box
+    if (hTextBox != HWND_INVALID) {
+        DestroyWindow(hTextBox);
+        hTextBox = HWND_INVALID;
+    }
+    
+    // Clean up all key buttons
+    for (int i = 0; i < 80; i++) {
+        if (hKeyButtons[i] != HWND_INVALID) {
+            DestroyWindow(hKeyButtons[i]);
+            hKeyButtons[i] = HWND_INVALID;
+        }
+    }
+    
+    // Allow some time for window cleanup to propagate
+    usleep(50000); // 50ms delay
+    
+    // Clean up main window
+    if (hMainWnd != HWND_INVALID) {
+        DestroyMainWindow(hMainWnd);
+        hMainWnd = HWND_INVALID;
+    }
+    
+    printf("Resource cleanup completed.\n");
+}
+
 // Signal handler for cleanup
 void cleanup_handler(int sig) {
     printf("Received signal %d, cleaning up...\n", sig);
-
-    if (korean_font) {
-        DestroyLogFont(korean_font);
-        korean_font = NULL;
-    }
-
+    cleanup_resources();
     exit(0);
 }
 
@@ -397,18 +430,22 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             setlocale(LC_ALL, "ko_KR.UTF-8");
 
             // Load Korean font - try Bold first since Regular has zero-width backtick
-            // Using smaller font size to reduce FreeType2 cache issues
             // Load Korean font - try Bold first since Regular has zero-width backtick
             // Using smaller font size to reduce FreeType2 cache issues
             korean_font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8",
                                         FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                         FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                         14, 0);
-            if (korean_font == NULL) {
+            if (korean_font != NULL) {
+                korean_font_needs_destroy = TRUE;
+            } else {
                 korean_font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8",
                                             FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                             FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                             14, 0);
+                if (korean_font != NULL) {
+                    korean_font_needs_destroy = TRUE;
+                }
             }
             if (korean_font == NULL) {
                 // Try system font as fallback
@@ -416,14 +453,18 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                                             FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                             FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                             12, 0);
+                if (korean_font != NULL) {
+                    korean_font_needs_destroy = TRUE;
+                }
             }
 
             if (korean_font) {
-                printf("Loaded Korean font for character support (size 16pt, optimized for cache)\n");
+                printf("Loaded Korean font for character support (size 14pt, optimized for cache)\n");
             } else {
                 printf("Using default font (Korean characters may not display correctly)\n");
-                // Try to load system default Korean font as last resort
+                // Use system default font as last resort - don't need to free system fonts
                 korean_font = GetSystemFont(SYSLOGFONT_DEFAULT);
+                korean_font_needs_destroy = FALSE; // System fonts don't need to be destroyed
             }
 
             // Create text box - use mledit for multi-line with word wrap
@@ -680,24 +721,7 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             return 0;
 
         case MSG_CLOSE:
-            if (korean_font) {
-                DestroyLogFont(korean_font);
-                korean_font = NULL;
-            }
-
-            if (hTextBox) {
-                DestroyWindow(hTextBox);
-                hTextBox = HWND_INVALID;
-            }
-
-            for (int i = 0; i < 80; i++) {
-                if (hKeyButtons[i]) {
-                    DestroyWindow(hKeyButtons[i]);
-                    hKeyButtons[i] = HWND_INVALID;
-                }
-            }
-
-            DestroyMainWindow(hWnd);
+            cleanup_resources();
             PostQuitMessage(hWnd);
             return 0;
 
@@ -749,13 +773,11 @@ int MiniGUIMain(int argc, const char* argv[])
         DispatchMessage(&msg);
     }
 
-    if (korean_font) {
-        DestroyLogFont(korean_font);
-        korean_font = NULL;
-    }
+    // Final cleanup
+    cleanup_resources();
 
     printf("Cleaning up MiniGUI resources...\n");
-    usleep(100000);
+    usleep(200000); // Give MiniGUI more time to clean up internally
 
     return 0;
 }
