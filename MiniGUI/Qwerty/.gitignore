@@ -1,0 +1,60 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.so.*
+*.la
+*.lo
+build/
+install/
+
+# Executable
+korean_input
+
+# MiniGUI source (external dependency)
+minigui/
+
+# Development/AI tools
+claude/
+
+# Logs
+*.log
+
+# Core dumps
+core
+core.*
+
+# Editor backup files
+*~
+*.swp
+*.swo
+*.bak
+.*.sw?
+
+# IDE/Editor specific
+.vscode/
+.idea/
+*.code-workspace
+
+# Temporary files
+*.tmp
+*.temp
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Package files
+*.tar.gz
+*.zip
+*.rar
+
+# OS specific
+.DS_Store
+Thumbs.db
+.directory
+
+# Compilation database
+compile_commands.json
