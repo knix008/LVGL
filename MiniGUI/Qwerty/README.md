@@ -192,14 +192,71 @@ make clean && ./build.sh
 ### Known Problems
 
 #### Character Display Issues
-- **Backtick Character**: Due to font limitations, backtick (`) is displayed as apostrophe (') 
-- **Text Wrapping**: Very long continuous text without spaces may not wrap properly in the text display area
-- **Font Warnings**: Cosmetic charset warnings may appear but don't affect functionality
+- **Backtick Character**: Due to NanumGothic font limitations where backtick (`) has zero width/height, it's replaced with apostrophe (') for visibility
+  - **Issue**: The backtick key button shows "'" instead of "`"
+  - **Root Cause**: NanumGothic-Regular reports zero dimensions for backtick character
+  - **Solution**: Automatic substitution ensures character is visible, though different from expected
+  - **Impact**: Affects both button display and text output for consistency
+
+- **Text Box Overflow**: Text display area has limitations with very long content
+  - **Issue**: Long continuous strings without spaces may overflow horizontally
+  - **Root Cause**: MiniGUI mledit control's word wrapping algorithm limitation  
+  - **Workaround**: Text automatically scrolls, but horizontal overflow may occur with extremely long words
+  - **Impact**: Affects display of very long URLs, file paths, or continuous character sequences
+
+- **Font Warnings**: Cosmetic charset warnings appear during startup but don't affect functionality
+  - **Issue**: "Invalid charset name 0-UTF-8" warnings in console output
+  - **Root Cause**: MiniGUI font system charset name parsing
+  - **Impact**: Visual only - does not affect Korean character display or input functionality
+
+#### Text Input Limitations
+- **Cursor Positioning**: Text box doesn't support precise cursor positioning for editing
+  - **Issue**: Users cannot click to position cursor within existing text
+  - **Limitation**: MiniGUI mledit control in current configuration is append-only
+  - **Workaround**: Use backspace to delete and retype content
+
+- **Text Selection**: No text selection or copy/paste functionality
+  - **Issue**: Cannot select and copy text from the display area
+  - **Limitation**: Basic mledit setup without clipboard integration
+  - **Impact**: Users must manually transcribe displayed text
+
+#### Korean Input Edge Cases
+- **Incomplete Syllables**: Rapid key presses may create incomplete Korean character combinations
+  - **Issue**: Very fast typing might not complete syllable formation properly
+  - **Cause**: Character composition state timing in rapid input scenarios
+  - **Workaround**: Type at normal speed for reliable Korean character formation
+
+- **Mixed Language Input**: Switching between Korean and English mid-syllable
+  - **Issue**: Incomplete Korean syllables when switching to English mode
+  - **Behavior**: Incomplete syllable gets output as-is before mode switch
+  - **Expected**: This is intentional behavior to prevent data loss
 
 #### Memory Management
 - **Minor Memory Leaks**: Minimal MiniGUI internal memory blocks may remain (2 blocks typical)
+  - **Issue**: DestroyBlockDataHeap warnings show remaining allocated blocks on exit
+  - **Root Cause**: Deep MiniGUI internal structures (font cache, window manager internals)
+  - **Impact**: 80% reduction achieved from original 10 blocks to 2 blocks - acceptable for GUI applications
+  - **Status**: This level of leakage is normal for MiniGUI applications
+
 - **Font Cache**: FreeType2 cache optimization may show harmless warnings
+  - **Issue**: FreeType2 internal cache management messages during font operations
+  - **Impact**: Performance optimization warnings only - no functional issues
+
 - **PNG Warnings**: libpng sRGB profile warnings are cosmetic and don't affect operation
+  - **Issue**: "libpng warning: iCCP: known incorrect sRGB profile" messages
+  - **Cause**: Embedded color profiles in PNG image files processed by MiniGUI
+  - **Impact**: Visual only - does not affect application functionality or image display
+
+#### Build and Environment Issues  
+- **Virtual Display**: Requires X11 and Xvfb for virtual framebuffer operation
+  - **Issue**: Application needs virtual display environment to run
+  - **Requirement**: X11 server or Xvfb must be available and properly configured
+  - **Setup**: Handled automatically by build.sh and run.sh scripts
+
+- **Font Installation**: Korean fonts must be properly installed in MiniGUI font directory
+  - **Issue**: Missing fonts result in fallback to system fonts with limited Korean support
+  - **Solution**: Makefile automatically copies fonts to ./install/share/fonts/
+  - **Verification**: Check font files exist with `ls -la ./install/share/fonts/`
 
 ### Performance Notes
 - **Startup Time**: Initial launch may take 2-3 seconds for font loading
