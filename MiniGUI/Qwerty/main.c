@@ -396,26 +396,26 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             // Set locale for wide character support
             setlocale(LC_ALL, "en_US.UTF-8");
 
-            // Load Korean font - try Regular first for better character coverage
-            korean_font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8",
-                                        FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+            // Load Korean font - try Bold first since Regular has zero-width backtick
+            korean_font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8",
+                                        FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                         FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
                                         18, 0);
-            if (korean_font == NULL) {
-                korean_font = CreateLogFont("ttf", "NanumGothic-Bold", "UTF-8",
-                                            FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
-                                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                            20, 0);
-            }
             if (korean_font == NULL) {
                 korean_font = CreateLogFont("ttf", "NanumGothic-ExtraBold", "UTF-8",
                                             FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
                                             FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                            20, 0);
+                                            18, 0);
+            }
+            if (korean_font == NULL) {
+                korean_font = CreateLogFont("ttf", "NanumGothic-Regular", "UTF-8",
+                                            FONT_WEIGHT_NORMAL, FONT_SLANT_ROMAN, FONT_FLIP_NONE,
+                                            FONT_OTHER_NONE, FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
+                                            18, 0);
             }
 
             if (korean_font) {
-                printf("Loaded Korean font for character support\n");
+                printf("Loaded Korean font for character support (Bold/ExtraBold priority for backtick)\n");
             } else {
                 printf("Using default font (Korean characters may not display correctly)\n");
             }
@@ -441,8 +441,8 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             // Calculate keyboard width and center it
             // Row 0 is the widest: 13 keys (40px each) + 1 backspace (65px) + spacing
             int keyboard_width = (key_spacing * 13) + 65;  // Total width of row 0
-            int window_width = 700;  // Window client width (rx - lx)
-            int start_x = (window_width - keyboard_width) / 2 - 5;  // Center position, moved left by 5px
+            int window_width = 700;  // Window client width (reduced back to original)
+            int start_x = (window_width - keyboard_width) / 2;  // Center position
             int start_y = 150;
 
             // Row 0: ` 1 2 3 4 5 6 7 8 9 0 - = Backspace
@@ -713,7 +713,7 @@ static void InitCreateInfo(MAINWINCREATE* pCreateInfo)
     pCreateInfo->MainWindowProc = KoreanInputWinProc;
     pCreateInfo->lx = 50;
     pCreateInfo->ty = 50;
-    pCreateInfo->rx = 750;
+    pCreateInfo->rx = 750;  // Reduced back to original width
     pCreateInfo->by = 480;
     pCreateInfo->iBkColor = COLOR_lightwhite;
     pCreateInfo->dwAddData = 0;

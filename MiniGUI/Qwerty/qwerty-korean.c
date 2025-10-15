@@ -29,7 +29,7 @@ static const wchar_t JONG_JAMO[] = {
 // Key mappings for QWERTY layout
 KeyMap key_maps[47] = {
     // Row 0
-    {"`", "~", "`", "~"},
+    {"`", "~", "`", "~"},  // Restored original backtick mapping
     {"1", "!", "1", "!"},
     {"2", "@", "2", "@"},
     {"3", "#", "3", "#"},
