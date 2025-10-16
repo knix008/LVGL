@@ -183,9 +183,13 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         case MSG_CREATE: {
             // Create text area to fit window width with auto-wrap
             // Window is 280px wide, use ~260px width with margins
-            // Use CTRL_EDIT with ES_MULTILINE and ES_AUTOWRAP instead of CTRL_MEDIT
-            hTextArea = CreateWindow(CTRL_EDIT, "",
-                                   WS_VISIBLE | WS_BORDER | ES_READONLY | ES_MULTILINE | ES_AUTOWRAP,
+            // Use CTRL_MLEDIT (Multi-Line Edit) for proper multi-line support with scrollbars
+            // ES_AUTOWRAP: automatically wraps text to next line when reaching edge
+            // ES_AUTOVSCROLL: shows vertical scrollbar when content exceeds height
+            // ES_AUTOHSCROLL: shows horizontal scrollbar when needed
+            hTextArea = CreateWindow(CTRL_MLEDIT, "",
+                                   WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_HSCROLL |
+                                   ES_READONLY | ES_AUTOWRAP,
                                    IDC_TEXT_AREA,
                                    10, 10, 260, 100, hWnd, 0);
             
