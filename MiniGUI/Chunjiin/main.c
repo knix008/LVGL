@@ -322,8 +322,16 @@ int MiniGUIMain(int argc, const char* argv[]) {
     
     // Initialize Korean font
     init_korean_font();
-    
-    // Create main window (non-resizable, non-minimizable)
+
+    // Calculate centered window position
+    int screen_width = GetGDCapability(HDC_SCREEN, GDCAP_HPIXEL);
+    int screen_height = GetGDCapability(HDC_SCREEN, GDCAP_VPIXEL);
+    int window_width = 280;
+    int window_height = 420;
+    int window_x = (screen_width - window_width) / 2;
+    int window_y = (screen_height - window_height) / 2;
+
+    // Create main window (non-resizable, non-minimizable, center-aligned)
     CreateInfo.dwStyle = WS_VISIBLE | WS_CAPTION | WS_SYSMENU;
     CreateInfo.dwExStyle = WS_EX_NONE;
     CreateInfo.spCaption = "천지인 한글 입력기 (Chunjiin Korean Input)";
@@ -331,10 +339,10 @@ int MiniGUIMain(int argc, const char* argv[]) {
     CreateInfo.hCursor = GetSystemCursor(0);
     CreateInfo.hIcon = 0;
     CreateInfo.MainWindowProc = ChunjiinWinProc;
-    CreateInfo.lx = 0;
-    CreateInfo.ty = 0;
-    CreateInfo.rx = 280;
-    CreateInfo.by = 420;
+    CreateInfo.lx = window_x;
+    CreateInfo.ty = window_y;
+    CreateInfo.rx = window_x + window_width;
+    CreateInfo.by = window_y + window_height;
     CreateInfo.iBkColor = COLOR_lightwhite;
     CreateInfo.dwAddData = 0;
     CreateInfo.hHosting = HWND_DESKTOP;
