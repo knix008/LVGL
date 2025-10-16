@@ -189,7 +189,7 @@ static wchar_t compose_hangul(wchar_t cho, wchar_t jung, wchar_t jong) {
 
 // Initialize qwerty state
 void qwerty_init(QwertyState *state) {
-    state->current_language = LANG_ENGLISH;
+    state->current_language = LANG_KOREAN;
     state->shift_pressed = 0;
     state->caps_lock = 0;
     state->hangul.cho = 0;

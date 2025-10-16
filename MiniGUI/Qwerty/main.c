@@ -239,7 +239,7 @@ static void update_button_labels() {
     // Update mode button
     for (int i = 0; i < 80; i++) {
         if (hKeyButtons[i] && GetDlgCtrlID(hKeyButtons[i]) == IDC_KEY_MODE) {
-            const char* mode_label = (qwerty_state.current_language == LANG_KOREAN) ? "한글" : "Eng";
+            const char* mode_label = (qwerty_state.current_language == LANG_KOREAN) ? "English" : "한글";
             SetWindowText(hKeyButtons[i], mode_label);
             SetWindowBkColor(hKeyButtons[i], (qwerty_state.current_language == LANG_KOREAN) ? PIXEL_lightgray : PIXEL_lightwhite);
             InvalidateRect(hKeyButtons[i], NULL, TRUE);
@@ -467,10 +467,10 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 korean_font_needs_destroy = FALSE; // System fonts don't need to be destroyed
             }
 
-            // Create text box - use edit control instead of mledit
+            // Create text box - use mledit control for multi-line support
             printf("Creating text box...\n");
-            hTextBox = CreateWindow("edit", "",
-                WS_VISIBLE | WS_CHILD | WS_BORDER,
+            hTextBox = CreateWindow("mledit", "",
+                WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_AUTOWRAP,
                 IDC_TEXTBOX,
                 20, 20, 650, 120,
                 hWnd, 0);
@@ -624,7 +624,7 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
             // Calculate Row 4 width: Eng(65) + gap(10) + Space(250) + gap(10) + Enter(90) = 425
             int row4_width = 65 + 10 + 250 + 10 + 90;
             int row4_x = (window_width - row4_width) / 2; // Centered
-            hKeyButtons[btn_idx++] = CreateWindow("button", "Eng", WS_VISIBLE | WS_CHILD, IDC_KEY_MODE,
+            hKeyButtons[btn_idx++] = CreateWindow("button", "English", WS_VISIBLE | WS_CHILD, IDC_KEY_MODE,
                 row4_x, start_y, 65, key_height, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "Space", WS_VISIBLE | WS_CHILD, IDC_KEY_SPACE,
                 row4_x + 65 + 10, start_y, 250, key_height, hWnd, 0);
