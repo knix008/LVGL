@@ -228,13 +228,13 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
         L"Space", L"Del"
     };
     static const wchar_t *upper_eng_texts[] = {
-        L"@?!", L".QZ", L"ABC", L"DEF", L"GHI",
-        L"JKL", L"MNO", L"PRS", L"TUV", L"WXY",
+        L"@", L"ABC", L"DEF", L"GHI", L"JKL",
+        L"MNO", L"PQR", L"STU", L"VWX", L"YZ",
         L"Space", L"Del"
     };
     static const wchar_t *lower_eng_texts[] = {
-        L"@?!", L".qz", L"abc", L"def", L"ghi",
-        L"jkl", L"mno", L"prs", L"tuv", L"wxy",
+        L"@", L"abc", L"def", L"ghi", L"jkl",
+        L"mno", L"pqr", L"stu", L"vwx", L"yz",
         L"Space", L"Del"
     };
     static const wchar_t *number_texts[] = {
@@ -243,7 +243,7 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
         L"Space", L"Del"
     };
     static const wchar_t *special_texts[] = {
-        L"~`^", L"!@#", L"$%&", L"*()=", L"+{}",
+        L"~`^", L"!#", L"$%&", L"*()=", L"+{}",
         L"[]=", L"<>|", L"-_", L":;", L"\"'/",
         L"Space", L"Del"
     };
@@ -255,7 +255,9 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
         case MODE_UPPER_ENGLISH: return upper_eng_texts[button_num];
         case MODE_ENGLISH: return lower_eng_texts[button_num];
         case MODE_NUMBER: return number_texts[button_num];
-        case MODE_SPECIAL: return special_texts[button_num];
+        case MODE_SPECIAL:
+            if (button_num == 0) return L"~`^"; // Remove @ in special mode
+            return special_texts[button_num];
         default: return L"";
     }
 }

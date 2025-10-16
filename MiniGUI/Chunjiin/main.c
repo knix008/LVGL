@@ -19,7 +19,7 @@
 
 #define IDC_TEXT_AREA      100
 #define IDC_MODE_BUTTON    101
-#define IDC_CLEAR_BUTTON   102
+#define IDC_PUNCT_BUTTON   102
 #define IDC_ENTER_BUTTON   103
 #define IDC_KEY_0          110
 #define IDC_KEY_1          111
@@ -37,9 +37,14 @@
 static ChunjiinState chunjiin_state;
 static HWND hTextArea;
 static HWND hButtons[12];  // Store button handles for updating labels
-static HWND hModeButton, hClearButton, hEnterButton;
+static HWND hModeButton, hPunctButton, hEnterButton;
 static PLOGFONT korean_font = NULL;
 static PLOGFONT korean_font_bold = NULL;
+
+// Punctuation cycling
+static const wchar_t *punctuation_marks[] = {L".", L",", L"?"};
+static int current_punct_index = 0;
+static int punct_position = -1;  // Position in text buffer where punctuation is being edited (-1 = none)
 
 // Korean font initialization
 static int init_korean_font(void) {
@@ -122,6 +127,7 @@ static void update_button_labels(void) {
 // Key button click handler
 static void handle_key_press(int key) {
     chunjiin_process_input(&chunjiin_state, key);
+    // Don't reset punct_position - let it naturally move with text length
     update_display();
 }
 
@@ -145,15 +151,49 @@ static LRESULT ButtonClickProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                 
                 case IDC_MODE_BUTTON:
                     change_mode(&chunjiin_state);
+                    // Don't reset punct_position - continue from current position
                     update_display();
                     update_button_labels();  // Update button labels after mode change
                     break;
-                
-                case IDC_CLEAR_BUTTON:
-                    chunjiin_clear_preserve_mode(&chunjiin_state);
-                    update_display();
+
+                case IDC_PUNCT_BUTTON: {
+                    size_t current_len = wcslen(chunjiin_state.text_buffer);
+
+                    if (punct_position == -1) {
+                        // First click - add first punctuation mark at cursor position
+                        if (current_len < MAX_TEXT_LEN - 1) {
+                            int cursor = chunjiin_state.cursor_pos;
+                            punct_position = cursor;
+                            current_punct_index = 0;
+
+                            // Insert at cursor position
+                            chunjiin_state.text_buffer[cursor] = punctuation_marks[current_punct_index][0];
+                            chunjiin_state.text_buffer[cursor + 1] = L'\0';
+                            chunjiin_state.cursor_pos = cursor + 1;  // Move cursor after punctuation
+                            update_display();
+                        }
+                    } else if (punct_position == (int)current_len - 1) {
+                        // Subsequent clicks on same position - cycle to next punctuation
+                        current_punct_index = (current_punct_index + 1) % 3;
+                        chunjiin_state.text_buffer[punct_position] = punctuation_marks[current_punct_index][0];
+                        update_display();
+                    } else {
+                        // Clicked after other input - add new punctuation at cursor
+                        if (current_len < MAX_TEXT_LEN - 1) {
+                            int cursor = chunjiin_state.cursor_pos;
+                            punct_position = cursor;
+                            current_punct_index = 0;
+
+                            // Insert at cursor position
+                            chunjiin_state.text_buffer[cursor] = punctuation_marks[current_punct_index][0];
+                            chunjiin_state.text_buffer[cursor + 1] = L'\0';
+                            chunjiin_state.cursor_pos = cursor + 1;  // Move cursor after punctuation
+                            update_display();
+                        }
+                    }
                     break;
-                
+                }
+
                 case IDC_ENTER_BUTTON: {
                     // Show input result in popup window, then clear
                     char utf8_text[MAX_TEXT_LEN * 4];
@@ -255,21 +295,21 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             hModeButton = CreateWindow(CTRL_BUTTON, "Mode",
                        WS_VISIBLE | BS_PUSHBUTTON,
                        IDC_MODE_BUTTON,
-                       button_start_x + 0 * button_spacing_x, 
-                       button_start_y + 4 * button_spacing_y, 
+                       button_start_x + 0 * button_spacing_x,
+                       button_start_y + 4 * button_spacing_y,
                        70, 40, hWnd, 0);
             if (korean_font_bold && hModeButton != HWND_INVALID) {
                 SetWindowFont(hModeButton, korean_font_bold);
             }
-            
-            hClearButton = CreateWindow(CTRL_BUTTON, "Clear",
+
+            hPunctButton = CreateWindow(CTRL_BUTTON, ".,?",
                        WS_VISIBLE | BS_PUSHBUTTON,
-                       IDC_CLEAR_BUTTON,
-                       button_start_x + 1 * button_spacing_x, 
-                       button_start_y + 4 * button_spacing_y, 
+                       IDC_PUNCT_BUTTON,
+                       button_start_x + 1 * button_spacing_x,
+                       button_start_y + 4 * button_spacing_y,
                        70, 40, hWnd, 0);
-            if (korean_font_bold && hClearButton != HWND_INVALID) {
-                SetWindowFont(hClearButton, korean_font_bold);
+            if (korean_font_bold && hPunctButton != HWND_INVALID) {
+                SetWindowFont(hPunctButton, korean_font_bold);
             }
             
             hEnterButton = CreateWindow(CTRL_BUTTON, "Enter",

@@ -13,9 +13,9 @@ A comprehensive Korean input method implementation using the ChunJiIn (천지인
 
 ### Multi-Language Support
 - **Korean (한글)**: Full ChunJiIn input method
-- **English**: Upper and lowercase input modes
+- **English**: Upper and lowercase input modes (with '@' on the first button)
 - **Numbers**: Numeric input mode
-- **Special characters**: Special symbol input mode
+- **Special characters**: Special symbol input mode (no '@' on the first button)
 
 ### User Interface
 - **Graphical interface**: Built with MiniGUI for cross-platform compatibility

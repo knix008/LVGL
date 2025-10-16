@@ -39,7 +39,7 @@ void special_make(ChunjiinState *state, int input) {
         const wchar_t *str = L"";
         switch (input) {
             case 0: str = L"~`^"; break;
-            case 1: str = L"!@#"; break;
+            case 1: str = L"!#"; break;     // Removed @ (already in English mode)
             case 2: str = L"$%&"; break;
             case 3: str = L"*()"; break;
             case 4: str = L"+{}"; break;
@@ -94,41 +94,70 @@ void eng_make(ChunjiinState *state, int input) {
     } else {
         const wchar_t *str = L"";
         switch (input) {
-            case 0: str = L"@?!"; break;
-            case 1: str = L".QZ"; break;
-            case 2: str = L"ABC"; break;
-            case 3: str = L"DEF"; break;
-            case 4: str = L"GHI"; break;
-            case 5: str = L"JKL"; break;
-            case 6: str = L"MNO"; break;
-            case 7: str = L"PRS"; break;
-            case 8: str = L"TUV"; break;
-            case 9: str = L"WXY"; break;
+            case 0: str = L"@"; break;        // @ symbol
+            case 1: str = L"ABC"; break;
+            case 2: str = L"DEF"; break;
+            case 3: str = L"GHI"; break;
+            case 4: str = L"JKL"; break;
+            case 5: str = L"MNO"; break;
+            case 6: str = L"PQR"; break;
+            case 7: str = L"STU"; break;
+            case 8: str = L"VWX"; break;
+            case 9: str = L"YZ"; break;
             default: return;
         }
 
-        wchar_t ch[4];
+        int len = wcslen(str);
+        wchar_t ch[5];
         ch[0] = str[0];
-        ch[1] = str[1];
-        ch[2] = str[2];
-        ch[3] = 0;
+        ch[1] = len > 1 ? str[1] : 0;
+        ch[2] = len > 2 ? str[2] : 0;
+        ch[3] = len > 3 ? str[3] : 0;
+        ch[4] = 0;
 
         if (wcslen(state->engnum) == 0) {
+            // First click - show first character
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
         } else if (state->engnum[0] == ch[0]) {
-            state->engnum[0] = ch[1];
-            state->engnum[1] = 0;
-            state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[1]) {
-            state->engnum[0] = ch[2];
-            state->engnum[1] = 0;
-            state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[2]) {
+            // First char -> second char
+            if (ch[1] != 0) {
+                state->engnum[0] = ch[1];
+                state->engnum[1] = 0;
+                state->flag_engdelete = true;
+            }
+        } else if (ch[1] != 0 && state->engnum[0] == ch[1]) {
+            // Second char -> third char or wrap to first
+            if (ch[2] != 0) {
+                state->engnum[0] = ch[2];
+                state->engnum[1] = 0;
+                state->flag_engdelete = true;
+            } else {
+                // 2-character key (like YZ) - wrap to first
+                state->engnum[0] = ch[0];
+                state->engnum[1] = 0;
+                state->flag_engdelete = true;
+            }
+        } else if (ch[2] != 0 && state->engnum[0] == ch[2]) {
+            // Third char -> fourth char or wrap to first
+            if (ch[3] != 0) {
+                // 4-character key
+                state->engnum[0] = ch[3];
+                state->engnum[1] = 0;
+                state->flag_engdelete = true;
+            } else {
+                // 3-character key - wrap to first
+                state->engnum[0] = ch[0];
+                state->engnum[1] = 0;
+                state->flag_engdelete = true;
+            }
+        } else if (ch[3] != 0 && state->engnum[0] == ch[3]) {
+            // 4th character wraps to first
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
         } else {
+            // Different button clicked - start with first character
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
         }
@@ -648,11 +677,15 @@ void write_engnum(ChunjiinState *state) {
 
     // Handle delete case
     if (state->flag_engdelete) {
+        // Same button clicked - replace character at same position
         wcscat(str, &state->text_buffer[position]);
         wcscpy(state->text_buffer, str);
-        state->cursor_pos = position;
+        // Keep cursor at same position (position is already cursor_pos from line 638)
+        // Don't increment cursor - just stay at current position for next cycle
+        state->cursor_pos = wcslen(str) - wcslen(&state->text_buffer[position]);
         state->flag_engdelete = false;
     } else {
+        // Different button or first click - add new character
         wcscat(str, &state->text_buffer[position]);
         wcscpy(state->text_buffer, str);
         if (wcslen(state->engnum) == 0) {
