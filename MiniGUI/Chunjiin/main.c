@@ -150,7 +150,7 @@ static LRESULT ButtonClickProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                     break;
                 
                 case IDC_CLEAR_BUTTON:
-                    chunjiin_init(&chunjiin_state);
+                    chunjiin_clear_preserve_mode(&chunjiin_state);
                     update_display();
                     break;
                 
@@ -167,7 +167,7 @@ static LRESULT ButtonClickProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                     }
 
                     // Clear the text after showing popup
-                    chunjiin_init(&chunjiin_state);
+                    chunjiin_clear_preserve_mode(&chunjiin_state);
                     update_display();
                     break;
                 }
@@ -183,8 +183,9 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         case MSG_CREATE: {
             // Create text area to fit window width with auto-wrap
             // Window is 280px wide, use ~260px width with margins
-            hTextArea = CreateWindow(CTRL_MEDIT, "",
-                                   WS_VISIBLE | WS_BORDER | ES_READONLY | ES_AUTOWRAP,
+            // Use CTRL_EDIT with ES_MULTILINE and ES_AUTOWRAP instead of CTRL_MEDIT
+            hTextArea = CreateWindow(CTRL_EDIT, "",
+                                   WS_VISIBLE | WS_BORDER | ES_READONLY | ES_MULTILINE | ES_AUTOWRAP,
                                    IDC_TEXT_AREA,
                                    10, 10, 260, 100, hWnd, 0);
             

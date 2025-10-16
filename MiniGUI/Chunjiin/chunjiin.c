@@ -11,6 +11,12 @@ void chunjiin_init(ChunjiinState *state) {
     state->cursor_pos = 0;
 }
 
+void chunjiin_clear_preserve_mode(ChunjiinState *state) {
+    InputMode saved_mode = state->now_mode;
+    chunjiin_init(state);
+    state->now_mode = saved_mode;
+}
+
 void hangul_init(HangulState *hangul) {
     memset(hangul->chosung, 0, sizeof(hangul->chosung));
     memset(hangul->jungsung, 0, sizeof(hangul->jungsung));

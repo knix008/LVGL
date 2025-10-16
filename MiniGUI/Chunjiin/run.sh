@@ -20,13 +20,13 @@ if [ ! -f "./install/lib/libminigui_sa.so" ]; then
 fi
 
 # Set up environment variables for MiniGUI
-export LD_LIBRARY_PATH="./install/lib"
-export FREETYPE_FONT_PATH="./install/share/fonts"
+export LD_LIBRARY_PATH="$(pwd)/install/lib"
+export FREETYPE_FONT_PATH="$(pwd)/install/share/fonts"
 export MG_RUNTIME_MODE="standalone"
 export MG_GAL_ENGINE="pc_xvfb"
 export MG_IAL_ENGINE="pc_xvfb"
 export MG_DEFAULTMODE="800x600-16bpp"
-export MG_CONFIG_FILE="./MiniGUI.cfg"
+export MG_CONFIG_FILE="$(pwd)/MiniGUI.cfg"
 
 echo "Environment configured:"
 echo "  LD_LIBRARY_PATH: $LD_LIBRARY_PATH"

@@ -42,6 +42,7 @@ typedef struct {
 
 // 초기화 함수
 void chunjiin_init(ChunjiinState *state);
+void chunjiin_clear_preserve_mode(ChunjiinState *state);
 void hangul_init(HangulState *hangul);
 void init_engnum(ChunjiinState *state);
 
