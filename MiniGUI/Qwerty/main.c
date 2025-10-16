@@ -467,17 +467,25 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 korean_font_needs_destroy = FALSE; // System fonts don't need to be destroyed
             }
 
-            // Create text box - use mledit for multi-line with word wrap
-            hTextBox = CreateWindow("mledit", "",
-                WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | ES_AUTOWRAP | ES_MULTILINE,
+            // Create text box - use edit control instead of mledit
+            printf("Creating text box...\n");
+            hTextBox = CreateWindow("edit", "",
+                WS_VISIBLE | WS_CHILD | WS_BORDER,
                 IDC_TEXTBOX,
                 20, 20, 650, 120,
                 hWnd, 0);
+            printf("Text box created, handle: %p\n", hTextBox);
+            if (hTextBox == HWND_INVALID) {
+                printf("ERROR: Failed to create text box\n");
+                return -1;
+            }
+            printf("Setting font for text box...\n");
             if (korean_font) {
                 SetWindowFont(hTextBox, korean_font);
                 InvalidateRect(hTextBox, NULL, TRUE);
                 UpdateWindow(hTextBox, TRUE);
             }
+            printf("Text box setup complete.\n");
 
             // Full QWERTY keyboard layout
             int btn_idx = 0;
