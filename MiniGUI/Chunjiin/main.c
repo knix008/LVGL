@@ -39,6 +39,7 @@ static HWND hTextArea;
 static HWND hButtons[12];  // Store button handles for updating labels
 static HWND hModeButton, hClearButton, hEnterButton;
 static PLOGFONT korean_font = NULL;
+static PLOGFONT korean_font_bold = NULL;
 
 // Korean font initialization
 static int init_korean_font(void) {
@@ -52,6 +53,18 @@ static int init_korean_font(void) {
         korean_font = GetSystemFont(SYSLOGFONT_DEFAULT);
         return 0;
     }
+    
+    // Create bold font for buttons
+    korean_font_bold = CreateLogFont(FONT_TYPE_NAME_SCALE_TTF, "SansSerif", 
+                               "UTF-8", FONT_WEIGHT_BOLD, FONT_SLANT_ROMAN,
+                               FONT_FLIP_NIL, FONT_OTHER_NIL, FONT_UNDERLINE_NONE,
+                               FONT_STRUCKOUT_NONE, 16, 0);
+    
+    if (!korean_font_bold) {
+        // Fallback to regular font if bold not available
+        korean_font_bold = korean_font;
+    }
+    
     return 1;
 }
 
@@ -98,9 +111,9 @@ static void update_button_labels(void) {
             char utf8_text[256];
             wchar_to_utf8(wtext, utf8_text, sizeof(utf8_text));
             SetWindowText(hButtons[i], utf8_text);
-            // Ensure Korean font is applied
-            if (korean_font) {
-                SetWindowFont(hButtons[i], korean_font);
+            // Apply bold Korean font to buttons
+            if (korean_font_bold) {
+                SetWindowFont(hButtons[i], korean_font_bold);
             }
         }
     }
@@ -175,12 +188,9 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                                    IDC_TEXT_AREA,
                                    10, 10, 260, 100, hWnd, 0);
             
-            if (korean_font) {
-                SetWindowFont(hTextArea, korean_font);
-            }
-            
-            if (korean_font) {
-                SetWindowFont(hTextArea, korean_font);
+            // Apply bold Korean font to text area
+            if (korean_font_bold) {
+                SetWindowFont(hTextArea, korean_font_bold);
             }
             
             // Initialize button handles
@@ -230,9 +240,9 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                            button_start_y + positions[i][1] * button_spacing_y, 
                            70, 40, hWnd, 0);
                 
-                // Apply Korean font to button
-                if (korean_font && hButtons[i] != HWND_INVALID) {
-                    SetWindowFont(hButtons[i], korean_font);
+                // Apply bold Korean font to button
+                if (korean_font_bold && hButtons[i] != HWND_INVALID) {
+                    SetWindowFont(hButtons[i], korean_font_bold);
                 }
             }
             
@@ -243,8 +253,8 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                        button_start_x + 0 * button_spacing_x, 
                        button_start_y + 4 * button_spacing_y, 
                        70, 40, hWnd, 0);
-            if (korean_font && hModeButton != HWND_INVALID) {
-                SetWindowFont(hModeButton, korean_font);
+            if (korean_font_bold && hModeButton != HWND_INVALID) {
+                SetWindowFont(hModeButton, korean_font_bold);
             }
             
             hClearButton = CreateWindow(CTRL_BUTTON, "Clear",
@@ -253,8 +263,8 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                        button_start_x + 1 * button_spacing_x, 
                        button_start_y + 4 * button_spacing_y, 
                        70, 40, hWnd, 0);
-            if (korean_font && hClearButton != HWND_INVALID) {
-                SetWindowFont(hClearButton, korean_font);
+            if (korean_font_bold && hClearButton != HWND_INVALID) {
+                SetWindowFont(hClearButton, korean_font_bold);
             }
             
             hEnterButton = CreateWindow(CTRL_BUTTON, "Enter",
@@ -263,8 +273,8 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                        button_start_x + 2 * button_spacing_x,
                        button_start_y + 4 * button_spacing_y,
                        70, 40, hWnd, 0);
-            if (korean_font && hEnterButton != HWND_INVALID) {
-                SetWindowFont(hEnterButton, korean_font);
+            if (korean_font_bold && hEnterButton != HWND_INVALID) {
+                SetWindowFont(hEnterButton, korean_font_bold);
             }
             
             // Initialize chunjiin state
@@ -284,6 +294,9 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         case MSG_DESTROY:
             if (korean_font && korean_font != GetSystemFont(SYSLOGFONT_DEFAULT)) {
                 DestroyLogFont(korean_font);
+            }
+            if (korean_font_bold && korean_font_bold != korean_font) {
+                DestroyLogFont(korean_font_bold);
             }
             return 0;
     }
@@ -326,11 +339,6 @@ int MiniGUIMain(int argc, const char* argv[]) {
     if (hMainWnd == HWND_INVALID) {
         printf("Failed to create main window!\n");
         return -1;
-    }
-    
-    // Set Korean window caption
-    if (korean_font) {
-        SetWindowCaption(hMainWnd, "천지인(ChunJiIn) 한글 입력기");
     }
     
     printf("Main window created successfully\n");

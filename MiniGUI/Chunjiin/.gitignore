@@ -1,6 +1,48 @@
-.o
+# Compiled objects
+*.o
+*.so
+*.so.*
+*.a
+*.la
+
+# Build directories
 build/
-*.log
+install/
+minigui/
+
+# Executables
 chunjiin
+chunjiin_app
+
+# Logs
+*.log
+
+# IDE and editor files
 .claude/
 .vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# MiniGUI specific
+minigui/autom4te.cache/
+minigui/config.log
+minigui/config.status
+minigui/stamp-h1

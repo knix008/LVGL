@@ -1,146 +1,68 @@
-# Makefile for Chunjiin Korean Input Method with MiniGUI
+# MiniGUI Application Makefile
 
+# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -std=c99 -I.
-LDFLAGS = -lminigui_ths -lpthread -lfreetype -ljpeg -lpng -lz -lm -ldl
+CFLAGS = -Wall -g -O2 -Wno-unused-parameter
+LDFLAGS = -Wl,--as-needed
 
-# Try to use pkg-config if available
-PKG_CONFIG_MINIGUI = $(shell pkg-config --exists minigui && echo "yes")
-PKG_CONFIG_FREETYPE = $(shell pkg-config --exists freetype2 && echo "yes")
+# Local MiniGUI installation paths
+MINIGUI_CFLAGS = -I./install/include
+MINIGUI_LIBS = -L./install/lib -lminigui_sa -ljpeg -lpng16 -lz -ldl -lharfbuzz -lfreetype -lm -lpthread -linput -ldrm -ludev
 
-ifeq ($(PKG_CONFIG_MINIGUI),yes)
-    CFLAGS += $(shell pkg-config --cflags minigui)
-    LDFLAGS = $(shell pkg-config --libs minigui)
-else
-    # Fallback flags
-    CFLAGS += -I/usr/local/include -I/usr/include
-    LDFLAGS = -L/usr/local/lib $(LDFLAGS)
-endif
+# Target executable
+TARGET = chunjiin_app
 
-ifeq ($(PKG_CONFIG_FREETYPE),yes)
-    CFLAGS += $(shell pkg-config --cflags freetype2)
-    LDFLAGS += $(shell pkg-config --libs freetype2)
-endif
-
-TARGET = chunjiin
+# Source files
 SOURCES = main.c chunjiin.c chunjiin_hangul.c
+
+# Object files
 OBJECTS = $(SOURCES:.c=.o)
 
-.PHONY: all clean install run setup help debug release
+# Default target
+all: copy-fonts $(TARGET)
 
-all: $(TARGET)
+# Copy Korean fonts to MiniGUI font directory
+copy-fonts:
+	@echo "Copying Korean fonts to MiniGUI font directory..."
+	@mkdir -p ./install/share/fonts
+	@cp assets/*.ttf ./install/share/fonts/ 2>/dev/null || echo "Warning: Could not copy fonts (assets directory may not exist)"
+	@echo "✓ Korean fonts copied to ./install/share/fonts/"
 
+# Build the executable
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
+	$(CC) $(OBJECTS) -o $(TARGET) $(MINIGUI_LIBS) $(LDFLAGS)
 
-main.o: main.c chunjiin.h
-	$(CC) $(CFLAGS) -c main.c -o main.o
-
+# Compile source files
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(MINIGUI_CFLAGS) -c $< -o $@
 
-# Debug build
-debug: CFLAGS += -g -O0 -DDEBUG
-debug: $(TARGET)
-
-# Release build  
-release: CFLAGS += -O2 -DNDEBUG
-release: $(TARGET)
-
+# Clean build files
 clean:
-	rm -f $(OBJECTS) $(TARGET)
-	rm -f *.log
+	rm -f $(OBJECTS)
+	rm -f $(TARGET)
+	rm -f ./install/share/fonts/*.ttf
 
-install: $(TARGET)
-	@echo "Installing $(TARGET)..."
-	sudo mkdir -p /usr/local/bin
-	sudo cp $(TARGET) /usr/local/bin/
-	sudo chmod +x /usr/local/bin/$(TARGET)
-	@if [ -d "assets" ]; then \
-		sudo mkdir -p /usr/local/share/$(TARGET); \
-		sudo cp -r assets /usr/local/share/$(TARGET)/; \
-	fi
-	@echo "Installation complete!"
-	@echo "Run with: $(TARGET)"
-
-uninstall:
-	@echo "Uninstalling $(TARGET)..."
-	sudo rm -f /usr/local/bin/$(TARGET)
-	sudo rm -rf /usr/local/share/$(TARGET)
-	@echo "Uninstallation complete!"
-
-run: $(TARGET)
-	@if [ -z "$$DISPLAY" ]; then \
-		echo "Warning: No X11 display found. Make sure X11 is running."; \
-	fi
-	./$(TARGET)
-
-# Setup using the installation script
-setup:
-	@echo "Setting up MiniGUI environment..."
-	@if [ -f "install_minigui.sh" ]; then \
-		./install_minigui.sh; \
+# Check if MiniGUI is installed locally
+check-minigui:
+	@echo "Checking local MiniGUI installation..."
+	@if [ -f "./install/lib/libminigui_sa.so" ]; then \
+		echo "✓ MiniGUI found locally"; \
 	else \
-		echo "install_minigui.sh not found. Please run the installation script first."; \
+		echo "✗ MiniGUI not found locally - run ./build.sh to build it"; \
 		exit 1; \
 	fi
 
+# Help target
 help:
-	@echo "Chunjiin Korean Input Method - MiniGUI Build System"
-	@echo ""
 	@echo "Available targets:"
-	@echo "  all       - Build the application (default)"
-	@echo "  debug     - Build with debug symbols"
-	@echo "  release   - Build optimized release version"
-	@echo "  clean     - Remove build artifacts"
-	@echo "  install   - Install the application system-wide"
-	@echo "  uninstall - Remove installed application"
-	@echo "  run       - Build and run the application"
-	@echo "  setup     - Run MiniGUI installation script"
-	@echo "  help      - Show this help message"
+	@echo "  all          - Build ChunJiIn application (default)"
+	@echo "  clean        - Remove build files"
+	@echo "  check-minigui - Check if MiniGUI is installed locally"
+	@echo "  help         - Show this help"
 	@echo ""
-	@echo "Prerequisites:"
-	@echo "  1. Run 'make setup' to install MiniGUI"
-	@echo "  2. Run 'make' to build the application"
-	@echo "  3. Run 'make run' to start the application"
+	@echo "Application:"
+	@echo "  ./chunjiin_app  - ChunJiIn Korean input system"
 	@echo ""
-	@echo "Configuration:"
-	@echo "  - MiniGUI.cfg contains the MiniGUI configuration"
-	@echo "  - Korean fonts are loaded from assets/ directory"
-	@echo "  - X11 display server is required for GUI"
+	@echo "Note: Run './build.sh' first to download and build MiniGUI locally"
 
-# Show build information
-info:
-	@echo "Build Information:"
-	@echo "  Target: $(TARGET)"
-	@echo "  Compiler: $(CC)"
-	@echo "  CFLAGS: $(CFLAGS)"
-	@echo "  LDFLAGS: $(LDFLAGS)"
-	@echo "  Sources: $(SOURCES)"
-	@echo ""
-	@echo "System Information:"
-	@echo "  OS: $(shell uname -s)"
-	@echo "  Architecture: $(shell uname -m)"
-	@echo "  Display: $(DISPLAY)"
-	@echo ""
-	@echo "Dependencies:"
-	@if command -v pkg-config >/dev/null 2>&1; then \
-		echo "  pkg-config: Available"; \
-		if pkg-config --exists minigui; then \
-			echo "  MiniGUI: $(shell pkg-config --modversion minigui)"; \
-		else \
-			echo "  MiniGUI: Not found via pkg-config"; \
-		fi; \
-		if pkg-config --exists freetype2; then \
-			echo "  FreeType: $(shell pkg-config --modversion freetype2)"; \
-		else \
-			echo "  FreeType: Not found via pkg-config"; \
-		fi; \
-	else \
-		echo "  pkg-config: Not available"; \
-	fi
-	@if ldconfig -p | grep -q libminigui; then \
-		echo "  libminigui: Found in system"; \
-	else \
-		echo "  libminigui: Not found in system"; \
-	fi
+.PHONY: all clean check-minigui help
