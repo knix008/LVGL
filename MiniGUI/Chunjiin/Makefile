@@ -1,4 +1,4 @@
-# MiniGUI Application Makefile
+# MiniGUI ChunJiIn Korean Input Application Makefile
 
 # Compiler and flags
 CC = gcc
@@ -14,33 +14,60 @@ TARGET = chunjiin_app
 
 # Source files
 SOURCES = main.c chunjiin.c chunjiin_hangul.c
+HEADERS = chunjiin.h
 
 # Object files
 OBJECTS = $(SOURCES:.c=.o)
 
+# Font directory
+FONT_DIR = ./install/share/fonts
+ASSETS_DIR = assets
+
 # Default target
 all: copy-fonts $(TARGET)
+	@echo ""
+	@echo "✓ Build complete!"
+	@echo "Run with: ./run.sh or make run"
 
 # Copy Korean fonts to MiniGUI font directory
 copy-fonts:
 	@echo "Copying Korean fonts to MiniGUI font directory..."
-	@mkdir -p ./install/share/fonts
-	@cp assets/*.ttf ./install/share/fonts/ 2>/dev/null || echo "Warning: Could not copy fonts (assets directory may not exist)"
-	@echo "✓ Korean fonts copied to ./install/share/fonts/"
+	@mkdir -p $(FONT_DIR)
+	@cp $(ASSETS_DIR)/*.ttf $(FONT_DIR)/ 2>/dev/null || echo "Warning: Could not copy fonts (assets directory may not exist)"
+	@echo "✓ Korean fonts copied to $(FONT_DIR)/"
 
 # Build the executable
 $(TARGET): $(OBJECTS)
+	@echo "Linking $(TARGET)..."
 	$(CC) $(OBJECTS) -o $(TARGET) $(MINIGUI_LIBS) $(LDFLAGS)
 
-# Compile source files
-%.o: %.c
+# Compile source files with header dependencies
+%.o: %.c $(HEADERS)
+	@echo "Compiling $<..."
 	$(CC) $(CFLAGS) $(MINIGUI_CFLAGS) -c $< -o $@
+
+# Rebuild everything from scratch
+rebuild: clean all
+
+# Run the application
+run: $(TARGET)
+	@echo "Starting ChunJiIn Korean Input Application..."
+	@./run.sh
 
 # Clean build files
 clean:
-	rm -f $(OBJECTS)
-	rm -f $(TARGET)
-	rm -f ./install/share/fonts/*.ttf
+	@echo "Cleaning build files..."
+	@rm -f $(OBJECTS)
+	@rm -f $(TARGET)
+	@rm -f $(FONT_DIR)/*.ttf
+	@echo "✓ Clean complete"
+
+# Deep clean including MiniGUI installation
+distclean: clean
+	@echo "Removing MiniGUI installation..."
+	@rm -rf ./install
+	@rm -rf ./minigui
+	@echo "✓ Deep clean complete"
 
 # Check if MiniGUI is installed locally
 check-minigui:
@@ -52,17 +79,54 @@ check-minigui:
 		exit 1; \
 	fi
 
+# Install dependencies (run build script)
+install-deps:
+	@echo "Building MiniGUI locally..."
+	@./build.sh
+
+# Show build information
+info:
+	@echo "ChunJiIn Korean Input Application"
+	@echo "=================================="
+	@echo "Compiler:       $(CC)"
+	@echo "CFLAGS:         $(CFLAGS)"
+	@echo "Target:         $(TARGET)"
+	@echo "Sources:        $(SOURCES)"
+	@echo "Objects:        $(OBJECTS)"
+	@echo "Font directory: $(FONT_DIR)"
+	@echo ""
+	@echo "MiniGUI Status:"
+	@if [ -f "./install/lib/libminigui_sa.so" ]; then \
+		echo "  ✓ MiniGUI installed locally"; \
+	else \
+		echo "  ✗ MiniGUI not installed - run 'make install-deps'"; \
+	fi
+
 # Help target
 help:
+	@echo "ChunJiIn Korean Input Application - Makefile Help"
+	@echo "=================================================="
+	@echo ""
 	@echo "Available targets:"
-	@echo "  all          - Build ChunJiIn application (default)"
-	@echo "  clean        - Remove build files"
+	@echo "  all           - Build ChunJiIn application (default)"
+	@echo "  rebuild       - Clean and rebuild everything"
+	@echo "  run           - Build and run the application"
+	@echo "  clean         - Remove build files and fonts"
+	@echo "  distclean     - Remove all build files and MiniGUI installation"
 	@echo "  check-minigui - Check if MiniGUI is installed locally"
-	@echo "  help         - Show this help"
+	@echo "  install-deps  - Download and build MiniGUI locally"
+	@echo "  info          - Show build configuration information"
+	@echo "  help          - Show this help message"
 	@echo ""
-	@echo "Application:"
-	@echo "  ./chunjiin_app  - ChunJiIn Korean input system"
+	@echo "Quick Start:"
+	@echo "  1. make install-deps  # Download and build MiniGUI (first time only)"
+	@echo "  2. make               # Build the application"
+	@echo "  3. make run           # Run the application"
 	@echo ""
-	@echo "Note: Run './build.sh' first to download and build MiniGUI locally"
+	@echo "Application Features:"
+	@echo "  - ChunJiIn Korean input method (천지인 입력기)"
+	@echo "  - Multi-line text display with auto-wrap"
+	@echo "  - Vertical and horizontal scrollbars"
+	@echo "  - Center-aligned window on startup"
 
-.PHONY: all clean check-minigui help
+.PHONY: all rebuild run clean distclean check-minigui install-deps info help copy-fonts
