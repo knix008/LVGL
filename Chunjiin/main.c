@@ -92,55 +92,80 @@ static void on_clear_clicked(lv_event_t *e) {
     }
 }
 
-// Timer callback to auto-dismiss popup
-static void popup_timer_cb(lv_timer_t *timer) {
+
+// Close button event handler
+static void on_close_button_clicked(lv_event_t *e) {
+    (void)e; // Suppress unused parameter warning
     if (active_mbox && lv_obj_is_valid(active_mbox)) {
         lv_obj_del(active_mbox);
         active_mbox = NULL;
     }
-    lv_timer_del(timer);
 }
 
-// Safe popup creation function
-static lv_obj_t* create_safe_popup(const char* title, const char* message) {
-    // Create a container for the popup
-    lv_obj_t *popup = lv_obj_create(lv_screen_active());
-    if (!popup) return NULL;
+// Create persistent result window
+static lv_obj_t* create_result_window(const char* title, const char* message) {
+    // Create a container for the window
+    lv_obj_t *window = lv_obj_create(lv_screen_active());
+    if (!window) return NULL;
     
-    // Set popup properties
-    lv_obj_set_size(popup, 300, 150);
-    lv_obj_center(popup);
-    lv_obj_set_style_bg_opa(popup, LV_OPA_90, 0);
-    lv_obj_set_style_bg_color(popup, lv_color_black(), 0);
-    lv_obj_set_style_border_width(popup, 2, 0);
-    lv_obj_set_style_border_color(popup, lv_color_white(), 0);
-    lv_obj_set_style_radius(popup, 10, 0);
-    lv_obj_set_style_pad_all(popup, 15, 0);
+    // Set window properties - fixed height
+    lv_obj_set_size(window, 280, 200);
+    lv_obj_center(window);
+    lv_obj_set_style_bg_opa(window, LV_OPA_90, 0);
+    lv_obj_set_style_bg_color(window, lv_color_hex(0x2C2C2C), 0);
+    lv_obj_set_style_border_width(window, 3, 0);
+    lv_obj_set_style_border_color(window, lv_color_hex(0x4A90E2), 0);
+    lv_obj_set_style_radius(window, 15, 0);
+    lv_obj_set_style_pad_all(window, 20, 0);
+    lv_obj_set_style_shadow_width(window, 20, 0);
+    lv_obj_set_style_shadow_color(window, lv_color_black(), 0);
     
     // Create title label
-    lv_obj_t *title_label = lv_label_create(popup);
+    lv_obj_t *title_label = lv_label_create(window);
     if (title_label) {
         lv_label_set_text(title_label, title);
-        lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
-        lv_obj_set_style_text_font(title_label, korean_font_16, 0);
-        lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
+        lv_obj_set_style_text_color(title_label, lv_color_hex(0x4A90E2), 0);
+        lv_obj_set_style_text_font(title_label, korean_font_20, 0);
+        lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 5);
     }
     
-    // Create message label
-    lv_obj_t *msg_label = lv_label_create(popup);
+    // Create message label with fixed height
+    lv_obj_t *msg_cont = lv_obj_create(window);
+    lv_obj_set_size(msg_cont, 220, 100);
+    lv_obj_align(msg_cont, LV_ALIGN_TOP_MID, 0, 40); // Position below title
+    lv_obj_set_style_bg_opa(msg_cont, LV_OPA_0, 0);
+    lv_obj_set_style_border_width(msg_cont, 0, 0);
+    lv_obj_set_style_pad_all(msg_cont, 10, 0);
+    
+    lv_obj_t *msg_label = lv_label_create(msg_cont);
     if (msg_label) {
         lv_label_set_text(msg_label, message);
         lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
         lv_obj_set_style_text_font(msg_label, korean_font_16, 0);
-        lv_obj_align(msg_label, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_align(msg_label, LV_ALIGN_TOP_LEFT, 0, 0);
         lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
-        lv_obj_set_width(msg_label, 250);
+        lv_obj_set_width(msg_label, 200);
     }
     
-    return popup;
+    // Create close button - positioned at bottom of dynamic window
+    lv_obj_t *close_btn = lv_button_create(window);
+    lv_obj_set_size(close_btn, 100, 35);
+    lv_obj_align(close_btn, LV_ALIGN_BOTTOM_MID, 0, -15);
+    lv_obj_set_style_bg_color(close_btn, lv_color_hex(0x4A90E2), 0);
+    lv_obj_set_style_radius(close_btn, 8, 0);
+    
+    lv_obj_t *close_label = lv_label_create(close_btn);
+    lv_label_set_text(close_label, "닫기");
+    lv_obj_set_style_text_color(close_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(close_label, korean_font_16, 0);
+    lv_obj_center(close_label);
+    
+    lv_obj_add_event_cb(close_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
+    
+    return window;
 }
 
-// Enter button handler - show result popup then clear
+// Enter button handler - show result window then clear
 static void on_enter_clicked(lv_event_t *e) {
     (void)e;
     
@@ -158,24 +183,18 @@ static void on_enter_clicked(lv_event_t *e) {
     // Get current text
     const char *text = lv_textarea_get_text(app_widgets.text_area);
     
-    // Create popup based on content
+    // Create window based on content
     if (text == NULL || text[0] == '\0') {
-        // If buffer is empty, show a warning popup
-        active_mbox = create_safe_popup("주의!!!", "입력된 내용이 없습니다.");
+        // If buffer is empty, show a warning window
+        active_mbox = create_result_window("주의!!!", "입력된 내용이 없습니다.");
     } else {
-        // Create popup with input result
-        active_mbox = create_safe_popup("입력 결과", text);
+        // Create window with input result
+        active_mbox = create_result_window("입력 결과", text);
         
         // Clear text (preserve mode)
         chunjiin_init(&app_widgets.state);
         app_widgets.state.now_mode = current_mode;
         lv_textarea_set_text(app_widgets.text_area, "");
-    }
-    
-    // Auto-dismiss popup after 3 seconds
-    if (active_mbox) {
-        lv_timer_t *timer = lv_timer_create(popup_timer_cb, 3000, NULL);
-        lv_timer_set_repeat_count(timer, 1);
     }
 }
 
