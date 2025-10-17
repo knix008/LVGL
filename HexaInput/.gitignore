@@ -1,0 +1,149 @@
+# Executable
+hexinput
+
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# LVGL build directory
+lvgl/
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Core dumps
+core
+core.*
+*.core
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-*
+.project
+.cproject
+.settings/
+
+# Build directories
+build/
+Build/
+out/
+bin/
+obj/
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Note: We use a custom Makefile for this project, so don't ignore it
+# If using CMake, uncomment the line below:
+# Makefile
+
+# Tags
+tags
+TAGS
+.tags
+.TAGS
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# System Files (macOS)
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# System Files (Windows)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# System Files (Linux)
+.directory
+.Trash-*
+
+# Archives (uncomment if you don't want to track)
+# *.zip
+# *.tar.gz
+# *.rar
+
+# Dependencies (if using package managers)
+node_modules/
+vendor/
+
+# Generated documentation
+docs/_build/
+html/
+latex/
+
+# Valgrind output
+vgcore.*
+*.valgrind
+
+# GDB history
+.gdb_history
+
+# Profiling data
+gmon.out
+*.gcov
+*.gcda
+*.gcno
+
