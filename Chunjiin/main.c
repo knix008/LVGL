@@ -319,7 +319,7 @@ void create_ui(void) {
     lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_STRETCH, 0, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
-    lv_label_set_text(mode_label, "모드");
+    lv_label_set_text(mode_label, "한/영/숫/특");
     lv_obj_set_style_text_font(mode_label, korean_font_14, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
@@ -328,7 +328,7 @@ void create_ui(void) {
     lv_obj_set_grid_cell(app_widgets.clear_button, LV_GRID_ALIGN_STRETCH, 1, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
-    lv_label_set_text(clear_label, "지우기");
+    lv_label_set_text(clear_label, "Clear");
     lv_obj_set_style_text_font(clear_label, korean_font_14, 0);
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
@@ -337,14 +337,14 @@ void create_ui(void) {
     lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_STRETCH, 2, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
-    lv_label_set_text(enter_label, "엔터");
+    lv_label_set_text(enter_label, "Enter");
     lv_obj_set_style_text_font(enter_label, korean_font_14, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(app_widgets.enter_button, on_enter_clicked, LV_EVENT_CLICKED, NULL);
 
     // Info label
     lv_obj_t *info_label = lv_label_create(main_cont);
-    lv_label_set_text(info_label, "천지인 한글 입력 방식");
+    lv_label_set_text(info_label, "천지인 한글/영어/숫자/특수키 입력 방식");
     lv_obj_set_style_text_font(info_label, korean_font_12, 0);
 }
 
