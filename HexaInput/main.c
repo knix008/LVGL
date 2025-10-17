@@ -17,9 +17,10 @@ typedef struct {
     lv_font_t *font_10;  // FreeType font 10pt
     lv_font_t *font_14;  // FreeType font 14pt
     lv_font_t *font_16;  // FreeType font 16pt
+    lv_font_t *font_20;  // FreeType font 20pt
 } AppState;
 
-static AppState app_state = {NULL, NULL, NULL, {{0}, 0}, NULL, NULL, NULL};
+static AppState app_state = {NULL, NULL, NULL, {{0}, 0}, NULL, NULL, NULL, NULL};
 
 // Static storage for hex digit characters
 static char hex_digits[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
@@ -160,8 +161,8 @@ static void create_gui(void) {
     // Title label
     lv_obj_t *title = lv_label_create(main_cont);
     lv_label_set_text(title, "MAC Address Input");
-    if (app_state.font_14) {
-        lv_obj_set_style_text_font(title, app_state.font_14, 0);
+    if (app_state.font_20) {
+        lv_obj_set_style_text_font(title, app_state.font_20, 0);
     }
 
     // Status label
@@ -288,7 +289,7 @@ static int init_fonts(void) {
         return -1;
     }
 
-    // Load font 14pt for title
+    // Load font 14pt (reserved for future use)
     app_state.font_14 = lv_freetype_font_create("assets/NanumGothicCoding.ttf",
                                                  LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                  14,
@@ -305,6 +306,16 @@ static int init_fonts(void) {
                                                  LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.font_16) {
         fprintf(stderr, "Error: Failed to load font 16pt\n");
+        return -1;
+    }
+
+    // Load font 20pt for title
+    app_state.font_20 = lv_freetype_font_create("assets/NanumGothicCoding.ttf",
+                                                 LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                 20,
+                                                 LV_FREETYPE_FONT_STYLE_NORMAL);
+    if (!app_state.font_20) {
+        fprintf(stderr, "Error: Failed to load font 20pt\n");
         return -1;
     }
 
