@@ -32,7 +32,7 @@ clean:
 
 # Clean everything including LVGL build artifacts
 clean-all: clean
-	rm -rf lvgl/build
+	rm -rf lvgl
 
 install: $(TARGET)
 	@echo "Installing $(TARGET)..."
