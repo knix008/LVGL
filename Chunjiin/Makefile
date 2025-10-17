@@ -2,23 +2,24 @@
 
 CC = gcc
 CFLAGS = -Wall -Wextra -O2 -I. -Ilvgl $(shell pkg-config --cflags freetype2)
-LDFLAGS = -lSDL2 -lpthread -lm $(shell pkg-config --libs freetype2)
+LDFLAGS = -Llvgl/lib -llvgl -lSDL2 -lpthread -lm $(shell pkg-config --libs freetype2)
 TARGET = chunjiin
 SOURCES = main.c chunjiin.c chunjiin_hangul.c
 
-# LVGL source files
-LVGL_DIR = lvgl
-
-# Core LVGL sources (includes built-in SDL driver)
-LVGL_SOURCES = $(shell find $(LVGL_DIR)/src -name "*.c")
-
-# All sources
-ALL_SOURCES = $(SOURCES) $(LVGL_SOURCES)
-OBJECTS = $(ALL_SOURCES:.c=.o)
+# Application object files only
+OBJECTS = $(SOURCES:.c=.o)
 
 .PHONY: all clean install run setup help
 
-all: $(TARGET)
+all: check_lvgl $(TARGET)
+
+# Check if LVGL library exists
+check_lvgl:
+	@if [ ! -f "lvgl/lib/liblvgl.a" ]; then \
+		echo "Error: LVGL library (lvgl/lib/liblvgl.a) not found!"; \
+		echo "Please run './setup.sh' first to build LVGL library."; \
+		exit 1; \
+	fi
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
@@ -28,7 +29,10 @@ $(TARGET): $(OBJECTS)
 
 clean:
 	rm -f $(OBJECTS) $(TARGET) $(TARGET).exe
-	find . -name "*.o" -type f -delete
+
+# Clean everything including LVGL build artifacts
+clean-all: clean
+	rm -rf lvgl/build
 
 install: $(TARGET)
 	@echo "Installing $(TARGET)..."
@@ -58,13 +62,19 @@ help:
 	@echo "Chunjiin Korean Input Method - Makefile (LVGL)"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make setup    - Clone LVGL repository"
-	@echo "  make          - Build the application"
-	@echo "  make clean    - Remove build files"
+	@echo "  ./setup.sh    - Complete setup (clone LVGL, build library, build app)"
+	@echo "  make          - Build the application (requires liblvgl.a)"
+	@echo "  make clean    - Remove application build files"
+	@echo "  make clean-all- Remove all build files including LVGL library"
 	@echo "  make run      - Build and run the application"
 	@echo "  make install  - Install to /usr/local/bin"
 	@echo "  make help     - Show this help message"
 	@echo ""
+	@echo "Build process:"
+	@echo "  1. Run './setup.sh' once to setup LVGL and build the library"
+	@echo "  2. Use 'make' for subsequent builds (much faster!)"
+	@echo ""
 	@echo "Requirements:"
 	@echo "  - SDL2 development libraries (libsdl2-dev)"
-	@echo "  - LVGL v9.2+ with built-in SDL driver (will be cloned by 'make setup')"
+	@echo "  - FreeType development libraries (libfreetype6-dev)"
+	@echo "  - LVGL v9.2+ (cloned and built by setup.sh)"

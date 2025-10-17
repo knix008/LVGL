@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <locale.h>
+#include <string.h>
 #include "chunjiin.h"
 
 typedef struct {
@@ -24,6 +25,7 @@ typedef struct {
 } AppWidgets;
 
 static AppWidgets app_widgets;
+static lv_obj_t *active_mbox = NULL; // Track active message box
 static lv_font_t *korean_font_16 = NULL;
 static lv_font_t *korean_font_20 = NULL;
 
@@ -62,15 +64,15 @@ static char* wchar_to_utf8(const wchar_t *wstr, size_t max_len) {
 // Button click event handler
 static void on_button_clicked(lv_event_t *e) {
     int button_num = (int)(intptr_t)lv_event_get_user_data(e);
-    printf("Button clicked: %d, Mode: %d\n", button_num, app_widgets.state.now_mode);
+    //printf("Button clicked: %d, Mode: %d\n", button_num, app_widgets.state.now_mode);
 
     // Process input
     chunjiin_process_input(&app_widgets.state, button_num);
 
     // Update text area
     char *utf8_text = wchar_to_utf8(app_widgets.state.text_buffer, MAX_TEXT_LEN);
-    printf("Text buffer after input: %ls\n", app_widgets.state.text_buffer);
-    printf("UTF-8 text: %s\n", utf8_text);
+    //printf("Text buffer after input: %ls\n", app_widgets.state.text_buffer);
+    //printf("UTF-8 text: %s\n", utf8_text);
     lv_textarea_set_text(app_widgets.text_area, utf8_text);
 }
 
@@ -94,51 +96,117 @@ static void on_mode_button_clicked(lv_event_t *e) {
 // Clear button handler
 static void on_clear_clicked(lv_event_t *e) {
     (void)e;
+    
+    // Defensive: check if text area is valid
+    if (!app_widgets.text_area) {
+        printf("Error: Text area not initialized\n");
+        return;
+    }
+    
     // Save current mode
     InputMode current_mode = app_widgets.state.now_mode;
 
     // Clear text (preserve mode)
     chunjiin_init(&app_widgets.state);
     app_widgets.state.now_mode = current_mode;
+    app_widgets.state.cursor_pos = 0;
+    memset(app_widgets.state.text_buffer, 0, sizeof(app_widgets.state.text_buffer));
     lv_textarea_set_text(app_widgets.text_area, "");
+    
+    // Defensive: reset message box pointer
+    if (active_mbox) {
+        if (lv_obj_is_valid(active_mbox)) {
+            lv_obj_del(active_mbox);
+        }
+        active_mbox = NULL;
+    }
+}
+
+// Timer callback to auto-dismiss popup
+static void popup_timer_cb(lv_timer_t *timer) {
+    if (active_mbox && lv_obj_is_valid(active_mbox)) {
+        lv_obj_del(active_mbox);
+        active_mbox = NULL;
+    }
+    lv_timer_del(timer);
+}
+
+// Safe popup creation function
+static lv_obj_t* create_safe_popup(const char* title, const char* message) {
+    // Create a container for the popup
+    lv_obj_t *popup = lv_obj_create(lv_screen_active());
+    if (!popup) return NULL;
+    
+    // Set popup properties
+    lv_obj_set_size(popup, 300, 150);
+    lv_obj_center(popup);
+    lv_obj_set_style_bg_opa(popup, LV_OPA_90, 0);
+    lv_obj_set_style_bg_color(popup, lv_color_black(), 0);
+    lv_obj_set_style_border_width(popup, 2, 0);
+    lv_obj_set_style_border_color(popup, lv_color_white(), 0);
+    lv_obj_set_style_radius(popup, 10, 0);
+    lv_obj_set_style_pad_all(popup, 15, 0);
+    
+    // Create title label
+    lv_obj_t *title_label = lv_label_create(popup);
+    if (title_label) {
+        lv_label_set_text(title_label, title);
+        lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
+        lv_obj_set_style_text_font(title_label, korean_font_16, 0);
+        lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
+    }
+    
+    // Create message label
+    lv_obj_t *msg_label = lv_label_create(popup);
+    if (msg_label) {
+        lv_label_set_text(msg_label, message);
+        lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
+        lv_obj_set_style_text_font(msg_label, korean_font_16, 0);
+        lv_obj_align(msg_label, LV_ALIGN_CENTER, 0, 0);
+        lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(msg_label, 250);
+    }
+    
+    return popup;
 }
 
 // Enter button handler - show result popup then clear
 static void on_enter_clicked(lv_event_t *e) {
     (void)e;
+    
     // Save current mode
     InputMode current_mode = app_widgets.state.now_mode;
 
-    // Get current text and make a copy
-    const char *text = lv_textarea_get_text(app_widgets.text_area);
-    static char text_copy[MAX_TEXT_LEN * 4];
-    snprintf(text_copy, sizeof(text_copy), "%s", text);
-
-    // Create message box
-    lv_obj_t *mbox = lv_msgbox_create(NULL);
-    lv_obj_set_style_text_font(mbox, korean_font_16, 0);
-
-    // Add title and set Korean font
-    lv_obj_t *title = lv_msgbox_add_title(mbox, "입력 결과");
-    lv_obj_set_style_text_font(title, korean_font_20, 0);
-
-    // Add text content and set Korean font
-    lv_obj_t *content = lv_msgbox_add_text(mbox, text_copy);
-    lv_obj_set_style_text_font(content, korean_font_20, 0);
-
-    // Add close button with Korean text
-    lv_obj_t *close_btn = lv_msgbox_add_close_button(mbox);
-    // Get the label inside the close button and set Korean font
-    lv_obj_t *close_label = lv_obj_get_child(close_btn, 0);
-    if (close_label) {
-        lv_label_set_text(close_label, "확인");
-        lv_obj_set_style_text_font(close_label, korean_font_16, 0);
+    // Clean up any existing message box first
+    if (active_mbox) {
+        if (lv_obj_is_valid(active_mbox)) {
+            lv_obj_del(active_mbox);
+        }
+        active_mbox = NULL;
     }
 
-    // Clear text (preserve mode)
-    chunjiin_init(&app_widgets.state);
-    app_widgets.state.now_mode = current_mode;
-    lv_textarea_set_text(app_widgets.text_area, "");
+    // Get current text
+    const char *text = lv_textarea_get_text(app_widgets.text_area);
+    
+    // Create popup based on content
+    if (text == NULL || text[0] == '\0') {
+        // If buffer is empty, show a warning popup
+        active_mbox = create_safe_popup("경고", "입력된 내용이 없습니다.");
+    } else {
+        // Create popup with input result
+        active_mbox = create_safe_popup("입력 결과", text);
+        
+        // Clear text (preserve mode)
+        chunjiin_init(&app_widgets.state);
+        app_widgets.state.now_mode = current_mode;
+        lv_textarea_set_text(app_widgets.text_area, "");
+    }
+    
+    // Auto-dismiss popup after 3 seconds
+    if (active_mbox) {
+        lv_timer_t *timer = lv_timer_create(popup_timer_cb, 3000, NULL);
+        lv_timer_set_repeat_count(timer, 1);
+    }
 }
 
 void create_ui(void) {
@@ -276,7 +344,7 @@ void create_ui(void) {
 
     // Info label
     lv_obj_t *info_label = lv_label_create(main_cont);
-    lv_label_set_text(info_label, "천지인 한글 입력 방식 - MIT License");
+    lv_label_set_text(info_label, "천지인 한글 입력 방식");
     lv_obj_set_style_text_font(info_label, korean_font_12, 0);
 }
 

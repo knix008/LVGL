@@ -121,8 +121,40 @@ fi
 
 echo ""
 
-# 4. Build the application
-echo "Step 4: Building the application..."
+# 4. Build LVGL library
+echo "Step 4: Building LVGL library..."
+echo ""
+
+if [ -f "lvgl/lib/liblvgl.a" ]; then
+    print_info "LVGL library already exists, skipping build"
+else
+    print_info "Building LVGL static library..."
+    
+    # Create build and lib directories for LVGL
+    mkdir -p lvgl/build
+    mkdir -p lvgl/lib
+    
+    # Find all LVGL source files
+    LVGL_SOURCES=$(find lvgl/src -name "*.c")
+    
+    print_info "Compiling LVGL sources..."
+    for src in $LVGL_SOURCES; do
+        obj="lvgl/build/$(basename ${src%.c}.o)"
+        if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
+            echo "  Compiling $src"
+            gcc -Wall -Wextra -O2 -I. -Ilvgl $(pkg-config --cflags freetype2) -c "$src" -o "$obj"
+        fi
+    done
+    
+    print_info "Creating static library..."
+    ar rcs lvgl/lib/liblvgl.a lvgl/build/*.o
+    print_success "LVGL library built: lvgl/lib/liblvgl.a"
+fi
+
+echo ""
+
+# 5. Build the application
+echo "Step 5: Building the application..."
 echo ""
 
 print_info "The application uses FreeType to load TrueType fonts at runtime"
@@ -141,13 +173,13 @@ else
     echo "Common issues:"
     echo "  - Make sure lv_conf.h is in the project root"
     echo "  - Check that SDL2 development files are installed"
-    echo "  - Verify LVGL and lv_drivers were cloned correctly"
+    echo "  - Verify LVGL library was built correctly"
     exit 1
 fi
 
 echo ""
 
-# 5. Summary
+# 6. Summary
 echo "========================================="
 echo "✓ Setup Complete!"
 echo "========================================="

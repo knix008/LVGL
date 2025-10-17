@@ -50,6 +50,7 @@ This will automatically:
 - Check for required system packages
 - Install missing dependencies (with your permission)
 - Clone LVGL v9.2
+- Build LVGL static library (one-time process)
 - Build the application
 - Optionally run it
 
@@ -60,15 +61,31 @@ This will automatically:
    git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
    ```
 
-2. **Build the Application**
+2. **Build LVGL Library** (one-time setup)
+   ```bash
+   # This creates lvgl/lib/liblvgl.a
+   ./setup.sh
+   ```
+
+3. **Build the Application** (fast subsequent builds)
    ```bash
    make
    ```
 
-3. **Run the Application**
+4. **Run the Application**
    ```bash
    ./chunjiin
    ```
+
+### Build Process
+
+The project uses an optimized build system:
+
+- **First time setup**: `./setup.sh` (builds LVGL library + application)
+- **Subsequent builds**: `make` (very fast, ~0.003 seconds)
+- **Clean build**: `make clean-all` (removes all build artifacts)
+
+The LVGL library is built once into `lvgl/lib/liblvgl.a`, making subsequent application builds extremely fast.
 
 ## Configuration
 
@@ -101,7 +118,7 @@ Chunjiin/
 ├── chunjiin_hangul.c        # Hangul character composition
 ├── chunjiin.h               # Header file with type definitions
 ├── lv_conf.h                # LVGL configuration (FreeType enabled)
-├── Makefile                 # Build system with LVGL integration
+├── Makefile                 # Optimized build system
 ├── setup.sh                 # Automated setup script
 ├── README.md                # This file
 ├── assets/                  # TrueType font files
@@ -109,6 +126,9 @@ Chunjiin/
 │   ├── NanumGothic-Bold.ttf
 │   └── NanumGothic-ExtraBold.ttf
 └── lvgl/                    # LVGL library (cloned during setup)
+    ├── src/                 # LVGL source code
+    ├── build/               # LVGL object files (*.o)
+    └── lib/                 # LVGL static library (liblvgl.a)
 ```
 
 ## How It Works
@@ -130,6 +150,16 @@ The application displays **incomplete Hangul characters** as you type:
 - Adding final consonant: `각` (complete syllable)
 
 This is achieved by using **Hangul Compatibility Jamo** (U+3130-U+318F) for standalone display, and **Composed Hangul Syllables** (U+AC00-U+D7AF) for complete characters.
+
+### Popup Functionality
+
+The application features a robust popup system that displays input results:
+
+- **Safe Implementation**: Uses custom container objects instead of problematic message box APIs
+- **Korean Text Support**: Displays Korean text with proper font rendering
+- **Auto-dismiss**: Popups automatically disappear after 3 seconds
+- **Error Handling**: Shows appropriate messages for empty input
+- **No Segmentation Faults**: Defensive programming prevents crashes
 
 ## Button Layout
 
@@ -166,16 +196,25 @@ The application maintains the same 3x5 grid layout as the GTK version:
 ### UI Features
 - ✓ **Beautiful Korean font rendering** using NanumGothic TrueType fonts
 - ✓ **Scrollable text area** for long text input
-- ✓ **Result popup dialog** when pressing Enter
+- ✓ **Safe popup dialogs** with Korean text support (no segmentation faults)
+- ✓ **Auto-dismissing popups** (3-second timeout)
 - ✓ **Mode switching button** to cycle through input modes
 - ✓ **Clear button** to reset input
 - ✓ **320×640 portrait display** optimized for mobile-style layouts
+- ✓ **Robust error handling** with defensive programming
 
 ## Troubleshooting
 
 ### Build Errors
 
-1. **Missing LVGL directory:**
+1. **Missing LVGL library:**
+   ```bash
+   Error: LVGL library (lvgl/lib/liblvgl.a) not found!
+   Please run './setup.sh' first to build LVGL library.
+   ```
+   **Solution:** Run `./setup.sh` to build the LVGL library first.
+
+2. **Missing LVGL directory:**
    ```bash
    git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
    ```
@@ -184,28 +223,30 @@ The application maintains the same 3x5 grid layout as the GTK version:
    ./setup.sh
    ```
 
-2. **SDL2 not found:**
+3. **SDL2 not found:**
    ```bash
    sudo apt-get install libsdl2-dev
    pkg-config --cflags --libs sdl2
    ```
 
-3. **FreeType not found:**
+4. **FreeType not found:**
    ```bash
    sudo apt-get install libfreetype6-dev
    pkg-config --cflags --libs freetype2
    ```
 
-4. **Compilation errors:** 
+5. **Compilation errors:** 
    - Make sure `lv_conf.h` is in the project root
    - Verify LVGL was cloned to `lvgl/` directory
    - Check that all `.ttf` font files are in `assets/` directory
+   - Run `make clean-all` and `./setup.sh` to rebuild everything
 
 ### Runtime Issues
 
 1. **Application won't start / Segmentation fault:**
    - Check that font files exist in `assets/` directory
    - Verify FreeType libraries are installed: `ldconfig -p | grep freetype`
+   - The application now uses safe popup implementation to avoid segfaults
 
 2. **Black screen or window doesn't appear:**
    - Check SDL2 installation: `pkg-config --modversion sdl2`
@@ -219,6 +260,11 @@ The application maintains the same 3x5 grid layout as the GTK version:
 4. **Application crashes or memory errors:**
    - Increase `LV_MEM_SIZE` in `lv_conf.h` (currently 256KB)
    - Check available system memory
+
+5. **Popup issues:**
+   - The application uses safe popup implementation that avoids segmentation faults
+   - Popups auto-dismiss after 3 seconds
+   - If popups don't appear, check console output for font loading errors
 
 ## Technical Details
 
@@ -256,21 +302,41 @@ The application maintains the same 3x5 grid layout as the GTK version:
 git clone https://github.com/yourusername/Chunjiin.git
 cd Chunjiin
 
-# Run setup
+# First time setup (builds LVGL library + application)
 ./setup.sh
 
-# Or manually:
-git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
+# Subsequent builds (very fast)
 make
+
+# Clean everything
+make clean-all
+
+# Run the application
 ./chunjiin
 ```
 
+### Build System
+
+The project uses an optimized two-stage build process:
+
+1. **LVGL Library Build** (one-time, ~30 seconds):
+   - Compiles all LVGL sources into `lvgl/build/`
+   - Creates static library `lvgl/lib/liblvgl.a`
+   - Handled by `setup.sh`
+
+2. **Application Build** (fast, ~0.003 seconds):
+   - Compiles only application sources
+   - Links against pre-built LVGL library
+   - Handled by `make`
+
 ### Code Structure
 
-- `main.c` - LVGL GUI, event handlers, font initialization
+- `main.c` - LVGL GUI, event handlers, font initialization, safe popup implementation
 - `chunjiin.c` - Core input processing, mode management
 - `chunjiin_hangul.c` - Korean character composition algorithms
 - `chunjiin.h` - Type definitions and function declarations
+- `setup.sh` - Automated setup script with LVGL library building
+- `Makefile` - Optimized build system with library linking
 
 ## References
 

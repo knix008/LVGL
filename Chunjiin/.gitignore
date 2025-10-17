@@ -140,5 +140,5 @@ callgrind.out.*
 test_output/
 *.test
 
-# LVGL directory
+# LVGL directory and build artifacts
 lvgl/
