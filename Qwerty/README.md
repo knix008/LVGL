@@ -46,11 +46,21 @@ This will:
 make
 ```
 
-Or for a clean build:
+For incremental builds (recommended):
 ```bash
-make clean
-make -j$(nproc)
+make  # Only compiles changed files
 ```
+
+For a complete clean build:
+```bash
+make clean  # Removes all object files including LVGL
+make        # Full rebuild
+```
+
+The build system is optimized for development:
+- **First build**: Compiles everything (takes 2-3 minutes)
+- **Subsequent builds**: Only recompiles changed files (fast)
+- **Clean build**: Removes all object files for fresh start
 
 ### 3. Run the Application
 
@@ -82,13 +92,27 @@ Row 4: [한/영] [Space] [Clear]
 ### Controls
 
 - **한/영 (Han/Yeong)**: Toggle between Korean and English input modes
+  - Shows "한글" when in English mode, "English" when in Korean mode
+  - Orange background color for easy identification
 - **Shift**: Toggle shift state (stays on until toggled off)
 - **Caps Lock**: Toggle caps lock (stays on until toggled off)
 - **← (Backspace)**: Delete last character (UTF-8 aware)
 - **Enter**: Show input result in popup dialog and clear text area
+  - Cyan background color for easy identification
 - **Space**: Insert space character
-- **Tab**: Insert tab character
+- **Tab**: Insert 4 space characters (visible indentation)
 - **Clear**: Clear all text
+  - Orange background color for easy identification
+
+### Button Color Scheme
+
+The application uses color-coded buttons for easy identification:
+
+- **🟠 Orange**: Function buttons (Language toggle, Clear)
+- **🔵 Cyan**: Action buttons (Enter)
+- **⚪ Default**: Regular keys (letters, numbers, symbols)
+
+This color scheme helps users quickly identify special function buttons versus regular input keys.
 
 ### Korean Input
 
@@ -129,6 +153,8 @@ Qwerty/
 ├── Makefile            # Build configuration
 ├── setup.sh            # Environment setup script (executable)
 ├── assets/             # TrueType font files
+│   ├── NanumGothicCoding.ttf
+│   ├── NanumGothicCoding-Bold.ttf
 │   ├── NanumGothic-Regular.ttf
 │   ├── NanumGothic-Bold.ttf
 │   └── NanumGothic-ExtraBold.ttf
@@ -162,14 +188,35 @@ To change the display resolution, edit these constants in `main.c`:
 
 ### Font Configuration
 
-The application uses **FreeType** to render TrueType fonts directly from the `assets/` directory:
+The application uses **NanumGothicCoding** as the default font with **FreeType** for direct TrueType rendering:
 
-- **Status Label**: NanumGothic-Regular 12px
-- **Text Area**: NanumGothic-Bold 16px (for backtick visibility)
-- **Keyboard Buttons**: NanumGothic-Regular 16px
-- **Backtick/Tilde Button**: NanumGothic-Bold 20px (special handling)
+- **Status Label**: NanumGothicCoding 12px (normal style)
+- **Text Area**: NanumGothicCoding 16px (normal style)
+- **Keyboard Buttons**: NanumGothicCoding 16px (normal style)
+- **Special Characters**: NanumGothicCoding 20px (normal style, for better visibility)
 
-**No font conversion needed!** FreeType renders `.ttf` files at runtime.
+**Key Features:**
+- **No font conversion needed!** FreeType renders `.ttf` files at runtime
+- **Consistent appearance**: All text uses the same coding font family
+- **Normal style**: All fonts use regular weight (not bold) for better readability
+- **Korean + ASCII support**: NanumGothicCoding includes both Korean and English characters
+
+## Recent Updates
+
+### Version Improvements
+
+**Latest Updates:**
+- **Color-coded buttons**: Orange for function buttons, cyan for action buttons
+- **Smart language button**: Shows target language (displays "한글" in English mode, "English" in Korean mode)
+- **Improved tab behavior**: Inserts 4 visible spaces instead of invisible tab character
+- **Optimized build system**: Faster incremental builds, proper clean functionality
+- **Consistent font usage**: NanumGothicCoding font family throughout the application
+
+**User Experience Enhancements:**
+- **Visual feedback**: Color-coded buttons make functions easily identifiable
+- **Intuitive language switching**: Button text shows what language you'll switch TO
+- **Visible indentation**: Tab key provides clear visual spacing
+- **Faster development**: Build system only recompiles changed files
 
 ## Building from Scratch
 
@@ -225,15 +272,14 @@ sudo apt-get install libfreetype-dev
 ### Korean Characters Not Displaying
 
 The application uses fonts from `assets/` directory. Verify:
-1. `assets/NanumGothic-Regular.ttf` exists
-2. `assets/NanumGothic-Bold.ttf` exists
-3. Font files are not corrupted
+1. `assets/NanumGothicCoding.ttf` exists
+2. Font files are not corrupted
 
-### Backtick (`` ` ``) Not Visible
+### Special Characters Not Visible
 
-The backtick character has zero dimensions in NanumGothic-Regular. Solutions:
-1. **Current**: Uses NanumGothic-Bold (visible at all sizes)
-2. **Alternative**: Display substitute character (implemented with `'`)
+The application now uses NanumGothicCoding font which provides better visibility for special characters like backtick (`` ` ``) and tilde (`~`). If characters still appear invisible:
+1. **Current**: Uses larger font size (20px) for special characters
+2. **Alternative**: Check font file integrity
 
 ### Compilation Errors
 
@@ -241,6 +287,17 @@ The backtick character has zero dimensions in NanumGothic-Regular. Solutions:
 2. Check that `lvgl/` directory contains LVGL v9.x
 3. Run `make clean` and then `make`
 4. Check compiler flags support C11 standard
+
+### Build System Issues
+
+**If builds are slow:**
+- The first build compiles all LVGL files (normal)
+- Subsequent builds should be fast (only changed files)
+- Use `make clean` only when needed for fresh start
+
+**If object files persist:**
+- Run `make clean` to remove all object files including LVGL
+- The improved clean target removes both application and library object files
 
 ## Korean Composition Details
 
@@ -274,16 +331,31 @@ lv_obj_set_size(btn, width, 39);  // Change height here
 create_key_button(row, "a", callback, data, 38);  // Change width
 ```
 
+### Button Color Customization
+
+To change button colors, modify the styling in `create_gui()`:
+
+```c
+// Orange color for function buttons
+lv_obj_set_style_bg_color(app_state.lang_button, lv_color_hex(0xFF8C00), 0);
+
+// Cyan color for action buttons  
+lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x00FFFF), 0);
+
+// Clear button (orange)
+lv_obj_set_style_bg_color(app_state.clear_button, lv_color_hex(0xFF8C00), 0);
+```
+
 ### Font Size Customization
 
 Edit `init_fonts()` function in `main.c`:
 
 ```c
 app_state.korean_font_20 = lv_freetype_font_create(
-    "assets/NanumGothic-Bold.ttf",
+    "assets/NanumGothicCoding.ttf",
     LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
     16,  // <- Change size here
-    LV_FREETYPE_FONT_STYLE_BOLD
+    LV_FREETYPE_FONT_STYLE_NORMAL
 );
 ```
 

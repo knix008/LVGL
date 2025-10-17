@@ -76,7 +76,7 @@ $(LVGL_DIR_LOCAL)/src/%.o: $(LVGL_DIR_LOCAL)/src/%.c
 endif
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) main.o qwerty.o
 ifeq ($(USE_LOCAL_LVGL), 1)
 	@find $(LVGL_DIR_LOCAL)/src -name "*.o" -delete 2>/dev/null || true
 endif

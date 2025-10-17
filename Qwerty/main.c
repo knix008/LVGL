@@ -13,6 +13,8 @@ typedef struct {
     lv_obj_t *shift_buttons[2];  // Left and right shift
     lv_obj_t *caps_button;
     lv_obj_t *lang_button;
+    lv_obj_t *clear_button;
+    lv_obj_t *enter_button;
     QwertyState qwerty;
     lv_font_t *korean_font_14;  // FreeType font for status
     lv_font_t *korean_font_20;  // FreeType font for text area
@@ -20,7 +22,7 @@ typedef struct {
     lv_font_t *korean_font_small_20;  // Smaller font for ASCII symbols with better visibility
 } AppState;
 
-static AppState app_state = {NULL, NULL, NULL, {NULL, NULL}, NULL, NULL, {LANG_ENGLISH, 0, 0, {0, 0, 0, 0}}, NULL, NULL, NULL, NULL};
+static AppState app_state = {NULL, NULL, NULL, {NULL, NULL}, NULL, NULL, NULL, NULL, {LANG_ENGLISH, 0, 0, {0, 0, 0, 0}}, NULL, NULL, NULL, NULL};
 
 // Global storage for key buttons to update labels
 static lv_obj_t *key_buttons[50];
@@ -40,7 +42,7 @@ static void update_status(void) {
     char status_text[128];
     snprintf(status_text, sizeof(status_text),
         "Mode: %s | Shift: %s | Caps: %s",
-        app_state.qwerty.current_language == LANG_ENGLISH ? "English" : "한국어",
+        app_state.qwerty.current_language == LANG_ENGLISH ? "ENG" : "한국어",
         app_state.qwerty.shift_pressed ? "ON" : "OFF",
         app_state.qwerty.caps_lock ? "ON" : "OFF"
     );
@@ -160,7 +162,7 @@ static void on_enter_clicked(lv_event_t *e) {
 // Tab callback
 static void on_tab_clicked(lv_event_t *e) {
     (void)e;
-    insert_text("\t");
+    insert_text("    ");  // Insert 4 spaces instead of tab character
     qwerty_reset_composition(&app_state.qwerty);
 }
 
@@ -242,7 +244,7 @@ static void update_button_labels(void) {
         if (label_obj) {
             lv_label_set_text(label_obj, label);
             
-            // Check if needs larger Bold font for visibility
+            // Check if needs larger font for visibility
             int needs_larger = (strcmp(label, "`") == 0 || strcmp(label, "~") == 0);
             
             // Ensure style is reapplied after text change
@@ -278,6 +280,26 @@ static void update_button_labels(void) {
             lv_obj_set_style_bg_color(app_state.caps_button, 
                                       lv_palette_main(LV_PALETTE_GREY), 0);
         }
+    }
+
+    // Update language button appearance and text
+    if (app_state.lang_button) {
+        // Set text based on current language (show opposite language)
+        lv_obj_t *label_obj = lv_obj_get_child(app_state.lang_button, 0);
+        if (label_obj) {
+            if (app_state.qwerty.current_language == LANG_ENGLISH) {
+                lv_label_set_text(label_obj, "한글");
+            } else {
+                lv_label_set_text(label_obj, "ENG");
+            }
+            lv_obj_set_style_text_font(label_obj, app_state.korean_font_16, 0);
+            lv_obj_set_style_text_color(label_obj, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_invalidate(label_obj);
+        }
+        
+        // Always set orange color
+        lv_obj_set_style_bg_color(app_state.lang_button, 
+                                  lv_color_hex(0xFF8C00), 0);  // Orange color
     }
 }
 
@@ -386,7 +408,15 @@ static void create_gui(void) {
         num_key_buttons++;
     }
 
-    create_key_button(row, "Enter", on_enter_clicked, NULL, 61);  // Reduced from 64
+    // Create Enter button and set it to blue color
+    app_state.enter_button = create_key_button(row, "Enter", on_enter_clicked, NULL, 61);  // Reduced from 64
+    lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x0000FF), 0);  // Blue color
+    
+    // Set Enter button label color to white for better contrast
+    lv_obj_t *enter_label = lv_obj_get_child(app_state.enter_button, 0);
+    if (enter_label) {
+        lv_obj_set_style_text_color(enter_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
 
     // Row 3: ZXCV
     row = lv_obj_create(keyboard_cont);
@@ -420,9 +450,15 @@ static void create_gui(void) {
     lv_obj_set_style_pad_gap(row, 2, 0);
     lv_obj_set_style_border_width(row, 0, 0);
 
-    app_state.lang_button = create_key_button(row, "한/영", on_lang_clicked, NULL, 58);  // Reduced from 61
+    app_state.lang_button = create_key_button(row, "한글", on_lang_clicked, NULL, 58);  // Reduced from 61
+    // Set language button to orange color
+    lv_obj_set_style_bg_color(app_state.lang_button, lv_color_hex(0xFF8C00), 0);  // Orange color
+    
     create_key_button(row, "Space", on_space_clicked, NULL, 343);  // Reduced from 346
-    create_key_button(row, "Clear", on_clear_clicked, NULL, 58);  // Reduced from 61
+    
+    // Create Clear button and set it to orange color
+    app_state.clear_button = create_key_button(row, "Clear", on_clear_clicked, NULL, 58);  // Reduced from 61
+    lv_obj_set_style_bg_color(app_state.clear_button, lv_color_hex(0xFF8C00), 0);  // Orange color
 
     // Initial button state update
     update_button_labels();
@@ -431,45 +467,45 @@ static void create_gui(void) {
 // Initialize FreeType fonts
 static int init_fonts(void) {
     // Initialize FreeType fonts with different sizes from assets directory
-    // Using NanumGothic-Regular.ttf which includes ASCII and Korean characters
+    // Using NanumGothicCoding.ttf as the default font which includes ASCII and Korean characters
     
     // Font for status label (12px)
-    app_state.korean_font_14 = lv_freetype_font_create("assets/NanumGothic-Regular.ttf", 
+    app_state.korean_font_14 = lv_freetype_font_create("assets/NanumGothicCoding.ttf", 
                                                         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                         12, 
                                                         LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.korean_font_14) {
-        fprintf(stderr, "Error: Failed to load font from assets (12px)\n");
+        fprintf(stderr, "Error: Failed to load NanumGothicCoding font from assets (12px)\n");
         return -1;
     }
     
-    // Font for text area (16px) - use Bold for backtick visibility
-    app_state.korean_font_20 = lv_freetype_font_create("assets/NanumGothic-Bold.ttf",
+    // Font for text area (16px) - use coding font for better readability
+    app_state.korean_font_20 = lv_freetype_font_create("assets/NanumGothicCoding.ttf",
                                                         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                         16,
-                                                        LV_FREETYPE_FONT_STYLE_BOLD);
+                                                        LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.korean_font_20) {
-        fprintf(stderr, "Error: Failed to load Bold font from assets (16px)\n");
+        fprintf(stderr, "Error: Failed to load NanumGothicCoding font from assets (16px)\n");
         return -1;
     }
     
-    // Font for keyboard buttons (16px) - larger for better glyph visibility
-    app_state.korean_font_16 = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
+    // Font for keyboard buttons (16px) - coding font for consistent appearance
+    app_state.korean_font_16 = lv_freetype_font_create("assets/NanumGothicCoding.ttf",
                                                         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                         16,
                                                         LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.korean_font_16) {
-        fprintf(stderr, "Error: Failed to load font from assets (16px)\n");
+        fprintf(stderr, "Error: Failed to load NanumGothicCoding font from assets (16px)\n");
         return -1;
     }
     
-    // Larger Regular font for backtick (might be visible at larger size)
-    app_state.korean_font_small_20 = lv_freetype_font_create("assets/NanumGothic-Bold.ttf",
+    // Larger coding font for special characters like backtick
+    app_state.korean_font_small_20 = lv_freetype_font_create("assets/NanumGothicCoding.ttf",
                                                               LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                               20,
-                                                              LV_FREETYPE_FONT_STYLE_BOLD);
+                                                              LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.korean_font_small_20) {
-        fprintf(stderr, "Warning: Failed to load Bold 20px font for backtick\n");
+        fprintf(stderr, "Warning: Failed to load NanumGothicCoding 20px font for special characters\n");
     }
     
     return 0;
