@@ -139,6 +139,8 @@ callgrind.out.*
 # Test files (optional)
 test_output/
 *.test
+test/test_chunjiin
+test/test_chunjiin_extra
 
 # LVGL directory and build artifacts
 lvgl/
