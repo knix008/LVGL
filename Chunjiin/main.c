@@ -191,7 +191,7 @@ static void on_enter_clicked(lv_event_t *e) {
     // Create popup based on content
     if (text == NULL || text[0] == '\0') {
         // If buffer is empty, show a warning popup
-        active_mbox = create_safe_popup("경고", "입력된 내용이 없습니다.");
+        active_mbox = create_safe_popup("주의!!!", "입력된 내용이 없습니다.");
     } else {
         // Create popup with input result
         active_mbox = create_safe_popup("입력 결과", text);
@@ -255,8 +255,8 @@ void create_ui(void) {
 
     // Title label
     lv_obj_t *title_label = lv_label_create(main_cont);
-    lv_label_set_text(title_label, "천지인 한글 입력기");
-    lv_obj_set_style_text_font(title_label, korean_font_20, 0);
+    lv_label_set_text(title_label, "천지인 한글/영어/숫자/특수키 입력기 예제");
+    lv_obj_set_style_text_font(title_label, korean_font_16, 0);
 
     // Text area (scrollable)
     app_widgets.text_area = lv_textarea_create(main_cont);
@@ -272,7 +272,7 @@ void create_ui(void) {
 
     // Button grid container
     lv_obj_t *button_grid = lv_obj_create(main_cont);
-    lv_obj_set_size(button_grid, 280, 250);
+    lv_obj_set_size(button_grid, 275, 250);
     lv_obj_set_style_pad_all(button_grid, 3, 0);
     lv_obj_set_style_pad_row(button_grid, 3, 0);
     lv_obj_set_style_pad_column(button_grid, 3, 0);
