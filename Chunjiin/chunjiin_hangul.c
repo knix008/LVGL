@@ -12,6 +12,8 @@ static wchar_t towlower_simple(wchar_t ch) {
 
 // num_make function (lines 381-391 in Java)
 void num_make(ChunjiinState *state, int input) {
+    if (state->cursor_pos >= MAX_TEXT_LEN) return;
+
     if (input == 10) { // Space
         wcscpy(state->engnum, L" ");
     } else if (input == 11) { // Delete
@@ -25,6 +27,8 @@ void num_make(ChunjiinState *state, int input) {
 
 // special_make function for special characters
 void special_make(ChunjiinState *state, int input) {
+    if (state->cursor_pos >= MAX_TEXT_LEN) return;
+
     if (input == 10) { // Space
         if (wcslen(state->engnum) == 0) {
             wcscpy(state->engnum, L" ");
@@ -81,6 +85,8 @@ void special_make(ChunjiinState *state, int input) {
 
 // eng_make function (lines 325-380 in Java)
 void eng_make(ChunjiinState *state, int input) {
+    if (state->cursor_pos >= MAX_TEXT_LEN) return;
+
     if (input == 10) { // Space
         if (wcslen(state->engnum) == 0) {
             wcscpy(state->engnum, L" ");
@@ -137,6 +143,8 @@ void eng_make(ChunjiinState *state, int input) {
 
 // hangul_make function (lines 392-788 in Java)
 void hangul_make(ChunjiinState *state, int input) {
+    if (state->cursor_pos >= MAX_TEXT_LEN) return;
+
     HangulState *hangul = &state->hangul;
     wchar_t beforedata[16] = {0};
     wchar_t nowdata[16] = {0};
@@ -613,6 +621,8 @@ void write_hangul(ChunjiinState *state) {
     } else {
         state->cursor_pos = position;
     }
+    // Boundary check
+    CLAMP_CURSOR(state);
 
     hangul->flag_dotused = false;
     hangul->flag_writing = (unicode == 0 && dotflag == false) ? false : true;
@@ -661,6 +671,8 @@ void write_engnum(ChunjiinState *state) {
             state->cursor_pos = position + 1;
         }
     }
+    // Boundary check
+    CLAMP_CURSOR(state);
 
     // Initialize engnum if flag is set
     if (state->flag_initengnum) {

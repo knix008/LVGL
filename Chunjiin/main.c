@@ -30,36 +30,6 @@ static lv_font_t *korean_font_16 = NULL;
 static lv_font_t *korean_font_20 = NULL;
 
 // wchar_t buffer to UTF-8 string conversion helper
-static char* wchar_to_utf8(const wchar_t *wstr, size_t max_len) {
-    if (wstr == NULL) {
-        return "";
-    }
-
-    static char buffer[MAX_TEXT_LEN * 4];  // UTF-8 can use up to 4 bytes per character
-    char *ptr = buffer;
-
-    for (size_t i = 0; i < max_len && wstr[i] != 0; i++) {
-        uint32_t uc = (uint32_t)wstr[i];
-
-        if (uc < 0x80) {
-            *ptr++ = (char)uc;
-        } else if (uc < 0x800) {
-            *ptr++ = (char)(0xC0 | (uc >> 6));
-            *ptr++ = (char)(0x80 | (uc & 0x3F));
-        } else if (uc < 0x10000) {
-            *ptr++ = (char)(0xE0 | (uc >> 12));
-            *ptr++ = (char)(0x80 | ((uc >> 6) & 0x3F));
-            *ptr++ = (char)(0x80 | (uc & 0x3F));
-        } else {
-            *ptr++ = (char)(0xF0 | (uc >> 18));
-            *ptr++ = (char)(0x80 | ((uc >> 12) & 0x3F));
-            *ptr++ = (char)(0x80 | ((uc >> 6) & 0x3F));
-            *ptr++ = (char)(0x80 | (uc & 0x3F));
-        }
-    }
-    *ptr = '\0';
-    return buffer;
-}
 
 // Button click event handler
 static void on_button_clicked(lv_event_t *e) {

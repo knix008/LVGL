@@ -1,7 +1,41 @@
+#include <stddef.h>
+#include <wchar.h>
+#include <stdint.h>
 #include "chunjiin.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+char* wchar_to_utf8(const wchar_t *wstr, size_t max_len) {
+    if (wstr == NULL) {
+        return "";
+    }
+
+    static char buffer[MAX_TEXT_LEN * 4];  // UTF-8 can use up to 4 bytes per character
+    char *ptr = buffer;
+
+    for (size_t i = 0; i < max_len && wstr[i] != 0; i++) {
+        uint32_t uc = (uint32_t)wstr[i];
+
+        if (uc < 0x80) {
+            *ptr++ = (char)uc;
+        } else if (uc < 0x800) {
+            *ptr++ = (char)(0xC0 | (uc >> 6));
+            *ptr++ = (char)(0x80 | (uc & 0x3F));
+        } else if (uc < 0x10000) {
+            *ptr++ = (char)(0xE0 | (uc >> 12));
+            *ptr++ = (char)(0x80 | ((uc >> 6) & 0x3F));
+            *ptr++ = (char)(0x80 | (uc & 0x3F));
+        } else {
+            *ptr++ = (char)(0xF0 | (uc >> 18));
+            *ptr++ = (char)(0x80 | ((uc >> 12) & 0x3F));
+            *ptr++ = (char)(0x80 | ((uc >> 6) & 0x3F));
+            *ptr++ = (char)(0x80 | (uc & 0x3F));
+        }
+    }
+    *ptr = '\0';
+    return buffer;
+}
 
 void chunjiin_init(ChunjiinState *state) {
     hangul_init(&state->hangul);
@@ -9,6 +43,7 @@ void chunjiin_init(ChunjiinState *state) {
     init_engnum(state);
     memset(state->text_buffer, 0, sizeof(state->text_buffer));
     state->cursor_pos = 0;
+    CLAMP_CURSOR(state);
 }
 
 void hangul_init(HangulState *hangul) {
@@ -56,6 +91,7 @@ void delete_char(ChunjiinState *state) {
         state->text_buffer[i] = state->text_buffer[i + 1];
     }
     state->cursor_pos--;
+    CLAMP_CURSOR(state);
 }
 
 int get_unicode(HangulState *hangul, const wchar_t *real_jong) {

@@ -1,6 +1,11 @@
+#define CLAMP_CURSOR(state) do { \
+    if ((state)->cursor_pos > MAX_TEXT_LEN) (state)->cursor_pos = MAX_TEXT_LEN; \
+    if ((state)->cursor_pos < 0) (state)->cursor_pos = 0; \
+} while(0)
 #ifndef CHUNJIIN_H
 #define CHUNJIIN_H
 
+#include <stddef.h>
 #include <stdbool.h>
 #include <wchar.h>
 
@@ -39,6 +44,9 @@ typedef struct {
     wchar_t text_buffer[MAX_TEXT_LEN];  // 텍스트 버퍼
     int cursor_pos;           // 커서 위치
 } ChunjiinState;
+
+// wchar_t to UTF-8 conversion
+char* wchar_to_utf8(const wchar_t *wstr, size_t max_len);
 
 // 초기화 함수
 void chunjiin_init(ChunjiinState *state);
