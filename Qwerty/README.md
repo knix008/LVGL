@@ -1,19 +1,14 @@
-# Korean/English QWERTY Keypad with LVGL
+# MAC Address Hex Input with LVGL
 
-A bilingual Korean/English virtual keyboard application built with LVGL (Light and Versatile Graphics Library), SDL2, and FreeType for TrueType font rendering.
+A virtual hex input application for MAC address entry built with LVGL (Light and Versatile Graphics Library), SDL2, and FreeType for TrueType font rendering.
 
 ## Features
 
-- **Bilingual Support**: Seamless switching between English and Korean input modes
-- **Hangul Composition**: Proper Korean character composition with jamo (자모) support
-  - Complex vowel combinations (ㅗ+ㅏ→ㅘ, ㅜ+ㅓ→ㅝ, etc.)
-  - Double consonants (ㄱ→ㄲ, ㅂ→ㅃ with Shift)
-  - Real-time display of incomplete characters as you type
-- **QWERTY Layout**: Standard 2-Set Korean (두벌식) keyboard mapping
+- **Hex Input Interface**: Virtual keyboard optimized for MAC address input
 - **FreeType Font Rendering**: Direct TrueType font rendering at runtime (no conversion needed)
 - **Modern UI**: Built with LVGL v9 for smooth, hardware-accelerated graphics
-- **Popup Dialog**: Enter key shows result in popup and clears input
 - **Compact Design**: Optimized 640×480 layout
+- **Efficient Build System**: LVGL compiled once during setup, fast application builds
 
 ## Requirements
 
@@ -21,14 +16,14 @@ A bilingual Korean/English virtual keyboard application built with LVGL (Light a
 - **Make**
 - **SDL2 development libraries** (libsdl2-dev)
 - **FreeType development libraries** (libfreetype-dev)
-- **LVGL v9.x** (automatically cloned by setup script)
-- **Korean TrueType fonts** (NanumGothic fonts included in assets/)
+- **LVGL v9.x** (automatically cloned and built by setup script)
+- **Git** (for cloning LVGL)
 
 ## Quick Start
 
 ### 1. Run Setup Script
 
-The setup script will install dependencies and download LVGL:
+The setup script will install dependencies and build LVGL:
 
 ```bash
 ./setup.sh
@@ -36,8 +31,9 @@ The setup script will install dependencies and download LVGL:
 
 This will:
 - Check for and install required build tools (gcc, make, pkg-config)
-- Install SDL2 development libraries if missing
+- Install SDL2 and FreeType development libraries if missing
 - Clone LVGL v9.2 into the project directory
+- Build LVGL as a static library (`lvgl/build/liblvgl.a`)
 - Verify lv_conf.h configuration
 
 ### 2. Build the Application
@@ -46,26 +42,15 @@ This will:
 make
 ```
 
-For incremental builds (recommended):
-```bash
-make  # Only compiles changed files
-```
-
-For a complete clean build:
-```bash
-make clean  # Removes all object files including LVGL
-make        # Full rebuild
-```
-
 The build system is optimized for development:
-- **First build**: Compiles everything (takes 2-3 minutes)
-- **Subsequent builds**: Only recompiles changed files (fast)
-- **Clean build**: Removes all object files for fresh start
+- **Setup phase**: LVGL is compiled once into a static library
+- **Application builds**: Only compile application sources (very fast)
+- **No recompilation**: LVGL library is reused across builds
 
 ### 3. Run the Application
 
 ```bash
-./qwerty
+./hexinput
 ```
 
 Or:
@@ -75,90 +60,45 @@ make run
 
 ## Usage
 
-### Keyboard Layout
+### Hex Input Interface
 
-The virtual keyboard follows the standard QWERTY layout in a compact 640×480 window:
-
-```
-Row 0: ' 1 2 3 4 5 6 7 8 9 0 - = [←]        (← = Backspace)
-Row 1: [Tab] q w e r t y u i o p [ ] \
-Row 2: [Caps] a s d f g h j k l ; ' [Enter]
-Row 3: [Shift] z x c v b n m , . / [Shift]
-Row 4: [한/영] [Space] [Clear]
-```
-
-**Note**: The first button shows `'` (apostrophe) as a display substitute for the backtick, but types the actual `` ` `` character.
+The application provides a virtual keyboard optimized for MAC address input with a compact 640×480 window layout.
 
 ### Controls
 
-- **한/영 (Han/Yeong)**: Toggle between Korean and English input modes
-  - Shows "한글" when in English mode, "English" when in Korean mode
-  - Orange background color for easy identification
-- **Shift**: Toggle shift state (stays on until toggled off)
-- **Caps Lock**: Toggle caps lock (stays on until toggled off)
-- **← (Backspace)**: Delete last character (UTF-8 aware)
+- **Hex Keys**: 0-9, A-F for hexadecimal input
+- **← (Backspace)**: Delete last character
 - **Enter**: Show input result in popup dialog and clear text area
-  - Cyan background color for easy identification
-- **Space**: Insert space character
-- **Tab**: Insert 4 space characters (visible indentation)
+- **Space**: Insert space character for MAC address formatting
 - **Clear**: Clear all text
-  - Orange background color for easy identification
+- **Function buttons**: Color-coded for easy identification
 
 ### Button Color Scheme
 
 The application uses color-coded buttons for easy identification:
 
-- **🟠 Orange**: Function buttons (Language toggle, Clear)
-- **🔵 Cyan**: Action buttons (Enter)
-- **⚪ Default**: Regular keys (letters, numbers, symbols)
+- **🟠 Orange**: Function buttons (Clear)
+- **🔵 Blue**: Action buttons (Enter)
+- **⚪ Default**: Regular hex input keys (0-9, A-F)
 
 This color scheme helps users quickly identify special function buttons versus regular input keys.
-
-### Korean Input
-
-In Korean mode, the keyboard uses the **2-Set Korean (두벌식)** layout:
-
-#### Basic Jamos:
-- **Consonants (초성/종성)**: ㄱ ㄴ ㄷ ㄹ ㅁ ㅂ ㅅ ㅇ ㅈ ㅊ ㅋ ㅌ ㅍ ㅎ
-- **Vowels (중성)**: ㅏ ㅑ ㅓ ㅕ ㅗ ㅛ ㅜ ㅠ ㅡ ㅣ
-
-#### With Shift:
-- **Double consonants**: ㄲ ㄸ ㅃ ㅆ ㅉ
-- **Special vowels**: ㅐ ㅒ ㅔ ㅖ
-
-#### Complex Vowel Combinations:
-The application automatically combines vowels:
-- ㅗ + ㅏ → ㅘ (h + k → 와)
-- ㅗ + ㅐ → ㅙ (h + Shift+o → 왜)
-- ㅗ + ㅣ → ㅚ (h + l → 외)
-- **ㅜ + ㅓ → ㅝ** (n + j → 워)
-- ㅜ + ㅔ → ㅞ (n + Shift+p → 웨)
-- ㅜ + ㅣ → ㅟ (n + l → 위)
-- ㅡ + ㅣ → ㅢ (m + l → 의)
-
-#### Example:
-- Type `r` (ㄱ) → shows "ㄱ"
-- Type `n` (ㅜ) → shows "구"
-- Type `j` (ㅓ) → shows "궈" (ㅜ+ㅓ combined to ㅝ)
-- Type `s` (ㄴ) → shows "권"
 
 ## Project Structure
 
 ```
 Qwerty/
 ├── main.c              # Main application with LVGL UI
-├── qwerty.c            # Korean/English input logic and composition
+├── qwerty.c            # Hex input logic
 ├── qwerty.h            # Header file
 ├── lv_conf.h           # LVGL configuration (v9.4.0)
-├── Makefile            # Build configuration
-├── setup.sh            # Environment setup script (executable)
+├── Makefile            # Build configuration (application only)
+├── setup.sh            # Environment setup script (builds LVGL)
 ├── assets/             # TrueType font files
 │   ├── NanumGothicCoding.ttf
-│   ├── NanumGothicCoding-Bold.ttf
-│   ├── NanumGothic-Regular.ttf
-│   ├── NanumGothic-Bold.ttf
-│   └── NanumGothic-ExtraBold.ttf
-├── lvgl/               # LVGL library (cloned by setup.sh)
+│   └── NanumGothicCoding-Bold.ttf
+├── lvgl/               # LVGL library (cloned and built by setup.sh)
+│   └── build/
+│       └── liblvgl.a   # Pre-built LVGL static library
 ├── LICENSE
 └── README.md           # This file
 ```
@@ -173,7 +113,6 @@ The project includes a pre-configured `lv_conf.h` file with:
 - **SDL driver**: Enabled (LV_USE_SDL = 1)
 - **FreeType support**: Enabled (LV_USE_FREETYPE = 1)
 - **Memory pool**: 256KB (for font rendering)
-- **CJK font support**: Enabled
 
 ### Display Resolution
 
@@ -193,30 +132,28 @@ The application uses **NanumGothicCoding** as the default font with **FreeType**
 - **Status Label**: NanumGothicCoding 12px (normal style)
 - **Text Area**: NanumGothicCoding 16px (normal style)
 - **Keyboard Buttons**: NanumGothicCoding 16px (normal style)
-- **Special Characters**: NanumGothicCoding 20px (normal style, for better visibility)
 
 **Key Features:**
 - **No font conversion needed!** FreeType renders `.ttf` files at runtime
 - **Consistent appearance**: All text uses the same coding font family
 - **Normal style**: All fonts use regular weight (not bold) for better readability
-- **Korean + ASCII support**: NanumGothicCoding includes both Korean and English characters
 
 ## Recent Updates
 
 ### Version Improvements
 
 **Latest Updates:**
-- **Color-coded buttons**: Orange for function buttons, cyan for action buttons
-- **Smart language button**: Shows target language (displays "한글" in English mode, "English" in Korean mode)
-- **Improved tab behavior**: Inserts 4 visible spaces instead of invisible tab character
-- **Optimized build system**: Faster incremental builds, proper clean functionality
-- **Consistent font usage**: NanumGothicCoding font family throughout the application
+- **Optimized build system**: LVGL compiled once during setup, fast application builds
+- **Color-coded buttons**: Orange for function buttons, blue for action buttons
+- **Efficient compilation**: Application builds are very fast (no LVGL recompilation)
+- **Simplified setup**: Single setup script handles all dependencies and LVGL building
+- **Static library approach**: LVGL built as `liblvgl.a` for reliable linking
 
-**User Experience Enhancements:**
-- **Visual feedback**: Color-coded buttons make functions easily identifiable
-- **Intuitive language switching**: Button text shows what language you'll switch TO
-- **Visible indentation**: Tab key provides clear visual spacing
-- **Faster development**: Build system only recompiles changed files
+**Build System Enhancements:**
+- **Setup phase**: LVGL is compiled once into a static library
+- **Application builds**: Only compile application sources (very fast)
+- **No recompilation**: LVGL library is reused across builds
+- **Clean separation**: Setup handles LVGL, Makefile handles application
 
 ## Building from Scratch
 
@@ -227,32 +164,22 @@ sudo apt-get update
 sudo apt-get install build-essential libsdl2-dev libfreetype-dev pkg-config git
 ```
 
-### Clone LVGL
+### Setup and Build
 
 ```bash
-git clone https://github.com/lvgl/lvgl.git
-cd lvgl
-git checkout release/v9.2
-cd ..
+./setup.sh  # Installs dependencies, clones and builds LVGL
+make        # Builds the application
 ```
 
-### Build
-
-```bash
-make -j$(nproc)
-```
-
-The first build compiles all 311 LVGL source files and may take 2-3 minutes. Subsequent builds are much faster.
+The setup script compiles LVGL once into a static library. Application builds are very fast afterward.
 
 ## Troubleshooting
 
-### "LVGL not found" Error
+### "LVGL library not found" Error
 
-Run the setup script or manually clone LVGL:
+Run the setup script to build LVGL:
 ```bash
 ./setup.sh
-# or
-git clone https://github.com/lvgl/lvgl.git
 ```
 
 ### "SDL not found" Error
@@ -269,53 +196,29 @@ Install FreeType development libraries:
 sudo apt-get install libfreetype-dev
 ```
 
-### Korean Characters Not Displaying
+### Font Display Issues
 
 The application uses fonts from `assets/` directory. Verify:
 1. `assets/NanumGothicCoding.ttf` exists
 2. Font files are not corrupted
 
-### Special Characters Not Visible
-
-The application now uses NanumGothicCoding font which provides better visibility for special characters like backtick (`` ` ``) and tilde (`~`). If characters still appear invisible:
-1. **Current**: Uses larger font size (20px) for special characters
-2. **Alternative**: Check font file integrity
-
 ### Compilation Errors
 
 1. Verify `lv_conf.h` exists in the project directory
-2. Check that `lvgl/` directory contains LVGL v9.x
+2. Check that `lvgl/build/liblvgl.a` exists (run `./setup.sh` if missing)
 3. Run `make clean` and then `make`
 4. Check compiler flags support C11 standard
 
 ### Build System Issues
 
 **If builds are slow:**
-- The first build compiles all LVGL files (normal)
-- Subsequent builds should be fast (only changed files)
-- Use `make clean` only when needed for fresh start
+- Run `./setup.sh` first to build LVGL library
+- Application builds should be very fast after setup
+- Use `make clean-lvgl` to rebuild LVGL if needed
 
-**If object files persist:**
-- Run `make clean` to remove all object files including LVGL
-- The improved clean target removes both application and library object files
-
-## Korean Composition Details
-
-### Composition Rules
-
-The application implements proper Hangul composition:
-
-1. **Consonant alone**: Shows as standalone jamo (초성)
-2. **Consonant + Vowel**: Composes into syllable
-3. **Consonant + Vowel + Consonant**: Complete syllable with 종성
-4. **Complex vowels**: Automatically combines (ㅗ+ㅏ→ㅘ)
-5. **Invalid combinations**: Preserves previous character, starts new
-
-### UTF-8 Support
-
-- Proper multi-byte character deletion
-- Korean characters are 3 bytes in UTF-8
-- Backspace deletes entire character, not individual bytes
+**If LVGL library is missing:**
+- Run `./setup.sh` to build the LVGL static library
+- Check that `lvgl/build/liblvgl.a` exists
 
 ## Development
 
@@ -328,7 +231,7 @@ All buttons are **35×39px** (regular keys). To modify:
 lv_obj_set_size(btn, width, 39);  // Change height here
 
 // For individual buttons, change width parameter:
-create_key_button(row, "a", callback, data, 38);  // Change width
+create_key_button(row, "A", callback, data, 38);  // Change width
 ```
 
 ### Button Color Customization
@@ -337,13 +240,10 @@ To change button colors, modify the styling in `create_gui()`:
 
 ```c
 // Orange color for function buttons
-lv_obj_set_style_bg_color(app_state.lang_button, lv_color_hex(0xFF8C00), 0);
-
-// Cyan color for action buttons  
-lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x00FFFF), 0);
-
-// Clear button (orange)
 lv_obj_set_style_bg_color(app_state.clear_button, lv_color_hex(0xFF8C00), 0);
+
+// Blue color for action buttons  
+lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x0000FF), 0);
 ```
 
 ### Font Size Customization
@@ -372,14 +272,16 @@ lv_font_t *my_font = lv_freetype_font_create(
 );
 ```
 
-### Modifying Keyboard Layout
+### Modifying Hex Input Layout
 
-Edit the `key_maps` array in `qwerty.c`:
+Edit the `key_maps` array in `qwerty.c` to customize the hex input interface:
 
 ```c
-KeyMap key_maps[47] = {
-    {"a", "A", "ㅁ", "ㅁ"},  // {normal, shift, korean, korean_shift}
-    // ...
+KeyMap key_maps[16] = {
+    {"0", "0"},  // {normal, shift}
+    {"1", "1"},
+    {"2", "2"},
+    // ... hex keys 0-F
 };
 ```
 
@@ -395,8 +297,8 @@ KeyMap key_maps[47] = {
 ### Architecture
 
 ```
-User Input → LVGL Event → qwerty_process_korean_char() → 
-  Composition Logic → UTF-8 Output → Text Area Display
+User Input → LVGL Event → Hex Input Processing → 
+  Text Validation → MAC Address Display
 ```
 
 ### Memory Usage
@@ -410,7 +312,7 @@ User Input → LVGL Event → qwerty_process_korean_char() →
 - **Frame rate**: 30 FPS (SDL VSync)
 - **Input latency**: < 5ms
 - **Font rendering**: Hardware accelerated (SDL2)
-- **Composition**: Real-time, no lag
+- **Build time**: Very fast application builds (LVGL pre-compiled)
 
 ## License
 
@@ -433,5 +335,3 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 - [LVGL v9 Migration Guide](https://docs.lvgl.io/master/CHANGELOG.html)
 - [FreeType Documentation](https://www.freetype.org/freetype2/docs/documentation.html)
 - [SDL2 Documentation](https://wiki.libsdl.org/)
-- [Hangul Composition](https://en.wikipedia.org/wiki/Hangul)
-- [Korean Keyboard Layout (2-Set)](https://en.wikipedia.org/wiki/Keyboard_layout#Korean)

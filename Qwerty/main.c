@@ -20,9 +20,10 @@ typedef struct {
     lv_font_t *korean_font_20;  // FreeType font for text area
     lv_font_t *korean_font_16;  // FreeType font for buttons
     lv_font_t *korean_font_small_20;  // Smaller font for ASCII symbols with better visibility
+    lv_font_t *korean_font_20_bold;  // FreeType font for status label (20px bold)
 } AppState;
 
-static AppState app_state = {NULL, NULL, NULL, {NULL, NULL}, NULL, NULL, NULL, NULL, {LANG_ENGLISH, 0, 0, {0, 0, 0, 0}}, NULL, NULL, NULL, NULL};
+static AppState app_state = {NULL, NULL, NULL, {NULL, NULL}, NULL, NULL, NULL, NULL, {LANG_ENGLISH, 0, 0, {0, 0, 0, 0}}, NULL, NULL, NULL, NULL, NULL};
 
 // Global storage for key buttons to update labels
 static lv_obj_t *key_buttons[50];
@@ -323,7 +324,7 @@ static void create_gui(void) {
 
     // Status label - use font from assets
     app_state.status_label = lv_label_create(main_cont);
-    lv_obj_set_style_text_font(app_state.status_label, app_state.korean_font_14, 0);
+    lv_obj_set_style_text_font(app_state.status_label, app_state.korean_font_20_bold, 0);
     update_status();
 
     // Text area - use font from assets
@@ -506,6 +507,15 @@ static int init_fonts(void) {
                                                               LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!app_state.korean_font_small_20) {
         fprintf(stderr, "Warning: Failed to load NanumGothicCoding 20px font for special characters\n");
+    }
+    
+    // Font for status label (20px bold)
+    app_state.korean_font_20_bold = lv_freetype_font_create("assets/NanumGothicCoding-Bold.ttf",
+                                                            LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                            20,
+                                                            LV_FREETYPE_FONT_STYLE_NORMAL);
+    if (!app_state.korean_font_20_bold) {
+        fprintf(stderr, "Warning: Failed to load NanumGothicCoding-Bold 20px font for status label\n");
     }
     
     return 0;
