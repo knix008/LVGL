@@ -220,8 +220,8 @@ static lv_obj_t* create_key_button(lv_obj_t *parent, const char *label,
         lv_obj_set_style_text_font(label_obj, app_state.korean_font_16, 0);
     }
     
-    // Ensure text is visible with explicit black color
-    lv_obj_set_style_text_color(label_obj, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    // Ensure text is visible with explicit white color
+    lv_obj_set_style_text_color(label_obj, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     
     // Force label to use single line and align center
     lv_label_set_long_mode(label_obj, LV_LABEL_LONG_CLIP);
@@ -254,7 +254,7 @@ static void update_button_labels(void) {
             } else {
                 lv_obj_set_style_text_font(label_obj, app_state.korean_font_16, 0);
             }
-            lv_obj_set_style_text_color(label_obj, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(label_obj, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_invalidate(label_obj);
         }
     }
@@ -294,7 +294,7 @@ static void update_button_labels(void) {
                 lv_label_set_text(label_obj, "ENG");
             }
             lv_obj_set_style_text_font(label_obj, app_state.korean_font_16, 0);
-            lv_obj_set_style_text_color(label_obj, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(label_obj, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_invalidate(label_obj);
         }
         
