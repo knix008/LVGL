@@ -5,7 +5,7 @@
 set -e  # Exit on error
 
 echo "==================================="
-echo "Qwerty Input Setup Script"
+echo "IP Address Input Setup Script"
 echo "==================================="
 echo ""
 

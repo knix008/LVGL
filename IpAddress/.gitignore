@@ -1,0 +1,43 @@
+# Build output
+build/
+ip_address
+ip_address_gui
+
+# Object files
+*.o
+*.a
+*.so
+*.dylib
+
+# Executables
+*.exe
+*.out
+
+# LVGL library
+lvgl/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Test files
+/tmp/
+test/test_ipv4
+test/test_ipv6
+test/test_all
+test/*.o
+test/debug*
+test/test_manual*
+
+# Documentation build
+*.pdf
+docs/build/
