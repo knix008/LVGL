@@ -31,9 +31,14 @@ int gui_app_init(void) {
     }
     app_widgets.mode_button = NULL;
     app_widgets.clear_button = NULL;
+    app_widgets.shift_button = NULL;
     app_widgets.enter_button = NULL;
     app_widgets.backspace_button = NULL;
     app_widgets.space_button = NULL;
+    
+    // Initialize shift button state tracking
+    app_widgets.previous_shift_state = false;
+    app_widgets.shift_disabled = false;
     
     // Initialize global pointers
     active_mbox = NULL;
@@ -113,8 +118,8 @@ void gui_app_create_flick_window(int button_num) {
         flick_window = NULL;
     }
     
-    // Get characters for this button
-    const wchar_t* chars = get_button_flick_chars(app_widgets.state.now_mode, button_num);
+    // Get characters for this button (with shift mode consideration)
+    const wchar_t* chars = get_button_flick_chars_with_shift(app_widgets.state.now_mode, button_num, app_widgets.state.shift_mode);
     int char_count = get_button_char_count(app_widgets.state.now_mode, button_num);
     
     if (char_count == 0) return;
@@ -157,19 +162,9 @@ void gui_app_create_flick_window(int button_num) {
         lv_obj_set_size(char_btn, 40, 40);
         lv_obj_set_style_radius(char_btn, 8, 0);
         
-        // Get character
+        // Get character (use shift-aware function for all modes)
         wchar_t char_to_show = L'?';
-        if (app_widgets.state.now_mode == MODE_ALPHABET) {
-            const char* ascii_chars = get_button_alphabet_chars(button_num);
-            if (ascii_chars && strlen(ascii_chars) > (size_t)i) {
-                char_to_show = (wchar_t)ascii_chars[i];
-            }
-        } else if (app_widgets.state.now_mode == MODE_NUMBER) {
-            const char* ascii_chars = get_button_number_chars(button_num);
-            if (ascii_chars && strlen(ascii_chars) > (size_t)i) {
-                char_to_show = (wchar_t)ascii_chars[i];
-            }
-        } else if (chars && wcslen(chars) > (size_t)i) {
+        if (chars && wcslen(chars) > (size_t)i) {
             char_to_show = chars[i];
         }
         
@@ -206,12 +201,18 @@ void gui_app_on_button_clicked(lv_event_t *e) {
 // Mode button click handler
 void gui_app_on_mode_button_clicked(lv_event_t *e) {
     (void)e;
+    
+    // Store current shift state before changing mode (if not already disabled)
+    if (!app_widgets.shift_disabled) {
+        app_widgets.previous_shift_state = app_widgets.state.shift_mode;
+    }
+    
     change_input_mode(&app_widgets.state);
 
     // Update button labels
     for (int i = 0; i < 12; i++) {
         if (app_widgets.buttons[i] == NULL) continue;
-        const wchar_t *wtext = get_button_text(app_widgets.state.now_mode, i);
+        const wchar_t *wtext = get_button_text_with_shift(app_widgets.state.now_mode, i, app_widgets.state.shift_mode);
         char *utf8_text = wchar_to_utf8(wtext, 20);
         lv_obj_t *label = lv_obj_get_child(app_widgets.buttons[i], 0);
         if (label) {
@@ -223,6 +224,38 @@ void gui_app_on_mode_button_clicked(lv_event_t *e) {
     lv_obj_t *mode_label = lv_obj_get_child(app_widgets.mode_button, 0);
     if (mode_label) {
         lv_label_set_text(mode_label, get_mode_name(app_widgets.state.now_mode));
+    }
+    
+    // Handle shift button state based on current mode
+    lv_obj_t *shift_label = lv_obj_get_child(app_widgets.shift_button, 0);
+    if (shift_label) {
+        if (app_widgets.state.now_mode == MODE_NUMBER) {
+            // Disable shift button in number mode
+            app_widgets.shift_disabled = true;
+            lv_obj_add_state(app_widgets.shift_button, LV_STATE_DISABLED);
+            lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x808080), 0); // Gray
+            lv_obj_set_style_text_color(shift_label, lv_color_hex(0x404040), 0); // Dark gray text
+        } else {
+            // Enable shift button in other modes
+            if (app_widgets.shift_disabled) {
+                // Restore previous shift state when re-enabling
+                app_widgets.state.shift_mode = app_widgets.previous_shift_state;
+                app_widgets.shift_disabled = false;
+            }
+            lv_obj_clear_state(app_widgets.shift_button, LV_STATE_DISABLED);
+            
+            // Set color based on current shift state
+            bool shift_active = app_widgets.state.shift_mode;
+            if (shift_active) {
+                // Orange when active/clicked
+                lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0xFF8000), 0);
+                lv_obj_set_style_text_color(shift_label, lv_color_white(), 0);
+            } else {
+                // Dark green when inactive/default
+                lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), 0);
+                lv_obj_set_style_text_color(shift_label, lv_color_white(), 0);
+            }
+        }
     }
 }
 
@@ -256,6 +289,68 @@ void gui_app_on_clear_clicked(lv_event_t *e) {
     }
 }
 
+// Shift button handler
+void gui_app_on_shift_clicked(lv_event_t *e) {
+    (void)e;
+    
+    // Don't allow shift button clicks when disabled (in number mode)
+    if (app_widgets.shift_disabled) {
+        return;
+    }
+    
+    // Close any existing message box
+    if (active_mbox && lv_obj_is_valid(active_mbox)) {
+        lv_msgbox_close(active_mbox);
+        active_mbox = NULL;
+    }
+    
+    // Close flick window if open
+    if (flick_window && lv_obj_is_valid(flick_window)) {
+        lv_obj_del(flick_window);
+        flick_window = NULL;
+    }
+    
+    // Toggle shift mode for all modes (Japanese: Hiragana/Katakana, Alphabet: lowercase/uppercase)
+    app_widgets.state.shift_mode = !app_widgets.state.shift_mode;
+    
+    // Update button labels to reflect mode change
+    for (int i = 0; i < 12; i++) {
+        if (app_widgets.buttons[i] == NULL) continue;
+        const wchar_t *wtext = get_button_text_with_shift(app_widgets.state.now_mode, i, app_widgets.state.shift_mode);
+        char *utf8_text = wchar_to_utf8(wtext, 20);
+        lv_obj_t *label = lv_obj_get_child(app_widgets.buttons[i], 0);
+        if (label) {
+            lv_label_set_text(label, utf8_text);
+        }
+    }
+    
+    // Update mode button text
+    lv_obj_t *mode_label = lv_obj_get_child(app_widgets.mode_button, 0);
+    if (mode_label) {
+        lv_label_set_text(mode_label, get_mode_name(app_widgets.state.now_mode));
+    }
+    
+    // Update shift button appearance based on current state
+    lv_obj_t *shift_label = lv_obj_get_child(app_widgets.shift_button, 0);
+    if (shift_label) {
+        // Check if shift button should be active (orange) or inactive (dark green)
+        bool shift_active = false;
+        
+        // In all modes, shift state is preserved and shows the current shift_mode state
+        shift_active = app_widgets.state.shift_mode;
+        
+        if (shift_active) {
+            // Orange when active/clicked
+            lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0xFF8000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
+        } else {
+            // Dark green when inactive/default
+            lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
+}
+
 // Enter button handler
 void gui_app_on_enter_clicked(lv_event_t *e) {
     (void)e;
@@ -280,6 +375,11 @@ void gui_app_on_enter_clicked(lv_event_t *e) {
     
     // Get current text and show result
     char *utf8_text = wchar_to_utf8(app_widgets.state.text_buffer, MAX_TEXT_LEN);
+    
+    // Clear the text area and input buffer
+    lv_textarea_set_text(app_widgets.text_area, "");
+    memset(app_widgets.state.text_buffer, 0, sizeof(app_widgets.state.text_buffer));
+    app_widgets.state.cursor_pos = 0;
     
     // Create result message box
     active_mbox = lv_msgbox_create(lv_screen_active());
@@ -516,6 +616,19 @@ void gui_app_create_ui(void) {
     lv_obj_set_style_bg_opa(row4, LV_OPA_0, 0);
     lv_obj_set_style_border_width(row4, 0, 0);
 
+    app_widgets.shift_button = lv_button_create(row4);
+    lv_obj_set_size(app_widgets.shift_button, 70, 50);
+    lv_obj_set_style_radius(app_widgets.shift_button, 10, 0);
+    lv_obj_t *shift_label = lv_label_create(app_widgets.shift_button);
+    lv_label_set_text(shift_label, "Shift");
+    lv_obj_set_style_text_font(shift_label, japanese_font_14, 0);
+    lv_obj_center(shift_label);
+    lv_obj_add_event_cb(app_widgets.shift_button, gui_app_on_shift_clicked, LV_EVENT_CLICKED, NULL);
+    
+    // Set initial shift button color (dark green - inactive by default)
+    lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
+
     app_widgets.mode_button = lv_button_create(row4);
     lv_obj_set_size(app_widgets.mode_button, 70, 50);
     lv_obj_set_style_radius(app_widgets.mode_button, 10, 0);
@@ -524,15 +637,6 @@ void gui_app_create_ui(void) {
     lv_obj_set_style_text_font(mode_label, japanese_font_14, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, gui_app_on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
-
-    app_widgets.space_button = lv_button_create(row4);
-    lv_obj_set_size(app_widgets.space_button, 70, 50);
-    lv_obj_set_style_radius(app_widgets.space_button, 10, 0);
-    lv_obj_t *space_label = lv_label_create(app_widgets.space_button);
-    lv_label_set_text(space_label, "Space");
-    lv_obj_set_style_text_font(space_label, japanese_font_14, 0);
-    lv_obj_center(space_label);
-    lv_obj_add_event_cb(app_widgets.space_button, gui_app_on_space_clicked, LV_EVENT_CLICKED, NULL);
 
     app_widgets.backspace_button = lv_button_create(row4);
     lv_obj_set_size(app_widgets.backspace_button, 70, 50);
@@ -571,6 +675,15 @@ void gui_app_create_ui(void) {
     lv_obj_set_style_text_font(enter_label, japanese_font_14, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(app_widgets.enter_button, gui_app_on_enter_clicked, LV_EVENT_CLICKED, NULL);
+
+    app_widgets.space_button = lv_button_create(row5);
+    lv_obj_set_size(app_widgets.space_button, 70, 50);
+    lv_obj_set_style_radius(app_widgets.space_button, 10, 0);
+    lv_obj_t *space_label = lv_label_create(app_widgets.space_button);
+    lv_label_set_text(space_label, "Space");
+    lv_obj_set_style_text_font(space_label, japanese_font_14, 0);
+    lv_obj_center(space_label);
+    lv_obj_add_event_cb(app_widgets.space_button, gui_app_on_space_clicked, LV_EVENT_CLICKED, NULL);
 
     // Info label
     lv_obj_t *info_label = lv_label_create(main_cont);

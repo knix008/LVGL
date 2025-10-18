@@ -15,12 +15,11 @@
 
 // Input modes
 typedef enum {
-    MODE_HIRAGANA = 0,    // ひらがな (Hiragana)
-    MODE_KATAKANA = 1,    // カタカナ (Katakana) 
-    MODE_ALPHABET = 2,    // アルファベット (Alphabet)
-    MODE_NUMBER = 3,      // 数字 (Numbers)
-    MODE_SYMBOL = 4,      // 記号 (Symbols)
-    MODE_COUNT = 5
+    MODE_JAPANESE = 0,    // 日本語 (Japanese - Hiragana/Katakana controlled by shift)
+    MODE_ALPHABET = 1,    // アルファベット (Alphabet)
+    MODE_NUMBER = 2,      // 数字 (Numbers)
+    MODE_SYMBOL = 3,      // 記号 (Symbols)
+    MODE_COUNT = 4
 } InputMode;
 
 // Japanese input state
@@ -45,6 +44,7 @@ void change_input_mode(JapaneseInputState *state);
 
 // Character mapping functions
 const wchar_t* get_button_flick_chars(InputMode mode, int button_num);
+const wchar_t* get_button_flick_chars_with_shift(InputMode mode, int button_num, bool shift_mode);
 int get_button_char_count(InputMode mode, int button_num);
 const char* get_button_alphabet_chars(int button_num);
 const char* get_button_number_chars(int button_num);
@@ -52,6 +52,7 @@ const char* get_mode_name(InputMode mode);
 
 // GUI utility functions
 const wchar_t* get_button_text(InputMode mode, int button_num);
+const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool shift_mode);
 
 // Utility functions
 char* wchar_to_utf8(const wchar_t* wstr, int max_len);

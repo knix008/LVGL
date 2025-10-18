@@ -15,10 +15,13 @@ typedef struct {
     lv_obj_t *buttons[12];
     lv_obj_t *mode_button;
     lv_obj_t *clear_button;
+    lv_obj_t *shift_button;
     lv_obj_t *enter_button;
     lv_obj_t *backspace_button;
     lv_obj_t *space_button;
     JapaneseInputState state;
+    bool previous_shift_state;  // Store shift state before entering number mode
+    bool shift_disabled;        // Track if shift button is currently disabled
 } AppWidgets;
 
 // GUI Application functions
@@ -30,6 +33,7 @@ void gui_app_cleanup(void);
 void gui_app_on_button_clicked(lv_event_t *e);
 void gui_app_on_mode_button_clicked(lv_event_t *e);
 void gui_app_on_clear_clicked(lv_event_t *e);
+void gui_app_on_shift_clicked(lv_event_t *e);
 void gui_app_on_enter_clicked(lv_event_t *e);
 void gui_app_on_backspace_clicked(lv_event_t *e);
 void gui_app_on_space_clicked(lv_event_t *e);

@@ -46,18 +46,18 @@ static const wchar_t* katakana_chars[12] = {
 
 // Alphabet mappings for each button
 static const char* alphabet_chars[12] = {
-    "abc",           // Button 1
-    "def",           // Button 2
-    "ghi",           // Button 3
-    "jkl",           // Button 4
-    "mno",           // Button 5
-    "pqrs",          // Button 6
-    "tuv",           // Button 7
-    "wxyz",          // Button 8
-    ".,!?",          // Button 9
-    " ",             // Button 0 (space)
-    "*",             // Button *
-    "#"              // Button #
+    "abc",           // Button 0
+    "def",           // Button 1
+    "ghi",           // Button 2
+    "jkl",           // Button 3
+    "mno",           // Button 4
+    "pqrs",          // Button 5
+    "tuv",           // Button 6
+    "wxyz",          // Button 7
+    ".,!?",          // Button 8
+    "@",             // Button 9 (first button in 4th row)
+    "*",             // Button 10
+    "#"              // Button 11
 };
 
 // Numbers for each button
@@ -78,24 +78,23 @@ static const char* number_chars[12] = {
 
 // Special symbols
 static const wchar_t* symbol_chars[12] = {
-    L"！？",         // Button 1
-    L"（）",         // Button 2
-    L"「」",         // Button 3
-    L"、。",         // Button 4
-    L"・：",         // Button 5
-    L"；〜",         // Button 6
-    L"－＝",         // Button 7
-    L"＋×",         // Button 8
-    L"÷％",         // Button 9
-    L" ",            // Button 0 (space)
-    L"*",            // Button *
-    L"#"             // Button #
+    L"！？",         // Button 0
+    L"（）",         // Button 1
+    L"「」",         // Button 2
+    L"、。",         // Button 3
+    L"・：",         // Button 4
+    L"；〜",         // Button 5
+    L"－＝",         // Button 6
+    L"＋×",         // Button 7
+    L"÷％",         // Button 8
+    L"［］",         // Button 9 (first button in 4th row)
+    L"*",            // Button 10
+    L"#"             // Button 11
 };
 
 // Mode names
 static const char* mode_names[MODE_COUNT] = {
-    "ひらがな",      // Hiragana
-    "カタカナ",      // Katakana
+    "日本語",        // Japanese (Hiragana/Katakana)
     "ABC",           // Alphabet
     "123",           // Numbers
     "記号"           // Symbols
@@ -103,7 +102,7 @@ static const char* mode_names[MODE_COUNT] = {
 
 // Initialize Japanese input state
 void japanese_input_init(JapaneseInputState *state) {
-    state->now_mode = MODE_HIRAGANA;
+    state->now_mode = MODE_JAPANESE;
     memset(state->text_buffer, 0, sizeof(state->text_buffer));
     state->cursor_pos = 0;
     state->shift_mode = false;
@@ -151,11 +150,9 @@ void japanese_input_select_flick_char(JapaneseInputState *state, int button_num,
     const wchar_t* chars = NULL;
     
     switch (state->now_mode) {
-        case MODE_HIRAGANA:
-            chars = hiragana_chars[button_num];
-            break;
-        case MODE_KATAKANA:
-            chars = katakana_chars[button_num];
+        case MODE_JAPANESE:
+            // Use shift_mode to determine Hiragana vs Katakana
+            chars = state->shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
             break;
         case MODE_ALPHABET:
             {
@@ -223,8 +220,64 @@ void japanese_input_process_input(JapaneseInputState *state, int button_num) {
     if (state->flick_active && state->flick_button == button_num) {
         japanese_input_select_flick_char(state, button_num, 0);
     } else {
-        // Show flick input for this button
-        japanese_input_show_flick(state, button_num);
+        // Check if there's only one character available
+        int char_count = get_button_char_count(state->now_mode, button_num);
+        if (char_count == 1) {
+            // Only one character available, input it directly
+            japanese_input_select_flick_char(state, button_num, 0);
+        } else {
+            // Multiple characters available, show flick input
+            japanese_input_show_flick(state, button_num);
+        }
+    }
+}
+
+// Get flick characters for a button with shift mode consideration
+const wchar_t* get_button_flick_chars_with_shift(InputMode mode, int button_num, bool shift_mode) {
+    if (button_num < 0 || button_num >= 12) {
+        return L"";
+    }
+    
+    switch (mode) {
+        case MODE_JAPANESE:
+            // Use shift_mode to determine Hiragana vs Katakana
+            return shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
+        case MODE_ALPHABET:
+            {
+                const char* ascii_chars = alphabet_chars[button_num];
+                if (ascii_chars && strlen(ascii_chars) > 0) {
+                    static wchar_t shifted_chars[20];
+                    int len = strlen(ascii_chars);
+                    for (int i = 0; i < len && i < 19; i++) {
+                        char c = ascii_chars[i];
+                        if (shift_mode) {
+                            c = toupper(c);
+                        }
+                        shifted_chars[i] = (wchar_t)c;
+                    }
+                    shifted_chars[len] = L'\0';
+                    return shifted_chars;
+                }
+                return L"";
+            }
+        case MODE_NUMBER:
+            {
+                const char* ascii_chars = number_chars[button_num];
+                if (ascii_chars && strlen(ascii_chars) > 0) {
+                    static wchar_t w_chars[20];
+                    int len = strlen(ascii_chars);
+                    for (int i = 0; i < len && i < 19; i++) {
+                        w_chars[i] = (wchar_t)ascii_chars[i];
+                    }
+                    w_chars[len] = L'\0';
+                    return w_chars;
+                }
+                return L"";
+            }
+        case MODE_SYMBOL:
+            return symbol_chars[button_num];
+        default:
+            return L"";
     }
 }
 
@@ -235,10 +288,10 @@ const wchar_t* get_button_flick_chars(InputMode mode, int button_num) {
     }
     
     switch (mode) {
-        case MODE_HIRAGANA:
+        case MODE_JAPANESE:
+            // This function doesn't have access to shift_mode, so return Hiragana by default
+            // The actual selection will be handled in japanese_input_select_flick_char
             return hiragana_chars[button_num];
-        case MODE_KATAKANA:
-            return katakana_chars[button_num];
         case MODE_SYMBOL:
             return symbol_chars[button_num];
         default:
@@ -253,8 +306,7 @@ int get_button_char_count(InputMode mode, int button_num) {
     }
     
     switch (mode) {
-        case MODE_HIRAGANA:
-        case MODE_KATAKANA:
+        case MODE_JAPANESE:
         case MODE_SYMBOL:
             {
                 const wchar_t* chars = get_button_flick_chars(mode, button_num);
@@ -299,6 +351,75 @@ const char* get_mode_name(InputMode mode) {
     return "Unknown";
 }
 
+// Get button text with shift mode consideration
+const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool shift_mode) {
+    if (button_num < 0 || button_num >= 12) {
+        return L"";
+    }
+    
+    static wchar_t single_char[2];
+    single_char[0] = L'\0';
+    single_char[1] = L'\0';
+    
+    switch (mode) {
+        case MODE_JAPANESE:
+            {
+                // Use shift_mode to determine Hiragana vs Katakana
+                const wchar_t* chars = shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
+                if (chars && wcslen(chars) > 0) {
+                    single_char[0] = chars[0];
+                }
+            }
+            break;
+                case MODE_ALPHABET:
+                    {
+                        const char* chars = get_button_alphabet_chars(button_num);
+                        if (chars && strlen(chars) > 0) {
+                            // For English mode, show all possible characters on the button
+                            // Convert the entire string to wide characters
+                            static wchar_t all_chars[20];
+                            int len = strlen(chars);
+                            for (int i = 0; i < len && i < 19; i++) {
+                                char c = chars[i];
+                                if (shift_mode) {
+                                    c = toupper(c);
+                                }
+                                all_chars[i] = (wchar_t)c;
+                            }
+                            all_chars[len] = L'\0';
+                            return all_chars;
+                        }
+                    }
+                    break;
+        case MODE_NUMBER:
+            {
+                const char* chars = get_button_number_chars(button_num);
+                if (chars && strlen(chars) > 0) {
+                    single_char[0] = (wchar_t)chars[0];
+                }
+            }
+            break;
+        case MODE_SYMBOL:
+            {
+                const wchar_t* chars = get_button_flick_chars(mode, button_num);
+                if (chars && wcslen(chars) > 0) {
+                    // For symbol mode, show all possible characters on the button
+                    static wchar_t all_chars[20];
+                    int len = wcslen(chars);
+                    for (int i = 0; i < len && i < 19; i++) {
+                        all_chars[i] = chars[i];
+                    }
+                    all_chars[len] = L'\0';
+                    return all_chars;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    return single_char;
+}
+
 // Get button text for current mode (shows only first character)
 const wchar_t* get_button_text(InputMode mode, int button_num) {
     if (button_num < 0 || button_num >= 12) {
@@ -310,17 +431,10 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
     single_char[1] = L'\0';
     
     switch (mode) {
-        case MODE_HIRAGANA:
+        case MODE_JAPANESE:
             {
-                const wchar_t* chars = get_button_flick_chars(mode, button_num);
-                if (chars && wcslen(chars) > 0) {
-                    single_char[0] = chars[0];
-                }
-            }
-            break;
-        case MODE_KATAKANA:
-            {
-                const wchar_t* chars = get_button_flick_chars(mode, button_num);
+                // For Japanese mode, default to Hiragana (shift_mode will be handled by get_button_text_with_shift)
+                const wchar_t* chars = hiragana_chars[button_num];
                 if (chars && wcslen(chars) > 0) {
                     single_char[0] = chars[0];
                 }
@@ -330,7 +444,14 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
             {
                 const char* chars = get_button_alphabet_chars(button_num);
                 if (chars && strlen(chars) > 0) {
-                    single_char[0] = (wchar_t)chars[0];
+                    // For English mode, show all possible characters on the button
+                    static wchar_t all_chars[20];
+                    int len = strlen(chars);
+                    for (int i = 0; i < len && i < 19; i++) {
+                        all_chars[i] = (wchar_t)chars[i];
+                    }
+                    all_chars[len] = L'\0';
+                    return all_chars;
                 }
             }
             break;
@@ -346,7 +467,14 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
             {
                 const wchar_t* chars = get_button_flick_chars(mode, button_num);
                 if (chars && wcslen(chars) > 0) {
-                    single_char[0] = chars[0];
+                    // For symbol mode, show all possible characters on the button
+                    static wchar_t all_chars[20];
+                    int len = wcslen(chars);
+                    for (int i = 0; i < len && i < 19; i++) {
+                        all_chars[i] = chars[i];
+                    }
+                    all_chars[len] = L'\0';
+                    return all_chars;
                 }
             }
             break;
