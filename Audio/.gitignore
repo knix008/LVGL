@@ -1,0 +1,73 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Executables
+audio_player
+qwerty
+
+# LVGL library (built locally)
+lvgl/
+
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# CMake build files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+
+# Test executables and objects
+tests/test_audio_player
+tests/test_utils
+tests/*.o
+tests/mock_gui.o
+
+# Documentation build artifacts
+docs/_build/
+
+# Backup and temporary documentation
+*.md~
+*.txt~
+
+# Font directory (if using custom fonts that shouldn't be tracked)
+font/
+
+# Generated or temporary assets
+assets/
+
+# Terminal command logs
+.cursor/
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Valgrind output
+*.valgrind
+valgrind-out.*
+
+# GDB history
+.gdb_history
