@@ -94,18 +94,18 @@ static const wchar_t* symbol_chars[12] = {
 
 // Shifted symbol characters (alternative symbols when shift is active)
 static const wchar_t* symbol_chars_shifted[12] = {
-    L"！？",         // Button 0
-    L"（）",         // Button 1
-    L"「」",         // Button 2
-    L"，．",         // Button 3 (comma and period)
-    L"・：",         // Button 4
-    L"；〜",         // Button 5
-    L"－＝",         // Button 6
-    L"＋×",         // Button 7
-    L"÷％",         // Button 8
-    L"［］",         // Button 9
-    L"<>/",          // Button 10 (same as normal)
-    L"\\{}"          // Button 11 (same as normal)
+    L"※◎",         // Button 0 (reference mark and bullseye)
+    L"◆◇",         // Button 1 (filled and empty diamond)
+    L"▲▼",         // Button 2 (up and down triangle)
+    L"◀▶",         // Button 3 (left and right triangle)
+    L"○●",         // Button 4 (empty and filled circle)
+    L"□■",         // Button 5 (empty and filled square)
+    L"△▽",         // Button 6 (triangle up and down)
+    L"♠♣",         // Button 7 (spade and club)
+    L"♥♦",         // Button 8 (heart and diamond)
+    L"★☆",         // Button 9 (filled and empty star)
+    L"♪♫",         // Button 10 (eighth note and beamed eighth notes)
+    L"∞§"          // Button 11 (infinity and section sign)
 };
 
 // Mode names

@@ -86,6 +86,17 @@ const lv_font_t* gui_app_get_japanese_font_14(void) { return (const lv_font_t*)j
 const lv_font_t* gui_app_get_japanese_font_16(void) { return (const lv_font_t*)japanese_font_16; }
 const lv_font_t* gui_app_get_japanese_font_20(void) { return (const lv_font_t*)japanese_font_20; }
 
+
+// Helper function to set button label text and font
+static void set_button_label_text(lv_obj_t* label, const wchar_t* wtext, const char* utf8_text) {
+    (void)wtext; // Suppress unused parameter warning
+    if (!label || !utf8_text) return;
+    
+    lv_label_set_text(label, utf8_text);
+    // Always use Japanese font since we're not using emojis anymore
+    lv_obj_set_style_text_font(label, japanese_font_14, 0);
+}
+
 // Get global application widgets
 AppWidgets* gui_app_get_widgets(void) {
     return &app_widgets;
@@ -216,7 +227,7 @@ void gui_app_on_mode_button_clicked(lv_event_t *e) {
         char *utf8_text = wchar_to_utf8(wtext, 20);
         lv_obj_t *label = lv_obj_get_child(app_widgets.buttons[i], 0);
         if (label) {
-            lv_label_set_text(label, utf8_text);
+            set_button_label_text(label, wtext, utf8_text);
         }
     }
     
@@ -321,7 +332,7 @@ void gui_app_on_shift_clicked(lv_event_t *e) {
         char *utf8_text = wchar_to_utf8(wtext, 20);
         lv_obj_t *label = lv_obj_get_child(app_widgets.buttons[i], 0);
         if (label) {
-            lv_label_set_text(label, utf8_text);
+            set_button_label_text(label, wtext, utf8_text);
         }
     }
     
@@ -519,8 +530,7 @@ void gui_app_create_ui(void) {
         lv_obj_set_style_radius(app_widgets.buttons[i], 10, 0);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
-        lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, japanese_font_14, 0);
+        set_button_label_text(label, wtext, utf8_text);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], gui_app_on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -546,8 +556,7 @@ void gui_app_create_ui(void) {
         lv_obj_set_style_radius(app_widgets.buttons[i], 10, 0);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
-        lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, japanese_font_14, 0);
+        set_button_label_text(label, wtext, utf8_text);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], gui_app_on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -573,8 +582,7 @@ void gui_app_create_ui(void) {
         lv_obj_set_style_radius(app_widgets.buttons[i], 10, 0);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
-        lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, japanese_font_14, 0);
+        set_button_label_text(label, wtext, utf8_text);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], gui_app_on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -600,8 +608,7 @@ void gui_app_create_ui(void) {
         lv_obj_set_style_radius(app_widgets.buttons[i], 10, 0);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
-        lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, japanese_font_14, 0);
+        set_button_label_text(label, wtext, utf8_text);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], gui_app_on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -690,6 +697,6 @@ void gui_app_create_ui(void) {
 
     // Info label
     lv_obj_t *info_label = lv_label_create(main_cont);
-    lv_label_set_text(info_label, "ひらがな/カタカナ/アルファベット/数字/記号入力");
+    lv_label_set_text(info_label, "日本語/アルファベット/数字/記号入力");
     lv_obj_set_style_text_font(info_label, japanese_font_12, 0);
 }
