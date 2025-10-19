@@ -5,7 +5,7 @@
 set -e  # Exit on error
 
 echo "==================================="
-echo "Audio Input Setup Script"
+echo "LVGL Input Setup Script"
 echo "==================================="
 echo ""
 

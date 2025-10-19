@@ -7,7 +7,6 @@
 
 # Executables
 audio_player
-qwerty
 
 # LVGL library (built locally)
 lvgl/

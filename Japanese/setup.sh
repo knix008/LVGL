@@ -5,8 +5,7 @@
 set -e  # Exit on error
 
 echo "========================================="
-echo " Chunjiin Korean Input Method - Setup"
-echo " 천지인 한글 입력기"
+echo " Japanese Input Method - Setup"
 echo "========================================="
 echo ""
 

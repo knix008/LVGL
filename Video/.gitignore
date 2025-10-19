@@ -1,0 +1,140 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Executables
+audio_player
+qwerty
+main
+test_korean
+
+# LVGL library (built locally)
+lvgl/
+
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# CMake build files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+
+# Test executables and objects
+tests/*.o
+tests/test_video_player
+tests/test_video_player_simple
+tests/test_video_player_core
+tests/test_results.log
+
+# Documentation build artifacts
+docs/_build/
+
+# Backup and temporary documentation
+*.md~
+*.txt~
+
+# Font directory (if using custom fonts that shouldn't be tracked)
+# font/
+
+# Generated or temporary assets
+# assets/
+
+# Video files (large media files)
+video/*.mp4
+video/*.avi
+video/*.mov
+video/*.mkv
+video/*.wmv
+video/*.flv
+video/*.webm
+
+# Audio files
+video/*.wav
+video/*.mp3
+video/*.aac
+video/*.ogg
+video/*.flac
+
+# Terminal command logs
+.cursor/
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Valgrind output
+*.valgrind
+valgrind-out.*
+
+# GDB history
+.gdb_history
+
+# FFmpeg temporary files
+*.ffmpeg
+*.ffmpeg.tmp
+
+# LVGL build artifacts
+lvgl/build/
+lvgl/*.o
+lvgl/*.a
+
+# Project specific build files
+*.d
+*.deps
+
+# Test video files generated during testing
+video/test_video.mp4
+
+# Development and debugging files
+*.gch
+*.pch
+*.dSYM/
+
+# IDE specific files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/c_cpp_properties.json
+
+# OS specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Profiling and analysis
+*.prof
+*.gcov
+*.gcda
+*.gcno
+
+# Package managers
+node_modules/
+package-lock.json
+yarn.lock
+
+# Documentation build
+docs/build/
+docs/html/
+docs/latex/
