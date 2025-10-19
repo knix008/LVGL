@@ -220,10 +220,11 @@ void gui_app_on_mode_button_clicked(lv_event_t *e) {
         }
     }
     
-    // Update mode button text
+    // Update mode button text to show next mode
     lv_obj_t *mode_label = lv_obj_get_child(app_widgets.mode_button, 0);
     if (mode_label) {
-        lv_label_set_text(mode_label, get_mode_name(app_widgets.state.now_mode));
+        InputMode next_mode = (app_widgets.state.now_mode + 1) % MODE_COUNT;
+        lv_label_set_text(mode_label, get_mode_name(next_mode));
     }
     
     // Handle shift button state based on current mode
@@ -251,8 +252,8 @@ void gui_app_on_mode_button_clicked(lv_event_t *e) {
                 lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0xFF8000), 0);
                 lv_obj_set_style_text_color(shift_label, lv_color_white(), 0);
             } else {
-                // Dark green when inactive/default
-                lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), 0);
+                // Green when inactive/default
+                lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x00AA00), 0);
                 lv_obj_set_style_text_color(shift_label, lv_color_white(), 0);
             }
         }
@@ -324,10 +325,11 @@ void gui_app_on_shift_clicked(lv_event_t *e) {
         }
     }
     
-    // Update mode button text
+    // Update mode button text to show next mode (mode button should not change with shift)
     lv_obj_t *mode_label = lv_obj_get_child(app_widgets.mode_button, 0);
     if (mode_label) {
-        lv_label_set_text(mode_label, get_mode_name(app_widgets.state.now_mode));
+        InputMode next_mode = (app_widgets.state.now_mode + 1) % MODE_COUNT;
+        lv_label_set_text(mode_label, get_mode_name(next_mode));
     }
     
     // Update shift button appearance based on current state
@@ -344,8 +346,8 @@ void gui_app_on_shift_clicked(lv_event_t *e) {
             lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0xFF8000), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
         } else {
-            // Dark green when inactive/default
-            lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), LV_PART_MAIN | LV_STATE_DEFAULT);
+            // Green when inactive/default
+            lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x00AA00), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
         }
     }
@@ -625,15 +627,16 @@ void gui_app_create_ui(void) {
     lv_obj_center(shift_label);
     lv_obj_add_event_cb(app_widgets.shift_button, gui_app_on_shift_clicked, LV_EVENT_CLICKED, NULL);
     
-    // Set initial shift button color (dark green - inactive by default)
-    lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x006600), LV_PART_MAIN | LV_STATE_DEFAULT);
+    // Set initial shift button color (green - inactive by default)
+    lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x00AA00), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(shift_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     app_widgets.mode_button = lv_button_create(row4);
     lv_obj_set_size(app_widgets.mode_button, 70, 50);
     lv_obj_set_style_radius(app_widgets.mode_button, 10, 0);
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
-    lv_label_set_text(mode_label, get_mode_name(app_widgets.state.now_mode));
+    InputMode next_mode = (app_widgets.state.now_mode + 1) % MODE_COUNT;
+    lv_label_set_text(mode_label, get_mode_name(next_mode));
     lv_obj_set_style_text_font(mode_label, japanese_font_14, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, gui_app_on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
@@ -667,15 +670,6 @@ void gui_app_create_ui(void) {
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(app_widgets.clear_button, gui_app_on_clear_clicked, LV_EVENT_CLICKED, NULL);
 
-    app_widgets.enter_button = lv_button_create(row5);
-    lv_obj_set_size(app_widgets.enter_button, 70, 50);
-    lv_obj_set_style_radius(app_widgets.enter_button, 10, 0);
-    lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
-    lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, japanese_font_14, 0);
-    lv_obj_center(enter_label);
-    lv_obj_add_event_cb(app_widgets.enter_button, gui_app_on_enter_clicked, LV_EVENT_CLICKED, NULL);
-
     app_widgets.space_button = lv_button_create(row5);
     lv_obj_set_size(app_widgets.space_button, 70, 50);
     lv_obj_set_style_radius(app_widgets.space_button, 10, 0);
@@ -684,6 +678,15 @@ void gui_app_create_ui(void) {
     lv_obj_set_style_text_font(space_label, japanese_font_14, 0);
     lv_obj_center(space_label);
     lv_obj_add_event_cb(app_widgets.space_button, gui_app_on_space_clicked, LV_EVENT_CLICKED, NULL);
+
+    app_widgets.enter_button = lv_button_create(row5);
+    lv_obj_set_size(app_widgets.enter_button, 70, 50);
+    lv_obj_set_style_radius(app_widgets.enter_button, 10, 0);
+    lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
+    lv_label_set_text(enter_label, "Enter");
+    lv_obj_set_style_text_font(enter_label, japanese_font_14, 0);
+    lv_obj_center(enter_label);
+    lv_obj_add_event_cb(app_widgets.enter_button, gui_app_on_enter_clicked, LV_EVENT_CLICKED, NULL);
 
     // Info label
     lv_obj_t *info_label = lv_label_create(main_cont);

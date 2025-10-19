@@ -19,11 +19,15 @@ A modern Japanese character input application built with LVGL, supporting multip
 - **Color-coded Elements**: Intuitive visual feedback
 
 ### 🎨 Input Methods
-- **Hiragana Mode**: ひらがな (あいうえお, かきくけこ, etc.)
-- **Katakana Mode**: カタカナ (アイウエオ, カキクケコ, etc.)
-- **Alphabet Mode**: English letters (abc, def, ghi, etc.)
-- **Number Mode**: Digits (1, 2, 3, etc.)
-- **Symbol Mode**: Japanese punctuation and symbols (！？、。, etc.)
+- **Japanese Mode**: Unified mode with Hiragana/Katakana toggle via Shift button
+  - **Hiragana**: ひらがな (あいうえお, かきくけこ, etc.) - Shift OFF
+  - **Katakana**: カタカナ (アイウエオ, カキクケコ, etc.) - Shift ON
+- **Alphabet Mode**: English letters with case toggle (abc/ABC via Shift)
+- **Number Mode**: Digits (1, 2, 3, etc.) with disabled Shift button
+- **Symbol Mode**: Japanese punctuation and symbols with dual character sets
+  - **Normal Symbols**: ！？、。・：；〜－＝＋×÷％［］<>/\{}
+  - **Shifted Symbols**: ！？、．・：；〜－＝＋×÷％［］<>/\{}
+  - **Special Characters**: Includes `{}`, `<>/`, `\` and other programming symbols
 
 ## Architecture
 
@@ -117,17 +121,43 @@ make
 5. **Text Management**: Use Space, Backspace, Clear, and Enter buttons as needed
 
 ### 📝 Input Modes
-- **ひらがな**: Japanese hiragana characters
-- **カタカナ**: Japanese katakana characters  
-- **ABC**: English alphabet
-- **123**: Numbers and digits
-- **記号**: Japanese symbols and punctuation
+- **日本語**: Japanese mode (Hiragana/Katakana via Shift toggle)
+- **ABC**: English alphabet (lowercase/uppercase via Shift toggle)
+- **123**: Numbers and digits (Shift button disabled)
+- **記号**: Japanese symbols and punctuation (dual character sets via Shift)
 
 ### 🔄 Flick Input Method
 1. Click any keypad button
 2. A popup window appears with all available characters for that button
 3. Click on the desired character to input it
 4. The popup automatically closes after selection
+5. **Single Character Shortcut**: If only one character is available, it's input directly without showing the popup
+
+### 🔄 Shift Button Functionality
+- **Japanese Mode**: Toggles between Hiragana (OFF) and Katakana (ON)
+- **Alphabet Mode**: Toggles between lowercase (OFF) and uppercase (ON)
+- **Number Mode**: Disabled (gray color, non-clickable)
+- **Symbol Mode**: Toggles between normal and shifted symbol sets
+- **Visual Feedback**: Green (inactive) / Orange (active) color coding
+- **State Persistence**: Shift state is preserved when switching between modes (except Number mode)
+
+### 📱 Keypad Layout
+```
+Row 1: [あ] [か] [さ]
+Row 2: [た] [な] [は]
+Row 3: [ま] [や] [ら]
+Row 4: [Shift] [わ] [ん]
+Row 5: [Space] [Clear] [Enter] [Backspace]
+```
+
+**Button Functions:**
+- **Character Buttons (0-11)**: Input characters based on current mode
+- **Shift Button**: Toggle character sets (Hiragana/Katakana, uppercase/lowercase, symbol sets)
+- **Space Button**: Insert space character
+- **Clear Button**: Clear all text in the input area
+- **Enter Button**: Show input result and clear text area
+- **Backspace Button**: Delete the last character
+- **Mode Button**: Cycle through input modes (shows next mode)
 
 ## Testing
 
@@ -147,9 +177,9 @@ make all          # All tests
 ```
 
 ### 📊 Test Coverage
-- **Core Logic Tests**: 63 test cases
-- **GUI Function Tests**: 264 test cases
-- **Total Coverage**: 327 test cases
+- **Core Logic Tests**: 56 test cases
+- **GUI Function Tests**: 212 test cases
+- **Total Coverage**: 268 test cases
 - **Success Rate**: 100% (all tests pass)
 
 ### 🔍 Test Categories
@@ -157,9 +187,12 @@ make all          # All tests
 - Mode switching functionality
 - Character mapping verification
 - Flick input processing
+- Shift button functionality
 - UTF-8 conversion
 - Edge cases and error handling
 - GUI consistency checks
+- Button label verification
+- Symbol character availability
 
 ## Development
 
@@ -188,9 +221,11 @@ make CFLAGS="-g -O0"
 ### 🔧 Customization
 - **Button Layout**: Modify button positions in `gui_app.c`
 - **Character Mappings**: Update character arrays in `japanese_input.c`
+- **Symbol Characters**: Add/modify symbols in `symbol_chars` and `symbol_chars_shifted` arrays
 - **Styling**: Adjust LVGL styles in `gui_app.c`
 - **Display Settings**: Modify window size and properties in `lvgl_init.c`
 - **Fonts**: Replace `assets/NotoSansCJK.ttc` with preferred Japanese font
+- **Mode Button Behavior**: The mode button shows the next mode instead of current mode
 
 ## Contributing
 
@@ -245,11 +280,40 @@ This project is open source. Please check the license file for specific terms.
 - Check font file integrity
 - Verify wide character support
 
+**Shift Button Issues**
+- Check if Shift button is disabled in Number mode (this is expected behavior)
+- Verify Shift state persistence when switching modes
+- Ensure proper color feedback (Green = inactive, Orange = active)
+
+**Mode Button Display**
+- Mode button shows the next mode, not the current mode
+- This is the intended behavior for better user experience
+
 ### Getting Help
 - Check the test output for functionality verification
 - Review the code comments for implementation details
 - Ensure all dependencies are properly installed
 - Verify system locale settings for Japanese text
+
+## Recent Updates
+
+### ✨ Latest Features (v2.0)
+- **Unified Japanese Mode**: Consolidated Hiragana and Katakana into a single Japanese mode with Shift toggle
+- **Enhanced Shift Button**: Context-aware functionality with visual feedback and state persistence
+- **Extended Symbol Support**: Added missing symbols `{}`, `<>/`, `\` to symbol input mode
+- **Improved Mode Button**: Now shows next mode instead of current mode for better UX
+- **Smart Flick Input**: Direct character input for single-character buttons (no popup needed)
+- **Button Label Optimization**: Alphabet and symbol modes show all available characters on button labels
+- **Enter Button Enhancement**: Clears text area after displaying input result
+- **Number Mode Optimization**: Shift button automatically disabled in number mode
+- **Position Improvements**: Swapped Enter and Space button positions for better usability
+
+### 🔧 Technical Improvements
+- **Modular Architecture**: Clean separation of LVGL initialization, GUI application, and input logic
+- **Comprehensive Testing**: 268 test cases covering all functionality
+- **Memory Management**: Proper cleanup and resource management
+- **UTF-8 Support**: Full Unicode character handling
+- **Cross-platform Compatibility**: Works on Linux with SDL2 and LVGL
 
 ## Future Enhancements
 

@@ -88,8 +88,24 @@ static const wchar_t* symbol_chars[12] = {
     L"＋×",         // Button 7
     L"÷％",         // Button 8
     L"［］",         // Button 9 (first button in 4th row)
-    L"*",            // Button 10
-    L"#"             // Button 11
+    L"<>/",          // Button 10 (angle brackets and forward slash)
+    L"\\{}"          // Button 11 (backslash and curly braces)
+};
+
+// Shifted symbol characters (alternative symbols when shift is active)
+static const wchar_t* symbol_chars_shifted[12] = {
+    L"！？",         // Button 0
+    L"（）",         // Button 1
+    L"「」",         // Button 2
+    L"，．",         // Button 3 (comma and period)
+    L"・：",         // Button 4
+    L"；〜",         // Button 5
+    L"－＝",         // Button 6
+    L"＋×",         // Button 7
+    L"÷％",         // Button 8
+    L"［］",         // Button 9
+    L"<>/",          // Button 10 (same as normal)
+    L"\\{}"          // Button 11 (same as normal)
 };
 
 // Mode names
@@ -175,7 +191,8 @@ void japanese_input_select_flick_char(JapaneseInputState *state, int button_num,
             }
             break;
         case MODE_SYMBOL:
-            chars = symbol_chars[button_num];
+            // Use shift_mode to determine normal vs shifted symbols
+            chars = state->shift_mode ? symbol_chars_shifted[button_num] : symbol_chars[button_num];
             break;
         case MODE_COUNT:
             // This case should never be reached, but included for completeness
@@ -275,7 +292,7 @@ const wchar_t* get_button_flick_chars_with_shift(InputMode mode, int button_num,
                 return L"";
             }
         case MODE_SYMBOL:
-            return symbol_chars[button_num];
+            return shift_mode ? symbol_chars_shifted[button_num] : symbol_chars[button_num];
         default:
             return L"";
     }
@@ -401,7 +418,7 @@ const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool s
             break;
         case MODE_SYMBOL:
             {
-                const wchar_t* chars = get_button_flick_chars(mode, button_num);
+                const wchar_t* chars = get_button_flick_chars_with_shift(mode, button_num, shift_mode);
                 if (chars && wcslen(chars) > 0) {
                     // For symbol mode, show all possible characters on the button
                     static wchar_t all_chars[20];
