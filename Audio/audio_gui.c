@@ -215,9 +215,9 @@ static void keyboard_event_cb(lv_event_t *e)
 
 lv_obj_t *audio_gui_create(void)
 {
-    // Create main screen
+    // Create main screen with white background
     screen = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(screen, lv_color_hex(0x1a1a1a), 0);
+    lv_obj_set_style_bg_color(screen, lv_color_hex(0xffffff), 0);
     lv_screen_load(screen);
     
     // Add keyboard event handler to screen
@@ -230,13 +230,13 @@ lv_obj_t *audio_gui_create(void)
     lv_obj_t *info_container = lv_obj_create(screen);
     lv_obj_set_size(info_container, 300, 140);
     lv_obj_align(info_container, LV_ALIGN_TOP_MID, 0, 10);
-    lv_obj_set_style_bg_color(info_container, lv_color_hex(0x2a2a2a), 0);
-    lv_obj_set_style_border_color(info_container, lv_color_hex(0x404040), 0);
+    lv_obj_set_style_bg_color(info_container, lv_color_hex(0xf0f0f0), 0);
+    lv_obj_set_style_border_color(info_container, lv_color_hex(0xcccccc), 0);
     
     title_label = lv_label_create(info_container);
     lv_label_set_text(title_label, "No Track Loaded");
     lv_obj_set_style_text_font(title_label, &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(title_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(title_label, lv_color_hex(0x000000), 0);
     lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
     lv_label_set_long_mode(title_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(title_label, 280);
@@ -244,7 +244,7 @@ lv_obj_t *audio_gui_create(void)
     artist_label = lv_label_create(info_container);
     lv_label_set_text(artist_label, "Unknown Artist");
     lv_obj_set_style_text_font(artist_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(artist_label, lv_color_hex(0xcccccc), 0);
+    lv_obj_set_style_text_color(artist_label, lv_color_hex(0x333333), 0);
     lv_obj_align(artist_label, LV_ALIGN_TOP_MID, 0, 50);
     lv_label_set_long_mode(artist_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(artist_label, 280);
@@ -252,7 +252,7 @@ lv_obj_t *audio_gui_create(void)
     album_label = lv_label_create(info_container);
     lv_label_set_text(album_label, "Unknown Album");
     lv_obj_set_style_text_font(album_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(album_label, lv_color_hex(0x999999), 0);
+    lv_obj_set_style_text_color(album_label, lv_color_hex(0x666666), 0);
     lv_obj_align(album_label, LV_ALIGN_TOP_MID, 0, 80);
     lv_label_set_long_mode(album_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(album_label, 280);
@@ -271,12 +271,12 @@ lv_obj_t *audio_gui_create(void)
     // Time labels
     time_current_label = lv_label_create(screen);
     lv_label_set_text(time_current_label, "00:00");
-    lv_obj_set_style_text_color(time_current_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(time_current_label, lv_color_hex(0x000000), 0);
     lv_obj_align(time_current_label, LV_ALIGN_TOP_LEFT, 20, 190);
     
     time_total_label = lv_label_create(screen);
     lv_label_set_text(time_total_label, "00:00");
-    lv_obj_set_style_text_color(time_total_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(time_total_label, lv_color_hex(0x000000), 0);
     lv_obj_align(time_total_label, LV_ALIGN_TOP_RIGHT, -20, 190);
     
     // Control buttons
@@ -310,11 +310,11 @@ lv_obj_t *audio_gui_create(void)
     lv_obj_t *volume_container = lv_obj_create(screen);
     lv_obj_set_size(volume_container, 280, 80);
     lv_obj_align(volume_container, LV_ALIGN_TOP_MID, 0, 300);
-    lv_obj_set_style_bg_color(volume_container, lv_color_hex(0x2a2a2a), 0);
+    lv_obj_set_style_bg_color(volume_container, lv_color_hex(0xf0f0f0), 0);
     
     lv_obj_t *vol_icon = lv_label_create(volume_container);
     lv_label_set_text(vol_icon, LV_SYMBOL_VOLUME_MAX);
-    lv_obj_set_style_text_color(vol_icon, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(vol_icon, lv_color_hex(0x000000), 0);
     lv_obj_align(vol_icon, LV_ALIGN_LEFT_MID, 10, 0);
     
     volume_slider = lv_slider_create(volume_container);
@@ -328,20 +328,20 @@ lv_obj_t *audio_gui_create(void)
     
     volume_label = lv_label_create(volume_container);
     lv_label_set_text(volume_label, "Vol: 70%");
-    lv_obj_set_style_text_color(volume_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(volume_label, lv_color_hex(0x000000), 0);
     lv_obj_align(volume_label, LV_ALIGN_CENTER, 0, -20);
     
     // File list
     lv_obj_t *list_label = lv_label_create(screen);
     lv_label_set_text(list_label, "Playlist");
-    lv_obj_set_style_text_color(list_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_color(list_label, lv_color_hex(0x000000), 0);
     lv_obj_set_style_text_font(list_label, &lv_font_montserrat_14, 0);
     lv_obj_align(list_label, LV_ALIGN_TOP_LEFT, 20, 400);
     
     file_list = lv_list_create(screen);
     lv_obj_set_size(file_list, 280, 200);
     lv_obj_align(file_list, LV_ALIGN_TOP_MID, 0, 430);
-    lv_obj_set_style_bg_color(file_list, lv_color_hex(0x2a2a2a), 0);
+    lv_obj_set_style_bg_color(file_list, lv_color_hex(0xf5f5f5), 0);
     
     // Scan and load audio files from assets/music directory
     scan_music_directory();
