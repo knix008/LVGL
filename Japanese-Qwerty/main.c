@@ -49,19 +49,24 @@ int main(int argc, char **argv) {
     printf("Japanese QWERTY Input Method Started!\n");
     printf("========================================\n\n");
     printf("Window Size: %dx%d\n", SCREEN_WIDTH, SCREEN_HEIGHT);
-    printf("\nControls:\n");
-    printf("  Click buttons to type\n");
-    printf("  Switch Mode - Toggle between Hiragana/Katakana/English\n");
-    printf("  Space       - Commit text and add space\n");
-    printf("  Enter       - Commit text and add newline\n");
-    printf("  Bksp        - Backspace\n");
-    printf("  -           - Prolonged sound mark (ー)\n");
-    printf("  Clear       - Clear all text\n\n");
+    printf("\nButton Controls:\n");
+    printf("  Letter Buttons - Type Japanese characters directly (JIS layout)\n");
+    printf("  Mode: あ→ア→A - Cycle: Hiragana → Katakana → English\n");
+    printf("  Shift       - Small characters (っ, ゃ, ょ, etc.)\n");
+    printf("  123/ABC     - Toggle numbers/symbols mode\n");
+    printf("  Space       - Add space\n");
+    printf("  Enter       - Add newline\n");
+    printf("  ← (Bksp)    - Delete last character\n");
+    printf("  Clear       - Clear all text\n");
+    printf("  ゛ (dakuten)   - Add dakuten mark (か→が)\n");
+    printf("  ゜ (handakuten)- Add handakuten mark (は→ぱ)\n");
+    printf("  ー          - Prolonged sound mark\n\n");
     printf("Examples:\n");
-    printf("  konnichiha → こんにちは\n");
-    printf("  arigatou   → ありがとう\n");
-    printf("  nihon      → にほん\n");
-    printf("  to-kyo-    → とーきょー\n\n");
+    printf("  か + ゛ → が (ga)\n");
+    printf("  は + ゛ → ば (ba)\n");
+    printf("  は + ゜ → ぱ (pa)\n");
+    printf("  こんにちは: こ-ん-に-ち-は\n");
+    printf("  ありがとう: Click buttons to type each character\n\n");
 
     // Main loop
     while (1) {

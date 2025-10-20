@@ -16,23 +16,78 @@ static const char *qwerty_rows[] = {
 };
 
 // Japanese character hints for QWERTY keys (Hiragana)
+// Based on standard JIS keyboard layout
 static const char *hiragana_hints[] = {
     // Row 1: q w e r t y u i o p
-    "q", "わ", "え", "ら", "た", "や", "う", "い", "お", "ぱ",
+    "た", "て", "い", "す", "か", "ん", "な", "に", "ら", "せ",
     // Row 2: a s d f g h j k l
-    "あ", "さ", "だ", "ふ", "が", "は", "じ", "か", "ら",
+    "ち", "と", "し", "は", "き", "く", "ま", "の", "り",
+    // Row 3: z x c v b n m  
+    "つ", "さ", "そ", "ひ", "こ", "み", "も"
+};
+
+// Small Hiragana characters for shift mode
+static const char *hiragana_small[] = {
+    // Row 1: q w e r t y u i o p
+    "た", "て", "ぃ", "す", "か", "ん", "ゃ", "に", "ょ", "せ",
+    // Row 2: a s d f g h j k l
+    "ち", "と", "し", "は", "き", "く", "ま", "の", "り",
     // Row 3: z x c v b n m
-    "ざ", "x", "ち", "ゔ", "ば", "ん", "ま"
+    "っ", "さ", "そ", "ひ", "こ", "み", "も"
 };
 
 // Japanese character hints for QWERTY keys (Katakana)
+// Based on standard JIS keyboard layout
 static const char *katakana_hints[] = {
     // Row 1: q w e r t y u i o p
-    "q", "ワ", "エ", "ラ", "タ", "ヤ", "ウ", "イ", "オ", "パ",
+    "タ", "テ", "イ", "ス", "カ", "ン", "ナ", "ニ", "ラ", "セ",
     // Row 2: a s d f g h j k l
-    "ア", "サ", "ダ", "フ", "ガ", "ハ", "ジ", "カ", "ラ",
+    "チ", "ト", "シ", "ハ", "キ", "ク", "マ", "ノ", "リ",
     // Row 3: z x c v b n m
-    "ザ", "x", "チ", "ヴ", "バ", "ン", "マ"
+    "ツ", "サ", "ソ", "ヒ", "コ", "ミ", "モ"
+};
+
+// Small Katakana characters for shift mode
+static const char *katakana_small[] = {
+    // Row 1: q w e r t y u i o p
+    "タ", "テ", "ィ", "ス", "カ", "ン", "ャ", "ニ", "ョ", "セ",
+    // Row 2: a s d f g h j k l
+    "チ", "ト", "シ", "ハ", "キ", "ク", "マ", "ノ", "リ",
+    // Row 3: z x c v b n m
+    "ッ", "サ", "ソ", "ヒ", "コ", "ミ", "モ"
+};
+
+// Dakuten conversion table (゛)
+typedef struct {
+    const char *base;
+    const char *dakuten;
+} DakutenMap;
+
+static const DakutenMap hiragana_dakuten[] = {
+    {"か", "が"}, {"き", "ぎ"}, {"く", "ぐ"}, {"け", "げ"}, {"こ", "ご"},
+    {"さ", "ざ"}, {"し", "じ"}, {"す", "ず"}, {"せ", "ぜ"}, {"そ", "ぞ"},
+    {"た", "だ"}, {"ち", "ぢ"}, {"つ", "づ"}, {"て", "で"}, {"と", "ど"},
+    {"は", "ば"}, {"ひ", "び"}, {"ふ", "ぶ"}, {"へ", "べ"}, {"ほ", "ぼ"},
+    {NULL, NULL}
+};
+
+static const DakutenMap katakana_dakuten[] = {
+    {"カ", "ガ"}, {"キ", "ギ"}, {"ク", "グ"}, {"ケ", "ゲ"}, {"コ", "ゴ"},
+    {"サ", "ザ"}, {"シ", "ジ"}, {"ス", "ズ"}, {"セ", "ゼ"}, {"ソ", "ゾ"},
+    {"タ", "ダ"}, {"チ", "ヂ"}, {"ツ", "ヅ"}, {"テ", "デ"}, {"ト", "ド"},
+    {"ハ", "バ"}, {"ヒ", "ビ"}, {"フ", "ブ"}, {"ヘ", "ベ"}, {"ホ", "ボ"},
+    {NULL, NULL}
+};
+
+// Handakuten conversion table (゜)
+static const DakutenMap hiragana_handakuten[] = {
+    {"は", "ぱ"}, {"ひ", "ぴ"}, {"ふ", "ぷ"}, {"へ", "ぺ"}, {"ほ", "ぽ"},
+    {NULL, NULL}
+};
+
+static const DakutenMap katakana_handakuten[] = {
+    {"ハ", "パ"}, {"ヒ", "ピ"}, {"フ", "プ"}, {"ヘ", "ペ"}, {"ホ", "ポ"},
+    {NULL, NULL}
 };
 
 static GUIState *global_gui_state = NULL;
@@ -154,9 +209,9 @@ void gui_shift_button_event_cb(lv_event_t *e) {
         
         // Update shift button appearance
         if (global_gui_state->shift_pressed) {
-            lv_obj_set_style_bg_color(global_gui_state->shift_button, lv_color_hex(0x4A90E2), 0);
+            lv_obj_set_style_bg_color(global_gui_state->shift_button, lv_color_hex(0xFF8000), 0);  // Orange when active
         } else {
-            lv_obj_set_style_bg_color(global_gui_state->shift_button, lv_color_hex(0x808080), 0);
+            lv_obj_set_style_bg_color(global_gui_state->shift_button, lv_color_hex(0x00AA00), 0);  // Green when inactive
         }
     }
 }
@@ -180,6 +235,50 @@ void gui_mode_button_event_cb(lv_event_t *e) {
     }
 }
 
+// Apply dakuten mark to last character
+void apply_dakuten_mark(IMEState *state, bool is_handakuten) {
+    if (state->display_pos == 0) return;
+    
+    // Find start of last UTF-8 character
+    int pos = state->display_pos - 1;
+    while (pos > 0 && (state->display[pos] & 0xC0) == 0x80) {
+        pos--;
+    }
+    
+    // Extract last character
+    char last_char[16] = {0};
+    int char_len = state->display_pos - pos;
+    strncpy(last_char, state->display + pos, char_len);
+    last_char[char_len] = '\0';
+    
+    // Find replacement in conversion table
+    const DakutenMap *map = NULL;
+    const char *replacement = NULL;
+    
+    if (state->mode == MODE_HIRAGANA) {
+        map = is_handakuten ? hiragana_handakuten : hiragana_dakuten;
+    } else if (state->mode == MODE_KATAKANA) {
+        map = is_handakuten ? katakana_handakuten : katakana_dakuten;
+    }
+    
+    if (map) {
+        for (int i = 0; map[i].base != NULL; i++) {
+            if (strcmp(last_char, map[i].base) == 0) {
+                replacement = map[i].dakuten;
+                break;
+            }
+        }
+    }
+    
+    // Replace last character with dakuten version
+    if (replacement) {
+        state->display[pos] = '\0';
+        state->display_pos = pos;
+        strcat(state->display, replacement);
+        state->display_pos += strlen(replacement);
+    }
+}
+
 void gui_special_button_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED && global_gui_state) {
@@ -194,8 +293,19 @@ void gui_special_button_event_cb(lv_event_t *e) {
             ime_process_backspace(global_gui_state->ime_state);
         } else if (strcmp(label, "Clear") == 0) {
             ime_clear(global_gui_state->ime_state);
-        } else if (strcmp(label, "-") == 0) {
-            ime_process_char(global_gui_state->ime_state, '-');
+        } else if (strcmp(label, "゛") == 0 || strcmp(label, "濁点") == 0) {
+            // Dakuten mark
+            apply_dakuten_mark(global_gui_state->ime_state, false);
+        } else if (strcmp(label, "゜") == 0 || strcmp(label, "半濁") == 0) {
+            // Handakuten mark
+            apply_dakuten_mark(global_gui_state->ime_state, true);
+        } else if (strcmp(label, "-") == 0 || strcmp(label, "ー") == 0) {
+            // Prolonged sound mark
+            int remaining = (int)sizeof(global_gui_state->ime_state->display) - global_gui_state->ime_state->display_pos - 1;
+            if (remaining > (int)strlen("ー")) {
+                strcat(global_gui_state->ime_state->display, "ー");
+                global_gui_state->ime_state->display_pos += strlen("ー");
+            }
         }
         
         gui_update_display(global_gui_state);
@@ -280,11 +390,19 @@ void gui_update_keyboard_labels(GUIState *state) {
         // Letter mode: Show Japanese characters or English letters
         const char **japanese_chars = NULL;
         
-        // Select Japanese character set based on mode
+        // Select Japanese character set based on mode and shift state
         if (state->ime_state->mode == MODE_HIRAGANA) {
-            japanese_chars = hiragana_hints;
+            if (state->shift_pressed) {
+                japanese_chars = hiragana_small;
+            } else {
+                japanese_chars = hiragana_hints;
+            }
         } else if (state->ime_state->mode == MODE_KATAKANA) {
-            japanese_chars = katakana_hints;
+            if (state->shift_pressed) {
+                japanese_chars = katakana_small;
+            } else {
+                japanese_chars = katakana_hints;
+            }
         }
         
         // Row 1: Q-P (10 keys)
@@ -430,8 +548,8 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
         state->key_buttons[button_index++] = btn;
     }
     
-    // Row 4: Shift (62) + Space (165) + Enter (62) + 123 (62) + Clear (62) + Hyphen (45) + 5 gaps (4px) = 478px total
-    int row4_total_width = 62 + 165 + 62 + 62 + 62 + 45 + 5 * btn_gap;
+    // Row 4: Shift (62) + Space (165) + Enter (62) + 123 (62) + Clear (62) + ゛(32) + ゜(32) + ー(32) + 7 gaps (4px)
+    int row4_total_width = 62 + 165 + 62 + 62 + 62 + 32 + 32 + 32 + 7 * btn_gap;
     int row4_start_x = (620 - row4_total_width) / 2;
     
     // Row 4: Shift, Space, Enter, 123/ABC, Clear, Hyphen
@@ -446,7 +564,7 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     lv_label_set_text(shift_label, "Shift");
     lv_obj_set_style_text_font(shift_label, state->japanese_font, 0);
     lv_obj_center(shift_label);
-    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x00AA00), 0);  // Green when inactive (initial state)
     lv_obj_add_event_cb(state->shift_button, gui_shift_button_event_cb, LV_EVENT_CLICKED, NULL);
     current_x += 62 + btn_gap;
     
@@ -494,15 +612,37 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     lv_obj_add_event_cb(clear_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
     current_x += 62 + btn_gap;
     
-    // Hyphen button (for prolonged sound mark)
-    lv_obj_t *hyphen_btn = lv_button_create(parent);
-    lv_obj_set_size(hyphen_btn, 45, btn_height);
-    lv_obj_set_pos(hyphen_btn, current_x, start_y);
-    lv_obj_t *hyphen_label = lv_label_create(hyphen_btn);
-    lv_label_set_text(hyphen_label, "-");
-    lv_obj_set_style_text_font(hyphen_label, state->japanese_font, 0);
-    lv_obj_center(hyphen_label);
-    lv_obj_add_event_cb(hyphen_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    // Dakuten button (゛)
+    lv_obj_t *dakuten_btn = lv_button_create(parent);
+    lv_obj_set_size(dakuten_btn, 32, btn_height);
+    lv_obj_set_pos(dakuten_btn, current_x, start_y);
+    lv_obj_t *dakuten_label = lv_label_create(dakuten_btn);
+    lv_label_set_text(dakuten_label, "゛");
+    lv_obj_set_style_text_font(dakuten_label, state->japanese_font, 0);
+    lv_obj_center(dakuten_label);
+    lv_obj_add_event_cb(dakuten_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    current_x += 32 + btn_gap;
+    
+    // Handakuten button (゜)
+    lv_obj_t *handakuten_btn = lv_button_create(parent);
+    lv_obj_set_size(handakuten_btn, 32, btn_height);
+    lv_obj_set_pos(handakuten_btn, current_x, start_y);
+    lv_obj_t *handakuten_label = lv_label_create(handakuten_btn);
+    lv_label_set_text(handakuten_label, "゜");
+    lv_obj_set_style_text_font(handakuten_label, state->japanese_font, 0);
+    lv_obj_center(handakuten_label);
+    lv_obj_add_event_cb(handakuten_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    current_x += 32 + btn_gap;
+    
+    // Prolonged sound mark button (ー)
+    lv_obj_t *chouon_btn = lv_button_create(parent);
+    lv_obj_set_size(chouon_btn, 32, btn_height);
+    lv_obj_set_pos(chouon_btn, current_x, start_y);
+    lv_obj_t *chouon_label = lv_label_create(chouon_btn);
+    lv_label_set_text(chouon_label, "ー");
+    lv_obj_set_style_text_font(chouon_label, state->japanese_font, 0);
+    lv_obj_center(chouon_label);
+    lv_obj_add_event_cb(chouon_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
     
     state->num_buttons = button_index;
 }
