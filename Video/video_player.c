@@ -192,8 +192,11 @@ static int init_audio(const char *filepath) {
 
     // Setup resampler to convert to SDL audio format (stereo, 16-bit, 44100Hz)
     swr_ctx = swr_alloc();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     av_opt_set_int(swr_ctx, "in_channel_layout", audio_codec_ctx->channel_layout ? audio_codec_ctx->channel_layout : AV_CH_LAYOUT_STEREO, 0);
     av_opt_set_int(swr_ctx, "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+#pragma GCC diagnostic pop
     av_opt_set_int(swr_ctx, "in_sample_rate", audio_codec_ctx->sample_rate, 0);
     av_opt_set_int(swr_ctx, "out_sample_rate", 44100, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", audio_codec_ctx->sample_fmt, 0);
