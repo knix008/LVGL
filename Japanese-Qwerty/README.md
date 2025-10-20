@@ -1,39 +1,68 @@
 # Japanese QWERTY Input Method (IME)
 
-A Japanese Input Method Editor for LVGL with an on-screen QWERTY button keyboard and real-time romaji to kana conversion.
+A Japanese Input Method Editor for LVGL with an on-screen QWERTY button keyboard featuring direct Japanese character input based on the JIS keyboard layout.
 
 ## Features
 
-- **Interactive QWERTY Button Keyboard**: Click buttons to type Japanese characters
+- **Interactive QWERTY Button Keyboard**: Click buttons to type Japanese characters directly
 - **640×480 Window**: Compact application window optimized for embedded displays
-- **Multiple Input Modes**: Hiragana (ひらがな), Katakana (カタカナ), and English
-- **Real-time Romaji Conversion**: Type in romaji and automatically convert to kana
+- **JIS Keyboard Layout**: Standard Japanese computer keyboard layout
+- **Direct Character Input**: Buttons show exact Japanese characters to input
+- **Multiple Input Modes**: 
+  - **Hiragana (ひらがな)**: Japanese phonetic characters
+  - **Katakana (カタカナ)**: Japanese phonetic characters for foreign words
+  - **English**: Uppercase and lowercase Latin letters
+  - **Numbers/Symbols**: Digits and special characters
+- **Combining Marks**:
+  - **Dakuten (゛)**: か→が, さ→ざ, た→だ, は→ば
+  - **Handakuten (゜)**: は→ぱ, ひ→ぴ, ふ→ぷ
+  - **Chōonpu (ー)**: Prolonged sound mark for katakana
 - **Runtime Font Loading**: Loads Japanese fonts directly from TrueType files using FreeType
-- **Japanese Font Support**: Uses NotoSansCJK font for proper Japanese character display
-- **Comprehensive Romaji Mapping**: Supports all standard Japanese syllables including:
-  - Basic vowels and consonants
-  - Voiced sounds (がぎぐげご, etc.)
-  - Semi-voiced sounds (ぱぴぷぺぽ)
-  - Contracted sounds (きゃ, しゅ, ちょ, etc.)
-  - Double consonants (っ/ッ)
-  - Special character ん (n/nn)
+- **Visual Feedback**: 
+  - Shift button: 🟢 Green (inactive) / 🟠 Orange (active)
+  - Mode-aware keyboard labels
+- **Smart Mode Toggle**: 123 button remembers previous input mode
 - **LVGL GUI**: Beautiful, responsive interface powered by LVGL 9.2
 - **SDL2 Backend**: Cross-platform display support
 
-## How Japanese IME Works
+## Keyboard Layout
 
-### Romaji → Hiragana/Katakana
-Click buttons to type romanized Japanese and the IME automatically converts it to kana:
-- `konnichiha` → `こんにちは`
-- `arigatou` → `ありがとう`
-- `nihon` → `にほん`
-- `to-kyo-` → `とーきょー`
+### Standard Mode (Hiragana/Katakana/English)
+```
+Row 1: [Q][W][E][R][T][Y][U][I][O][P][←]
+Row 2:   [A][S][D][F][G][H][J][K][L]
+Row 3: [Shift][Z][X][C][V][B][N][M][Enter]
+Row 4:    [Space__________][123][Clear][゛][゜][ー]
+```
 
-### Input Modes
+**Button Sizes:**
+- Letter keys: 45×32 pixels
+- Backspace: 50×32 pixels
+- Shift/Enter: 62×32 pixels
+- Space: 200×32 pixels
+- Other buttons: 32-62×32 pixels
+- Gap: 4 pixels between all buttons
 
-1. **Hiragana Mode (ひらがな)**: Default mode for Japanese text
-2. **Katakana Mode (カタカナ)**: For foreign words and technical terms
-3. **English Mode**: Direct English character input
+### Hiragana Mode
+```
+Row 1: [た][て][い][す][か][ん][な][に][ら][せ]
+Row 2:   [ち][と][し][は][き][く][ま][の][り]
+Row 3: [Shift][つ][さ][そ][ひ][こ][み][も]
+```
+
+### Katakana Mode
+```
+Row 1: [タ][テ][イ][ス][カ][ン][ナ][ニ][ラ][セ]
+Row 2:   [チ][ト][シ][ハ][キ][ク][マ][ノ][リ]
+Row 3: [Shift][ツ][サ][ソ][ヒ][コ][ミ][モ]
+```
+
+### Number Mode
+```
+Row 1: [1][2][3][4][5][6][7][8][9][0]
+Row 2:   [-][=][[] []][\ ][;]['][,][.][/]
+Row 4:    [Space__________][あ/ア/ABC][Clear][゛][゜][ー]
+```
 
 ## Installation
 
@@ -97,73 +126,86 @@ make
 
 The application window will open at 640×480 resolution.
 
-### On-Screen Keyboard Controls
+### Button Controls
 
-#### Letter Keys (QWERTY Layout)
-- **Row 1**: Q W E R T Y U I O P
-- **Row 2**: A S D F G H J K L
-- **Row 3**: Z X C V B N M
+#### Main Input Buttons
+Click the letter keys to type Japanese characters directly as shown on the buttons.
 
 #### Special Keys
-- **Switch Mode** - Toggle between Hiragana/Katakana/English modes
-- **Space** - Commit current input and add space
-- **Enter** - Commit current input and add newline
-- **Bksp** - Backspace (delete last character)
-- **-** - Insert prolonged sound mark (ー)
-- **Clear** - Clear all text
 
-### Input Display
+| Button | Function | Description |
+|--------|----------|-------------|
+| **Mode: あ→ア→A** | Cycle modes | Hiragana → Katakana → English |
+| **Shift** | Toggle shift | 🟢 Green (inactive) / 🟠 Orange (active) |
+| **123** | Number mode | Toggles to numbers, shows previous mode (あ/ア/ABC) |
+| **Space** | Add space | Inserts space character |
+| **Enter** | Submit input | Shows popup with result and clears text |
+| **←** | Backspace | Deletes last character |
+| **Clear** | Clear all | Removes all text |
+| **゛** | Dakuten | Adds voicing mark (か→が) |
+| **゜** | Handakuten | Adds semi-voicing mark (は→ぱ) |
+| **ー** | Chōonpu | Prolonged sound mark |
 
-The application shows:
-1. **Mode Label**: Current input mode (ひらがな/カタカナ/English)
-2. **Text Area**: Committed text with Japanese characters
-3. **Input Buffer**: Shows romaji input → kana conversion in real-time
+### Shift Button Behavior
 
-## Romaji Conversion Examples
+**In Japanese Mode (Hiragana/Katakana):**
+- Without Shift: Normal characters (た, て, い...)
+- With Shift: Small characters (っ, ゃ, ょ...)
+- Shift also toggles: Hiragana ↔ Katakana
 
-### Basic Syllables
-```
-ka ki ku ke ko → か き く け こ
-sa shi su se so → さ し す せ そ
-ta chi tsu te to → た ち つ て と
-na ni nu ne no → な に ぬ ね の
-ha hi fu he ho → は ひ ふ へ ほ
-```
+**In English Mode:**
+- Without Shift: Lowercase (a, b, c...)
+- With Shift: Uppercase (A, B, C...)
 
-### Contracted Sounds (拗音)
-```
-kya kyu kyo → きゃ きゅ きょ
-sha shu sho → しゃ しゅ しょ
-cha chu cho → ちゃ ちゅ ちょ
-nya nyu nyo → にゃ にゅ にょ
-```
+**In Number Mode:**
+- Without Shift: Numbers (1, 2, 3...)
+- With Shift: Symbols (!, @, #...)
 
-### Double Consonants (促音)
-```
-kitte → きって (stamp)
-gakkou → がっこう (school)
-zasshi → ざっし (magazine)
-```
+### 123/ABC Toggle Button
 
-### Special Cases
-```
-n / nn → ん
-- → ー (prolonged sound mark)
-```
+**Smart Mode Memory:**
+- In Letter mode → Button shows "**123**" → Click to enter Number mode
+- In Number mode → Button shows previous mode (**あ**/**ア**/**ABC**) → Click to return
 
-## Example Typing Session
+**Example:**
+1. Start in Hiragana mode
+2. Click **[123]** → Enter number mode, button changes to **[あ]**
+3. Type numbers...
+4. Click **[あ]** → Return to Hiragana mode, button changes to **[123]**
 
-```
-1. Click "Switch Mode" to ensure Hiragana mode is active
-2. Click: k-o-n-n-i-c-h-i-h-a
-   → Input buffer shows: konnichiha → こんにちは
-3. Click "Space"
-   → Text committed: こんにちは 
-4. Click: a-r-i-g-a-t-o-u
-   → Input buffer shows: arigatou → ありがとう
-5. Click "Enter"
-   → Text committed with newline
-```
+### Combining Marks (Dakuten/Handakuten)
+
+Type a base character, then click the combining mark button:
+
+**Dakuten (゛) Examples:**
+- か + ゛ → が (ka → ga)
+- さ + ゛ → ざ (sa → za)
+- た + ゛ → だ (ta → da)
+- は + ゛ → ば (ha → ba)
+
+**Handakuten (゜) Examples:**
+- は + ゜ → ぱ (ha → pa)
+- ひ + ゜ → ぴ (hi → pi)
+- ふ + ゜ → ぷ (fu → pu)
+
+## Example Typing
+
+### Type "こんにちは" (Hello)
+1. Click B (こ)
+2. Click Y (ん)
+3. Click I (に)
+4. Click A (ち)
+5. Click F (は)
+
+### Type "ありがとう" (Thank you)
+Need additional vowel characters (あ, り, がconversion, とう)
+
+### Type "がっこう" (School)
+1. Click T (か)
+2. Click ゛ → becomes が
+3. Click Shift (turns orange), then Z (っ)
+4. Click B (こ)
+5. Need う character
 
 ## Project Structure
 
@@ -176,26 +218,35 @@ Japanese-Qwerty/
 ├── japanese_gui.c          # GUI with QWERTY button keyboard & font loading
 ├── Makefile                # Build configuration
 ├── setup.sh                # Automated setup script
+├── run_test.sh             # Test runner script
 ├── lv_conf.h               # LVGL configuration
 ├── .gitignore              # Git ignore rules
 ├── README.md               # This file
-├── lvgl/                   # LVGL library (cloned by setup)
-└── assets/
-    └── NotoSansCJK.ttc     # Japanese TrueType font (loaded at runtime)
+├── assets/
+│   └── NotoSansCJK.ttc     # Japanese TrueType font (loaded at runtime)
+├── tests/
+│   ├── test_japanese_qwerty.c  # Core IME tests (26 tests)
+│   ├── test_dakuten.c          # Combining marks tests (27 tests)
+│   ├── Makefile                # Test build configuration
+│   └── README.md               # Test documentation
+└── lvgl/                   # LVGL library (cloned by setup)
 ```
 
 ### Code Architecture
 
 1. **IME Core Layer** (`japanese_qwerty.h/c`)
-   - Romaji to kana conversion
+   - Romaji to kana conversion (for fallback/compatibility)
    - Input mode handling
+   - Buffer management
    - Pure C logic with no GUI dependencies
 
 2. **GUI Layer** (`japanese_gui.h/c`)
-   - LVGL button-based QWERTY keyboard
+   - LVGL button-based QWERTY keyboard with JIS layout
    - Runtime font loading using FreeType
+   - Direct Japanese character input
+   - Dakuten/handakuten combining logic
    - Event handling for button clicks
-   - Visual feedback and display updates
+   - Visual feedback (shift colors, mode indicators)
 
 3. **Application Layer** (`main.c`)
    - LVGL initialization
@@ -209,7 +260,7 @@ The application loads Japanese fonts at runtime using LVGL's FreeType integratio
 
 - **Font File**: `assets/NotoSansCJK.ttc`
 - **Loading Method**: FreeType at runtime (no pre-generation needed)
-- **Font Size**: 20pt for main display
+- **Font Size**: 14px for all text
 - **Fallback**: Uses default LVGL font if loading fails
 
 ### Why Runtime Loading?
@@ -230,38 +281,84 @@ make clean-all # Remove all build files including LVGL
 make help     # Show help message
 ```
 
-## Extending the IME
+## Testing
 
-### Adding Custom Romaji Mappings
+The project includes a comprehensive test suite in the `tests/` directory.
 
-Edit `japanese_qwerty.c` and add entries to the `romaji_table`:
+### Quick Test Run
 
-```c
-static const RomajiMap romaji_table[] = {
-    // ... existing entries ...
-    {"custom", "カスタム", "カスタム"},
-    {NULL, NULL, NULL}
-};
+From the project root directory:
+
+```bash
+./run_test.sh     # Compile and run all tests with colored output
 ```
 
-### Customizing the Keyboard Layout
+### Manual Test Running
 
-Edit `japanese_gui.c` to modify the button layout:
+Alternatively, run tests from the tests directory:
 
-```c
-static const char *qwerty_rows[] = {
-    "qwertyuiop",
-    "asdfghjkl",
-    "zxcvbnm"
-};
+```bash
+cd tests
+make              # Build and run all tests
+make run-qwerty   # Run core IME tests only
+make run-dakuten  # Run dakuten combining tests only
+make clean        # Clean test builds
 ```
+
+### Test Coverage
+
+**test_japanese_qwerty.c** (26 tests): Core IME functionality
+- IME initialization and state management
+- Mode switching (Hiragana/Katakana/English)
+- Romaji to Kana conversion
+- Backspace, Space, Enter operations
+- Buffer management and overflow protection
+
+**test_dakuten.c** (27 tests): Combining marks
+- Dakuten (゛) conversion table: か→が, さ→ざ, た→だ, は→ば
+- Handakuten (゜) conversion table: は→ぱ, ひ→ぴ, etc.
+- Complete character set coverage (20 dakuten + 5 handakuten)
+
+### Test Results
+
+All tests pass with 100% success rate:
+- ✅ 26/26 core IME tests passed
+- ✅ 27/27 dakuten combining tests passed
+- ✅ Total: 53/53 tests passed
+
+## Customization
 
 ### Changing Font Size
 
 Edit `japanese_gui.c` in the `gui_load_fonts()` function:
 
 ```c
-font_info_20.weight = 24;  // Change from 20 to 24 for larger font
+lv_font_t *japanese_font = lv_freetype_font_create(
+    "assets/NotoSansCJK.ttc",
+    LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+    16,  // Change from 14 to your preferred size
+    LV_FREETYPE_FONT_STYLE_NORMAL
+);
+```
+
+### Modifying Button Layout
+
+Edit button sizes in `japanese_gui.c` → `gui_create_qwerty_keyboard()`:
+
+```c
+int btn_width = 45;   // Change button width
+int btn_height = 32;  // Change button height
+int btn_gap = 4;      // Change gap between buttons
+```
+
+### Adding More Japanese Characters
+
+Edit character arrays in `japanese_gui.c`:
+
+```c
+static const char *hiragana_hints[] = {
+    // Add or modify character mappings
+};
 ```
 
 ## Troubleshooting
@@ -300,32 +397,55 @@ rm -rf lvgl/lib lvgl/build
 - Check file permissions (should be readable)
 - Application will use default font as fallback
 
+**Dakuten/Handakuten not working**
+- Only works on compatible characters (か, さ, た, は rows)
+- Must have at least one character typed before using combining marks
+
 ## Technical Details
 
 ### Window Specifications
 - **Resolution**: 640×480 pixels
-- **Display Area**: 620×150 pixels text area
-- **Keyboard Area**: 620×210 pixels
-- **Button Layout**: Standard QWERTY (3 rows + special keys)
+- **Text Display Area**: 620×170 pixels
+- **Keyboard Area**: 620×250 pixels
+- **Button Layout**: Standard QWERTY with JIS character mapping
+- **All buttons centered** in their respective rows
 
 ### Font Loading Process
 1. Initialize LVGL FreeType support
-2. Load `assets/NotoSansCJK.ttc` at 20pt size
+2. Load `assets/NotoSansCJK.ttc` at 14pt size
 3. Fall back to default font if loading fails
-4. Apply font to text display components
+4. Apply font to all text display components
 
-### Romaji Conversion Algorithm
+### Direct Input Architecture
 
-1. **Longest Match First**: Tries to match the longest possible romaji sequence
-2. **Small Tsu Handling**: Detects doubled consonants (e.g., `tt` → `っ` + `t`)
-3. **Real-time Feedback**: Shows current romaji buffer and composed kana
+Unlike traditional IME systems that convert romaji to kana, this system provides **direct character input**:
+
+```
+Traditional IME:    Button "か" → romaji 'k'+'a' → conversion → output "か"
+This System:        Button "か" → direct input → output "か"
+```
+
+**Benefits:**
+- Faster input (no conversion delay)
+- What You See Is What You Get (WYSIWYG)
+- Familiar to users of Japanese keyboards
+- Simpler codebase (no complex conversion logic needed)
+
+### Combining Mark Algorithm
+
+1. User types base character (e.g., "か")
+2. User clicks dakuten button (゛)
+3. System finds last UTF-8 character in display buffer
+4. Looks up character in conversion table
+5. Replaces base character with dakuten version
 
 ## Performance
 
-- Real-time conversion with no noticeable lag
+- Real-time character input with no lag
 - Efficient button event handling
 - Lightweight rendering optimized for 640×480 display
 - Font caching by FreeType for fast rendering
+- All buttons update instantly on mode/shift changes
 
 ## License
 
@@ -335,18 +455,22 @@ This project uses LVGL which is licensed under the MIT license.
 
 - [LVGL Documentation](https://docs.lvgl.io/)
 - [LVGL FreeType Integration](https://docs.lvgl.io/master/libs/freetype.html)
+- [JIS Keyboard Layout (Wikipedia)](https://en.wikipedia.org/wiki/Keyboard_layout#Japanese)
 - [Japanese Input Method (Wikipedia)](https://en.wikipedia.org/wiki/Japanese_input_method)
-- [Romaji (Wikipedia)](https://en.wikipedia.org/wiki/Romanization_of_Japanese)
+- [Dakuten and Handakuten (Wikipedia)](https://en.wikipedia.org/wiki/Dakuten_and_handakuten)
 
 ## Contributing
 
 Contributions are welcome! Areas for improvement:
-- Additional romaji variants
-- More sophisticated rendering
-- Customizable button themes
-- Additional input modes
+- Additional character mappings for complete JIS coverage
+- Autocomplete/prediction features
+- Customizable button themes and colors
+- Additional input modes (half-width katakana, etc.)
+- Kanji conversion support
+- Export/save text functionality
 
 ---
 
 **Created with LVGL 9.2 + SDL2 + FreeType for 640×480 displays**  
-**Fonts loaded at runtime - no generation required!**
+**Fonts loaded at runtime - no generation required!**  
+**Direct Japanese character input based on JIS keyboard layout**

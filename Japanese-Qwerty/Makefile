@@ -46,6 +46,7 @@ $(LVGL_LIB):
 # Clean targets
 clean:
 	rm -f $(OBJECTS) $(TARGET)
+	cd tests && make clean
 	@echo "Clean complete!"
 
 clean-all: clean

@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     printf("  Shift       - Small characters (っ, ゃ, ょ, etc.)\n");
     printf("  123/ABC     - Toggle numbers/symbols mode\n");
     printf("  Space       - Add space\n");
-    printf("  Enter       - Add newline\n");
+    printf("  Enter       - Show result popup and clear text\n");
     printf("  ← (Bksp)    - Delete last character\n");
     printf("  Clear       - Clear all text\n");
     printf("  ゛ (dakuten)   - Add dakuten mark (か→が)\n");

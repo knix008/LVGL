@@ -98,6 +98,7 @@ void gui_init(GUIState *state, IMEState *ime_state) {
     state->japanese_font = NULL;  // Will be loaded later
     state->shift_pressed = false;
     state->number_mode = false;
+    state->previous_letter_mode = MODE_HIRAGANA;  // Default to Hiragana
     global_gui_state = state;
 }
 
@@ -126,7 +127,7 @@ bool gui_load_fonts(GUIState *state) {
 }
 
 void gui_update_display(GUIState *state) {
-    if (!state || !state->text_area || !state->mode_label || !state->buffer_label) {
+    if (!state || !state->text_area || !state->mode_label) {
         return;
     }
     
@@ -139,20 +140,6 @@ void gui_update_display(GUIState *state) {
     char mode_text[64];
     snprintf(mode_text, sizeof(mode_text), "Mode: %s", mode_str);
     lv_label_set_text(state->mode_label, mode_text);
-    
-    // Update buffer label (showing current input)
-    char buffer_text[1024];  // Increased size to handle long inputs
-    if (state->ime_state->buffer_pos > 0 || state->ime_state->output_pos > 0) {
-        int written = snprintf(buffer_text, sizeof(buffer_text), "Input: %s → %s", 
-                 state->ime_state->buffer, 
-                 state->ime_state->output);
-        if (written >= (int)sizeof(buffer_text)) {
-            buffer_text[sizeof(buffer_text) - 1] = '\0';  // Ensure null termination
-        }
-    } else {
-        snprintf(buffer_text, sizeof(buffer_text), "Input: ");
-    }
-    lv_label_set_text(state->buffer_label, buffer_text);
 }
 
 void gui_button_event_cb(lv_event_t *e) {
@@ -170,10 +157,20 @@ void gui_button_event_cb(lv_event_t *e) {
                     strcat(global_gui_state->ime_state->display, label);
                     global_gui_state->ime_state->display_pos += strlen(label);
                 }
+            } else if (global_gui_state->ime_state->mode == MODE_ENGLISH) {
+                // For English mode, directly append the character shown on button (supports uppercase)
+                if (global_gui_state->ime_state->display_pos + strlen(label) < (int)sizeof(global_gui_state->ime_state->display) - 1) {
+                    strcat(global_gui_state->ime_state->display, label);
+                    global_gui_state->ime_state->display_pos += strlen(label);
+                }
             } else {
-                // For English and Number modes, process character normally
+                // For Number mode, process character normally
                 for (size_t i = 0; i < strlen(label); i++) {
-                    ime_process_char(global_gui_state->ime_state, label[i]);
+                    char c = label[i];
+                    if (global_gui_state->ime_state->display_pos < (int)sizeof(global_gui_state->ime_state->display) - 1) {
+                        global_gui_state->ime_state->display[global_gui_state->ime_state->display_pos++] = c;
+                        global_gui_state->ime_state->display[global_gui_state->ime_state->display_pos] = '\0';
+                    }
                 }
             }
             gui_update_display(global_gui_state);
@@ -219,19 +216,41 @@ void gui_shift_button_event_cb(lv_event_t *e) {
 void gui_mode_button_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED && global_gui_state) {
-        // Toggle between letter mode and number mode
-        global_gui_state->number_mode = !global_gui_state->number_mode;
-        global_gui_state->shift_pressed = false;  // Reset shift when changing modes
+        lv_obj_t *mode_label = lv_obj_get_child(lv_event_get_target(e), 0);
         
-        // Update keyboard labels
+        if (global_gui_state->number_mode) {
+            // Currently in number mode, switch back to previous letter mode
+            global_gui_state->number_mode = false;
+            ime_set_mode(global_gui_state->ime_state, global_gui_state->previous_letter_mode);
+            
+            // Update button to show "123"
+            if (mode_label) {
+                lv_label_set_text(mode_label, "123");
+            }
+        } else {
+            // Currently in letter mode, switch to number mode
+            // Save current mode as previous
+            global_gui_state->previous_letter_mode = global_gui_state->ime_state->mode;
+            global_gui_state->number_mode = true;
+            
+            // Update button to show previous mode name
+            if (mode_label) {
+                const char *mode_name = "ABC";
+                if (global_gui_state->previous_letter_mode == MODE_HIRAGANA) {
+                    mode_name = "あ";
+                } else if (global_gui_state->previous_letter_mode == MODE_KATAKANA) {
+                    mode_name = "ア";
+                } else {
+                    mode_name = "ABC";
+                }
+                lv_label_set_text(mode_label, mode_name);
+            }
+        }
+        
+        // Don't reset shift when entering/exiting number mode
+        // Update keyboard labels to reflect number mode AND current shift state
         gui_update_keyboard_labels(global_gui_state);
         gui_update_display(global_gui_state);
-        
-        // Update mode button text
-        lv_obj_t *mode_label = lv_obj_get_child(lv_event_get_target(e), 0);
-        if (mode_label) {
-            lv_label_set_text(mode_label, global_gui_state->number_mode ? "ABC" : "123");
-        }
     }
 }
 
@@ -288,7 +307,25 @@ void gui_special_button_event_cb(lv_event_t *e) {
         if (strcmp(label, "Space") == 0) {
             ime_process_space(global_gui_state->ime_state);
         } else if (strcmp(label, "Enter") == 0) {
-            ime_process_enter(global_gui_state->ime_state);
+            // Get current text
+            const char *current_text = ime_get_display_text(global_gui_state->ime_state);
+            
+            // Only show popup if there's text to display
+            if (current_text && strlen(current_text) > 0) {
+                // Create result popup message box
+                lv_obj_t *mbox = lv_msgbox_create(lv_screen_active());
+                lv_msgbox_add_title(mbox, "入力完了 - Input Complete");
+                lv_msgbox_add_text(mbox, current_text);
+                lv_msgbox_add_close_button(mbox);
+                lv_obj_center(mbox);
+                
+                // Set font for the message box content
+                lv_obj_set_style_text_font(mbox, global_gui_state->japanese_font, 0);
+                
+                // Clear the input after showing popup
+                ime_clear(global_gui_state->ime_state);
+                gui_update_display(global_gui_state);
+            }
         } else if (strcmp(label, "←") == 0) {
             ime_process_backspace(global_gui_state->ime_state);
         } else if (strcmp(label, "Clear") == 0) {
@@ -336,7 +373,26 @@ void gui_cycle_mode_button_event_cb(lv_event_t *e) {
         }
         
         ime_set_mode(global_gui_state->ime_state, next_mode);
-        global_gui_state->shift_pressed = false;  // Reset shift when changing base mode
+        global_gui_state->previous_letter_mode = next_mode;  // Update previous mode
+        // Don't reset shift - keep current shift state when changing modes
+        
+        // If currently in number mode, update the 123/ABC toggle button label
+        if (global_gui_state->number_mode && global_gui_state->mode_toggle_button) {
+            lv_obj_t *toggle_label = lv_obj_get_child(global_gui_state->mode_toggle_button, 0);
+            if (toggle_label) {
+                const char *mode_name = "ABC";
+                if (next_mode == MODE_HIRAGANA) {
+                    mode_name = "あ";
+                } else if (next_mode == MODE_KATAKANA) {
+                    mode_name = "ア";
+                } else {
+                    mode_name = "ABC";
+                }
+                lv_label_set_text(toggle_label, mode_name);
+            }
+        }
+        
+        // Update keyboard labels to reflect new mode AND current shift state
         gui_update_keyboard_labels(global_gui_state);
         gui_update_display(global_gui_state);
     }
@@ -527,16 +583,31 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
         state->key_buttons[button_index++] = btn;
     }
     
-    // Row 3: 7 buttons (45px) + 6 gaps (4px) = 339px total
-    int row3_total_width = 7 * btn_width + 6 * btn_gap;
+    // Row 3: Shift (62) + 7 buttons (45px) + Enter (62) + 8 gaps (4px) = 501px total
+    int row3_total_width = 62 + 7 * btn_width + 62 + 8 * btn_gap;
     int row3_start_x = (620 - row3_total_width) / 2;
     
-    // Row 3: Z X C V B N M
+    // Row 3: [Shift] Z X C V B N M [Enter]
     start_y += btn_height + btn_gap;
+    int row3_x = row3_start_x;
+    
+    // Shift button at start of row 3
+    state->shift_button = lv_button_create(parent);
+    lv_obj_set_size(state->shift_button, 62, btn_height);
+    lv_obj_set_pos(state->shift_button, row3_x, start_y);
+    lv_obj_t *shift_label = lv_label_create(state->shift_button);
+    lv_label_set_text(shift_label, "Shift");
+    lv_obj_set_style_text_font(shift_label, state->japanese_font, 0);
+    lv_obj_center(shift_label);
+    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x00AA00), 0);  // Green when inactive (initial state)
+    lv_obj_add_event_cb(state->shift_button, gui_shift_button_event_cb, LV_EVENT_CLICKED, NULL);
+    row3_x += 62 + btn_gap;
+    
+    // Z X C V B N M keys
     for (int i = 0; i < 7; i++) {
         lv_obj_t *btn = lv_button_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        lv_obj_set_pos(btn, row3_start_x + i * (btn_width + btn_gap), start_y);
+        lv_obj_set_pos(btn, row3_x + i * (btn_width + btn_gap), start_y);
         
         lv_obj_t *label = lv_label_create(btn);
         char str[2] = {qwerty_rows[2][i], '\0'};
@@ -547,58 +618,46 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
         lv_obj_add_event_cb(btn, gui_button_event_cb, LV_EVENT_CLICKED, NULL);
         state->key_buttons[button_index++] = btn;
     }
+    row3_x += 7 * (btn_width + btn_gap);
     
-    // Row 4: Shift (62) + Space (165) + Enter (62) + 123 (62) + Clear (62) + ゛(32) + ゜(32) + ー(32) + 7 gaps (4px)
-    int row4_total_width = 62 + 165 + 62 + 62 + 62 + 32 + 32 + 32 + 7 * btn_gap;
+    // Enter button at end of row 3
+    lv_obj_t *enter_btn = lv_button_create(parent);
+    lv_obj_set_size(enter_btn, 62, btn_height);
+    lv_obj_set_pos(enter_btn, row3_x, start_y);
+    lv_obj_t *enter_label = lv_label_create(enter_btn);
+    lv_label_set_text(enter_label, "Enter");
+    lv_obj_set_style_text_font(enter_label, state->japanese_font, 0);
+    lv_obj_center(enter_label);
+    lv_obj_add_event_cb(enter_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    
+    // Row 4: Space (200) + 123 (62) + Clear (62) + ゛(32) + ゜(32) + ー(32) + 5 gaps (4px)
+    int row4_total_width = 200 + 62 + 62 + 32 + 32 + 32 + 5 * btn_gap;
     int row4_start_x = (620 - row4_total_width) / 2;
     
-    // Row 4: Shift, Space, Enter, 123/ABC, Clear, Hyphen
+    // Row 4: Space, 123/ABC, Clear, dakuten buttons
     start_y += btn_height + btn_gap;
     int current_x = row4_start_x;
     
-    // Shift button
-    state->shift_button = lv_button_create(parent);
-    lv_obj_set_size(state->shift_button, 62, btn_height);
-    lv_obj_set_pos(state->shift_button, current_x, start_y);
-    lv_obj_t *shift_label = lv_label_create(state->shift_button);
-    lv_label_set_text(shift_label, "Shift");
-    lv_obj_set_style_text_font(shift_label, state->japanese_font, 0);
-    lv_obj_center(shift_label);
-    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x00AA00), 0);  // Green when inactive (initial state)
-    lv_obj_add_event_cb(state->shift_button, gui_shift_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 62 + btn_gap;
-    
-    // Space button
+    // Space button (larger since shift and enter moved)
     lv_obj_t *space_btn = lv_button_create(parent);
-    lv_obj_set_size(space_btn, 165, btn_height);
+    lv_obj_set_size(space_btn, 200, btn_height);
     lv_obj_set_pos(space_btn, current_x, start_y);
     lv_obj_t *space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
     lv_obj_set_style_text_font(space_label, state->japanese_font, 0);
     lv_obj_center(space_label);
     lv_obj_add_event_cb(space_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 165 + btn_gap;
-    
-    // Enter button
-    lv_obj_t *enter_btn = lv_button_create(parent);
-    lv_obj_set_size(enter_btn, 62, btn_height);
-    lv_obj_set_pos(enter_btn, current_x, start_y);
-    lv_obj_t *enter_label = lv_label_create(enter_btn);
-    lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, state->japanese_font, 0);
-    lv_obj_center(enter_label);
-    lv_obj_add_event_cb(enter_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 62 + btn_gap;
+    current_x += 200 + btn_gap;
     
     // 123/ABC mode toggle button
-    lv_obj_t *mode_btn = lv_button_create(parent);
-    lv_obj_set_size(mode_btn, 62, btn_height);
-    lv_obj_set_pos(mode_btn, current_x, start_y);
-    lv_obj_t *mode_label = lv_label_create(mode_btn);
-    lv_label_set_text(mode_label, "123");
+    state->mode_toggle_button = lv_button_create(parent);
+    lv_obj_set_size(state->mode_toggle_button, 62, btn_height);
+    lv_obj_set_pos(state->mode_toggle_button, current_x, start_y);
+    lv_obj_t *mode_label = lv_label_create(state->mode_toggle_button);
+    lv_label_set_text(mode_label, "123");  // Initially shows "123" since we start in letter mode
     lv_obj_set_style_text_font(mode_label, state->japanese_font, 0);
     lv_obj_center(mode_label);
-    lv_obj_add_event_cb(mode_btn, gui_mode_button_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(state->mode_toggle_button, gui_mode_button_event_cb, LV_EVENT_CLICKED, NULL);
     current_x += 62 + btn_gap;
     
     // Clear button
@@ -663,29 +722,23 @@ void gui_create_ui(GUIState *state) {
     lv_obj_set_size(mode_btn, 140, 30);
     lv_obj_set_pos(mode_btn, 490, 5);
     lv_obj_t *mode_btn_label = lv_label_create(mode_btn);
-    lv_label_set_text(mode_btn_label, "Mode: あ→ア→A");
+    lv_label_set_text(mode_btn_label, "Mode:あ→ア→A");
     lv_obj_set_style_text_font(mode_btn_label, state->japanese_font, 0);
     lv_obj_center(mode_btn_label);
     lv_obj_add_event_cb(mode_btn, gui_cycle_mode_button_event_cb, LV_EVENT_CLICKED, NULL);
     
-    // Create text area for displaying Japanese text
+    // Create text area for displaying Japanese text (larger without buffer label)
     state->text_area = lv_textarea_create(state->screen);
-    lv_obj_set_size(state->text_area, 620, 140);
+    lv_obj_set_size(state->text_area, 620, 170);
     lv_obj_set_pos(state->text_area, 10, 40);
     lv_textarea_set_text(state->text_area, "");
     lv_obj_set_style_text_font(state->text_area, state->japanese_font, 0);
     lv_textarea_set_placeholder_text(state->text_area, "Type here...");
     
-    // Create buffer label (shows current romaji input)
-    state->buffer_label = lv_label_create(state->screen);
-    lv_label_set_text(state->buffer_label, "Input: ");
-    lv_obj_set_pos(state->buffer_label, 10, 185);
-    lv_obj_set_style_text_font(state->buffer_label, state->japanese_font, 0);
-    
     // Create keyboard container
     state->keyboard_container = lv_obj_create(state->screen);
     lv_obj_set_size(state->keyboard_container, 620, 250);
-    lv_obj_set_pos(state->keyboard_container, 10, 210);
+    lv_obj_set_pos(state->keyboard_container, 10, 220);
     lv_obj_set_style_bg_color(state->keyboard_container, lv_color_hex(0xE0E0E0), 0);
     lv_obj_set_style_border_width(state->keyboard_container, 2, 0);
     lv_obj_set_style_border_color(state->keyboard_container, lv_color_hex(0x808080), 0);

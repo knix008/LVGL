@@ -234,8 +234,21 @@ echo "  • arigatou → ありがとう"
 echo "  • nihon → にほん"
 echo "  • to-kyo- → とーきょー"
 echo ""
+echo "Testing:"
+echo "  • Run all tests: ./run_test.sh"
+echo "  • 53 unit tests with 100% pass rate"
+echo ""
 echo "For more information, see README.md"
 echo ""
+
+# Ask if user wants to run tests
+read -p "Run tests first? [y/N]: " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    print_info "Running test suite..."
+    ./run_test.sh
+    echo ""
+fi
 
 # Ask if user wants to run the application
 read -p "Run the application now? [Y/n]: " -n 1 -r

@@ -8,12 +8,19 @@ japanese_input
 *.out
 *.app
 
+# Test executables
+tests/test_japanese_qwerty
+tests/test_dakuten
+tests/test_simple
+tests/test_debug
+tests/test_minimal
+
 # Build directories
 build/
 lvgl/build/
 lvgl/lib/
 
-# LVGL submodule (if not tracking)
+# LVGL library (built by setup script)
 lvgl/
 
 # IDE and editor files
@@ -29,6 +36,8 @@ lvgl/
 *.su
 *.idb
 *.pdb
+core
+core.*
 
 # Python cache
 __pycache__/
@@ -40,6 +49,7 @@ __pycache__/
 *.tmp
 *.bak
 *.log
+test_*.c.bak
 
 # CMake (if using)
 CMakeFiles/

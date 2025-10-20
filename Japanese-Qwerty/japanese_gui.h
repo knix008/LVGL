@@ -17,7 +17,6 @@ typedef struct {
     lv_obj_t *screen;
     lv_obj_t *text_area;
     lv_obj_t *mode_label;
-    lv_obj_t *buffer_label;
     lv_obj_t *keyboard_container;
     
     // Fonts
@@ -26,11 +25,13 @@ typedef struct {
     // Keyboard buttons
     lv_obj_t *key_buttons[50];
     lv_obj_t *shift_button;
+    lv_obj_t *mode_toggle_button;  // 123/ABC button
     int num_buttons;
     
     // Input state
     bool shift_pressed;
     bool number_mode;
+    InputMode previous_letter_mode;  // Store previous mode before entering number mode
 } GUIState;
 
 // Function declarations
