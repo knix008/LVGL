@@ -57,25 +57,6 @@ docs/_build/
 # Font directory (if using custom fonts that shouldn't be tracked)
 # font/
 
-# Generated or temporary assets
-# assets/
-
-# Video files (large media files)
-video/*.mp4
-video/*.avi
-video/*.mov
-video/*.mkv
-video/*.wmv
-video/*.flv
-video/*.webm
-
-# Audio files
-video/*.wav
-video/*.mp3
-video/*.aac
-video/*.ogg
-video/*.flac
-
 # Terminal command logs
 .cursor/
 
@@ -103,9 +84,6 @@ lvgl/*.a
 # Project specific build files
 *.d
 *.deps
-
-# Test video files generated during testing
-video/test_video.mp4
 
 # Development and debugging files
 *.gch

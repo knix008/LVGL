@@ -1,15 +1,12 @@
 #include "video_player.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
-#include <math.h>
 #include <SDL2/SDL.h>
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/opt.h>
+#include <libavcodec/avcodec.h>
 #include <libswresample/swresample.h>
+#include <libavutil/opt.h>
 
 // Video player state variables
 static player_state_t current_state = PLAYER_STOPPED;
@@ -22,99 +19,73 @@ static time_t last_update_time = 0;
 // LVGL video player object
 static lv_obj_t *video_player_obj = NULL;
 
-// Audio context for direct FFmpeg audio output
+// Audio playback context
 static AVFormatContext *audio_format_ctx = NULL;
 static AVCodecContext *audio_codec_ctx = NULL;
-static SwrContext *swr_ctx = NULL;
 static int audio_stream_index = -1;
-static SDL_AudioDeviceID audio_device = 0;
-static uint8_t *audio_buffer = NULL;
-static int audio_buffer_size = 0;
-static int audio_buffer_pos = 0;
-static bool audio_playing = false;
-static bool audio_needs_reset = false;
+static SDL_AudioDeviceID audio_device_id = 0;
+static SwrContext *swr_ctx = NULL;
+static uint8_t *audio_buf = NULL;
+static unsigned int audio_buf_size = 0;
+static unsigned int audio_buf_index = 0;
+static AVPacket *audio_pkt = NULL;
+static AVFrame *audio_frame = NULL;
+static int audio_volume = 50;
 
-// Audio callback function for SDL
-void audio_callback(void *userdata, Uint8 *stream, int len) {
-    (void)userdata; // Suppress unused parameter warning
-    
-    if (!audio_playing || !audio_format_ctx) {
-        memset(stream, 0, len);
+// SDL audio callback
+static void audio_callback(void *userdata, Uint8 *stream, int len) {
+    (void)userdata;
+    memset(stream, 0, len); // Start with silence
+
+    if (!audio_format_ctx || audio_stream_index < 0 || current_state != PLAYER_PLAYING) {
         return;
     }
-    
-    // Reset audio stream position if needed (only when coming from stopped state)
-    if (audio_needs_reset) {
-        av_seek_frame(audio_format_ctx, audio_stream_index, 0, AVSEEK_FLAG_BACKWARD);
-        audio_needs_reset = false;
-        printf("Audio stream reset to beginning\n");
-    }
-    
-    // Decode audio from video file
-    AVPacket packet;
-    AVFrame *frame = av_frame_alloc();
-    int ret;
-    
-    while (av_read_frame(audio_format_ctx, &packet) >= 0) {
-        if (packet.stream_index == audio_stream_index) {
-            ret = avcodec_send_packet(audio_codec_ctx, &packet);
+
+    while (len > 0) {
+        if (audio_buf_index >= audio_buf_size) {
+            // Need more audio data - decode next frame
+            int ret = av_read_frame(audio_format_ctx, audio_pkt);
             if (ret < 0) {
-                av_packet_unref(&packet);
-                continue;
+                break; // End of file or error
             }
-            
-            ret = avcodec_receive_frame(audio_codec_ctx, frame);
-            if (ret == 0) {
-                // Convert audio to SDL format
-                int16_t *samples = (int16_t*)stream;
-                int num_samples = len / 4; // 16-bit stereo = 4 bytes per sample
-                
-                // Proper audio conversion based on format
-                if (frame->format == AV_SAMPLE_FMT_FLTP) {
-                    // Float planar format (AAC)
-                    float *left = (float*)frame->data[0];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                    float *right = (frame->channels > 1) ? (float*)frame->data[1] : left;
-#pragma GCC diagnostic pop
-                    
-                    for (int i = 0; i < num_samples && i < frame->nb_samples; i++) {
-                        int16_t left_sample = (int16_t)(left[i] * 32767.0f * volume_level / 100.0f);
-                        int16_t right_sample = (int16_t)(right[i] * 32767.0f * volume_level / 100.0f);
-                        
-                        samples[i * 2] = left_sample;     // Left channel
-                        samples[i * 2 + 1] = right_sample; // Right channel
+
+            if (audio_pkt->stream_index == audio_stream_index) {
+                ret = avcodec_send_packet(audio_codec_ctx, audio_pkt);
+                if (ret == 0) {
+                    ret = avcodec_receive_frame(audio_codec_ctx, audio_frame);
+                    if (ret == 0) {
+                        // Resample audio to SDL format (stereo, 16-bit, 44100Hz)
+                        int out_samples = swr_convert(swr_ctx,
+                                                     &audio_buf, audio_frame->nb_samples,
+                                                     (const uint8_t **)audio_frame->data, audio_frame->nb_samples);
+                        if (out_samples > 0) {
+                            audio_buf_size = out_samples * 4; // 2 channels * 2 bytes per sample
+                            audio_buf_index = 0;
+                        }
                     }
-                } else if (frame->format == AV_SAMPLE_FMT_S16P) {
-                    // 16-bit planar format
-                    int16_t *left = (int16_t*)frame->data[0];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                    int16_t *right = (frame->channels > 1) ? (int16_t*)frame->data[1] : left;
-#pragma GCC diagnostic pop
-                    
-                    for (int i = 0; i < num_samples && i < frame->nb_samples; i++) {
-                        int16_t left_sample = (int16_t)(left[i] * volume_level / 100);
-                        int16_t right_sample = (int16_t)(right[i] * volume_level / 100);
-                        
-                        samples[i * 2] = left_sample;     // Left channel
-                        samples[i * 2 + 1] = right_sample; // Right channel
-                    }
-                } else {
-                    // Fallback: convert to silence
-                    memset(stream, 0, len);
                 }
-                
-                av_frame_unref(frame);
-                av_packet_unref(&packet);
-                return;
             }
+            av_packet_unref(audio_pkt);
         }
-        av_packet_unref(&packet);
+
+        if (audio_buf_index < audio_buf_size) {
+            int remaining = audio_buf_size - audio_buf_index;
+            int to_copy = (len < remaining) ? len : remaining;
+
+            // Apply volume
+            int16_t *samples = (int16_t *)(audio_buf + audio_buf_index);
+            int16_t *out = (int16_t *)stream;
+            for (int i = 0; i < to_copy / 2; i++) {
+                out[i] = (int16_t)(samples[i] * audio_volume / 100);
+            }
+
+            stream += to_copy;
+            len -= to_copy;
+            audio_buf_index += to_copy;
+        } else {
+            break;
+        }
     }
-    
-    av_frame_free(&frame);
-    memset(stream, 0, len);
 }
 
 // Initialize video player
@@ -125,107 +96,134 @@ void video_player_init(void) {
     current_position = 0;
     total_duration = 0;
     volume_level = 50;
+    audio_volume = 50;
     last_update_time = time(NULL);
     video_player_obj = NULL;
-    
+
     // Initialize FFmpeg
     av_log_set_level(AV_LOG_ERROR);
+
+    // Allocate audio packet and frame
+    audio_pkt = av_packet_alloc();
+    audio_frame = av_frame_alloc();
 }
 
-// Initialize audio for a file
-static int init_audio(const char *filename) {
-    // Open input file
-    if (avformat_open_input(&audio_format_ctx, filename, NULL, NULL) < 0) {
-        printf("Error: Could not open audio file: %s\n", filename);
+// Cleanup audio resources
+static void cleanup_audio(void) {
+    if (audio_device_id) {
+        SDL_PauseAudioDevice(audio_device_id, 1);
+        SDL_CloseAudioDevice(audio_device_id);
+        audio_device_id = 0;
+    }
+
+    if (audio_buf) {
+        av_freep(&audio_buf);
+        audio_buf = NULL;
+    }
+
+    if (swr_ctx) {
+        swr_free(&swr_ctx);
+    }
+
+    if (audio_codec_ctx) {
+        avcodec_free_context(&audio_codec_ctx);
+    }
+
+    if (audio_format_ctx) {
+        avformat_close_input(&audio_format_ctx);
+    }
+
+    audio_stream_index = -1;
+    audio_buf_size = 0;
+    audio_buf_index = 0;
+}
+
+// Initialize audio for a video file
+static int init_audio(const char *filepath) {
+    // Open video file for audio
+    if (avformat_open_input(&audio_format_ctx, filepath, NULL, NULL) < 0) {
+        printf("Error: Could not open file for audio: %s\n", filepath);
         return -1;
     }
-    
+
     if (avformat_find_stream_info(audio_format_ctx, NULL) < 0) {
         printf("Error: Could not find stream information\n");
+        avformat_close_input(&audio_format_ctx);
         return -1;
     }
-    
+
     // Find audio stream
     audio_stream_index = av_find_best_stream(audio_format_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (audio_stream_index < 0) {
-        printf("Error: Could not find audio stream\n");
+        printf("Warning: No audio stream found in file\n");
+        avformat_close_input(&audio_format_ctx);
         return -1;
     }
-    
-    printf("Audio stream found at index %d\n", audio_stream_index);
-    
+
     // Get audio codec
     const AVCodec *audio_codec = avcodec_find_decoder(audio_format_ctx->streams[audio_stream_index]->codecpar->codec_id);
     if (!audio_codec) {
         printf("Error: Could not find audio codec\n");
+        avformat_close_input(&audio_format_ctx);
         return -1;
     }
-    
-    // Initialize audio codec context
+
+    // Create codec context
     audio_codec_ctx = avcodec_alloc_context3(audio_codec);
     if (!audio_codec_ctx) {
         printf("Error: Could not allocate audio codec context\n");
+        avformat_close_input(&audio_format_ctx);
         return -1;
     }
-    
+
     if (avcodec_parameters_to_context(audio_codec_ctx, audio_format_ctx->streams[audio_stream_index]->codecpar) < 0) {
-        printf("Error: Could not copy audio codec parameters\n");
+        printf("Error: Could not copy codec parameters\n");
+        avcodec_free_context(&audio_codec_ctx);
+        avformat_close_input(&audio_format_ctx);
         return -1;
     }
-    
+
     if (avcodec_open2(audio_codec_ctx, audio_codec, NULL) < 0) {
         printf("Error: Could not open audio codec\n");
-        return -1;
-    }
-    
-    printf("Audio codec: %s\n", audio_codec->name);
-    
-    // Initialize SDL audio
-    SDL_AudioSpec desired, obtained;
-    desired.freq = 44100;
-    desired.format = AUDIO_S16SYS;
-    desired.channels = 2;
-    desired.samples = 1024;
-    desired.callback = audio_callback;
-    desired.userdata = NULL;
-    
-    audio_device = SDL_OpenAudioDevice(NULL, 0, &desired, &obtained, 0);
-    if (audio_device == 0) {
-        printf("Error: Could not open SDL audio device\n");
-        return -1;
-    }
-    
-    printf("Audio initialized: %dHz, %d channels\n", obtained.freq, obtained.channels);
-    return 0;
-}
-
-// Cleanup audio
-static void cleanup_audio(void) {
-    if (audio_device) {
-        SDL_CloseAudioDevice(audio_device);
-        audio_device = 0;
-    }
-    
-    if (audio_buffer) {
-        free(audio_buffer);
-        audio_buffer = NULL;
-    }
-    
-    if (swr_ctx) {
-        swr_free(&swr_ctx);
-    }
-    
-    if (audio_codec_ctx) {
         avcodec_free_context(&audio_codec_ctx);
-    }
-    
-    if (audio_format_ctx) {
         avformat_close_input(&audio_format_ctx);
+        return -1;
     }
-    
-    audio_buffer_size = 0;
-    audio_buffer_pos = 0;
-    audio_playing = false;
+
+    // Setup resampler to convert to SDL audio format (stereo, 16-bit, 44100Hz)
+    swr_ctx = swr_alloc();
+    av_opt_set_int(swr_ctx, "in_channel_layout", audio_codec_ctx->channel_layout ? audio_codec_ctx->channel_layout : AV_CH_LAYOUT_STEREO, 0);
+    av_opt_set_int(swr_ctx, "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+    av_opt_set_int(swr_ctx, "in_sample_rate", audio_codec_ctx->sample_rate, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate", 44100, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", audio_codec_ctx->sample_fmt, 0);
+    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+    swr_init(swr_ctx);
+
+    // Allocate audio buffer
+    audio_buf_size = 192000; // 1 second of 48khz stereo 16-bit audio
+    audio_buf = (uint8_t *)av_malloc(audio_buf_size);
+    audio_buf_index = audio_buf_size; // Start empty
+
+    // Setup SDL audio
+    SDL_AudioSpec wanted_spec, obtained_spec;
+    wanted_spec.freq = 44100;
+    wanted_spec.format = AUDIO_S16SYS;
+    wanted_spec.channels = 2;
+    wanted_spec.silence = 0;
+    wanted_spec.samples = 1024;
+    wanted_spec.callback = audio_callback;
+    wanted_spec.userdata = NULL;
+
+    audio_device_id = SDL_OpenAudioDevice(NULL, 0, &wanted_spec, &obtained_spec, 0);
+    if (audio_device_id == 0) {
+        printf("Error: Could not open SDL audio device: %s\n", SDL_GetError());
+        cleanup_audio();
+        return -1;
+    }
+
+    printf("Audio initialized: %s, %dHz, %d channels\n", audio_codec->name, obtained_spec.freq, obtained_spec.channels);
+    return 0;
 }
 
 // Cleanup video player
@@ -233,6 +231,14 @@ void video_player_cleanup(void) {
     printf("Video player cleanup\n");
     video_player_stop();
     cleanup_audio();
+
+    if (audio_pkt) {
+        av_packet_free(&audio_pkt);
+    }
+    if (audio_frame) {
+        av_frame_free(&audio_frame);
+    }
+
     video_player_obj = NULL;
 }
 
@@ -252,15 +258,15 @@ void video_player_load_file(const char *filename) {
         printf("Error: No filename provided\n");
         return;
     }
-    
+
     if (!video_player_obj) {
         printf("Error: Video player object not set\n");
         return;
     }
-    
+
     // Stop current playback
     video_player_stop();
-    
+
     // Cleanup previous audio
     cleanup_audio();
 
@@ -272,21 +278,11 @@ void video_player_load_file(const char *filename) {
     current_position = 0;
 
     printf("Loading video file: %s\n", filename);
-    
-    // Initialize audio for the file
-    char audio_path[512];
-    snprintf(audio_path, sizeof(audio_path), "/home/shkwon/Projects/LVGL/Video/video/%s", filename);
-    if (init_audio(audio_path) < 0) {
-        printf("Warning: Could not initialize audio for %s\n", filename);
-    } else {
-        // Set reset flag for new file
-        audio_needs_reset = true;
-    }
-    
+
     // Try different path formats for LVGL FFmpeg player
     char full_path[512];
     lv_result_t result = LV_RESULT_INVALID;
-    
+
     // Try 1: LVGL file system path
     snprintf(full_path, sizeof(full_path), "A:video/%s", filename);
     printf("Trying LVGL path: %s\n", full_path);
@@ -294,9 +290,11 @@ void video_player_load_file(const char *filename) {
     if (result == LV_RESULT_OK) {
         printf("Video loaded successfully with LVGL path: %s\n", full_path);
         total_duration = 120;
+        // Initialize audio separately
+        init_audio(full_path + 2); // Skip "A:" prefix
         return;
     }
-    
+
     // Try 2: Absolute path
     snprintf(full_path, sizeof(full_path), "/home/shkwon/Projects/LVGL/Video/video/%s", filename);
     printf("Trying absolute path: %s\n", full_path);
@@ -304,9 +302,10 @@ void video_player_load_file(const char *filename) {
     if (result == LV_RESULT_OK) {
         printf("Video loaded successfully with absolute path: %s\n", full_path);
         total_duration = 120;
+        init_audio(full_path);
         return;
     }
-    
+
     // Try 3: Relative path
     snprintf(full_path, sizeof(full_path), "video/%s", filename);
     printf("Trying relative path: %s\n", full_path);
@@ -314,18 +313,20 @@ void video_player_load_file(const char *filename) {
     if (result == LV_RESULT_OK) {
         printf("Video loaded successfully with relative path: %s\n", full_path);
         total_duration = 120;
+        init_audio(full_path);
         return;
     }
-    
+
     // Try 4: Just filename
     printf("Trying filename only: %s\n", filename);
     result = lv_ffmpeg_player_set_src(video_player_obj, filename);
     if (result == LV_RESULT_OK) {
         printf("Video loaded successfully with filename: %s\n", filename);
         total_duration = 120;
+        init_audio(filename);
         return;
     }
-    
+
     printf("Error: Could not load video file with any path format (result: %d)\n", result);
     current_file[0] = '\0';
     total_duration = 0;
@@ -342,41 +343,37 @@ void video_player_play(void) {
         printf("Error: Video player object not set\n");
         return;
     }
-    
-    // Determine if we need to reset audio stream
-    bool needs_audio_reset = (current_state == PLAYER_STOPPED);
-    
+
     if (current_state == PLAYER_PAUSED) {
-        // Resume from pause - do NOT reset audio stream
+        // Resume from pause
         current_state = PLAYER_PLAYING;
         printf("Resuming playback from pause\n");
     } else if (current_state == PLAYER_STOPPED) {
-        // Start from beginning - reset audio stream
+        // Start from beginning
         current_state = PLAYER_PLAYING;
         current_position = 0;
+        // Reset audio to beginning
+        if (audio_format_ctx && audio_stream_index >= 0) {
+            av_seek_frame(audio_format_ctx, audio_stream_index, 0, AVSEEK_FLAG_BACKWARD);
+            audio_buf_index = audio_buf_size; // Empty the buffer
+        }
         printf("Starting playback from beginning\n");
     } else {
         // Already playing, do nothing
         printf("Already playing\n");
         return;
     }
-    
+
     // Use LVGL FFmpeg player command for video
     lv_ffmpeg_player_set_cmd(video_player_obj, LV_FFMPEG_PLAYER_CMD_START);
-    
-    // Handle audio playback
-    if (audio_device) {
-        audio_playing = true;
-        if (needs_audio_reset) {
-            audio_needs_reset = true; // Reset audio stream position
-            printf("Audio will reset to beginning\n");
-        } else {
-            printf("Audio will continue from current position\n");
-        }
-        SDL_PauseAudioDevice(audio_device, 0);
+
+    // Start audio playback
+    if (audio_device_id) {
+        SDL_PauseAudioDevice(audio_device_id, 0);
         printf("Audio playback started\n");
     }
-    
+
+    printf("Video playback started\n");
     last_update_time = time(NULL);
 }
 
@@ -386,20 +383,20 @@ void video_player_pause(void) {
         printf("Cannot pause - not currently playing\n");
         return;
     }
-    
+
     current_state = PLAYER_PAUSED;
     printf("Playback paused\n");
-    
+
     // Pause video
     if (video_player_obj) {
         lv_ffmpeg_player_set_cmd(video_player_obj, LV_FFMPEG_PLAYER_CMD_PAUSE);
+        printf("Video paused\n");
     }
-    
-    // Pause audio (do NOT reset position)
-    if (audio_device) {
-        audio_playing = false;
-        SDL_PauseAudioDevice(audio_device, 1);
-        printf("Audio paused (position preserved)\n");
+
+    // Pause audio
+    if (audio_device_id) {
+        SDL_PauseAudioDevice(audio_device_id, 1);
+        printf("Audio paused\n");
     }
 }
 
@@ -409,22 +406,21 @@ void video_player_stop(void) {
         printf("Already stopped\n");
         return;
     }
-    
+
     current_state = PLAYER_STOPPED;
     current_position = 0;
     printf("Playback stopped\n");
-    
+
     // Stop video
     if (video_player_obj) {
         lv_ffmpeg_player_set_cmd(video_player_obj, LV_FFMPEG_PLAYER_CMD_STOP);
+        printf("Video stopped\n");
     }
-    
-    // Stop audio and reset position for next play
-    if (audio_device) {
-        audio_playing = false;
-        audio_needs_reset = true; // Reset audio stream position for next play
-        SDL_PauseAudioDevice(audio_device, 1);
-        printf("Audio stopped (will reset on next play)\n");
+
+    // Stop audio
+    if (audio_device_id) {
+        SDL_PauseAudioDevice(audio_device_id, 1);
+        printf("Audio stopped\n");
     }
 }
 
@@ -441,8 +437,9 @@ void video_player_seek(int position) {
 void video_player_set_volume(int volume) {
     if (volume < 0) volume = 0;
     if (volume > 100) volume = 100;
-    
+
     volume_level = volume;
+    audio_volume = volume;
     printf("Volume set to: %d%%\n", volume);
 }
 
