@@ -303,16 +303,13 @@ void gui_special_button_event_cb(lv_event_t *e) {
             
             // Only show popup if there's text to display
             if (current_text && strlen(current_text) > 0) {
-                // Create result popup message box
+                // Create result message box (like gui_app.c)
                 lv_obj_t *mbox = lv_msgbox_create(lv_screen_active());
                 lv_msgbox_add_title(mbox, "入力完了 - Input Complete");
                 lv_msgbox_add_text(mbox, current_text);
                 lv_msgbox_add_close_button(mbox);
-                lv_obj_center(mbox);
-                
-                // Set font for the message box content
                 lv_obj_set_style_text_font(mbox, global_gui_state->japanese_font, 0);
-                
+                lv_obj_center(mbox);
                 // Clear the input after showing popup
                 ime_clear(global_gui_state->ime_state);
                 gui_update_display(global_gui_state);
@@ -575,7 +572,7 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     lv_obj_set_size(bksp_btn, 50, btn_height);
     lv_obj_set_pos(bksp_btn, row0_start_x + 13 * (btn_width + btn_gap), start_y);
     lv_obj_t *bksp_label = lv_label_create(bksp_btn);
-    lv_label_set_text(bksp_label, "←");
+    lv_label_set_text(bksp_label, "\u2190");
     lv_obj_set_style_text_font(bksp_label, state->japanese_font, 0);
     lv_obj_center(bksp_label);
     lv_obj_add_event_cb(bksp_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
@@ -644,8 +641,8 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
         state->key_buttons[button_index++] = btn;
     }
     
-    // Row 4: Shift (50) + Space (160) + 123 (50) + Clear (50) + ゛(32) + ゜(32) + ー(32) + Enter (50) + 7 gaps (4px)
-    int row4_total_width = 50 + 160 + 50 + 50 + 32 + 32 + 32 + 50 + 7 * btn_gap;
+    // Row 4: Shift (50) + Space (160) + 123 (80) + Clear (50) + ゛(32) + ゜(32) + ー(32) + Enter (50) + 7 gaps (4px)
+    int row4_total_width = 50 + 160 + 80 + 50 + 32 + 32 + 32 + 50 + 7 * btn_gap;
     int row4_start_x = (780 - row4_total_width) / 2;
 
     // Row 4: Shift, Space, 123/ABC, Clear, dakuten buttons, Enter
@@ -668,23 +665,23 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     lv_obj_t *space_btn = lv_button_create(parent);
     lv_obj_set_size(space_btn, 160, btn_height);
     lv_obj_set_pos(space_btn, current_x, start_y);
+    current_x += 160 + btn_gap;
     lv_obj_t *space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
     lv_obj_set_style_text_font(space_label, state->japanese_font, 0);
     lv_obj_center(space_label);
     lv_obj_add_event_cb(space_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 160 + btn_gap;
 
     // 123/ABC mode toggle button (for number mode)
     lv_obj_t *num_mode_btn = lv_button_create(parent);
-    lv_obj_set_size(num_mode_btn, 50, btn_height);
+    lv_obj_set_size(num_mode_btn, 80, btn_height);
     lv_obj_set_pos(num_mode_btn, current_x, start_y);
     lv_obj_t *mode_label = lv_label_create(num_mode_btn);
     lv_label_set_text(mode_label, "123");  // Initially shows "123" since we start in letter mode
     lv_obj_set_style_text_font(mode_label, state->japanese_font, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(num_mode_btn, gui_mode_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 50 + btn_gap;
+    current_x += 80 + btn_gap;
 
     // Clear button
     lv_obj_t *clear_btn = lv_button_create(parent);
@@ -757,7 +754,8 @@ void gui_create_ui(GUIState *state) {
     // Create mode switch button (Hiragana → Katakana → English)
     lv_obj_t *mode_btn = lv_button_create(state->screen);
     lv_obj_set_size(mode_btn, 100, 30);
-    lv_obj_set_pos(mode_btn, 530, 5);
+    // Align mode button to the right side (window width 780, button width 100, margin 10)
+    lv_obj_set_pos(mode_btn, 780 - 100 - 10, 5);
     state->mode_toggle_button = mode_btn;  // Save for later updates
     lv_obj_t *mode_btn_label = lv_label_create(mode_btn);
     lv_label_set_text(mode_btn_label, "カタカナ");  // Start in Hiragana, show Katakana as next
