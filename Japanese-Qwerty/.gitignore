@@ -1,0 +1,53 @@
+# Compiled object files
+*.o
+*.obj
+
+# Executables
+japanese_input
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+lvgl/build/
+lvgl/lib/
+
+# LVGL submodule (if not tracking)
+lvgl/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# CMake (if using)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.bak
+
+# Package manager
+node_modules/
+package-lock.json
+

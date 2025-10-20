@@ -1,5 +1,5 @@
 #!/bin/bash
-# Chunjiin Korean Input Method - Automated Setup Script
+# Japanese QWERTY Input Method - Automated Setup Script
 # Sets up LVGL environment and builds the application
 
 set -e  # Exit on error
@@ -63,12 +63,12 @@ else
     print_success "Git found"
 fi
 
-# Check for FreeType
+# Check for FreeType (for loading fonts at runtime)
 if ! pkg-config --exists freetype2; then
     print_error "FreeType development libraries not found"
     MISSING_PACKAGES+=("libfreetype6-dev")
 else
-    print_success "FreeType found"
+    print_success "FreeType found (for runtime font loading)"
 fi
 
 # Install missing packages if any
@@ -109,11 +109,14 @@ echo ""
 echo "Step 3: Checking font files..."
 echo ""
 
-print_info "Using LVGL built-in fonts (suitable for Japanese display)"
-if [ -f "assets/NotoSansCJK-Regular.ttf" ]; then
-    print_success "NotoSansCJK-Regular.ttf found (optional)"
+if [ -f "assets/NotoSansCJK.ttc" ]; then
+    print_success "NotoSansCJK.ttc found"
 else
-    print_info "No custom Japanese font found - will use built-in fonts"
+    print_error "NotoSansCJK.ttc not found in assets/"
+    echo ""
+    echo "Please download NotoSansCJK.ttc and place it in the assets/ directory"
+    echo "Download from: https://github.com/googlefonts/noto-cjk"
+    exit 1
 fi
 
 echo ""
@@ -124,7 +127,18 @@ echo ""
 
 if [ -f "lvgl/lib/liblvgl.a" ]; then
     print_info "LVGL library already exists, skipping build"
-else
+    read -p "Rebuild LVGL library? [y/N]: " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Rebuilding LVGL library..."
+        rm -rf lvgl/lib lvgl/build
+    else
+        echo ""
+        print_info "Using existing LVGL library"
+    fi
+fi
+
+if [ ! -f "lvgl/lib/liblvgl.a" ]; then
     print_info "Building LVGL static library..."
     
     # Create build and lib directories for LVGL
@@ -138,8 +152,7 @@ else
     for src in $LVGL_SOURCES; do
         obj="lvgl/build/$(basename ${src%.c}.o)"
         if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
-            echo "  Compiling $src"
-            gcc -Wall -Wextra -O2 -I. -Ilvgl $(pkg-config --cflags freetype2) -c "$src" -o "$obj"
+            gcc -Wall -Wextra -O2 -I. -Ilvgl -DLV_CONF_INCLUDE_SIMPLE $(pkg-config --cflags sdl2) -c "$src" -o "$obj"
         fi
     done
     
@@ -150,12 +163,22 @@ fi
 
 echo ""
 
-# 5. Build the application
-echo "Step 5: Building the application..."
+# 5. Check FreeType (required for loading fonts at runtime)
+echo "Step 5: Checking FreeType support..."
 echo ""
 
-print_info "The application uses FreeType to load TrueType fonts at runtime"
-print_info "No font conversion needed!"
+if ! pkg-config --exists freetype2; then
+    print_error "FreeType not found (already checked earlier)"
+    exit 1
+else
+    print_success "FreeType found - fonts will be loaded at runtime"
+    print_info "No font pre-generation needed!"
+fi
+
+echo ""
+
+# 6. Build the application
+echo "Step 6: Building the application..."
 echo ""
 
 print_info "Running make clean..."
@@ -171,30 +194,45 @@ else
     echo "  - Make sure lv_conf.h is in the project root"
     echo "  - Check that SDL2 development files are installed"
     echo "  - Verify LVGL library was built correctly"
+    echo "  - Ensure FreeType is installed (libfreetype6-dev)"
+    echo "  - Check that assets/NotoSansCJK.ttc exists"
     exit 1
 fi
 
 echo ""
 
-# 6. Summary
+# 7. Summary
 echo "========================================="
 echo "✓ Setup Complete!"
 echo "========================================="
 echo ""
-echo "The Chunjiin Korean Input Method is ready to use!"
+echo "The Japanese QWERTY Input Method is ready to use!"
 echo ""
 echo "To run the application:"
-echo "  ./chunjiin"
-echo ""
-echo "Or use:"
-echo "  make run"
+echo "  ./japanese_input"
 echo ""
 echo "Features:"
-echo "  • Korean input using Chunjiin (천지인) method"
-echo "  • Real-time character composition with incomplete character display"
-echo "  • Multiple input modes: 한글, 영문, 숫자, 특수문자"
-echo "  • Beautiful Korean fonts via FreeType + NanumGothic"
-echo "  • LVGL-based GUI with SDL2"
+echo "  • 640x480 window with on-screen QWERTY button keyboard"
+echo "  • Click buttons to type Japanese characters"
+echo "  • Hiragana, Katakana, and English input modes"
+echo "  • Real-time romaji to kana conversion"
+echo "  • Japanese font support (NotoSansCJK)"
+echo "  • Comprehensive romaji mapping"
+echo ""
+echo "Controls:"
+echo "  • Click letter buttons to type romaji"
+echo "  • Switch Mode: Toggle between Hiragana/Katakana/English"
+echo "  • Space: Commit text and add space"
+echo "  • Enter: Commit text and add newline"
+echo "  • Bksp: Backspace (delete character)"
+echo "  • -: Insert prolonged sound mark (ー)"
+echo "  • Clear: Clear all text"
+echo ""
+echo "Examples:"
+echo "  • konnichiha → こんにちは"
+echo "  • arigatou → ありがとう"
+echo "  • nihon → にほん"
+echo "  • to-kyo- → とーきょー"
 echo ""
 echo "For more information, see README.md"
 echo ""
@@ -203,6 +241,6 @@ echo ""
 read -p "Run the application now? [Y/n]: " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-    print_info "Starting Chunjiin..."
-    ./chunjiin
+    print_info "Starting Japanese Input Method..."
+    ./japanese_input
 fi
