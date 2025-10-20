@@ -178,6 +178,197 @@ void test_english_mode(void) {
     TEST_ASSERT(strcmp(state.output, "hi") == 0, "English output correct");
 }
 
+// Test 11: Vowel Conversion (a, i, u, e, o)
+void test_vowel_conversion(void) {
+    TEST_START("Vowel Conversion");
+    
+    IMEState state;
+    
+    // Test 'a'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'a');
+    TEST_ASSERT(strcmp(state.output, "あ") == 0, "'a' converts to 'あ'");
+    
+    // Test 'i'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'i');
+    TEST_ASSERT(strcmp(state.output, "い") == 0, "'i' converts to 'い'");
+    
+    // Test 'u'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'u');
+    TEST_ASSERT(strcmp(state.output, "う") == 0, "'u' converts to 'う'");
+    
+    // Test 'e'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'e');
+    TEST_ASSERT(strcmp(state.output, "え") == 0, "'e' converts to 'え'");
+    
+    // Test 'o'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'o');
+    TEST_ASSERT(strcmp(state.output, "お") == 0, "'o' converts to 'お'");
+}
+
+// Test 12: Katakana Vowel Conversion
+void test_katakana_vowels(void) {
+    TEST_START("Katakana Vowel Conversion");
+    
+    IMEState state;
+    
+    // Test katakana 'a'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_KATAKANA);
+    ime_process_char(&state, 'a');
+    TEST_ASSERT(strcmp(state.output, "ア") == 0, "'a' converts to 'ア' in katakana");
+    
+    // Test katakana 'i'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_KATAKANA);
+    ime_process_char(&state, 'i');
+    TEST_ASSERT(strcmp(state.output, "イ") == 0, "'i' converts to 'イ' in katakana");
+}
+
+// Test 13: Y-row Characters (ya, yu, yo)
+void test_y_row_conversion(void) {
+    TEST_START("Y-row Character Conversion");
+    
+    IMEState state;
+    
+    // Test 'ya'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'y');
+    ime_process_char(&state, 'a');
+    TEST_ASSERT(strcmp(state.output, "や") == 0, "'ya' converts to 'や'");
+    
+    // Test 'yu'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'y');
+    ime_process_char(&state, 'u');
+    TEST_ASSERT(strcmp(state.output, "ゆ") == 0, "'yu' converts to 'ゆ'");
+    
+    // Test 'yo'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'y');
+    ime_process_char(&state, 'o');
+    TEST_ASSERT(strcmp(state.output, "よ") == 0, "'yo' converts to 'よ'");
+}
+
+// Test 14: W-row Character (wa)
+void test_w_row_conversion(void) {
+    TEST_START("W-row Character Conversion");
+    
+    IMEState state;
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    
+    ime_process_char(&state, 'w');
+    ime_process_char(&state, 'a');
+    
+    TEST_ASSERT(strcmp(state.output, "わ") == 0, "'wa' converts to 'わ'");
+}
+
+// Test 15: Additional Consonants (nu, fu, ho, he)
+void test_additional_consonants(void) {
+    TEST_START("Additional Consonant Conversions");
+    
+    IMEState state;
+    
+    // Test 'nu'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'n');
+    ime_process_char(&state, 'u');
+    TEST_ASSERT(strcmp(state.output, "ぬ") == 0, "'nu' converts to 'ぬ'");
+    
+    // Test 'fu'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'f');
+    ime_process_char(&state, 'u');
+    TEST_ASSERT(strcmp(state.output, "ふ") == 0, "'fu' converts to 'ふ'");
+    
+    // Test 'ho'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'h');
+    ime_process_char(&state, 'o');
+    TEST_ASSERT(strcmp(state.output, "ほ") == 0, "'ho' converts to 'ほ'");
+    
+    // Test 'he'
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    ime_process_char(&state, 'h');
+    ime_process_char(&state, 'e');
+    TEST_ASSERT(strcmp(state.output, "へ") == 0, "'he' converts to 'へ'");
+}
+
+// Test 16: Complete Word - Arigatou
+void test_word_arigatou(void) {
+    TEST_START("Complete Word - ありがとう");
+    
+    IMEState state;
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    
+    // Type "arigatou"
+    const char *word = "arigatou";
+    for (size_t i = 0; i < strlen(word); i++) {
+        ime_process_char(&state, word[i]);
+    }
+    
+    TEST_ASSERT(strstr(state.output, "あ") != NULL, "Contains 'あ'");
+    TEST_ASSERT(strstr(state.output, "り") != NULL, "Contains 'り'");
+    TEST_ASSERT(strstr(state.output, "が") != NULL, "Contains 'が'");
+    TEST_ASSERT(strstr(state.output, "と") != NULL, "Contains 'と'");
+    TEST_ASSERT(strstr(state.output, "う") != NULL, "Contains 'う'");
+}
+
+// Test 17: Complete Word - Watashi
+void test_word_watashi(void) {
+    TEST_START("Complete Word - わたし");
+    
+    IMEState state;
+    ime_init(&state);
+    ime_set_mode(&state, MODE_HIRAGANA);
+    
+    // Type "watashi"
+    const char *word = "watashi";
+    for (size_t i = 0; i < strlen(word); i++) {
+        ime_process_char(&state, word[i]);
+    }
+    
+    TEST_ASSERT(strstr(state.output, "わ") != NULL, "Contains 'わ'");
+    TEST_ASSERT(strstr(state.output, "た") != NULL, "Contains 'た'");
+    TEST_ASSERT(strstr(state.output, "し") != NULL, "Contains 'し'");
+}
+
+// Test 18: Mode Preservation
+void test_mode_preservation(void) {
+    TEST_START("Mode Preservation");
+    
+    IMEState state;
+    ime_init(&state);
+    
+    // Set to Katakana
+    ime_set_mode(&state, MODE_KATAKANA);
+    TEST_ASSERT(state.mode == MODE_KATAKANA, "Mode set to Katakana");
+    
+    // Type something
+    ime_process_char(&state, 'a');
+    
+    // Mode should still be Katakana
+    TEST_ASSERT(state.mode == MODE_KATAKANA, "Mode preserved after input");
+}
+
 // Main test runner
 int main(void) {
     printf("\n");
@@ -196,6 +387,14 @@ int main(void) {
     test_enter();
     test_clear();
     test_english_mode();
+    test_vowel_conversion();
+    test_katakana_vowels();
+    test_y_row_conversion();
+    test_w_row_conversion();
+    test_additional_consonants();
+    test_word_arigatou();
+    test_word_watashi();
+    test_mode_preservation();
     
     // Print summary
     printf("\n");

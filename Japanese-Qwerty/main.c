@@ -51,8 +51,8 @@ int main(int argc, char **argv) {
     printf("Window Size: %dx%d\n", SCREEN_WIDTH, SCREEN_HEIGHT);
     printf("\nButton Controls:\n");
     printf("  Letter Buttons - Type Japanese characters directly (JIS layout)\n");
-    printf("  Mode: あ→ア→A - Cycle: Hiragana → Katakana → English\n");
-    printf("  Shift       - Small characters (っ, ゃ, ょ, etc.)\n");
+    printf("  あ/A Button - Toggle: Japanese (Hiragana) ↔ English\n");
+    printf("  Shift       - Toggle Hiragana↔Katakana / Small chars / Uppercase\n");
     printf("  123/ABC     - Toggle numbers/symbols mode\n");
     printf("  Space       - Add space\n");
     printf("  Enter       - Show result popup and clear text\n");

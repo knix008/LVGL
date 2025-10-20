@@ -10,8 +10,8 @@
 #include <stdbool.h>
 
 // Screen dimensions
-#define SCREEN_WIDTH  640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH  800
+#define SCREEN_HEIGHT 600
 
 // Input mode enumeration
 typedef enum {

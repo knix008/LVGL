@@ -9,10 +9,9 @@ A Japanese Input Method Editor for LVGL with an on-screen QWERTY button keyboard
 - **JIS Keyboard Layout**: Standard Japanese computer keyboard layout
 - **Direct Character Input**: Buttons show exact Japanese characters to input
 - **Multiple Input Modes**: 
-  - **Hiragana (ひらがな)**: Japanese phonetic characters
-  - **Katakana (カタカナ)**: Japanese phonetic characters for foreign words
-  - **English**: Uppercase and lowercase Latin letters
-  - **Numbers/Symbols**: Digits and special characters
+  - **Japanese (Hiragana/Katakana)**: Toggle with Shift key
+  - **English**: Uppercase and lowercase Latin letters (Shift toggles case)
+  - **Numbers/Symbols**: Digits and special characters (Shift for symbols)
 - **Combining Marks**:
   - **Dakuten (゛)**: か→が, さ→ざ, た→だ, は→ば
   - **Handakuten (゜)**: は→ぱ, ひ→ぴ, ふ→ぷ
@@ -45,23 +44,68 @@ Row 4:    [Space__________][123][Clear][゛][゜][ー]
 
 ### Hiragana Mode
 ```
-Row 1: [た][て][い][す][か][ん][な][に][ら][せ]
-Row 2:   [ち][と][し][は][き][く][ま][の][り]
-Row 3: [Shift][つ][さ][そ][ひ][こ][み][も]
+Row 0: [ぬ][ふ][あ][う][え][お][や][ゆ][よ][わ][ほ][へ]
+Row 1: [た][て][い][す][か][ん][な][に][ら][せ][BS]
+Row 2: [Shift][と][し][は][き][く][ま][の][り][Enter]
+Row 3: [け][さ][そ][ひ][こ][も][ね][る][め][ろ][れ]
+Row 4: [Space__________][カタカナ][123][Clear][゛][゜][ー]
+```
+
+With Shift (🟠) - Small characters:
+```
+Row 0: [ぬ][ふ][ぁ][ぅ][ぇ][ぉ][ゃ][ゅ][ょ][ゎ][ほ][へ]
+Row 1: [た][て][ぃ][す][か][ん][な][に][ら][せ][BS]
+Row 2: [Shift][と][し][は][き][く][ま][の][り][Enter]
+Row 3: [け][さ][そ][ひ][こ][も][ね][る][ろ][れ][っ]
 ```
 
 ### Katakana Mode
 ```
-Row 1: [タ][テ][イ][ス][カ][ン][ナ][ニ][ラ][セ]
-Row 2:   [チ][ト][シ][ハ][キ][ク][マ][ノ][リ]
-Row 3: [Shift][ツ][サ][ソ][ヒ][コ][ミ][モ]
+Row 0: [ヌ][フ][ア][ウ][エ][オ][ヤ][ユ][ヨ][ワ][ホ][ヘ]
+Row 1: [タ][テ][イ][ス][カ][ン][ナ][ニ][ラ][セ][BS]
+Row 2: [Shift][ト][シ][ハ][キ][ク][マ][ノ][リ][Enter]
+Row 3: [ケ][サ][ソ][ヒ][コ][モ][ネ][ル][メ][ロ][レ]
+Row 4: [Space__________][English][123][Clear][゛][゜][ー]
 ```
 
-### Number Mode
+With Shift (🟠) - Small characters:
 ```
-Row 1: [1][2][3][4][5][6][7][8][9][0]
-Row 2:   [-][=][[] []][\ ][;]['][,][.][/]
-Row 4:    [Space__________][あ/ア/ABC][Clear][゛][゜][ー]
+Row 0: [ヌ][フ][ァ][ゥ][ェ][ォ][ャ][ュ][ョ][ヮ][ホ][ヘ]
+Row 1: [タ][テ][ィ][ス][カ][ン][ナ][ニ][ラ][セ][BS]
+Row 2: [Shift][ト][シ][ハ][キ][ク][マ][ノ][リ][Enter]
+Row 3: [ケ][サ][ソ][ヒ][コ][モ][ネ][ル][ロ][レ][ッ]
+```
+
+### English Mode
+```
+Row 0: [1][2][3][4][5][6][7][8][9][0][-][=]
+Row 1: [Q][W][E][R][T][Y][U][I][O][P][BS]
+Row 2: [Shift][S][D][F][G][H][J][K][L][Enter]
+Row 3: [;][.][/][;][.][/][;][.][/][;][.]
+Row 4: [Space__________][ひらがな][123][Clear][゛][゜][ー]
+```
+
+With Shift (🟠) - Uppercase:
+```
+Row 0: [1][2][3][4][5][6][7][8][9][0][-][=]
+Row 1: [Q][W][E][R][T][Y][U][I][O][P][BS]
+Row 2: [Shift][S][D][F][G][H][J][K][L][Enter]
+Row 3: [;][.][/][;][.][/][;][.][/][;][.]
+```
+
+### Number/Symbol Mode
+```
+Row 0: [1][2][3][4][5][6][7][8][9][0][-][=]
+Row 1: [[][]][{][}][(][)][^][`][\ ][|][BS]
+Row 2: [Shift][;][:][.][/][<][>][€][¥][Enter]
+Row 3: [@][&][#][⌘][⌥][⌃][⌫][⌦][℉][µ][£]
+Row 4:    [Space__________][あ/カ/ABC][Clear][゛][゜][ー]
+
+With Shift (🟠):
+Row 0: [!][~][°][$][%][•][*][_][+][±][≡][≈]
+Row 1: [«][»][←][→][↑][↓][☆][★][▲][▼][BS]
+Row 2: [Shift]["]['][¿][¡][√][×][÷][≠][Enter]
+Row 3: [?][¢][§][¶][†][‡][✓][∑][π][Ω][∆]
 ```
 
 ## Installation
@@ -135,9 +179,9 @@ Click the letter keys to type Japanese characters directly as shown on the butto
 
 | Button | Function | Description |
 |--------|----------|-------------|
-| **Mode: あ→ア→A** | Cycle modes | Hiragana → Katakana → English |
-| **Shift** | Toggle shift | 🟢 Green (inactive) / 🟠 Orange (active) |
-| **123** | Number mode | Toggles to numbers, shows previous mode (あ/ア/ABC) |
+| **あ/A** | Toggle mode | Japanese (Hiragana) ↔ English |
+| **Shift** | Multi-function | Hiragana↔Katakana / Small chars / Uppercase / Symbols |
+| **123** | Number mode | Toggles to numbers, shows previous mode (あ/ABC) |
 | **Space** | Add space | Inserts space character |
 | **Enter** | Submit input | Shows popup with result and clears text |
 | **←** | Backspace | Deletes last character |
@@ -148,30 +192,34 @@ Click the letter keys to type Japanese characters directly as shown on the butto
 
 ### Shift Button Behavior
 
-**In Japanese Mode (Hiragana/Katakana):**
-- Without Shift: Normal characters (た, て, い...)
-- With Shift: Small characters (っ, ゃ, ょ...)
-- Shift also toggles: Hiragana ↔ Katakana
+The Shift button (🟢 Green / 🟠 Orange) serves multiple purposes:
+
+**In Japanese Mode:**
+- 🟢 **Green (OFF)**: Hiragana characters (た, て, い, す...)
+- 🟠 **Orange (ON)**: Katakana characters (タ, テ, イ, ス...)
+- Also accesses small characters (っ, ゃ, ょ, ぁ, ぅ, etc.)
 
 **In English Mode:**
-- Without Shift: Lowercase (a, b, c...)
-- With Shift: Uppercase (A, B, C...)
+- 🟢 **Green (OFF)**: Lowercase letters (a, b, c...)
+- 🟠 **Orange (ON)**: Uppercase letters (A, B, C...)
 
 **In Number Mode:**
-- Without Shift: Numbers (1, 2, 3...)
-- With Shift: Symbols (!, @, #...)
+- 🟢 **Green (OFF)**: Numbers (1, 2, 3...) and symbols
+- 🟠 **Orange (ON)**: Special characters (!, @, #...)
 
 ### 123/ABC Toggle Button
 
 **Smart Mode Memory:**
 - In Letter mode → Button shows "**123**" → Click to enter Number mode
-- In Number mode → Button shows previous mode (**あ**/**ア**/**ABC**) → Click to return
+- In Number mode → Button shows previous mode (**あ** or **ABC**) → Click to return
 
 **Example:**
-1. Start in Hiragana mode
+1. Start in Japanese mode (Hiragana)
 2. Click **[123]** → Enter number mode, button changes to **[あ]**
 3. Type numbers...
-4. Click **[あ]** → Return to Hiragana mode, button changes to **[123]**
+4. Click **[あ]** → Return to Japanese mode, button changes to **[123]**
+
+**Note:** The Shift key toggles between Hiragana and Katakana in Japanese mode, so you don't need a separate Katakana mode button.
 
 ### Combining Marks (Dakuten/Handakuten)
 
@@ -307,12 +355,18 @@ make clean        # Clean test builds
 
 ### Test Coverage
 
-**test_japanese_qwerty.c** (26 tests): Core IME functionality
+**test_japanese_qwerty.c** (51 tests): Core IME functionality
 - IME initialization and state management
 - Mode switching (Hiragana/Katakana/English)
 - Romaji to Kana conversion
+- All vowels (a, i, u, e, o) in Hiragana and Katakana
+- Y-row characters (ya, yu, yo)
+- W-row character (wa)
+- Additional consonants (nu, fu, ho, he)
+- Complete word tests (arigatou, watashi)
 - Backspace, Space, Enter operations
 - Buffer management and overflow protection
+- Mode preservation
 
 **test_dakuten.c** (27 tests): Combining marks
 - Dakuten (゛) conversion table: か→が, さ→ざ, た→だ, は→ば
@@ -322,9 +376,9 @@ make clean        # Clean test builds
 ### Test Results
 
 All tests pass with 100% success rate:
-- ✅ 26/26 core IME tests passed
+- ✅ 51/51 core IME tests passed
 - ✅ 27/27 dakuten combining tests passed
-- ✅ Total: 53/53 tests passed
+- ✅ Total: 78/78 tests passed
 
 ## Customization
 
