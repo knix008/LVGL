@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Setup script for MAC Address Hex Input with LVGL
-
 set -e  # Exit on error
 
 echo "==================================="
-echo "LVGL Input Setup Script"
+echo "LVGL Setup Script"
 echo "==================================="
 echo ""
 

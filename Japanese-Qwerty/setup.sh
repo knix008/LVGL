@@ -5,7 +5,7 @@
 set -e  # Exit on error
 
 echo "========================================="
-echo " Japanese Input Method - Setup"
+echo " Japanese Qwerty Input Method - Setup"
 echo "========================================="
 echo ""
 
@@ -161,7 +161,7 @@ echo ""
 print_info "Running make clean..."
 make clean 2>/dev/null || true
 
-print_info "Building Chunjiin..."
+print_info "Building Japanese Qwerty Input Method..."
 if make; then
     print_success "Build successful!"
 else

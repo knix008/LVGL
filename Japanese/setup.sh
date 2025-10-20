@@ -105,22 +105,7 @@ fi
 
 echo ""
 
-# 3. Verify font files
-echo "Step 3: Checking font files..."
-echo ""
-
-if [ -f "assets/NanumGothic-Regular.ttf" ]; then
-    print_success "NanumGothic-Regular.ttf found"
-else
-    print_error "Font file not found: assets/NanumGothic-Regular.ttf"
-    echo ""
-    echo "Please ensure the font files are in the assets/ directory"
-    exit 1
-fi
-
-echo ""
-
-# 4. Build LVGL library
+# 3. Build LVGL library
 echo "Step 4: Building LVGL library..."
 echo ""
 
@@ -152,7 +137,7 @@ fi
 
 echo ""
 
-# 5. Build the application
+# 4. Build the application
 echo "Step 5: Building the application..."
 echo ""
 
@@ -178,25 +163,18 @@ fi
 
 echo ""
 
-# 6. Summary
+# 5. Summary
 echo "========================================="
 echo "✓ Setup Complete!"
 echo "========================================="
 echo ""
-echo "The Chunjiin Korean Input Method is ready to use!"
+echo "The Japanese Input Method is ready to use!" 
 echo ""
 echo "To run the application:"
-echo "  ./chunjiin"
+echo "  ./japanese_input"
 echo ""
 echo "Or use:"
 echo "  make run"
-echo ""
-echo "Features:"
-echo "  • Korean input using Chunjiin (천지인) method"
-echo "  • Real-time character composition with incomplete character display"
-echo "  • Multiple input modes: 한글, 영문, 숫자, 특수문자"
-echo "  • Beautiful Korean fonts via FreeType + NanumGothic"
-echo "  • LVGL-based GUI with SDL2"
 echo ""
 echo "For more information, see README.md"
 echo ""
@@ -205,6 +183,6 @@ echo ""
 read -p "Run the application now? [Y/n]: " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-    print_info "Starting Chunjiin..."
-    ./chunjiin
+    print_info "Starting Japanese..."
+    ./japanese_input
 fi
