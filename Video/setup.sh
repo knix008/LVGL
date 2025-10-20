@@ -49,6 +49,12 @@ if [ ! -f "lv_conf.h" ]; then
     exit 1
 fi
 
+# Copy lv_conf.h to lvgl directory
+echo ""
+echo "Copying lv_conf.h to lvgl directory..."
+cp lv_conf.h lvgl/
+echo "lv_conf.h copied successfully"
+
 echo ""
 echo "==================================="
 echo "Building LVGL Library..."
