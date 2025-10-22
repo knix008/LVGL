@@ -541,21 +541,22 @@ void gui_update_keyboard_labels(GUIState *state) {
 }
 
 void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
-    int btn_width = 42;  // Reduced from 45 to fit 12 buttons in Row 3
-    int btn_height = 32;
+    int btn_width = 50;  // Character button width
+    int btn_wide = btn_width * 2;   // Shift/Enter button width is twice character button
+    int btn_height = 40; // Increased button height for larger keys
     int btn_gap = 4;
     int start_y = 5;
     int button_index = 0;
     
     // Row 0: Number row (` 1 2 3 4 5 6 7 8 9 0 - =) - 13 buttons + Backspace
     int row0_total_width = 13 * btn_width + 50 + 13 * btn_gap;
-    int row0_start_x = (780 - row0_total_width) / 2;
+    int row0_start_x = (780 - row0_total_width) / 2 - 5;
 
     const char *number_keys = "`1234567890-=";
     for (int i = 0; i < 13; i++) {
         lv_obj_t *btn = lv_button_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        lv_obj_set_pos(btn, row0_start_x + i * (btn_width + btn_gap), start_y);
+        lv_obj_set_pos(btn, row0_start_x + i * (btn_width + btn_gap) - 5, start_y);
 
         lv_obj_t *label = lv_label_create(btn);
         char str[2] = {number_keys[i], '\0'};
@@ -570,7 +571,7 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     // Backspace button at end of row 0
     lv_obj_t *bksp_btn = lv_button_create(parent);
     lv_obj_set_size(bksp_btn, 50, btn_height);
-    lv_obj_set_pos(bksp_btn, row0_start_x + 13 * (btn_width + btn_gap), start_y);
+    lv_obj_set_pos(bksp_btn, row0_start_x + 13 * (btn_width + btn_gap) - 5, start_y);
     lv_obj_t *bksp_label = lv_label_create(bksp_btn);
     lv_label_set_text(bksp_label, "\u2190");
     lv_obj_set_style_text_font(bksp_label, state->japanese_font, 0);
@@ -581,12 +582,12 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     // Row 1: Q W E R T Y U I O P [ ] (12 keys)
     start_y += btn_height + btn_gap;
     int row1_total_width = 12 * btn_width + 11 * btn_gap;
-    int row1_start_x = (780 - row1_total_width) / 2;
+    int row1_start_x = (780 - row1_total_width) / 2 - 5;
 
     for (int i = 0; i < 12; i++) {
         lv_obj_t *btn = lv_button_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        lv_obj_set_pos(btn, row1_start_x + i * (btn_width + btn_gap), start_y);
+        lv_obj_set_pos(btn, row1_start_x + i * (btn_width + btn_gap) - 5, start_y);
 
         lv_obj_t *label = lv_label_create(btn);
         char str[2] = {english_row1[i], '\0'};
@@ -600,14 +601,14 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
     
     // Row 2: 11 buttons (42px) + 10 gaps (4px) = 502px total
     int row2_total_width = 11 * btn_width + 10 * btn_gap;
-    int row2_start_x = (780 - row2_total_width) / 2;
+    int row2_start_x = (780 - row2_total_width) / 2 - 5;
 
     // Row 2: A S D F G H J K L ; ' (11 keys)
     start_y += btn_height + btn_gap;
     for (int i = 0; i < 11; i++) {
         lv_obj_t *btn = lv_button_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        lv_obj_set_pos(btn, row2_start_x + i * (btn_width + btn_gap), start_y);
+    lv_obj_set_pos(btn, row2_start_x + i * (btn_width + btn_gap) - 5, start_y);
 
         lv_obj_t *label = lv_label_create(btn);
         char str[2] = {english_row2[i], '\0'};
@@ -619,123 +620,125 @@ void gui_create_qwerty_keyboard(GUIState *state, lv_obj_t *parent) {
         state->key_buttons[button_index++] = btn;
     }
     
-    // Row 3: 10 buttons (42px) + 9 gaps (4px) = 456px total
-    int row3_total_width = 10 * btn_width + 9 * btn_gap;
-    int row3_start_x = (780 - row3_total_width) / 2;
+    // Row 3: Shift + Z X C V B N M , . / + Enter (12 buttons)
+    int row3_total_width = btn_wide + 10 * btn_width + btn_wide + 11 * btn_gap;
+    int row3_start_x = (780 - row3_total_width) / 2 - 5;
 
-    // Row 3: Z X C V B N M , . / (10 buttons - will show Japanese or punctuation based on mode)
     start_y += btn_height + btn_gap;
+    // Shift button at start of Row 3
+    int x = row3_start_x;
+    state->shift_button = lv_button_create(parent);
+    lv_obj_set_size(state->shift_button, btn_wide, btn_height); // Shift button is twice as wide
+    lv_obj_set_pos(state->shift_button, x - 5, start_y);
+    x += btn_wide + btn_gap;
+    lv_obj_t *shift_label = lv_label_create(state->shift_button);
+    lv_label_set_text(shift_label, "Shift");
+    lv_obj_set_style_text_font(shift_label, state->japanese_font, 0);
+    lv_obj_center(shift_label);
+    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x00AA00), 0);
+    lv_obj_add_event_cb(state->shift_button, gui_shift_button_event_cb, LV_EVENT_CLICKED, NULL);
+
+    // Z X C V B N M , . /
     for (int i = 0; i < 10; i++) {
         lv_obj_t *btn = lv_button_create(parent);
         lv_obj_set_size(btn, btn_width, btn_height);
-        lv_obj_set_pos(btn, row3_start_x + i * (btn_width + btn_gap), start_y);
-
+    lv_obj_set_pos(btn, x - 5, start_y);
         lv_obj_t *label = lv_label_create(btn);
-        // Temporary label, will be updated by gui_update_keyboard_labels
         char str[2] = {english_row3[i], '\0'};
         lv_label_set_text(label, str);
         lv_obj_set_style_text_font(label, state->japanese_font, 0);
         lv_obj_center(label);
-
         lv_obj_add_event_cb(btn, gui_button_event_cb, LV_EVENT_CLICKED, NULL);
         state->key_buttons[button_index++] = btn;
+        x += btn_width + btn_gap;
     }
+
+    // Enter button at end of Row 3
+    lv_obj_t *enter_btn = lv_button_create(parent);
+    lv_obj_set_size(enter_btn, btn_wide, btn_height); // Enter button is twice as wide
+    lv_obj_set_pos(enter_btn, x - 5, start_y);
+    lv_obj_t *enter_label = lv_label_create(enter_btn);
+    lv_label_set_text(enter_label, "Enter");
+    lv_obj_set_style_text_font(enter_label, state->japanese_font, 0);
+    lv_obj_center(enter_label);
+    lv_obj_set_style_bg_color(enter_btn, lv_color_hex(0x222222), 0); // Darker color
+    lv_obj_add_event_cb(enter_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
     
     // Row 4: Shift (50) + Space (160) + 123 (80) + Clear (50) + ゛(32) + ゜(32) + ー(32) + Enter (50) + 7 gaps (4px)
     int row4_total_width = 50 + 160 + 80 + 50 + 32 + 32 + 32 + 50 + 7 * btn_gap;
-    int row4_start_x = (780 - row4_total_width) / 2;
+    int row4_start_x = (780 - row4_total_width) / 2 - 5;
 
     // Row 4: Shift, Space, 123/ABC, Clear, dakuten buttons, Enter
     start_y += btn_height + btn_gap;
     int current_x = row4_start_x;
 
-    // Shift button at start of row 4
-    state->shift_button = lv_button_create(parent);
-    lv_obj_set_size(state->shift_button, 50, btn_height);
-    lv_obj_set_pos(state->shift_button, current_x, start_y);
-    lv_obj_t *shift_label = lv_label_create(state->shift_button);
-    lv_label_set_text(shift_label, "Shift");
-    lv_obj_set_style_text_font(shift_label, state->japanese_font, 0);
-    lv_obj_center(shift_label);
-    lv_obj_set_style_bg_color(state->shift_button, lv_color_hex(0x00AA00), 0);  // Green when inactive
-    lv_obj_add_event_cb(state->shift_button, gui_shift_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 50 + btn_gap;
-
-    // Space button (smaller to fit with Shift and Enter)
+    // Space button
     lv_obj_t *space_btn = lv_button_create(parent);
     lv_obj_set_size(space_btn, 160, btn_height);
-    lv_obj_set_pos(space_btn, current_x, start_y);
-    current_x += 160 + btn_gap;
+    lv_obj_set_pos(space_btn, current_x - 5, start_y);
     lv_obj_t *space_label = lv_label_create(space_btn);
     lv_label_set_text(space_label, "Space");
     lv_obj_set_style_text_font(space_label, state->japanese_font, 0);
     lv_obj_center(space_label);
     lv_obj_add_event_cb(space_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    current_x += 160 + btn_gap;
 
-    // 123/ABC mode toggle button (for number mode)
+    // 123/ABC mode toggle button
     lv_obj_t *num_mode_btn = lv_button_create(parent);
     lv_obj_set_size(num_mode_btn, 80, btn_height);
-    lv_obj_set_pos(num_mode_btn, current_x, start_y);
+    lv_obj_set_pos(num_mode_btn, current_x - 5, start_y);
     lv_obj_t *mode_label = lv_label_create(num_mode_btn);
-    lv_label_set_text(mode_label, "123");  // Initially shows "123" since we start in letter mode
+    lv_label_set_text(mode_label, "123");
     lv_obj_set_style_text_font(mode_label, state->japanese_font, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(num_mode_btn, gui_mode_button_event_cb, LV_EVENT_CLICKED, NULL);
     current_x += 80 + btn_gap;
 
-    // Clear button
-    lv_obj_t *clear_btn = lv_button_create(parent);
-    lv_obj_set_size(clear_btn, 50, btn_height);
-    lv_obj_set_pos(clear_btn, current_x, start_y);
-    lv_obj_t *clear_label = lv_label_create(clear_btn);
-    lv_label_set_text(clear_label, "Clear");
-    lv_obj_set_style_text_font(clear_label, state->japanese_font, 0);
-    lv_obj_center(clear_label);
-    lv_obj_add_event_cb(clear_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 50 + btn_gap;
-
     // Dakuten button (゛)
+    int jp_btn_gap = btn_gap * 2;
     lv_obj_t *dakuten_btn = lv_button_create(parent);
-    lv_obj_set_size(dakuten_btn, 32, btn_height);
-    lv_obj_set_pos(dakuten_btn, current_x, start_y);
+    lv_obj_set_size(dakuten_btn, btn_width, btn_height);
+    lv_obj_set_pos(dakuten_btn, current_x - 5, start_y);
     lv_obj_t *dakuten_label = lv_label_create(dakuten_btn);
     lv_label_set_text(dakuten_label, "゛");
     lv_obj_set_style_text_font(dakuten_label, state->japanese_font, 0);
     lv_obj_center(dakuten_label);
     lv_obj_add_event_cb(dakuten_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 32 + btn_gap;
+    current_x += btn_width + jp_btn_gap;
 
     // Handakuten button (゜)
     lv_obj_t *handakuten_btn = lv_button_create(parent);
-    lv_obj_set_size(handakuten_btn, 32, btn_height);
-    lv_obj_set_pos(handakuten_btn, current_x, start_y);
+    lv_obj_set_size(handakuten_btn, btn_width, btn_height);
+    lv_obj_set_pos(handakuten_btn, current_x - 5, start_y);
     lv_obj_t *handakuten_label = lv_label_create(handakuten_btn);
     lv_label_set_text(handakuten_label, "゜");
     lv_obj_set_style_text_font(handakuten_label, state->japanese_font, 0);
     lv_obj_center(handakuten_label);
     lv_obj_add_event_cb(handakuten_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 32 + btn_gap;
+    current_x += btn_width + jp_btn_gap;
 
     // Prolonged sound mark button (ー)
     lv_obj_t *chouon_btn = lv_button_create(parent);
-    lv_obj_set_size(chouon_btn, 32, btn_height);
-    lv_obj_set_pos(chouon_btn, current_x, start_y);
+    lv_obj_set_size(chouon_btn, btn_width, btn_height);
+    lv_obj_set_pos(chouon_btn, current_x - 5, start_y);
     lv_obj_t *chouon_label = lv_label_create(chouon_btn);
     lv_label_set_text(chouon_label, "ー");
     lv_obj_set_style_text_font(chouon_label, state->japanese_font, 0);
     lv_obj_center(chouon_label);
     lv_obj_add_event_cb(chouon_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
-    current_x += 32 + btn_gap;
+    current_x += btn_width + jp_btn_gap;
 
-    // Enter button at end of row 4
-    lv_obj_t *enter_btn = lv_button_create(parent);
-    lv_obj_set_size(enter_btn, 50, btn_height);
-    lv_obj_set_pos(enter_btn, current_x, start_y);
-    lv_obj_t *enter_label = lv_label_create(enter_btn);
-    lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, state->japanese_font, 0);
-    lv_obj_center(enter_label);
-    lv_obj_add_event_cb(enter_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+    // Clear button at end
+    lv_obj_t *clear_btn = lv_button_create(parent);
+    lv_obj_set_size(clear_btn, btn_width * 2, btn_height);
+    lv_obj_set_pos(clear_btn, current_x - 5, start_y);
+    lv_obj_t *clear_label = lv_label_create(clear_btn);
+    lv_label_set_text(clear_label, "Clear");
+    lv_obj_set_style_text_font(clear_label, state->japanese_font, 0);
+    lv_obj_center(clear_label);
+    lv_obj_add_event_cb(clear_btn, gui_special_button_event_cb, LV_EVENT_CLICKED, NULL);
+
+    // ...existing code...
     
     state->num_buttons = button_index;
 }
@@ -773,8 +776,8 @@ void gui_create_ui(GUIState *state) {
     
     // Create keyboard container (taller for 5 rows)
     state->keyboard_container = lv_obj_create(state->screen);
-    lv_obj_set_size(state->keyboard_container, 780, 360);
-    lv_obj_set_pos(state->keyboard_container, 10, 180);
+    lv_obj_set_size(state->keyboard_container, 780, 250);
+    lv_obj_set_pos(state->keyboard_container, 10, 220);
     lv_obj_set_style_bg_color(state->keyboard_container, lv_color_hex(0xE0E0E0), 0);
     lv_obj_set_style_border_width(state->keyboard_container, 2, 0);
     lv_obj_set_style_border_color(state->keyboard_container, lv_color_hex(0x808080), 0);
