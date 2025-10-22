@@ -14,34 +14,68 @@
 // Hiragana character mappings for each button (Keitai input method)
 // Based on gojūon table: each number corresponds to a column, presses determine row
 static const wchar_t* hiragana_chars[12] = {
-    L"あいうえお",    // Button 1: あ行 (a-column)
-    L"かきくけこ",    // Button 2: か行 (ka-column)  
-    L"さしすせそ",    // Button 3: さ行 (sa-column)
-    L"たちつてと",    // Button 4: た行 (ta-column)
-    L"なにぬねの",    // Button 5: な行 (na-column)
-    L"はひふへほ",    // Button 6: は行 (ha-column)
-    L"まみむめも",    // Button 7: ま行 (ma-column)
-    L"やゆよ",        // Button 8: や行 (ya-column) - only 3 characters
-    L"らりるれろ",    // Button 9: ら行 (ra-column)
-    L"わをん",        // Button 0: わ行 (wa-column) + ん
-    L"゛゜",          // Button * (dakuten/handakuten marks)
-    L"ー"             // Button # (long vowel mark)
+    L"あいうえお",    // Button 0: あ行 (a-column)
+    L"かきくけこ",    // Button 1: か行 (ka-column)
+    L"さしすせそ",    // Button 2: さ行 (sa-column)
+    L"たちつてと",    // Button 3: た行 (ta-column)
+    L"なにぬねの",    // Button 4: な行 (na-column)
+    L"はひふへほ",    // Button 5: は行 (ha-column)
+    L"まみむめも",    // Button 6: ま行 (ma-column)
+    L"やゆよ",        // Button 7: や行 (ya-column) - only 3 characters
+    L"らりるれろ",    // Button 8: ら行 (ra-column)
+    L"わをん",        // Button 9: わ行 (wa-column) + ん
+    L"゛゜",          // Button 10: * (dakuten/handakuten marks)
+    L"ー"             // Button 11: # (long vowel mark)
+};
+
+// Small hiragana characters (for shift mode)
+// If a button doesn't have small versions, we use NULL to indicate fallback to normal
+static const wchar_t* hiragana_chars_small[12] = {
+    L"ぁぃぅぇぉ",    // Button 0: small あ行
+    NULL,             // Button 1: か行 - fallback to normal
+    NULL,             // Button 2: さ行 - fallback to normal
+    L"っ",            // Button 3: small つ (tsu)
+    NULL,             // Button 4: な行 - fallback to normal
+    NULL,             // Button 5: は行 - fallback to normal
+    NULL,             // Button 6: ま行 - fallback to normal
+    L"ゃゅょ",        // Button 7: small や行
+    NULL,             // Button 8: ら行 - fallback to normal
+    L"ゎ",            // Button 9: small わ
+    L"゛゜",          // Button 10: * (dakuten/handakuten marks - same as normal)
+    L"ー"             // Button 11: # (long vowel mark - same as normal)
 };
 
 // Katakana character mappings for each button (Keitai input method)
 static const wchar_t* katakana_chars[12] = {
-    L"アイウエオ",    // Button 1: ア行 (a-column)
-    L"カキクケコ",    // Button 2: カ行 (ka-column)
-    L"サシスセソ",    // Button 3: サ行 (sa-column)
-    L"タチツテト",    // Button 4: タ行 (ta-column)
-    L"ナニヌネノ",    // Button 5: ナ行 (na-column)
-    L"ハヒフヘホ",    // Button 6: ハ行 (ha-column)
-    L"マミムメモ",    // Button 7: マ行 (ma-column)
-    L"ヤユヨ",        // Button 8: ヤ行 (ya-column) - only 3 characters
-    L"ラリルレロ",    // Button 9: ラ行 (ra-column)
-    L"ワヲン",        // Button 0: ワ行 (wa-column) + ン
-    L"゛゜",          // Button * (dakuten/handakuten marks)
-    L"ー"             // Button # (long vowel mark)
+    L"アイウエオ",    // Button 0: ア行 (a-column)
+    L"カキクケコ",    // Button 1: カ行 (ka-column)
+    L"サシスセソ",    // Button 2: サ行 (sa-column)
+    L"タチツテト",    // Button 3: タ行 (ta-column)
+    L"ナニヌネノ",    // Button 4: ナ行 (na-column)
+    L"ハヒフヘホ",    // Button 5: ハ行 (ha-column)
+    L"マミムメモ",    // Button 6: マ行 (ma-column)
+    L"ヤユヨ",        // Button 7: ヤ行 (ya-column) - only 3 characters
+    L"ラリルレロ",    // Button 8: ラ行 (ra-column)
+    L"ワヲン",        // Button 9: ワ行 (wa-column) + ン
+    L"゛゜",          // Button 10: * (dakuten/handakuten marks)
+    L"ー"             // Button 11: # (long vowel mark)
+};
+
+// Small katakana characters (for shift mode)
+// If a button doesn't have small versions, we use NULL to indicate fallback to normal
+static const wchar_t* katakana_chars_small[12] = {
+    L"ァィゥェォ",    // Button 0: small ア行
+    L"ヵヶ",          // Button 1: small カ (ka) and ケ (ke)
+    NULL,             // Button 2: サ行 - fallback to normal
+    L"ッ",            // Button 3: small ツ (tsu)
+    NULL,             // Button 4: ナ行 - fallback to normal
+    NULL,             // Button 5: ハ行 - fallback to normal
+    NULL,             // Button 6: マ行 - fallback to normal
+    L"ャュョ",        // Button 7: small ヤ行
+    NULL,             // Button 8: ラ行 - fallback to normal
+    L"ヮ",            // Button 9: small ワ
+    L"゛゜",          // Button 10: * (dakuten/handakuten marks - same as normal)
+    L"ー"             // Button 11: # (long vowel mark - same as normal)
 };
 
 // Alphabet mappings for each button
@@ -110,7 +144,8 @@ static const wchar_t* symbol_chars_shifted[12] = {
 
 // Mode names
 static const char* mode_names[MODE_COUNT] = {
-    "日本語",        // Japanese (Hiragana/Katakana)
+    "ひらがな",      // Hiragana
+    "カタカナ",      // Katakana
     "ABC",           // Alphabet
     "123",           // Numbers
     "記号"           // Symbols
@@ -118,7 +153,7 @@ static const char* mode_names[MODE_COUNT] = {
 
 // Initialize Japanese input state
 void japanese_input_init(JapaneseInputState *state) {
-    state->now_mode = MODE_JAPANESE;
+    state->now_mode = MODE_HIRAGANA;
     memset(state->text_buffer, 0, sizeof(state->text_buffer));
     state->cursor_pos = 0;
     state->shift_mode = false;
@@ -166,9 +201,29 @@ void japanese_input_select_flick_char(JapaneseInputState *state, int button_num,
     const wchar_t* chars = NULL;
     
     switch (state->now_mode) {
-        case MODE_JAPANESE:
-            // Use shift_mode to determine Hiragana vs Katakana
-            chars = state->shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
+        case MODE_HIRAGANA:
+            // Use shift_mode to determine normal vs small hiragana
+            if (state->shift_mode) {
+                chars = hiragana_chars_small[button_num];
+                // Fallback to normal if no small version exists
+                if (chars == NULL || wcslen(chars) == 0) {
+                    chars = hiragana_chars[button_num];
+                }
+            } else {
+                chars = hiragana_chars[button_num];
+            }
+            break;
+        case MODE_KATAKANA:
+            // Use shift_mode to determine normal vs small katakana
+            if (state->shift_mode) {
+                chars = katakana_chars_small[button_num];
+                // Fallback to normal if no small version exists
+                if (chars == NULL || wcslen(chars) == 0) {
+                    chars = katakana_chars[button_num];
+                }
+            } else {
+                chars = katakana_chars[button_num];
+            }
             break;
         case MODE_ALPHABET:
             {
@@ -237,15 +292,18 @@ void japanese_input_process_input(JapaneseInputState *state, int button_num) {
     if (state->flick_active && state->flick_button == button_num) {
         japanese_input_select_flick_char(state, button_num, 0);
     } else {
-        // Check if there's only one character available
-        int char_count = get_button_char_count(state->now_mode, button_num);
+        // Get the actual characters considering shift mode
+        const wchar_t* chars = get_button_flick_chars_with_shift(state->now_mode, button_num, state->shift_mode);
+        int char_count = (chars && wcslen(chars) > 0) ? wcslen(chars) : 0;
+
         if (char_count == 1) {
             // Only one character available, input it directly
             japanese_input_select_flick_char(state, button_num, 0);
-        } else {
+        } else if (char_count > 1) {
             // Multiple characters available, show flick input
             japanese_input_show_flick(state, button_num);
         }
+        // If char_count == 0, do nothing (button has no characters)
     }
 }
 
@@ -256,9 +314,28 @@ const wchar_t* get_button_flick_chars_with_shift(InputMode mode, int button_num,
     }
     
     switch (mode) {
-        case MODE_JAPANESE:
-            // Use shift_mode to determine Hiragana vs Katakana
-            return shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
+        case MODE_HIRAGANA:
+            // Use shift_mode to determine normal vs small hiragana
+            if (shift_mode) {
+                const wchar_t* small_chars = hiragana_chars_small[button_num];
+                // Fallback to normal if no small version exists
+                if (small_chars == NULL || wcslen(small_chars) == 0) {
+                    return hiragana_chars[button_num];
+                }
+                return small_chars;
+            }
+            return hiragana_chars[button_num];
+        case MODE_KATAKANA:
+            // Use shift_mode to determine normal vs small katakana
+            if (shift_mode) {
+                const wchar_t* small_chars = katakana_chars_small[button_num];
+                // Fallback to normal if no small version exists
+                if (small_chars == NULL || wcslen(small_chars) == 0) {
+                    return katakana_chars[button_num];
+                }
+                return small_chars;
+            }
+            return katakana_chars[button_num];
         case MODE_ALPHABET:
             {
                 const char* ascii_chars = alphabet_chars[button_num];
@@ -303,12 +380,12 @@ const wchar_t* get_button_flick_chars(InputMode mode, int button_num) {
     if (button_num < 0 || button_num >= 12) {
         return L"";
     }
-    
+
     switch (mode) {
-        case MODE_JAPANESE:
-            // This function doesn't have access to shift_mode, so return Hiragana by default
-            // The actual selection will be handled in japanese_input_select_flick_char
+        case MODE_HIRAGANA:
             return hiragana_chars[button_num];
+        case MODE_KATAKANA:
+            return katakana_chars[button_num];
         case MODE_SYMBOL:
             return symbol_chars[button_num];
         default:
@@ -321,9 +398,10 @@ int get_button_char_count(InputMode mode, int button_num) {
     if (button_num < 0 || button_num >= 12) {
         return 0;
     }
-    
+
     switch (mode) {
-        case MODE_JAPANESE:
+        case MODE_HIRAGANA:
+        case MODE_KATAKANA:
         case MODE_SYMBOL:
             {
                 const wchar_t* chars = get_button_flick_chars(mode, button_num);
@@ -379,16 +457,39 @@ const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool s
     single_char[1] = L'\0';
     
     switch (mode) {
-        case MODE_JAPANESE:
+        case MODE_HIRAGANA:
             {
-                // Use shift_mode to determine Hiragana vs Katakana
-                const wchar_t* chars = shift_mode ? katakana_chars[button_num] : hiragana_chars[button_num];
+                // For button labels: only show small chars if they exist, otherwise keep normal
+                const wchar_t* chars;
+                if (shift_mode && hiragana_chars_small[button_num] != NULL && wcslen(hiragana_chars_small[button_num]) > 0) {
+                    // Show small characters only if they exist
+                    chars = hiragana_chars_small[button_num];
+                } else {
+                    // Keep showing normal characters
+                    chars = hiragana_chars[button_num];
+                }
                 if (chars && wcslen(chars) > 0) {
                     single_char[0] = chars[0];
                 }
             }
             break;
-                case MODE_ALPHABET:
+        case MODE_KATAKANA:
+            {
+                // For button labels: only show small chars if they exist, otherwise keep normal
+                const wchar_t* chars;
+                if (shift_mode && katakana_chars_small[button_num] != NULL && wcslen(katakana_chars_small[button_num]) > 0) {
+                    // Show small characters only if they exist
+                    chars = katakana_chars_small[button_num];
+                } else {
+                    // Keep showing normal characters
+                    chars = katakana_chars[button_num];
+                }
+                if (chars && wcslen(chars) > 0) {
+                    single_char[0] = chars[0];
+                }
+            }
+            break;
+        case MODE_ALPHABET:
                     {
                         const char* chars = get_button_alphabet_chars(button_num);
                         if (chars && strlen(chars) > 0) {
@@ -448,10 +549,17 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
     single_char[1] = L'\0';
     
     switch (mode) {
-        case MODE_JAPANESE:
+        case MODE_HIRAGANA:
             {
-                // For Japanese mode, default to Hiragana (shift_mode will be handled by get_button_text_with_shift)
                 const wchar_t* chars = hiragana_chars[button_num];
+                if (chars && wcslen(chars) > 0) {
+                    single_char[0] = chars[0];
+                }
+            }
+            break;
+        case MODE_KATAKANA:
+            {
+                const wchar_t* chars = katakana_chars[button_num];
                 if (chars && wcslen(chars) > 0) {
                     single_char[0] = chars[0];
                 }

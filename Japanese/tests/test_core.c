@@ -32,7 +32,7 @@ void test_initialization() {
     JapaneseInputState state;
     japanese_input_init(&state);
     
-    TEST_ASSERT(state.now_mode == MODE_JAPANESE, "Initial mode should be Hiragana");
+    TEST_ASSERT(state.now_mode == MODE_HIRAGANA, "Initial mode should be Hiragana");
     TEST_ASSERT(state.cursor_pos == 0, "Initial cursor position should be 0");
     TEST_ASSERT(state.shift_mode == false, "Initial shift mode should be false");
     TEST_ASSERT(state.composing_len == 0, "Initial composing length should be 0");
@@ -49,29 +49,37 @@ void test_mode_switching() {
     japanese_input_init(&state);
     
     // Test cycling through all modes
-    TEST_ASSERT(state.now_mode == MODE_JAPANESE, "Initial mode should be Japanese");
-    
+    TEST_ASSERT(state.now_mode == MODE_HIRAGANA, "Initial mode should be Hiragana");
+
     change_input_mode(&state);
-    TEST_ASSERT(state.now_mode == MODE_ALPHABET, "Second mode should be Alphabet");
-    
+    TEST_ASSERT(state.now_mode == MODE_KATAKANA, "Second mode should be Katakana");
+
     change_input_mode(&state);
-    TEST_ASSERT(state.now_mode == MODE_NUMBER, "Third mode should be Number");
-    
+    TEST_ASSERT(state.now_mode == MODE_ALPHABET, "Third mode should be Alphabet");
+
     change_input_mode(&state);
-    TEST_ASSERT(state.now_mode == MODE_SYMBOL, "Fourth mode should be Symbol");
-    
+    TEST_ASSERT(state.now_mode == MODE_NUMBER, "Fourth mode should be Number");
+
     change_input_mode(&state);
-    TEST_ASSERT(state.now_mode == MODE_JAPANESE, "Should cycle back to Japanese");
+    TEST_ASSERT(state.now_mode == MODE_SYMBOL, "Fifth mode should be Symbol");
+
+    change_input_mode(&state);
+    TEST_ASSERT(state.now_mode == MODE_HIRAGANA, "Should cycle back to Hiragana");
 }
 
 // Test button text generation
 void test_button_text() {
     printf("\n=== Testing Button Text Generation ===\n");
     
-    // Test Japanese mode (defaults to Hiragana)
-    const wchar_t* japanese_text = get_button_text(MODE_JAPANESE, 0);
-    TEST_ASSERT(japanese_text != NULL && wcslen(japanese_text) > 0, "Japanese button text should not be empty");
-    TEST_ASSERT(japanese_text[0] == L'あ', "First Japanese button should show あ");
+    // Test Hiragana mode
+    const wchar_t* hiragana_text = get_button_text(MODE_HIRAGANA, 0);
+    TEST_ASSERT(hiragana_text != NULL && wcslen(hiragana_text) > 0, "Hiragana button text should not be empty");
+    TEST_ASSERT(hiragana_text[0] == L'あ', "First Hiragana button should show あ");
+
+    // Test Katakana mode
+    const wchar_t* katakana_text = get_button_text(MODE_KATAKANA, 0);
+    TEST_ASSERT(katakana_text != NULL && wcslen(katakana_text) > 0, "Katakana button text should not be empty");
+    TEST_ASSERT(katakana_text[0] == L'ア', "First Katakana button should show ア");
     
     // Test Alphabet mode (now shows all characters)
     const wchar_t* alphabet_text = get_button_text(MODE_ALPHABET, 0);
@@ -94,12 +102,19 @@ void test_button_text() {
 void test_character_counts() {
     printf("\n=== Testing Character Count Functions ===\n");
     
-    // Test Japanese character counts
-    int japanese_count = get_button_char_count(MODE_JAPANESE, 0);
-    TEST_ASSERT(japanese_count == 5, "Japanese button 0 should have 5 characters");
-    
-    int japanese_count_7 = get_button_char_count(MODE_JAPANESE, 7);
-    TEST_ASSERT(japanese_count_7 == 3, "Japanese button 7 (や) should have 3 characters");
+    // Test Hiragana character counts
+    int hiragana_count = get_button_char_count(MODE_HIRAGANA, 0);
+    TEST_ASSERT(hiragana_count == 5, "Hiragana button 0 should have 5 characters");
+
+    int hiragana_count_7 = get_button_char_count(MODE_HIRAGANA, 7);
+    TEST_ASSERT(hiragana_count_7 == 3, "Hiragana button 7 (や) should have 3 characters");
+
+    // Test Katakana character counts
+    int katakana_count = get_button_char_count(MODE_KATAKANA, 0);
+    TEST_ASSERT(katakana_count == 5, "Katakana button 0 should have 5 characters");
+
+    int katakana_count_7 = get_button_char_count(MODE_KATAKANA, 7);
+    TEST_ASSERT(katakana_count_7 == 3, "Katakana button 7 (ヤ) should have 3 characters");
     
     // Test Alphabet character counts
     int alphabet_count = get_button_char_count(MODE_ALPHABET, 0);
@@ -114,10 +129,15 @@ void test_character_counts() {
 void test_flick_characters() {
     printf("\n=== Testing Flick Character Functions ===\n");
     
-    // Test Japanese flick characters (defaults to Hiragana)
-    const wchar_t* japanese_flick = get_button_flick_chars(MODE_JAPANESE, 0);
-    TEST_ASSERT(japanese_flick != NULL, "Japanese flick characters should not be NULL");
-    TEST_ASSERT(wcscmp(japanese_flick, L"あいうえお") == 0, "Japanese button 0 should have あいうえお");
+    // Test Hiragana flick characters
+    const wchar_t* hiragana_flick = get_button_flick_chars(MODE_HIRAGANA, 0);
+    TEST_ASSERT(hiragana_flick != NULL, "Hiragana flick characters should not be NULL");
+    TEST_ASSERT(wcscmp(hiragana_flick, L"あいうえお") == 0, "Hiragana button 0 should have あいうえお");
+
+    // Test Katakana flick characters
+    const wchar_t* katakana_flick = get_button_flick_chars(MODE_KATAKANA, 0);
+    TEST_ASSERT(katakana_flick != NULL, "Katakana flick characters should not be NULL");
+    TEST_ASSERT(wcscmp(katakana_flick, L"アイウエオ") == 0, "Katakana button 0 should have アイウエオ");
     
     // Test Alphabet flick characters
     const char* alphabet_flick = get_button_alphabet_chars(0);
@@ -134,9 +154,12 @@ void test_flick_characters() {
 void test_mode_names() {
     printf("\n=== Testing Mode Names ===\n");
     
-    const char* japanese_name = get_mode_name(MODE_JAPANESE);
-    TEST_ASSERT(japanese_name != NULL, "Mode name should not be NULL");
-    TEST_ASSERT(strcmp(japanese_name, "日本語") == 0, "Japanese mode name should be 日本語");
+    const char* hiragana_name = get_mode_name(MODE_HIRAGANA);
+    TEST_ASSERT(hiragana_name != NULL, "Mode name should not be NULL");
+    TEST_ASSERT(strcmp(hiragana_name, "ひらがな") == 0, "Hiragana mode name should be ひらがな");
+
+    const char* katakana_name = get_mode_name(MODE_KATAKANA);
+    TEST_ASSERT(strcmp(katakana_name, "カタカナ") == 0, "Katakana mode name should be カタカナ");
     
     const char* alphabet_name = get_mode_name(MODE_ALPHABET);
     TEST_ASSERT(strcmp(alphabet_name, "ABC") == 0, "Alphabet mode name should be ABC");
@@ -197,19 +220,87 @@ void test_flick_input() {
 // Test input processing
 void test_input_processing() {
     printf("\n=== Testing Input Processing ===\n");
-    
+
     JapaneseInputState state;
     japanese_input_init(&state);
-    
-    // Test initial flick input activation
+
+    // Test initial flick input activation (button 0 has 5 characters)
     japanese_input_process_input(&state, 0);
     TEST_ASSERT(state.flick_button == 0, "Processing input should set flick button");
     TEST_ASSERT(state.flick_active == true, "Processing input should activate flick");
-    
+
     // Test selecting first character when flick is already active
     japanese_input_process_input(&state, 0);
     TEST_ASSERT(state.text_buffer[0] == L'あ', "Processing same input should select first character");
     TEST_ASSERT(state.flick_active == false, "Flick should be deactivated after selection");
+
+    // Test direct input for single character with shift (small っ)
+    japanese_input_init(&state); // Reset state
+    state.shift_mode = true;
+    japanese_input_process_input(&state, 3); // Button 3 with shift = small っ (only 1 char)
+    TEST_ASSERT(state.text_buffer[0] == L'っ', "Single small character should be input directly");
+    TEST_ASSERT(state.flick_active == false, "Flick should not be active for single character");
+    TEST_ASSERT(state.cursor_pos == 1, "Cursor should advance after direct input");
+
+    // Test direct input for another single small character (small ゎ)
+    japanese_input_init(&state); // Reset state
+    state.shift_mode = true;
+    japanese_input_process_input(&state, 9); // Button 9 with shift = small ゎ (only 1 char)
+    TEST_ASSERT(state.text_buffer[0] == L'ゎ', "Single small ゎ should be input directly");
+    TEST_ASSERT(state.flick_active == false, "Flick should not be active for single character");
+}
+
+// Test small character functionality
+void test_small_characters() {
+    printf("\n=== Testing Small Character Functionality ===\n");
+
+    JapaneseInputState state;
+    japanese_input_init(&state);
+
+    // Test small hiragana with shift
+    state.shift_mode = true;
+    const wchar_t* small_hiragana = get_button_flick_chars_with_shift(MODE_HIRAGANA, 0, true);
+    TEST_ASSERT(small_hiragana != NULL, "Small hiragana should not be NULL");
+    TEST_ASSERT(wcscmp(small_hiragana, L"ぁぃぅぇぉ") == 0, "Button 0 should have small hiragana characters when shift is active");
+
+    // Test small katakana with shift
+    const wchar_t* small_katakana = get_button_flick_chars_with_shift(MODE_KATAKANA, 0, true);
+    TEST_ASSERT(small_katakana != NULL, "Small katakana should not be NULL");
+    TEST_ASSERT(wcscmp(small_katakana, L"ァィゥェォ") == 0, "Button 0 should have small katakana characters when shift is active");
+
+    // Test small っ (tsu) in hiragana
+    const wchar_t* small_tsu_hiragana = get_button_flick_chars_with_shift(MODE_HIRAGANA, 3, true);
+    TEST_ASSERT(small_tsu_hiragana != NULL, "Small っ should not be NULL");
+    TEST_ASSERT(wcscmp(small_tsu_hiragana, L"っ") == 0, "Button 3 should have small っ when shift is active");
+
+    // Test small ッ (tsu) in katakana
+    const wchar_t* small_tsu_katakana = get_button_flick_chars_with_shift(MODE_KATAKANA, 3, true);
+    TEST_ASSERT(small_tsu_katakana != NULL, "Small ッ should not be NULL");
+    TEST_ASSERT(wcscmp(small_tsu_katakana, L"ッ") == 0, "Button 3 should have small ッ when shift is active");
+
+    // Test fallback to normal characters for buttons without small versions
+    const wchar_t* fallback_hiragana = get_button_flick_chars_with_shift(MODE_HIRAGANA, 1, true);
+    TEST_ASSERT(fallback_hiragana != NULL, "Fallback hiragana should not be NULL");
+    TEST_ASSERT(wcscmp(fallback_hiragana, L"かきくけこ") == 0, "Button 1 should fallback to normal か行 when no small version exists");
+
+    const wchar_t* fallback_katakana = get_button_flick_chars_with_shift(MODE_KATAKANA, 2, true);
+    TEST_ASSERT(fallback_katakana != NULL, "Fallback katakana should not be NULL");
+    TEST_ASSERT(wcscmp(fallback_katakana, L"サシスセソ") == 0, "Button 2 should fallback to normal サ行 when no small version exists");
+
+    // Test small ya-row in hiragana (ゃゅょ)
+    const wchar_t* small_ya_hiragana = get_button_flick_chars_with_shift(MODE_HIRAGANA, 7, true);
+    TEST_ASSERT(small_ya_hiragana != NULL, "Small ya-row hiragana should not be NULL");
+    TEST_ASSERT(wcscmp(small_ya_hiragana, L"ゃゅょ") == 0, "Button 7 should have small や行 when shift is active");
+
+    // Test small ya-row in katakana (ャュョ)
+    const wchar_t* small_ya_katakana = get_button_flick_chars_with_shift(MODE_KATAKANA, 7, true);
+    TEST_ASSERT(small_ya_katakana != NULL, "Small ya-row katakana should not be NULL");
+    TEST_ASSERT(wcscmp(small_ya_katakana, L"ャュョ") == 0, "Button 7 should have small ヤ行 when shift is active");
+
+    // Test normal characters without shift
+    const wchar_t* normal_hiragana = get_button_flick_chars_with_shift(MODE_HIRAGANA, 0, false);
+    TEST_ASSERT(normal_hiragana != NULL, "Normal hiragana should not be NULL");
+    TEST_ASSERT(wcscmp(normal_hiragana, L"あいうえお") == 0, "Button 0 should have normal characters when shift is not active");
 }
 
 // Test edge cases
@@ -217,18 +308,18 @@ void test_edge_cases() {
     printf("\n=== Testing Edge Cases ===\n");
     
     // Test invalid button numbers
-    const wchar_t* invalid_text = get_button_text(MODE_JAPANESE, -1);
+    const wchar_t* invalid_text = get_button_text(MODE_HIRAGANA, -1);
     TEST_ASSERT(wcslen(invalid_text) == 0, "Invalid button number should return empty string");
-    
-    invalid_text = get_button_text(MODE_JAPANESE, 12);
+
+    invalid_text = get_button_text(MODE_HIRAGANA, 12);
     TEST_ASSERT(wcslen(invalid_text) == 0, "Button number >= 12 should return empty string");
-    
+
     // Test invalid mode
     const char* invalid_mode = get_mode_name(MODE_COUNT);
     TEST_ASSERT(strcmp(invalid_mode, "Unknown") == 0, "Invalid mode should return 'Unknown'");
-    
+
     // Test character count for invalid buttons
-    int invalid_count = get_button_char_count(MODE_JAPANESE, -1);
+    int invalid_count = get_button_char_count(MODE_HIRAGANA, -1);
     TEST_ASSERT(invalid_count == 0, "Invalid button should have 0 characters");
 }
 
@@ -246,6 +337,7 @@ int main() {
     test_utf8_conversion();
     test_flick_input();
     test_input_processing();
+    test_small_characters();
     test_edge_cases();
     
     printf("\n=== Test Results ===\n");

@@ -15,11 +15,12 @@
 
 // Input modes
 typedef enum {
-    MODE_JAPANESE = 0,    // 日本語 (Japanese - Hiragana/Katakana controlled by shift)
-    MODE_ALPHABET = 1,    // アルファベット (Alphabet)
-    MODE_NUMBER = 2,      // 数字 (Numbers)
-    MODE_SYMBOL = 3,      // 記号 (Symbols)
-    MODE_COUNT = 4
+    MODE_HIRAGANA = 0,    // ひらがな (Hiragana)
+    MODE_KATAKANA = 1,    // カタカナ (Katakana)
+    MODE_ALPHABET = 2,    // アルファベット (Alphabet)
+    MODE_NUMBER = 3,      // 数字 (Numbers)
+    MODE_SYMBOL = 4,      // 記号 (Symbols)
+    MODE_COUNT = 5
 } InputMode;
 
 // Japanese input state
@@ -27,7 +28,7 @@ typedef struct {
     InputMode now_mode;           // Current input mode
     wchar_t text_buffer[MAX_TEXT_LEN]; // Text buffer (UTF-32)
     int cursor_pos;               // Cursor position
-    bool shift_mode;              // Shift mode for alphabet
+    bool shift_mode;              // Shift mode for alphabet/small characters
     wchar_t composing_buffer[10]; // Buffer for composing characters
     int composing_len;            // Length of composing buffer
     int flick_button;             // Currently showing flick options for this button (-1 if none)

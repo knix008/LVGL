@@ -49,6 +49,9 @@ run: $(TARGET)
 clean:
 	@echo "Cleaning..."
 	rm -f $(OBJECTS) $(TARGET)
+	rm -f test/*.o
+	rm -f test/test_core
+	rm -f test/test_gui
 	rm -rf lvgl/build/*.o
 	@echo "Clean complete."
 

@@ -5,7 +5,9 @@ A modern Japanese character input application built with LVGL, supporting multip
 ## Features
 
 ### 🎯 Core Functionality
-- **Multi-mode Input**: Support for Hiragana, Katakana, English (lowercase/uppercase), Numbers, and Special Characters
+- **Multi-mode Input**: Separate modes for Hiragana, Katakana, English (lowercase/uppercase), Numbers, and Special Characters
+- **Small Character Support**: Input small Japanese characters (ぁぃぅぇぉ, っ, ゃゅょ, ゎ, etc.) using Shift key
+- **Smart Input**: Single characters input directly; multiple characters show flick selection window
 - **Flick Input Method**: Modern smartphone-style character selection interface
 - **Mobile Keypad Layout**: Traditional 12-button mobile phone keypad design
 - **UTF-8 Support**: Full Unicode character support for Japanese text
@@ -19,14 +21,17 @@ A modern Japanese character input application built with LVGL, supporting multip
 - **Color-coded Elements**: Intuitive visual feedback
 
 ### 🎨 Input Methods
-- **Japanese Mode**: Unified mode with Hiragana/Katakana toggle via Shift button
-  - **Hiragana**: ひらがな (あいうえお, かきくけこ, etc.) - Shift OFF
-  - **Katakana**: カタカナ (アイウエオ, カキクケコ, etc.) - Shift ON
+- **Hiragana Mode**: ひらがな (Japanese hiragana characters)
+  - **Normal**: あいうえお, かきくけこ, さしすせそ, etc. - Shift OFF
+  - **Small Characters**: ぁぃぅぇぉ, っ, ゃゅょ, ゎ - Shift ON
+- **Katakana Mode**: カタカナ (Japanese katakana characters)
+  - **Normal**: アイウエオ, カキクケコ, サシスセソ, etc. - Shift OFF
+  - **Small Characters**: ァィゥェォ, ッ, ャュョ, ヮ, ヵヶ - Shift ON
 - **Alphabet Mode**: English letters with case toggle (abc/ABC via Shift)
 - **Number Mode**: Digits (1, 2, 3, etc.) with disabled Shift button
 - **Symbol Mode**: Japanese punctuation and symbols with dual character sets
   - **Normal Symbols**: ！？、。・：；〜－＝＋×÷％［］<>/\{}
-  - **Shifted Symbols**: ！？、．・：；〜－＝＋×÷％［］<>/\{}
+  - **Shifted Symbols**: ※◎、◆◇、▲▼、◀▶、○●、□■、△▽、♠♣、♥♦、★☆、♪♫、∞§
   - **Special Characters**: Includes `{}`, `<>/`, `\` and other programming symbols
 
 ## Architecture
@@ -121,7 +126,8 @@ make
 5. **Text Management**: Use Space, Backspace, Clear, and Enter buttons as needed
 
 ### 📝 Input Modes
-- **日本語**: Japanese mode (Hiragana/Katakana via Shift toggle)
+- **ひらがな**: Hiragana mode (normal/small characters via Shift toggle)
+- **カタカナ**: Katakana mode (normal/small characters via Shift toggle)
 - **ABC**: English alphabet (lowercase/uppercase via Shift toggle)
 - **123**: Numbers and digits (Shift button disabled)
 - **記号**: Japanese symbols and punctuation (dual character sets via Shift)
@@ -134,12 +140,14 @@ make
 5. **Single Character Shortcut**: If only one character is available, it's input directly without showing the popup
 
 ### 🔄 Shift Button Functionality
-- **Japanese Mode**: Toggles between Hiragana (OFF) and Katakana (ON)
+- **Hiragana Mode**: Toggles between normal characters (OFF) and small characters (ON: ぁぃぅぇぉ, っ, ゃゅょ, ゎ)
+- **Katakana Mode**: Toggles between normal characters (OFF) and small characters (ON: ァィゥェォ, ッ, ャュョ, ヮ, ヵヶ)
 - **Alphabet Mode**: Toggles between lowercase (OFF) and uppercase (ON)
 - **Number Mode**: Disabled (gray color, non-clickable)
-- **Symbol Mode**: Toggles between normal and shifted symbol sets
+- **Symbol Mode**: Toggles between normal and decorative symbol sets
 - **Visual Feedback**: Green (inactive) / Orange (active) color coding
 - **State Persistence**: Shift state is preserved when switching between modes (except Number mode)
+- **Smart Button Labels**: Only buttons with small characters change their label when Shift is active
 
 ### 📱 Keypad Layout
 ```
@@ -152,12 +160,35 @@ Row 5: [Space] [Clear] [Enter] [Backspace]
 
 **Button Functions:**
 - **Character Buttons (0-11)**: Input characters based on current mode
-- **Shift Button**: Toggle character sets (Hiragana/Katakana, uppercase/lowercase, symbol sets)
+- **Shift Button**: Toggle character sets (normal/small characters, uppercase/lowercase, symbol sets)
 - **Space Button**: Insert space character
 - **Clear Button**: Clear all text in the input area
 - **Enter Button**: Show input result and clear text area
 - **Backspace Button**: Delete the last character
 - **Mode Button**: Cycle through input modes (shows next mode)
+
+### 💡 Usage Examples
+
+**Typing "きゃ" (kya) in Hiragana:**
+1. Switch to Hiragana mode (ひらがな)
+2. Click button 1 to select き (ki)
+3. Press Shift button (turns orange)
+4. Click button 7 - small ゃ inputs directly (no flick window)
+5. Result: きゃ
+
+**Typing "チョコ" (choko - chocolate) in Katakana:**
+1. Switch to Katakana mode (カタカナ)
+2. Click button 3, select チ
+3. Press Shift button
+4. Click button 7, select ョ from flick window
+5. Press Shift button again to turn it off
+6. Click button 1, select コ
+7. Result: チョコ
+
+**Single Character Direct Input:**
+- Button 3 + Shift = っ or ッ (inputs directly)
+- Button 9 + Shift = ゎ or ヮ (inputs directly)
+- Buttons with multiple small characters still show flick window
 
 ## Testing
 
@@ -177,22 +208,24 @@ make all          # All tests
 ```
 
 ### 📊 Test Coverage
-- **Core Logic Tests**: 56 test cases
-- **GUI Function Tests**: 212 test cases
-- **Total Coverage**: 268 test cases
+- **Core Logic Tests**: 87 test cases
+- **GUI Function Tests**: 212+ test cases
+- **Total Coverage**: 299+ test cases
 - **Success Rate**: 100% (all tests pass)
 
 ### 🔍 Test Categories
 - Initialization and state management
-- Mode switching functionality
-- Character mapping verification
+- Mode switching functionality (including separate Hiragana/Katakana modes)
+- Character mapping verification (normal and small characters)
 - Flick input processing
-- Shift button functionality
+- Small character direct input (single character optimization)
+- Shift button functionality (mode-aware behavior)
 - UTF-8 conversion
 - Edge cases and error handling
 - GUI consistency checks
-- Button label verification
+- Button label verification (shift-aware labels)
 - Symbol character availability
+- Fallback behavior for buttons without small characters
 
 ## Development
 
@@ -297,20 +330,23 @@ This project is open source. Please check the license file for specific terms.
 
 ## Recent Updates
 
-### ✨ Latest Features (v2.0)
-- **Unified Japanese Mode**: Consolidated Hiragana and Katakana into a single Japanese mode with Shift toggle
-- **Enhanced Shift Button**: Context-aware functionality with visual feedback and state persistence
-- **Extended Symbol Support**: Added missing symbols `{}`, `<>/`, `\` to symbol input mode
-- **Improved Mode Button**: Now shows next mode instead of current mode for better UX
+### ✨ Latest Features (v3.0)
+- **Separate Hiragana/Katakana Modes**: Independent modes for Hiragana and Katakana input
+- **Small Character Support**: Full support for small Japanese characters (ぁぃぅぇぉ, っ, ゃゅょ, ゎ, etc.)
+- **Smart Shift Behavior**: Shift key toggles between normal and small characters in Japanese modes
+- **Intelligent Button Labels**: Buttons without small characters keep their normal labels when Shift is active
+- **Optimized Direct Input**: Single small characters (like っ, ゎ) input directly without flick window
+- **Fallback System**: Buttons without small versions automatically use normal characters
+- **Enhanced Symbol Mode**: Decorative symbols (※◎, ◆◇, ▲▼, ♠♣, etc.) with Shift toggle
 - **Smart Flick Input**: Direct character input for single-character buttons (no popup needed)
 - **Button Label Optimization**: Alphabet and symbol modes show all available characters on button labels
-- **Enter Button Enhancement**: Clears text area after displaying input result
-- **Number Mode Optimization**: Shift button automatically disabled in number mode
-- **Position Improvements**: Swapped Enter and Space button positions for better usability
+- **Extended Testing**: 299+ test cases including small character functionality
 
-### 🔧 Technical Improvements
+### 🔧 Technical Improvements (v3.0)
+- **Shift-aware Input Processing**: Character count considers shift state for optimal UX
+- **NULL Handling**: Proper fallback for buttons without small character variants
+- **Enhanced Test Coverage**: Added tests for small characters, direct input, and fallback behavior
 - **Modular Architecture**: Clean separation of LVGL initialization, GUI application, and input logic
-- **Comprehensive Testing**: 268 test cases covering all functionality
 - **Memory Management**: Proper cleanup and resource management
 - **UTF-8 Support**: Full Unicode character handling
 - **Cross-platform Compatibility**: Works on Linux with SDL2 and LVGL

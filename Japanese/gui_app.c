@@ -242,7 +242,7 @@ void gui_app_on_mode_button_clicked(lv_event_t *e) {
     lv_obj_t *shift_label = lv_obj_get_child(app_widgets.shift_button, 0);
     if (shift_label) {
         if (app_widgets.state.now_mode == MODE_NUMBER) {
-            // Disable shift button in number mode
+            // Disable shift button in number mode (numbers don't have shift variants)
             app_widgets.shift_disabled = true;
             lv_obj_add_state(app_widgets.shift_button, LV_STATE_DISABLED);
             lv_obj_set_style_bg_color(app_widgets.shift_button, lv_color_hex(0x808080), 0); // Gray

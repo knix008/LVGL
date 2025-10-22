@@ -29,11 +29,17 @@ static int tests_passed = 0;
 void test_gui_button_text() {
     printf("\n=== Testing GUI Button Text Generation ===\n");
     
-    // Test Japanese mode - should show only first character
-    const wchar_t* japanese_text = get_button_text(MODE_JAPANESE, 0);
-    TEST_ASSERT(japanese_text != NULL, "Japanese button text should not be NULL");
-    TEST_ASSERT(wcslen(japanese_text) == 1, "Japanese button text should be single character");
-    TEST_ASSERT(japanese_text[0] == L'あ', "First Japanese button should show あ");
+    // Test Hiragana mode - should show only first character
+    const wchar_t* hiragana_text = get_button_text(MODE_HIRAGANA, 0);
+    TEST_ASSERT(hiragana_text != NULL, "Hiragana button text should not be NULL");
+    TEST_ASSERT(wcslen(hiragana_text) == 1, "Hiragana button text should be single character");
+    TEST_ASSERT(hiragana_text[0] == L'あ', "First Hiragana button should show あ");
+
+    // Test Katakana mode - should show only first character
+    const wchar_t* katakana_text = get_button_text(MODE_KATAKANA, 0);
+    TEST_ASSERT(katakana_text != NULL, "Katakana button text should not be NULL");
+    TEST_ASSERT(wcslen(katakana_text) == 1, "Katakana button text should be single character");
+    TEST_ASSERT(katakana_text[0] == L'ア', "First Katakana button should show ア");
     
     // Test Alphabet mode - now shows all characters
     const wchar_t* alphabet_text = get_button_text(MODE_ALPHABET, 0);
@@ -58,12 +64,12 @@ void test_gui_button_text() {
 void test_different_buttons() {
     printf("\n=== Testing Different Button Numbers ===\n");
     
-    // Test Japanese buttons
-    const wchar_t* button1 = get_button_text(MODE_JAPANESE, 1);
-    TEST_ASSERT(button1[0] == L'か', "Japanese button 1 should show か");
-    
-    const wchar_t* button2 = get_button_text(MODE_JAPANESE, 2);
-    TEST_ASSERT(button2[0] == L'さ', "Japanese button 2 should show さ");
+    // Test Hiragana buttons
+    const wchar_t* button1 = get_button_text(MODE_HIRAGANA, 1);
+    TEST_ASSERT(button1[0] == L'か', "Hiragana button 1 should show か");
+
+    const wchar_t* button2 = get_button_text(MODE_HIRAGANA, 2);
+    TEST_ASSERT(button2[0] == L'さ', "Hiragana button 2 should show さ");
     
     // Test Alphabet buttons (now shows all characters)
     const wchar_t* alphabet_btn1 = get_button_text(MODE_ALPHABET, 1);
@@ -83,10 +89,10 @@ void test_gui_edge_cases() {
     printf("\n=== Testing GUI Edge Cases ===\n");
     
     // Test invalid button numbers
-    const wchar_t* invalid_neg = get_button_text(MODE_JAPANESE, -1);
+    const wchar_t* invalid_neg = get_button_text(MODE_HIRAGANA, -1);
     TEST_ASSERT(wcslen(invalid_neg) == 0, "Invalid negative button should return empty string");
-    
-    const wchar_t* invalid_large = get_button_text(MODE_JAPANESE, 12);
+
+    const wchar_t* invalid_large = get_button_text(MODE_HIRAGANA, 12);
     TEST_ASSERT(wcslen(invalid_large) == 0, "Invalid large button number should return empty string");
     
     // Test invalid modes (though this shouldn't happen in practice)
@@ -99,7 +105,7 @@ void test_consistency() {
     printf("\n=== Testing Consistency Between GUI and Core ===\n");
     
     // Test that GUI button text matches first character of core flick characters
-    for (int mode = MODE_JAPANESE; mode < MODE_COUNT; mode++) {
+    for (int mode = MODE_HIRAGANA; mode < MODE_COUNT; mode++) {
         for (int button = 0; button < 12; button++) {
             const wchar_t* gui_text = get_button_text(mode, button);
             const wchar_t* core_chars = get_button_flick_chars(mode, button);
@@ -158,7 +164,7 @@ void test_all_modes() {
     printf("\n=== Testing All Input Modes ===\n");
     
     // Test that all modes return valid button text
-    for (int mode = MODE_JAPANESE; mode < MODE_COUNT; mode++) {
+    for (int mode = MODE_HIRAGANA; mode < MODE_COUNT; mode++) {
         for (int button = 0; button < 12; button++) {
             const wchar_t* text = get_button_text(mode, button);
             TEST_ASSERT(text != NULL, "Button text should not be NULL for any valid mode/button");
