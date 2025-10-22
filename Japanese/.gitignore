@@ -146,6 +146,7 @@ test/test_chunjiin
 test/test_chunjiin_extra
 
 # LVGL directory and build artifacts
+lvgl/
 lvgl/lib/
 lvgl/build/
 

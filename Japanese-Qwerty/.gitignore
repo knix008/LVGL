@@ -21,7 +21,7 @@ lvgl/build/
 lvgl/lib/
 
 # LVGL library (built by setup script)
-lvgl/
+lvgl/*
 
 # IDE and editor files
 .vscode/
