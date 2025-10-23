@@ -143,14 +143,27 @@ static void keypad_button_event_cb(lv_event_t *e) {
         data->last_button_text = NULL;
         data->cycle_index = 0;
     } else if (strcmp(txt, "ABC") == 0) {
-        // Switch to English mode - respect current shift state
-        if (data->shift_active) {
-            keypad_set_mode(container, KEYPAD_MODE_UPPERCASE);
+        // In English mode, treat 'ABC' as a character input button
+        const char *abc_chars = data->shift_active ? "ABC" : "abc";
+        int txt_len = strlen(abc_chars);
+        if (txt_len > 1) {
+            if (data->last_button_text && strcmp(data->last_button_text, txt) == 0 && time_diff < 1000) {
+                lv_textarea_delete_char(data->target_textarea);
+                data->cycle_index = (data->cycle_index + 1) % txt_len;
+            } else {
+                data->cycle_index = 0;
+            }
+            char ch[2] = {abc_chars[data->cycle_index], '\0'};
+            lv_textarea_add_text(data->target_textarea, ch);
+            data->last_button_text = txt;
         } else {
-            keypad_set_mode(container, KEYPAD_MODE_LOWERCASE);
+            const char *current_text = lv_textarea_get_text(data->target_textarea);
+            if (strlen(current_text) < 32) {
+                lv_textarea_add_text(data->target_textarea, abc_chars);
+            }
+            data->last_button_text = NULL;
+            data->cycle_index = 0;
         }
-        data->last_button_text = NULL;
-        data->cycle_index = 0;
     } else if (strcmp(txt, "123") == 0) {
         // Switch to Numbers/Special mode - respect current shift state
         if (data->shift_active) {

@@ -164,7 +164,7 @@ static bool load_fonts(void) {
     // Load bold font
     font_bold = lv_freetype_font_create("assets/NanumGothicCoding-Bold.ttf",
                                         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
-                                        24,
+                                        16,
                                         LV_FREETYPE_FONT_STYLE_NORMAL);
     if (!font_bold) {
         printf("Warning: Failed to load bold font. Using default font.\n");
@@ -287,12 +287,13 @@ void gui_create_login_screen(void) {
 
     // Create keypad (3x5 grid with all functions integrated)
     // All necessary buttons (Shift, Backspace, Space, Mode) are in the keypad grid
+    // Use bold font, size 20 for keypad buttons
     keypad_config_t keypad_cfg = {
         .width = WINDOW_WIDTH - 10,
         .height = 290,  // Reduced height to leave bottom margin
         .parent = screen,
         .target_textarea = userid_textarea,
-        .button_font = font_normal  // Use Korean font for keypad buttons
+        .button_font = font_bold  // Use bold Korean font for keypad buttons
     };
 
     keypad_obj = keypad_create(&keypad_cfg);
