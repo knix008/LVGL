@@ -205,3 +205,13 @@ This project is for educational purposes and demonstrates LVGL image button usag
 - [LVGL Examples](https://github.com/lvgl/lvgl)
 - [SDL2 Documentation](https://wiki.libsdl.org/)
 - [Make Documentation](https://www.gnu.org/software/make/manual/)
+
+## .gitignore
+
+A sample `.gitignore` is provided to help keep your repository clean. It ignores:
+- Build artifacts (e.g., `build/`, `*.o`, `*.elf`, `*.bin`)
+- LVGL library folder (`lvgl/`)
+- Application binary (`image_button_app`)
+- Common editor files (`.vscode/`, `.idea/`, `*.swp`, `*~`, `.DS_Store`, `Thumbs.db`)
+
+You can customize `.gitignore` as needed for your workflow.
