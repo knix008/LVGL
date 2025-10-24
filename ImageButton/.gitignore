@@ -11,6 +11,8 @@ build/
 
 # LVGL library
 lvgl/
+lvgl/lib/
+lvgl/lib/*.a
 
 # Editor files
 .vscode/
