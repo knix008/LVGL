@@ -13,6 +13,7 @@
 
 // TrueType font object
 static lv_font_t * custom_font = NULL;
+static lv_font_t * custom_font_12 = NULL; // 12px font for button labels
 
 // Global variables for UI elements
 static lv_obj_t * main_screen;
@@ -121,6 +122,7 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
     lv_obj_t * label = lv_label_create(btn);
     lv_label_set_text(label, text);
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(label, custom_font_12 ? custom_font_12 : custom_font, 0); // Use 12px font for button label
     lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -5);
 
     printf("Button created at (%d, %d) with size %dx%d\n", (int)x, (int)y, (int)width, (int)height);
@@ -154,16 +156,13 @@ static void init_custom_font(void)
     lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
     printf("FreeType initialized\n");
 
-    // Create a larger Korean font for the title (24px, matching ImageButtonUI)
-    // FreeType may use direct filesystem paths instead of LVGL's "A:" prefix
+    // Load 16px font for title/info (existing)
     custom_font = lv_freetype_font_create("assets/fonts/NanumGothicCoding-Bold.ttf",
                                          LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                          16,
                                          LV_FREETYPE_FONT_STYLE_NORMAL);
-
     if (custom_font == NULL) {
         printf("WARNING: Custom font loading failed, trying absolute path...\n");
-        // Try with absolute path as fallback
         custom_font = lv_freetype_font_create("/home/shkwon/Projects/LVGL/ImageButton/assets/fonts/NanumGothicCoding-Bold.ttf",
                                              LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                              16,
@@ -171,10 +170,30 @@ static void init_custom_font(void)
         if (custom_font == NULL) {
             printf("WARNING: Font loading failed with both relative and absolute paths\n");
         } else {
-            printf("Custom font loaded successfully with absolute path (24px)\n");
+            printf("Custom font loaded successfully with absolute path (16px)\n");
         }
     } else {
-        printf("Custom font loaded successfully: NanumGothicCoding-Bold.ttf (24px)\n");
+        printf("Custom font loaded successfully: NanumGothicCoding-Bold.ttf (16px)\n");
+    }
+
+    // Load 12px font for button labels
+    custom_font_12 = lv_freetype_font_create("assets/fonts/NanumGothicCoding-Bold.ttf",
+                                             LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                             12,
+                                             LV_FREETYPE_FONT_STYLE_NORMAL);
+    if (custom_font_12 == NULL) {
+        printf("WARNING: 12px font loading failed, trying absolute path...\n");
+        custom_font_12 = lv_freetype_font_create("/home/shkwon/Projects/LVGL/ImageButton/assets/fonts/NanumGothicCoding-Bold.ttf",
+                                                 LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                 12,
+                                                 LV_FREETYPE_FONT_STYLE_NORMAL);
+        if (custom_font_12 == NULL) {
+            printf("WARNING: 12px font loading failed with both relative and absolute paths\n");
+        } else {
+            printf("Custom font loaded successfully with absolute path (12px)\n");
+        }
+    } else {
+        printf("Custom font loaded successfully: NanumGothicCoding-Bold.ttf (12px)\n");
     }
 }
 
