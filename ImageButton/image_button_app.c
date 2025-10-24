@@ -11,6 +11,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// ============================================
+// Button sizing configuration
+// ============================================
+// Easy-to-adjust button size settings
+// Image size is automatically: BUTTON_HEIGHT - 8 (accounting for padding)
+//
+// Examples:
+//   BUTTON_HEIGHT 40 → 32x32 images (compact)
+//   BUTTON_HEIGHT 50 → 42x42 images (balanced)
+//   BUTTON_HEIGHT 60 → 52x52 images (spacious)
+//   BUTTON_HEIGHT 80 → 72x72 images (large)
+#define BUTTON_WIDTH    180   // Button width in pixels
+#define BUTTON_HEIGHT   80    // Button height in pixels
+// ============================================
+
 // TrueType font object
 static lv_font_t * custom_font = NULL;
 static lv_font_t * custom_font_12 = NULL; // 12px font for button labels
@@ -45,9 +60,9 @@ void button_click_handler(lv_event_t * e)
         lv_obj_t * btn = lv_event_get_target(e);
 
         // Find which button was clicked by checking user data
-        int button_index = (int)(intptr_t)lv_obj_get_user_data(btn);
+        size_t button_index = (size_t)(intptr_t)lv_obj_get_user_data(btn);
 
-        if(button_index >= 0 && button_index < 3) {  // Now we have 3 buttons
+        if(button_index < (sizeof(buttons) / sizeof(buttons[0]))) {
             // Get image size information
             lv_image_header_t img_header;
             lv_result_t res = lv_image_decoder_get_info(buttons[button_index].image_path, &img_header);
@@ -96,34 +111,57 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
     lv_obj_set_pos(btn, x, y);
     lv_obj_set_size(btn, width, height);
 
+    // Set a flex layout on the button to arrange its children (image and label)
+    lv_obj_set_layout(btn, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // Arrange children in a row
+    lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Center items
+    lv_obj_set_style_pad_row(btn, 8, 0); // Space between image and label (column padding)
+    lv_obj_set_style_pad_left(btn, 8, 0);
+    lv_obj_set_style_pad_right(btn, 8, 0);
+
     printf("Creating button with image: %s\n", image_path);
 
     // Create an image widget inside the button
     lv_obj_t * img = lv_image_create(btn);
-    lv_image_set_src(img, image_path);
 
-    // Set a smaller size for the image (reduce from original 64x64 to 48x48)
-    lv_obj_set_size(img, 48, 48);
+    // Calculate target size BEFORE setting source or properties
+    lv_coord_t target_size = height - 8; // Full button height minus padding
 
-    // Position image at the top of the button
-    lv_obj_align(img, LV_ALIGN_TOP_MID, 0, 8);
+    // Disable flex grow FIRST - this allows explicit sizing to work
+    lv_obj_set_flex_grow(img, 0);
+
+    // Set size properties separately using width/height functions
+    lv_obj_set_width(img, target_size);
+    lv_obj_set_height(img, target_size);
 
     // Try to load the image to verify it exists
     lv_image_header_t img_header;
     lv_result_t res = lv_image_decoder_get_info(image_path, &img_header);
     if (res == LV_RESULT_OK) {
-        printf("  Image loaded successfully: %dx%d, format: %d\n",
-               img_header.w, img_header.h, img_header.cf);
+        // Now set the image source AFTER sizing is configured
+        lv_image_set_src(img, image_path);
+
+        printf("  Image loaded successfully: %dx%d, format: %d. Display size: %dx%d\n",
+               img_header.w, img_header.h, img_header.cf, target_size, target_size);
     } else {
-        printf("  WARNING: Failed to load image: %s (error: %d)\n", image_path, res);
+        // If image fails to load, show a warning symbol instead
+        lv_obj_set_size(img, 24, 24);
+        lv_image_set_src(img, LV_SYMBOL_WARNING);
+        const char* err_str = "Unknown error";
+        if (res == LV_RESULT_INVALID) {
+            err_str = "File not found or image format not supported";
+        }
+        printf("  WARNING: Failed to load image: %s. Reason: %s (code: %d)\n", image_path, err_str, res);
     }
 
-    // Create a label below the image
+    // Create a label next to the image (Flexbox will position it)
     lv_obj_t * label = lv_label_create(btn);
     lv_label_set_text(label, text);
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
     lv_obj_set_style_text_font(label, custom_font_12 ? custom_font_12 : custom_font, 0); // Use 12px font for button label
-    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -5);
+
+    // Prevent label from shrinking the image with flex layout
+    lv_obj_set_flex_grow(label, 1); // Allow label to expand and fill remaining space
 
     printf("Button created at (%d, %d) with size %dx%d\n", (int)x, (int)y, (int)width, (int)height);
 
@@ -223,24 +261,26 @@ void image_button_app_init(void)
     lv_obj_set_style_text_color(title_label, lv_color_black(), 0);
     lv_obj_align(title_label, LV_ALIGN_TOP_LEFT, 10, 10);
     
-    // Create 3 image buttons in a horizontal row with text on them
-    // Images are 64x64, so make buttons 100x100 to fit image + text
-    const int button_width = 100;
-    const int button_height = 100;
-    const int spacing = 10;
-    const int num_buttons = 3;
-    const int total_width = num_buttons * button_width + (num_buttons - 1) * spacing;
-    const int start_x = (320 - total_width) / 2;  // Center horizontally
-    const int start_y = 80;   // Top margin (below title)
+    // Create a container for the buttons with a flex layout
+    lv_obj_t * btn_container = lv_obj_create(main_screen);
+    lv_obj_remove_style_all(btn_container); // Make container transparent
+    lv_obj_set_size(btn_container, 320, 320); // Give it some space
+    lv_obj_align(btn_container, LV_ALIGN_TOP_MID, 0, 60); // Position below title
 
-    for(int i = 0; i < num_buttons; i++) {
-        int x = start_x + i * (button_width + spacing);
-        int y = start_y;
+    // Set the layout to a column, with items centered and space between them
+    lv_obj_set_layout(btn_container, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn_container, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btn_container, 10, 0); // Spacing between buttons
 
+    // Create 3 image buttons inside the flex container
+    for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
         // Create the image button with text on it
-        lv_obj_t * btn = create_image_button(main_screen, buttons[i].image_path,
+        // The layout manager will handle positioning, so x/y are 0.
+        // Use the defined button size constants for easy adjustment
+        lv_obj_t * btn = create_image_button(btn_container, buttons[i].image_path,
                                            buttons[i].name,
-                                           x, y, button_width, button_height);
+                                           0, 0, BUTTON_WIDTH, BUTTON_HEIGHT);
 
         // Set user data to identify which button this is
         lv_obj_set_user_data(btn, (void*)(intptr_t)i);
