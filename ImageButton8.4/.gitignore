@@ -1,0 +1,74 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Executables
+button_demo
+*.exe
+
+# Build directories
+build/
+dist/
+*.build/
+
+# LVGL build artifacts
+lvgl
+lvgl/build/
+lvgl/lib/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.bak
+
+# Object files
+*.o.d
+*.su
+
+# Debug files
+*.dSYM/
+*.su
+*.gch
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Node (if any)
+node_modules/
+
+# Project specific
+*.core
+core
+vgcore.*
+
+# Asset cache
+assets/fonts/cache/
+
+# Local environment files
+.env
+.env.local
+*.local
