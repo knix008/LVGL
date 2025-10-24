@@ -14,9 +14,12 @@ SDL2_LIBS = $(shell pkg-config --libs sdl2)
 FREETYPE_CFLAGS = $(shell pkg-config --cflags freetype2)
 FREETYPE_LIBS = $(shell pkg-config --libs freetype2)
 
+# PNG flags (for image decoding)
+PNG_LIBS = $(shell pkg-config --libs libpng 2>/dev/null || echo "-lpng")
+
 # Combine all flags
 CFLAGS += $(SDL2_CFLAGS) $(FREETYPE_CFLAGS)
-LDFLAGS = $(SDL2_LIBS) $(FREETYPE_LIBS)
+LDFLAGS = $(SDL2_LIBS) $(FREETYPE_LIBS) $(PNG_LIBS)
 
 # Source files
 SOURCES = main.c

@@ -9,13 +9,16 @@
 #include "lvgl.h"
 #include "lv_conf.h"
 #include "lvgl/src/extra/libs/freetype/lv_freetype.h"
+#include "lvgl/src/extra/libs/png/lv_png.h"
+#include "lvgl/src/extra/libs/bmp/lv_bmp.h"
+#include "lvgl/src/extra/libs/sjpg/lv_sjpg.h"
 
 /*******************************************************************************
  * Display Configuration
  ******************************************************************************/
 
-#define DISP_HOR_RES 480
-#define DISP_VER_RES 320
+#define DISP_HOR_RES 320
+#define DISP_VER_RES 640
 
 // Double buffer for smoother rendering
 #define BUF_SIZE (DISP_HOR_RES * DISP_VER_RES / 10)
@@ -137,70 +140,115 @@ static void create_buttons(void)
     lv_obj_t *scr = lv_scr_act();
     lv_obj_set_style_bg_color(scr, lv_color_hex(0xF5F5F5), LV_PART_MAIN);
 
-    // Title with Korean font
+    // Title with Korean font (centered)
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, "LVGL 8.4 버튼 데모");
-    lv_obj_set_pos(title, 10, 10);
+    lv_obj_set_pos(title, 10, 15);
     if (korean_font_20) {
         lv_obj_set_style_text_font(title, korean_font_20, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(title, lv_color_hex(0x000000), LV_PART_MAIN);
 
-    // Button 1
+    // Button 1 (full width with image)
     lv_obj_t *btn1 = lv_btn_create(scr);
-    lv_obj_set_pos(btn1, 20, 50);
-    lv_obj_set_size(btn1, 100, 40);
+    lv_obj_set_pos(btn1, 20, 40);
+    lv_obj_set_size(btn1, 280, 70);
     lv_obj_set_style_bg_color(btn1, lv_color_hex(0xFF9800), LV_PART_MAIN);
     lv_obj_set_style_border_width(btn1, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(btn1, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_add_event_cb(btn1, button_event_handler, LV_EVENT_CLICKED, NULL);
 
+    // Set flex layout on button for image and label
+    lv_obj_set_layout(btn1, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn1, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn1, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btn1, 8, 0);
+    lv_obj_set_style_pad_left(btn1, 8, 0);
+    lv_obj_set_style_pad_right(btn1, 8, 0);
+
+    // Image
+    lv_obj_t *img1 = lv_img_create(btn1);
+    lv_obj_set_flex_grow(img1, 0);
+    // Load the image - it will size itself to the image's natural dimensions
+    lv_img_set_src(img1, "A:assets/images/button_png.png");
+
+    // Label
     lv_obj_t *label1 = lv_label_create(btn1);
-    lv_label_set_text(label1, "버튼 1");
-    lv_obj_center(label1);
+    lv_label_set_text(label1, "PNG 버튼");
     if (korean_font_16) {
         lv_obj_set_style_text_font(label1, korean_font_16, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(label1, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_obj_set_flex_grow(label1, 1);
 
-    // Button 2
+    // Button 2 (full width with image)
     lv_obj_t *btn2 = lv_btn_create(scr);
-    lv_obj_set_pos(btn2, 190, 50);
-    lv_obj_set_size(btn2, 100, 40);
+    lv_obj_set_pos(btn2, 20, 125);
+    lv_obj_set_size(btn2, 280, 70);
     lv_obj_set_style_bg_color(btn2, lv_color_hex(0xFF9800), LV_PART_MAIN);
     lv_obj_set_style_border_width(btn2, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(btn2, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_add_event_cb(btn2, button_event_handler, LV_EVENT_CLICKED, NULL);
 
+    // Set flex layout on button for image and label
+    lv_obj_set_layout(btn2, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn2, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn2, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btn2, 8, 0);
+    lv_obj_set_style_pad_left(btn2, 8, 0);
+    lv_obj_set_style_pad_right(btn2, 8, 0);
+
+    // Image
+    lv_obj_t *img2 = lv_img_create(btn2);
+    lv_obj_set_flex_grow(img2, 0);
+    // Load the image - it will size itself to the image's natural dimensions
+    lv_img_set_src(img2, "A:assets/images/button_bmp.bmp");
+
+    // Label
     lv_obj_t *label2 = lv_label_create(btn2);
-    lv_label_set_text(label2, "버튼 2");
-    lv_obj_center(label2);
+    lv_label_set_text(label2, "BMP 버튼");
     if (korean_font_16) {
         lv_obj_set_style_text_font(label2, korean_font_16, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(label2, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_obj_set_flex_grow(label2, 1);
 
-    // Button 3
+    // Button 3 (full width with image)
     lv_obj_t *btn3 = lv_btn_create(scr);
-    lv_obj_set_pos(btn3, 360, 50);
-    lv_obj_set_size(btn3, 100, 40);
+    lv_obj_set_pos(btn3, 20, 210);
+    lv_obj_set_size(btn3, 280, 70);
     lv_obj_set_style_bg_color(btn3, lv_color_hex(0xFF9800), LV_PART_MAIN);
     lv_obj_set_style_border_width(btn3, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(btn3, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_add_event_cb(btn3, button_event_handler, LV_EVENT_CLICKED, NULL);
 
+    // Set flex layout on button for image and label
+    lv_obj_set_layout(btn3, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn3, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn3, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btn3, 8, 0);
+    lv_obj_set_style_pad_left(btn3, 8, 0);
+    lv_obj_set_style_pad_right(btn3, 8, 0);
+
+    // Image
+    lv_obj_t *img3 = lv_img_create(btn3);
+    lv_obj_set_flex_grow(img3, 0);
+    // Load the image - it will size itself to the image's natural dimensions
+    lv_img_set_src(img3, "A:assets/images/button_jpg.jpg");
+
+    // Label
     lv_obj_t *label3 = lv_label_create(btn3);
-    lv_label_set_text(label3, "버튼 3");
-    lv_obj_center(label3);
+    lv_label_set_text(label3, "JPG 버튼");
     if (korean_font_16) {
         lv_obj_set_style_text_font(label3, korean_font_16, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(label3, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_obj_set_flex_grow(label3, 1);
 
-    // Toggle Button 1
+    // Toggle Button 1 (full width)
     lv_obj_t *toggle_btn1 = lv_btn_create(scr);
-    lv_obj_set_pos(toggle_btn1, 20, 120);
-    lv_obj_set_size(toggle_btn1, 100, 40);
+    lv_obj_set_pos(toggle_btn1, 20, 295);
+    lv_obj_set_size(toggle_btn1, 280, 70);
     lv_obj_set_style_bg_color(toggle_btn1, lv_color_hex(0x757575), LV_PART_MAIN);
     lv_obj_set_style_border_width(toggle_btn1, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(toggle_btn1, lv_color_hex(0x333333), LV_PART_MAIN);
@@ -208,17 +256,17 @@ static void create_buttons(void)
     lv_obj_add_event_cb(toggle_btn1, toggle_button_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *toggle_label1 = lv_label_create(toggle_btn1);
-    lv_label_set_text(toggle_label1, "토글 1");
+    lv_label_set_text(toggle_label1, "토글 버튼 #1");
     lv_obj_center(toggle_label1);
     if (korean_font_16) {
         lv_obj_set_style_text_font(toggle_label1, korean_font_16, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(toggle_label1, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
 
-    // Toggle Button 2
+    // Toggle Button 2 (full width)
     lv_obj_t *toggle_btn2 = lv_btn_create(scr);
-    lv_obj_set_pos(toggle_btn2, 190, 120);
-    lv_obj_set_size(toggle_btn2, 100, 40);
+    lv_obj_set_pos(toggle_btn2, 20, 380);
+    lv_obj_set_size(toggle_btn2, 280, 70);
     lv_obj_set_style_bg_color(toggle_btn2, lv_color_hex(0x757575), LV_PART_MAIN);
     lv_obj_set_style_border_width(toggle_btn2, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(toggle_btn2, lv_color_hex(0x333333), LV_PART_MAIN);
@@ -226,24 +274,24 @@ static void create_buttons(void)
     lv_obj_add_event_cb(toggle_btn2, toggle_button_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *toggle_label2 = lv_label_create(toggle_btn2);
-    lv_label_set_text(toggle_label2, "토글 2");
+    lv_label_set_text(toggle_label2, "토글 버튼 #2");
     lv_obj_center(toggle_label2);
     if (korean_font_16) {
         lv_obj_set_style_text_font(toggle_label2, korean_font_16, LV_PART_MAIN);
     }
     lv_obj_set_style_text_color(toggle_label2, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
 
-    // Disabled Button
+    // Disabled Button (full width)
     lv_obj_t *disabled_btn = lv_btn_create(scr);
-    lv_obj_set_pos(disabled_btn, 360, 120);
-    lv_obj_set_size(disabled_btn, 100, 40);
+    lv_obj_set_pos(disabled_btn, 20, 465);
+    lv_obj_set_size(disabled_btn, 280, 70);
     lv_obj_set_style_bg_color(disabled_btn, lv_color_hex(0xBDBDBD), LV_PART_MAIN);
     lv_obj_set_style_border_width(disabled_btn, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(disabled_btn, lv_color_hex(0x999999), LV_PART_MAIN);
     lv_obj_add_state(disabled_btn, LV_STATE_DISABLED);
 
     lv_obj_t *disabled_label = lv_label_create(disabled_btn);
-    lv_label_set_text(disabled_label, "비활성");
+    lv_label_set_text(disabled_label, "비활성 버튼");
     lv_obj_center(disabled_label);
     if (korean_font_16) {
         lv_obj_set_style_text_font(disabled_label, korean_font_16, LV_PART_MAIN);
@@ -253,8 +301,8 @@ static void create_buttons(void)
     // Info Label with Korean text
     lv_obj_t *info = lv_label_create(scr);
     lv_label_set_text(info, "버튼을 클릭하여 시각적 피드백을 확인하세요!");
-    lv_obj_set_pos(info, 10, 200);
-    lv_obj_set_width(info, 460);
+    lv_obj_set_pos(info, 10, 550);
+    lv_obj_set_width(info, 300);
     lv_label_set_long_mode(info, LV_LABEL_LONG_WRAP);
     if (korean_font_16) {
         lv_obj_set_style_text_font(info, korean_font_16, LV_PART_MAIN);
