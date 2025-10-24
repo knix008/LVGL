@@ -1,42 +1,59 @@
 # LVGL Image Button Demo Application
 
-A demonstration application showcasing LVGL image buttons with different image formats (PNG, JPG, GIF, BMP). This project demonstrates how to create interactive image buttons using the LVGL graphics library.
+A fully interactive demonstration application showcasing image buttons with multiple image formats (PNG, JPG, BMP) using LVGL (Light and Versatile Graphics Library). Features clickable buttons with images as labels, visual feedback on interactions, and configurable sizing.
 
 ## Features
 
-- **Multiple Image Formats**: Demonstrates PNG, JPG, GIF, and BMP image formats
-- **Interactive Buttons**: Click buttons to see format information
-- **Modern GUI**: Clean, responsive interface with SDL backend
-- **Cross-platform**: Works on Linux with SDL2
-- **Educational**: Shows best practices for LVGL image button implementation
+✨ **Multi-Format Image Support**
+- PNG images with transparency support (tested & working)
+- JPG/JPEG images with compression (tested & working)
+- BMP bitmap images (tested & working)
 
-## Image Formats Demonstrated
+🎨 **Interactive Image Buttons**
+- Clickable buttons with image labels and text
+- Visual feedback on button press/release (image dimming to 70% opacity)
+- Displays detailed image information when clicked
+- Text labels displayed next to images
 
-| Format | Description | Features |
-|--------|-------------|----------|
-| **PNG** | Portable Network Graphics | Transparency support, lossless compression |
-| **JPG** | JPEG | Lossy compression, small file sizes |
-| **GIF** | Graphics Interchange Format | Animation support, limited colors |
-| **BMP** | Bitmap | Uncompressed, simple format |
+⚙️ **Configurable Button & Image Sizing**
+- Easy-to-adjust button height (40-80px recommended)
+- Automatic image widget sizing based on button height
+- Configurable image scale percentage
+- Images automatically rescaled via LVGL's image scaling
+
+🎯 **Responsive UI**
+- Flex layout for automatic element positioning
+- Centered buttons on screen
+- Information display panel with clicked button details
+- Status label showing last clicked button
+
+## Image Format Details
+
+| Format | File Size | Image Size | Features |
+|--------|-----------|-----------|----------|
+| **PNG** | ~11.5 KB | 32x32 px | Lossless compression, transparency support |
+| **JPG** | ~1.1 KB | 32x32 px | Lossy compression, smallest file size |
+| **BMP** | ~3.2 KB | 32x32 px | Uncompressed, simple format |
 
 ## Project Structure
 
 ```
 ImageButton/
 ├── assets/
-│   └── images/           # Sample images for demonstration
-│       ├── button_png.png
-│       ├── button_jpg.jpg
-│       ├── button_gif.gif
-│       └── button_bmp.bmp
-├── lvgl/                 # LVGL library (created by setup)
-├── lv_conf.h            # LVGL configuration
-├── main.c               # Application entry point
-├── image_button_app.c   # GUI implementation
-├── image_button_app.h   # Header file
-├── Makefile            # Simple build system
-├── setup.sh            # LVGL setup script
-└── README.md           # This file
+│   ├── images/                    # Image button assets
+│   │   ├── button_png.png        # PNG image (32x32)
+│   │   ├── button_jpg.jpg        # JPG image (32x32)
+│   │   └── button_bmp.bmp        # BMP image (32x32)
+│   └── fonts/
+│       └── NanumGothicCoding-Bold.ttf  # Custom font (16px, 12px)
+├── lvgl/                          # LVGL library (created by setup.sh)
+├── lv_conf.h                     # LVGL configuration
+├── main.c                        # Application entry point with SDL initialization
+├── image_button_app.c            # Button UI implementation and event handlers
+├── image_button_app.h            # Header file with function declarations
+├── Makefile                      # Build system
+├── setup.sh                      # LVGL setup and build script
+└── README.md                     # This documentation
 ```
 
 ## Prerequisites
@@ -131,24 +148,62 @@ Images are loaded using LVGL's file system interface:
 - **`image_button_app.c`**: GUI implementation and button handling
 - **`image_button_app.h`**: Header file with function declarations
 
-## Customization
+## Configuration & Customization
 
-### Adding New Image Formats
-1. Add image files to `assets/images/`
-2. Update the `buttons` array in `image_button_app.c`
-3. Rebuild the application
+### Button Sizing Configuration
+
+Edit `image_button_app.c` (lines 14-35) to adjust button and image sizes:
+
+```c
+// Easy-to-adjust button size settings
+#define BUTTON_WIDTH    180   // Button width in pixels
+#define BUTTON_HEIGHT   50    // Button height in pixels
+
+// Image scale percentage (as percentage of the calculated widget size)
+#define IMAGE_SCALE_PERCENT   100   // Image as percentage of widget size
+```
+
+**Size Examples:**
+- `BUTTON_HEIGHT 40` → 32x32 image display area (compact)
+- `BUTTON_HEIGHT 50` → 42x42 image display area (current - balanced)
+- `BUTTON_HEIGHT 60` → 52x52 image display area (spacious)
+- `BUTTON_HEIGHT 80` → 72x72 image display area (large)
+
+**Scale Examples:**
+- `50` = images at 50% of widget size (small images, lots of padding)
+- `75` = images at 75% of widget size (medium images)
+- `100` = images fill entire widget size (full/largest) ← current
+
+### Adding New Image Buttons
+
+1. Prepare images (32x32 pixels recommended)
+2. Place in `assets/images/`
+3. Update the `buttons[]` array in `image_button_app.c`:
+
+```c
+static const button_info_t buttons[] = {
+    {"PNG Button", "A:assets/images/button_png.png", "PNG format description"},
+    {"JPG Button", "A:assets/images/button_jpg.jpg", "JPG format description"},
+    {"BMP Button", "A:assets/images/button_bmp.bmp", "BMP format description"},
+    // Add new buttons here
+};
+```
+
+4. Rebuild: `make clean && make`
 
 ### Modifying Button Layout
-Edit the button creation code in `image_button_app_init()` function:
-- Change button positions
-- Modify button sizes
-- Adjust spacing and layout
 
-### Styling
-Modify the style properties in the source code:
-- Colors: `lv_color_hex()`
-- Fonts: `lv_font_montserrat_*`
-- Padding: `lv_obj_set_style_pad_*()`
+Edit the flex layout settings in `create_image_button()`:
+- Change button styling (colors, borders, radius)
+- Adjust padding between image and label
+- Modify alignment and spacing
+
+### Customizing Image Behavior
+
+Edit event handlers in `image_button_app.c`:
+- `button_image_press_handler()` - Controls image opacity on press/release
+- `button_click_handler()` - Updates info display on click
+- Modify opacity values (currently 70% on press, 100% on release)
 
 ## Troubleshooting
 

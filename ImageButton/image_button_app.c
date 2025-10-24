@@ -12,18 +12,26 @@
 #include <stdlib.h>
 
 // ============================================
-// Button sizing configuration
+// Button and image sizing configuration
 // ============================================
-// Easy-to-adjust button size settings
-// Image size is automatically: BUTTON_HEIGHT - 8 (accounting for padding)
+// Adjust these two values to control button and image sizes
 //
-// Examples:
-//   BUTTON_HEIGHT 40 → 32x32 images (compact)
-//   BUTTON_HEIGHT 50 → 42x42 images (balanced)
-//   BUTTON_HEIGHT 60 → 52x52 images (spacious)
-//   BUTTON_HEIGHT 80 → 72x72 images (large)
+// Button height examples:
+//   BUTTON_HEIGHT 40 → 32x32 widget size, images auto-scale to fit
+//   BUTTON_HEIGHT 50 → 42x42 widget size, images auto-scale to fit ← current
+//   BUTTON_HEIGHT 60 → 52x52 widget size, images auto-scale to fit
+//   BUTTON_HEIGHT 80 → 72x72 widget size, images auto-scale to fit
 #define BUTTON_WIDTH    180   // Button width in pixels
-#define BUTTON_HEIGHT   80    // Button height in pixels
+#define BUTTON_HEIGHT   50    // Button height in pixels (reduced from 80)
+
+// Image scale percentage (as percentage of the calculated widget size)
+// How much of the widget should the image fill?
+// Examples:
+//   50  = images at 50% of widget size (small images, lots of padding)
+//   75  = images at 75% of widget size (medium images)
+//   100 = images fill entire widget size (full/largest) ← current
+//   125 = images 125% of widget size (oversized, may be clipped)
+#define IMAGE_SCALE_PERCENT   100   // Image as percentage of widget size
 // ============================================
 
 // TrueType font object
@@ -48,6 +56,28 @@ static const button_info_t buttons[] = {
     {"JPG Button", "A:assets/images/button_jpg.jpg", "JPEG format with compression"},
     {"BMP Button", "A:assets/images/button_bmp.bmp", "Bitmap format without compression"}
 };
+
+/**
+ * @brief Handle button press/release events to change image opacity
+ */
+void button_image_press_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * btn = lv_event_get_target(e);
+
+    // Get the image child of the button (first child)
+    lv_obj_t * img = lv_obj_get_child(btn, 0);
+
+    if (img != NULL) {
+        if (code == LV_EVENT_PRESSED) {
+            // Dim the image when button is pressed
+            lv_obj_set_style_opa(img, LV_OPA_70, 0);
+        } else if (code == LV_EVENT_RELEASED) {
+            // Restore full opacity when button is released
+            lv_obj_set_style_opa(img, LV_OPA_COVER, 0);
+        }
+    }
+}
 
 /**
  * @brief Handle button click events
@@ -111,6 +141,8 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
     lv_obj_set_pos(btn, x, y);
     lv_obj_set_size(btn, width, height);
 
+    // Use default button styling (no custom colors)
+
     // Set a flex layout on the button to arrange its children (image and label)
     lv_obj_set_layout(btn, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // Arrange children in a row
@@ -119,30 +151,40 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
     lv_obj_set_style_pad_left(btn, 8, 0);
     lv_obj_set_style_pad_right(btn, 8, 0);
 
-    printf("Creating button with image: %s\n", image_path);
-
     // Create an image widget inside the button
     lv_obj_t * img = lv_image_create(btn);
 
-    // Calculate target size BEFORE setting source or properties
-    lv_coord_t target_size = height - 8; // Full button height minus padding
+    // Calculate widget size based on button height minus padding
+    lv_coord_t widget_size = height - 8;
 
-    // Disable flex grow FIRST - this allows explicit sizing to work
+    // Disable flex grow to maintain explicit sizing
     lv_obj_set_flex_grow(img, 0);
 
-    // Set size properties separately using width/height functions
-    lv_obj_set_width(img, target_size);
-    lv_obj_set_height(img, target_size);
+    // Set widget size to available space
+    lv_obj_set_width(img, widget_size);
+    lv_obj_set_height(img, widget_size);
+
+    // Add image styling to respond to button press
+    // Normal state - full opacity
+    lv_obj_set_style_opa(img, LV_OPA_COVER, 0);
+    // Pressed state - slightly transparent/dimmed when button is clicked
+    lv_obj_set_style_opa(img, LV_OPA_70, LV_STATE_PRESSED);
+
+    // Apply image scaling BEFORE setting source
+    // LVGL scale factor: 256 = 100%
+    int32_t scale_factor = (IMAGE_SCALE_PERCENT * 256) / 100;
+    lv_image_set_scale(img, scale_factor);
 
     // Try to load the image to verify it exists
     lv_image_header_t img_header;
     lv_result_t res = lv_image_decoder_get_info(image_path, &img_header);
     if (res == LV_RESULT_OK) {
-        // Now set the image source AFTER sizing is configured
+        // Set the image source AFTER scale is configured
         lv_image_set_src(img, image_path);
 
-        printf("  Image loaded successfully: %dx%d, format: %d. Display size: %dx%d\n",
-               img_header.w, img_header.h, img_header.cf, target_size, target_size);
+        printf("  Image loaded: %dx%d, format: %d, display size: %dx%d, scale: %d%%\n",
+               img_header.w, img_header.h, img_header.cf, widget_size, widget_size,
+               IMAGE_SCALE_PERCENT);
     } else {
         // If image fails to load, show a warning symbol instead
         lv_obj_set_size(img, 24, 24);
@@ -165,8 +207,10 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
 
     printf("Button created at (%d, %d) with size %dx%d\n", (int)x, (int)y, (int)width, (int)height);
 
-    // Add click event handler
-    lv_obj_add_event_cb(btn, button_click_handler, LV_EVENT_CLICKED, NULL);
+    // Add event handlers
+    lv_obj_add_event_cb(btn, button_image_press_handler, LV_EVENT_PRESSED, NULL);   // When button is pressed
+    lv_obj_add_event_cb(btn, button_image_press_handler, LV_EVENT_RELEASED, NULL);  // When button is released
+    lv_obj_add_event_cb(btn, button_click_handler, LV_EVENT_CLICKED, NULL);         // When button is clicked
 
     return btn;
 }

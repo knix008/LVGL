@@ -61,18 +61,13 @@ int main(int argc, char **argv)
     // Initialize the image button application UI
     image_button_app_init();
 
-    printf("\n=== LVGL Image Button Demo ===\n");
-    printf("Controls:\n");
-    printf("  - Click image buttons to see format information\n");
-    printf("  - Press 'Q' or 'Escape' to quit\n");
-    printf("  - Use mouse to interact with the interface\n");
-    printf("\nStarting application...\n");
-
     // Main loop - call lv_timer_handler periodically (every 5ms)
     while(1) {
         lv_timer_handler();
         usleep(5000);  // 5ms
     }
+
+    printf("Bye!!!\n");
 
     return 0;
 }
