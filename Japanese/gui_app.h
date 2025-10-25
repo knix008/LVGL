@@ -41,6 +41,7 @@ void gui_app_on_space_clicked(lv_event_t *e);
 // Flick input functions
 void gui_app_create_flick_window(int button_num);
 void gui_app_on_flick_char_clicked(lv_event_t *e);
+void gui_app_on_flick_cancel_clicked(lv_event_t *e);
 
 // Font management
 const lv_font_t* gui_app_get_japanese_font_12(void);

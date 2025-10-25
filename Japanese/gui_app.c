@@ -121,6 +121,21 @@ void gui_app_on_flick_char_clicked(lv_event_t *e) {
     }
 }
 
+// Cancel button handler for flick window
+void gui_app_on_flick_cancel_clicked(lv_event_t *e) {
+    (void)e;
+    
+    // Cancel the flick input (don't input any character)
+    app_widgets.state.flick_active = false;
+    app_widgets.state.flick_button = -1;
+    
+    // Close flick window
+    if (flick_window && lv_obj_is_valid(flick_window)) {
+        lv_obj_del(flick_window);
+        flick_window = NULL;
+    }
+}
+
 // Create flick input selection window
 void gui_app_create_flick_window(int button_num) {
     // Close existing flick window
@@ -135,9 +150,9 @@ void gui_app_create_flick_window(int button_num) {
     
     if (char_count == 0) return;
     
-    // Create flick window
+    // Create flick window - make it slightly taller to accommodate cancel button
     flick_window = lv_obj_create(lv_screen_active());
-    lv_obj_set_size(flick_window, 280, 120);
+    lv_obj_set_size(flick_window, 280, 160);
     lv_obj_center(flick_window);
     lv_obj_set_style_bg_opa(flick_window, LV_OPA_90, 0);
     lv_obj_set_style_bg_color(flick_window, lv_color_hex(0x2C2C2C), 0);
@@ -150,10 +165,26 @@ void gui_app_create_flick_window(int button_num) {
     
     // Create title
     lv_obj_t *title_label = lv_label_create(flick_window);
-    lv_label_set_text(title_label, "文字選択 - Character Selection");
+    lv_label_set_text(title_label, "文字選択");
     lv_obj_set_style_text_color(title_label, lv_color_hex(0x4A90E2), 0);
     lv_obj_set_style_text_font(title_label, japanese_font_16, 0);
     lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 5);
+    
+    // Create cancel button in the top right corner
+    lv_obj_t *cancel_btn = lv_button_create(flick_window);
+    lv_obj_set_size(cancel_btn, 40, 30);
+    lv_obj_align(cancel_btn, LV_ALIGN_TOP_RIGHT, -5, 5);
+    lv_obj_set_style_radius(cancel_btn, 5, 0);
+    lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0xFF4444), 0); // Red background
+    
+    lv_obj_t *cancel_label = lv_label_create(cancel_btn);
+    lv_label_set_text(cancel_label, "×");
+    lv_obj_set_style_text_color(cancel_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(cancel_label, japanese_font_16, 0);
+    lv_obj_center(cancel_label);
+    
+    // Add click event to cancel button
+    lv_obj_add_event_cb(cancel_btn, gui_app_on_flick_cancel_clicked, LV_EVENT_CLICKED, NULL);
     
     // Create character buttons
     lv_obj_t *char_container = lv_obj_create(flick_window);

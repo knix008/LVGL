@@ -125,10 +125,18 @@ void test_consistency() {
                             "GUI text should match symbol character");
                     }
                 } else {
-                    TEST_ASSERT(gui_text && wcslen(gui_text) == 1, 
-                        "GUI text should be single character");
-                    TEST_ASSERT(gui_text[0] == core_chars[0], 
-                        "GUI text should match first core character");
+                    // Special case: Button 10 (dakuten/handakuten) in Japanese modes shows 2 characters
+                    if ((mode == MODE_HIRAGANA || mode == MODE_KATAKANA) && button == 10 && wcslen(core_chars) == 2) {
+                        TEST_ASSERT(gui_text && wcslen(gui_text) == 2,
+                            "GUI text should show both dakuten and handakuten");
+                        TEST_ASSERT(gui_text[0] == core_chars[0] && gui_text[1] == core_chars[1],
+                            "GUI text should match both dakuten characters");
+                    } else {
+                        TEST_ASSERT(gui_text && wcslen(gui_text) == 1, 
+                            "GUI text should be single character");
+                        TEST_ASSERT(gui_text[0] == core_chars[0], 
+                            "GUI text should match first core character");
+                    }
                 }
             } else {
                 // For alphabet and number modes, test differently
@@ -186,7 +194,17 @@ void test_all_modes() {
                         TEST_ASSERT(wcslen(text) == 1, "Single-character symbol button should show single character");
                     }
                 } else {
-                    TEST_ASSERT(wcslen(text) == 1, "Button text should be single character when not empty");
+                    // Special case: Button 10 (dakuten/handakuten) in Japanese modes shows 2 characters
+                    if ((mode == MODE_HIRAGANA || mode == MODE_KATAKANA) && button == 10) {
+                        const wchar_t* core_chars = get_button_flick_chars(mode, button);
+                        if (core_chars && wcslen(core_chars) == 2) {
+                            TEST_ASSERT(wcslen(text) == 2, "Dakuten button should show both marks");
+                        } else {
+                            TEST_ASSERT(wcslen(text) == 1, "Button text should be single character when not empty");
+                        }
+                    } else {
+                        TEST_ASSERT(wcslen(text) == 1, "Button text should be single character when not empty");
+                    }
                 }
             }
         }

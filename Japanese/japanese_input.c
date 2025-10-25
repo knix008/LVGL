@@ -469,6 +469,10 @@ const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool s
                     chars = hiragana_chars[button_num];
                 }
                 if (chars && wcslen(chars) > 0) {
+                    // For button 10 (dakuten/handakuten), show both marks
+                    if (button_num == 10 && wcslen(chars) == 2) {
+                        return chars;  // Return the full "゛゜" string
+                    }
                     single_char[0] = chars[0];
                 }
             }
@@ -485,6 +489,10 @@ const wchar_t* get_button_text_with_shift(InputMode mode, int button_num, bool s
                     chars = katakana_chars[button_num];
                 }
                 if (chars && wcslen(chars) > 0) {
+                    // For button 10 (dakuten/handakuten), show both marks
+                    if (button_num == 10 && wcslen(chars) == 2) {
+                        return chars;  // Return the full "゛゜" string
+                    }
                     single_char[0] = chars[0];
                 }
             }
@@ -553,6 +561,10 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
             {
                 const wchar_t* chars = hiragana_chars[button_num];
                 if (chars && wcslen(chars) > 0) {
+                    // For button 10 (dakuten/handakuten), show both marks
+                    if (button_num == 10 && wcslen(chars) == 2) {
+                        return chars;  // Return the full "゛゜" string
+                    }
                     single_char[0] = chars[0];
                 }
             }
@@ -561,6 +573,10 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
             {
                 const wchar_t* chars = katakana_chars[button_num];
                 if (chars && wcslen(chars) > 0) {
+                    // For button 10 (dakuten/handakuten), show both marks
+                    if (button_num == 10 && wcslen(chars) == 2) {
+                        return chars;  // Return the full "゛゜" string
+                    }
                     single_char[0] = chars[0];
                 }
             }
