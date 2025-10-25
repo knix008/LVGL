@@ -14,11 +14,13 @@ This project demonstrates:
 ## Features
 
 ### UI Components
-- **3 Interactive Buttons with Images**: Orange buttons (70x280px) with images and click feedback
-  - Button 1: PNG image (button_png.png)
-  - Button 2: BMP image (button_bmp.bmp)
-  - Button 3: JPG image (button_jpg.jpg)
-- **2 Toggle Buttons**: Gray buttons that toggle between states (gray OFF / blue ON)
+- **3 Interactive Buttons with Images**: Orange buttons (70x280px) with visual effects and click feedback
+  - Button 1: PNG image (button_png.png) with green border flash effect
+  - Button 2: BMP image (button_bmp.bmp) with green border flash effect  
+  - Button 3: JPG image (button_jpg.jpg) with green border flash effect
+- **2 Toggle Buttons**: Gray buttons that toggle between states with animated color transitions
+  - Gray (OFF) to Blue (ON) with smooth color animation
+  - Subtle scale effects for visual emphasis
 - **1 Disabled Button**: Non-interactive button to show disabled state
 - **Korean UI Text**: All text displayed in Korean using NanumGothicCoding font
 - **Title and Info Label**: Provides user guidance in Korean
@@ -33,6 +35,10 @@ This project demonstrates:
 - **FreeType Integration**: Dynamic TrueType font loading at runtime
 - **Event Handling**: Proper LVGL event callbacks for button interactions
 - **SDL2 Backend**: Cross-platform display and input
+- **Visual Effects**: Safe and reliable visual feedback animations
+  - Green border flash effect on image buttons (200ms duration)
+  - Smooth color transitions for toggle buttons
+  - Timer-based animation cleanup to prevent visual artifacts
 
 ## Project Structure
 
@@ -117,8 +123,14 @@ make run
 ## Usage
 
 ### Interaction
-- **Click Buttons**: Regular buttons change from orange to green when clicked
-- **Click Toggle Buttons**: Toggle buttons change color between gray (OFF) and blue (ON)
+- **Click Image Buttons**: 
+  - Orange buttons change to green with smooth color animation
+  - Green border flashes around the image for 200ms
+  - Images remain visible and stable throughout the animation
+- **Click Toggle Buttons**: 
+  - Toggle buttons change color between gray (OFF) and blue (ON)
+  - Smooth animated color transitions
+  - Subtle scale effects for visual emphasis
 - **Disabled Button**: The disabled button cannot be clicked
 - **Console Output**: Button events are printed to console (e.g., "Button clicked!", "Toggle button is ON")
 
@@ -301,6 +313,14 @@ This project uses:
 - FreeType Documentation: https://www.freetype.org/freetype2/docs/
 
 ## Recent Updates
+
+### v1.2.0 - Visual Effects & Animation
+- **Fixed image disappearing issue** - images now stay visible when clicked
+- **Added green border flash effect** - 200ms duration for image buttons
+- **Improved toggle button animations** - smooth color transitions with scale effects
+- **Safe animation implementation** - timer-based cleanup prevents visual artifacts
+- **Simplified visual effects** - removed problematic transform animations
+- **Enhanced user feedback** - reliable visual responses to button interactions
 
 ### v1.1.0 - Image Support
 - Added support for PNG, BMP, and JPG image formats

@@ -43,6 +43,66 @@ static lv_font_t *korean_font_20 = NULL;
  * Button Click Handlers
  ******************************************************************************/
 
+// Animation callback for image scaling effect
+static void img_scale_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *img = (lv_obj_t *)var;
+    lv_obj_set_style_transform_zoom(img, value, 0);
+}
+
+// Animation callback for image rotation effect
+static void img_rotate_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *img = (lv_obj_t *)var;
+    lv_obj_set_style_transform_angle(img, value, 0);
+}
+
+// Animation callback for image opacity effect
+static void img_opacity_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *img = (lv_obj_t *)var;
+    lv_obj_set_style_opa(img, value, 0);
+}
+
+
+// Timer callback to remove image border
+static void remove_border_timer_cb(lv_timer_t *timer)
+{
+    lv_obj_t *img = (lv_obj_t *)timer->user_data;
+    lv_obj_set_style_border_width(img, 0, 0);
+    lv_timer_del(timer);
+}
+
+// Animation callback for button color change
+static void btn_color_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *btn = (lv_obj_t *)var;
+    lv_color_t color;
+    
+    // Check if this is a toggle button by looking for the checkable flag
+    if (lv_obj_has_flag(btn, LV_OBJ_FLAG_CHECKABLE)) {
+        // Toggle button color animation (blue to gray)
+        if (value < 500) {
+            // Gray color (OFF state)
+            color = lv_color_hex(0x757575);
+        } else {
+            // Blue color (ON state)
+            color = lv_color_hex(0x2196F3);
+        }
+    } else {
+        // Regular button color animation (orange to green)
+        if (value < 500) {
+            // Green color
+            color = lv_color_hex(0x4CAF50);
+        } else {
+            // Orange color
+            color = lv_color_hex(0xFF9800);
+        }
+    }
+    
+    lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN);
+}
+
 static void button_event_handler(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -50,8 +110,39 @@ static void button_event_handler(lv_event_t *e)
 
     if (code == LV_EVENT_CLICKED) {
         printf("Button clicked!\n");
-        // Add visual feedback by changing color
-        lv_obj_set_style_bg_color(obj, lv_color_hex(0x4CAF50), LV_PART_MAIN);
+        
+        // Find the image object within the button
+        lv_obj_t *img = NULL;
+        uint32_t child_cnt = lv_obj_get_child_cnt(obj);
+        for (uint32_t i = 0; i < child_cnt; i++) {
+            lv_obj_t *child = lv_obj_get_child(obj, i);
+            if (lv_obj_check_type(child, &lv_img_class)) {
+                img = child;
+                break;
+            }
+        }
+        
+        if (img != NULL) {
+            // Simple and safe visual effect - add a temporary border to the image
+            lv_obj_set_style_border_width(img, 3, 0);
+            lv_obj_set_style_border_color(img, lv_color_hex(0x00FF00), 0);
+            
+            // Create a timer to remove the border after 200ms
+            lv_timer_t *border_timer = lv_timer_create(remove_border_timer_cb, 200, img);
+            lv_timer_set_repeat_count(border_timer, 1);
+        }
+        
+        // Button color animation
+        lv_anim_t btn_anim;
+        lv_anim_init(&btn_anim);
+        lv_anim_set_var(&btn_anim, obj);
+        lv_anim_set_values(&btn_anim, 1000, 500);
+        lv_anim_set_time(&btn_anim, 300);
+        lv_anim_set_exec_cb(&btn_anim, btn_color_anim_cb);
+        lv_anim_set_path_cb(&btn_anim, lv_anim_path_ease_in_out);
+        lv_anim_set_playback_time(&btn_anim, 300);
+        lv_anim_set_playback_delay(&btn_anim, 0);
+        lv_anim_start(&btn_anim);
     }
     else if (code == LV_EVENT_LONG_PRESSED) {
         printf("Button long pressed!\n");
@@ -66,11 +157,49 @@ static void toggle_button_event_handler(lv_event_t *e)
     if (code == LV_EVENT_VALUE_CHANGED) {
         if (lv_obj_has_state(obj, LV_STATE_CHECKED)) {
             printf("Toggle button is ON\n");
-            lv_obj_set_style_bg_color(obj, lv_color_hex(0x2196F3), LV_PART_MAIN);
+            
+            // Animated color change to blue
+            lv_anim_t color_anim;
+            lv_anim_init(&color_anim);
+            lv_anim_set_var(&color_anim, obj);
+            lv_anim_set_values(&color_anim, 0, 1000);
+            lv_anim_set_time(&color_anim, 300);
+            lv_anim_set_exec_cb(&color_anim, btn_color_anim_cb);
+            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
+            lv_anim_start(&color_anim);
+            
+            // Scale animation for emphasis
+            lv_anim_t scale_anim;
+            lv_anim_init(&scale_anim);
+            lv_anim_set_var(&scale_anim, obj);
+            lv_anim_set_values(&scale_anim, 1000, 1050);
+            lv_anim_set_time(&scale_anim, 200);
+            lv_anim_set_exec_cb(&scale_anim, img_scale_anim_cb);
+            lv_anim_set_path_cb(&scale_anim, lv_anim_path_bounce);
+            lv_anim_start(&scale_anim);
         }
         else {
             printf("Toggle button is OFF\n");
-            lv_obj_set_style_bg_color(obj, lv_color_hex(0x757575), LV_PART_MAIN);
+            
+            // Animated color change to gray
+            lv_anim_t color_anim;
+            lv_anim_init(&color_anim);
+            lv_anim_set_var(&color_anim, obj);
+            lv_anim_set_values(&color_anim, 1000, 0);
+            lv_anim_set_time(&color_anim, 300);
+            lv_anim_set_exec_cb(&color_anim, btn_color_anim_cb);
+            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
+            lv_anim_start(&color_anim);
+            
+            // Scale animation for emphasis
+            lv_anim_t scale_anim;
+            lv_anim_init(&scale_anim);
+            lv_anim_set_var(&scale_anim, obj);
+            lv_anim_set_values(&scale_anim, 1000, 950);
+            lv_anim_set_time(&scale_anim, 200);
+            lv_anim_set_exec_cb(&scale_anim, img_scale_anim_cb);
+            lv_anim_set_path_cb(&scale_anim, lv_anim_path_bounce);
+            lv_anim_start(&scale_anim);
         }
     }
 }
