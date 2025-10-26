@@ -241,6 +241,79 @@ void test_empty_and_null_input() {
     printf("test_empty_and_null_input passed\n");
 }
 
+void test_special_char_button_0() {
+    ChunjiinState state;
+    chunjiin_init(&state);
+    // Switch to special mode
+    change_mode(&state); // English
+    change_mode(&state); // Upper English
+    change_mode(&state); // Number
+    change_mode(&state); // Special
+    assert(state.now_mode == MODE_SPECIAL);
+
+    // Test button 0: ~.^ (cycles through ~, ., ^)
+    int before = state.cursor_pos;
+    chunjiin_process_input(&state, 0); // First press: ~
+    assert(state.cursor_pos == before + 1);
+
+    before = state.cursor_pos;
+    chunjiin_process_input(&state, 0); // Second press: .
+    assert(state.cursor_pos == before);
+
+    chunjiin_process_input(&state, 0); // Third press: ^
+    assert(state.cursor_pos == before);
+
+    chunjiin_process_input(&state, 0); // Fourth press: cycles back to ~
+    assert(state.cursor_pos == before);
+
+    printf("test_special_char_button_0 passed\n");
+}
+
+void test_special_char_button_7() {
+    ChunjiinState state;
+    chunjiin_init(&state);
+    // Switch to special mode
+    change_mode(&state); // English
+    change_mode(&state); // Upper English
+    change_mode(&state); // Number
+    change_mode(&state); // Special
+    assert(state.now_mode == MODE_SPECIAL);
+
+    // Test button 7: -_ (cycles through -, _)
+    int before = state.cursor_pos;
+    chunjiin_process_input(&state, 7); // First press: -
+    assert(state.cursor_pos == before + 1);
+
+    before = state.cursor_pos;
+    chunjiin_process_input(&state, 7); // Second press: _
+    assert(state.cursor_pos == before);
+
+    chunjiin_process_input(&state, 7); // Third press: cycles back to -
+    assert(state.cursor_pos == before);
+
+    printf("test_special_char_button_7 passed\n");
+}
+
+void test_special_char_all_buttons() {
+    ChunjiinState state;
+    chunjiin_init(&state);
+    // Switch to special mode
+    change_mode(&state); // English
+    change_mode(&state); // Upper English
+    change_mode(&state); // Number
+    change_mode(&state); // Special
+    assert(state.now_mode == MODE_SPECIAL);
+
+    // Test all special character buttons (0-9)
+    for (int i = 0; i < 10; i++) {
+        int before = state.cursor_pos;
+        chunjiin_process_input(&state, i);
+        assert(state.cursor_pos >= before); // Should add at least one character
+    }
+
+    printf("test_special_char_all_buttons passed\n");
+}
+
 int main() {
     test_delete_char();
     test_rapid_mode_switch();
@@ -259,6 +332,9 @@ int main() {
     test_rapid_mode_clear_enter();
     test_unicode_edge_cases();
     test_empty_and_null_input();
+    test_special_char_button_0();
+    test_special_char_button_7();
+    test_special_char_all_buttons();
     printf("Additional Chunjiin tests passed!\n");
     return 0;
 }

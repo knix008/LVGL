@@ -42,7 +42,7 @@ void special_make(ChunjiinState *state, int input) {
     } else {
         const wchar_t *str = L"";
         switch (input) {
-            case 0: str = L"~`^"; break;
+            case 0: str = L"~.^"; break;
             case 1: str = L"!@#"; break;
             case 2: str = L"$%&"; break;
             case 3: str = L"*()"; break;
@@ -61,6 +61,8 @@ void special_make(ChunjiinState *state, int input) {
         ch[2] = str[2];
         ch[3] = 0;
 
+        size_t str_len = wcslen(str);
+
         if (wcslen(state->engnum) == 0) {
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
@@ -68,11 +70,16 @@ void special_make(ChunjiinState *state, int input) {
             state->engnum[0] = ch[1];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[1]) {
+        } else if (state->engnum[0] == ch[1] && str_len >= 3) {
             state->engnum[0] = ch[2];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[2]) {
+        } else if (state->engnum[0] == ch[1] && str_len == 2) {
+            // For 2-character buttons, cycle back to first character
+            state->engnum[0] = ch[0];
+            state->engnum[1] = 0;
+            state->flag_engdelete = true;
+        } else if (state->engnum[0] == ch[2] && str_len >= 3) {
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
@@ -119,6 +126,8 @@ void eng_make(ChunjiinState *state, int input) {
         ch[2] = str[2];
         ch[3] = 0;
 
+        size_t str_len = wcslen(str);
+
         if (wcslen(state->engnum) == 0) {
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
@@ -126,11 +135,16 @@ void eng_make(ChunjiinState *state, int input) {
             state->engnum[0] = ch[1];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[1]) {
+        } else if (state->engnum[0] == ch[1] && str_len >= 3) {
             state->engnum[0] = ch[2];
             state->engnum[1] = 0;
             state->flag_engdelete = true;
-        } else if (state->engnum[0] == ch[2]) {
+        } else if (state->engnum[0] == ch[1] && str_len == 2) {
+            // For 2-character buttons, cycle back to first character
+            state->engnum[0] = ch[0];
+            state->engnum[1] = 0;
+            state->flag_engdelete = true;
+        } else if (state->engnum[0] == ch[2] && str_len >= 3) {
             state->engnum[0] = ch[0];
             state->engnum[1] = 0;
             state->flag_engdelete = true;

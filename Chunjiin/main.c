@@ -28,6 +28,9 @@ static AppWidgets app_widgets;
 static lv_obj_t *active_mbox = NULL; // Track active message box
 static lv_font_t *korean_font_16 = NULL;
 static lv_font_t *korean_font_20 = NULL;
+static lv_font_t *korean_font_16_bold = NULL;
+static lv_font_t *korean_font_20_bold = NULL;
+static lv_font_t *korean_font_14_bold = NULL;
 
 // wchar_t buffer to UTF-8 string conversion helper
 
@@ -125,7 +128,7 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     if (title_label) {
         lv_label_set_text(title_label, title);
         lv_obj_set_style_text_color(title_label, lv_color_hex(0x4A90E2), 0);
-        lv_obj_set_style_text_font(title_label, korean_font_20, 0);
+        lv_obj_set_style_text_font(title_label, korean_font_20_bold, 0);
         lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 5);
     }
     
@@ -141,26 +144,49 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     if (msg_label) {
         lv_label_set_text(msg_label, message);
         lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
-        lv_obj_set_style_text_font(msg_label, korean_font_16, 0);
+        lv_obj_set_style_text_font(msg_label, korean_font_16_bold, 0);
         lv_obj_align(msg_label, LV_ALIGN_TOP_LEFT, 0, 0);
         lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
         lv_obj_set_width(msg_label, 200);
     }
     
-    // Create close button - positioned at bottom of dynamic window
-    lv_obj_t *close_btn = lv_button_create(window);
-    lv_obj_set_size(close_btn, 100, 35);
-    lv_obj_align(close_btn, LV_ALIGN_BOTTOM_MID, 0, -15);
-    lv_obj_set_style_bg_color(close_btn, lv_color_hex(0x4A90E2), 0);
-    lv_obj_set_style_radius(close_btn, 8, 0);
-    
-    lv_obj_t *close_label = lv_label_create(close_btn);
-    lv_label_set_text(close_label, "닫기");
-    lv_obj_set_style_text_color(close_label, lv_color_white(), 0);
-    lv_obj_set_style_text_font(close_label, korean_font_16, 0);
-    lv_obj_center(close_label);
-    
-    lv_obj_add_event_cb(close_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
+    // Create button container for cancel and confirm buttons
+    lv_obj_t *btn_container = lv_obj_create(window);
+    lv_obj_set_size(btn_container, 220, 35);
+    lv_obj_align(btn_container, LV_ALIGN_BOTTOM_MID, 0, -15);
+    lv_obj_set_style_bg_opa(btn_container, LV_OPA_0, 0);
+    lv_obj_set_style_border_width(btn_container, 0, 0);
+    lv_obj_set_style_pad_all(btn_container, 0, 0);
+    lv_obj_set_flex_flow(btn_container, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Create cancel button
+    lv_obj_t *cancel_btn = lv_button_create(btn_container);
+    lv_obj_set_size(cancel_btn, 100, 35);
+    lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_radius(cancel_btn, 8, 0);
+
+    lv_obj_t *cancel_label = lv_label_create(cancel_btn);
+    lv_label_set_text(cancel_label, "취소");
+    lv_obj_set_style_text_color(cancel_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(cancel_label, korean_font_16, 0);
+    lv_obj_center(cancel_label);
+
+    lv_obj_add_event_cb(cancel_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
+
+    // Create confirm button
+    lv_obj_t *confirm_btn = lv_button_create(btn_container);
+    lv_obj_set_size(confirm_btn, 100, 35);
+    lv_obj_set_style_bg_color(confirm_btn, lv_color_hex(0x4A90E2), 0);
+    lv_obj_set_style_radius(confirm_btn, 8, 0);
+
+    lv_obj_t *confirm_label = lv_label_create(confirm_btn);
+    lv_label_set_text(confirm_label, "확인");
+    lv_obj_set_style_text_color(confirm_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(confirm_label, korean_font_16, 0);
+    lv_obj_center(confirm_label);
+
+    lv_obj_add_event_cb(confirm_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
     
     return window;
 }
@@ -216,11 +242,27 @@ void create_ui(void) {
                                              16,
                                              LV_FREETYPE_FONT_STYLE_NORMAL);
 
+    // Load bold fonts for popup dialog
+    korean_font_20_bold = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
+                                                   LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                   20,
+                                                   LV_FREETYPE_FONT_STYLE_BOLD);
+
+    korean_font_16_bold = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
+                                                   LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                   16,
+                                                   LV_FREETYPE_FONT_STYLE_BOLD);
+
     // Load NanumGothic font at size 14 (for buttons)
     lv_font_t *korean_font_14 = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
                                                          LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
                                                          14,
                                                          LV_FREETYPE_FONT_STYLE_NORMAL);
+
+    korean_font_14_bold = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
+                                                   LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                                   14,
+                                                   LV_FREETYPE_FONT_STYLE_BOLD);
 
     // Load NanumGothic font at size 12 (for info label)
     lv_font_t *korean_font_12 = lv_freetype_font_create("assets/NanumGothic-Regular.ttf",
@@ -228,7 +270,8 @@ void create_ui(void) {
                                                          12,
                                                          LV_FREETYPE_FONT_STYLE_NORMAL);
 
-    if (!korean_font_16 || !korean_font_20 || !korean_font_14 || !korean_font_12) {
+    if (!korean_font_16 || !korean_font_20 || !korean_font_14 || !korean_font_12 ||
+        !korean_font_16_bold || !korean_font_20_bold || !korean_font_14_bold) {
         LV_LOG_ERROR("Failed to load Korean fonts!");
         return;
     }
@@ -251,12 +294,12 @@ void create_ui(void) {
     app_widgets.text_area = lv_textarea_create(main_cont);
     lv_obj_set_size(app_widgets.text_area, 300, 150);
     lv_textarea_set_text(app_widgets.text_area, "");
-    lv_obj_set_style_text_font(app_widgets.text_area, korean_font_16, 0);
-    
+    lv_obj_set_style_text_font(app_widgets.text_area, korean_font_16_bold, 0);
+
     // Set font for the textarea's internal label
     lv_obj_t *textarea_label = lv_textarea_get_label(app_widgets.text_area);
     if (textarea_label) {
-        lv_obj_set_style_text_font(textarea_label, korean_font_16, 0);
+        lv_obj_set_style_text_font(textarea_label, korean_font_16_bold, 0);
     }
 
     // Button grid container
@@ -297,7 +340,7 @@ void create_ui(void) {
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
         lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, korean_font_14, 0);
+        lv_obj_set_style_text_font(label, korean_font_16_bold, 0);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -307,9 +350,10 @@ void create_ui(void) {
     app_widgets.mode_button = lv_button_create(button_grid);
     lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_STRETCH, 0, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_style_bg_color(app_widgets.mode_button, lv_color_hex(0xFF8C00), 0);  // Orange color
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
     lv_label_set_text(mode_label, "한/영/숫/특");
-    lv_obj_set_style_text_font(mode_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(mode_label, korean_font_16_bold, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
 
@@ -318,16 +362,17 @@ void create_ui(void) {
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
     lv_label_set_text(clear_label, "Clear");
-    lv_obj_set_style_text_font(clear_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(clear_label, korean_font_16_bold, 0);
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
 
     app_widgets.enter_button = lv_button_create(button_grid);
     lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_STRETCH, 2, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_style_bg_color(app_widgets.enter_button, lv_color_hex(0x28A745), 0);  // Green color
     lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
     lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(enter_label, korean_font_16_bold, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(app_widgets.enter_button, on_enter_clicked, LV_EVENT_CLICKED, NULL);
 

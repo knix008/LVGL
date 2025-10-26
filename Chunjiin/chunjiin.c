@@ -255,27 +255,27 @@ const wchar_t* get_button_text(InputMode mode, int button_num) {
     static const wchar_t *hangul_texts[] = {
         L"ㅇㅁ", L"ㅣ", L"·", L"ㅡ", L"ㄱㅋ",
         L"ㄴㄹ", L"ㄷㅌ", L"ㅂㅍ", L"ㅅㅎ", L"ㅈㅊ",
-        L"Space", L"Del"
+        L"Space", L"←"
     };
     static const wchar_t *upper_eng_texts[] = {
         L"@?!", L".QZ", L"ABC", L"DEF", L"GHI",
         L"JKL", L"MNO", L"PRS", L"TUV", L"WXY",
-        L"Space", L"Del"
+        L"Space", L"←"
     };
     static const wchar_t *lower_eng_texts[] = {
         L"@?!", L".qz", L"abc", L"def", L"ghi",
         L"jkl", L"mno", L"prs", L"tuv", L"wxy",
-        L"Space", L"Del"
+        L"Space", L"←"
     };
     static const wchar_t *number_texts[] = {
         L"0", L"1", L"2", L"3", L"4",
         L"5", L"6", L"7", L"8", L"9",
-        L"Space", L"Del"
+        L"Space", L"←"
     };
     static const wchar_t *special_texts[] = {
-        L"~`^", L"!@#", L"$%&", L"*()=", L"+{}",
+        L"~.^", L"!@#", L"$%&", L"*()=", L"+{}",
         L"[]=", L"<>|", L"-_", L":;", L"\"'/",
-        L"Space", L"Del"
+        L"Space", L"←"
     };
 
     if (button_num < 0 || button_num > 11) return L"";

@@ -8,9 +8,31 @@ This application provides a graphical Korean input method using the Chunjiin sys
 - Excellent embedded system support
 - Real-time Korean character composition
 - Display of incomplete Hangul characters (partial jamos) as you type
-- Beautiful Korean font rendering using FreeType with NanumGothic fonts
+- Beautiful Korean font rendering using FreeType with NanumGothic fonts (including bold styles)
 - SDL2-based desktop simulation
 - Multiple input modes: 한글 (Hangul), 영문 (English), 숫자 (Numbers), 특수문자 (Special characters)
+- Modern UI with color-coded buttons and bold typography
+
+## Recent Enhancements (2025)
+
+### Typography & Visual Design
+- ✨ **Bold Font Support**: Added bold font rendering for improved readability
+  - All button labels use bold 14px font
+  - Text result area uses bold 16px font
+  - Popup dialog titles and messages use bold fonts (20px and 16px)
+- 🎨 **Color-Coded Buttons**: Enhanced visual hierarchy
+  - Orange mode button (0xFF8C00) for input mode switching
+  - Green enter button (0x28A745) for primary action confirmation
+  - Gray/Blue dual-button popup dialogs for Cancel/Confirm actions
+- ⬅️ **Modern Symbols**: Replaced "Del" with left arrow symbol (←) for backspace
+
+### Enhanced Functionality
+- 🔘 **Dual-Button Popup Dialogs**:
+  - Added cancel button (취소) alongside confirm button (확인)
+  - Better user control over dialog actions
+- ⌨️ **Improved Special Characters**:
+  - Added period (.) to button 7 in special mode
+  - Now supports three characters: hyphen (-), underscore (_), and period (.)
 
 ## Prerequisites
 
@@ -100,14 +122,22 @@ The `lv_conf.h` file is pre-configured with:
 The application uses **LVGL's FreeType integration** to render Korean fonts directly from TrueType files:
 
 - **Font Files:** NanumGothic-Regular.ttf (included in `assets/`)
-- **Font Sizes:** 12px, 14px, 16px, 20px (loaded at runtime)
+- **Font Sizes and Styles:**
+  - 12px normal - Info labels
+  - 14px normal - Standard UI elements
+  - 14px **bold** - Button labels (all buttons)
+  - 16px normal - Title labels
+  - 16px **bold** - Text result area, popup messages
+  - 20px normal - Large titles
+  - 20px **bold** - Popup dialog titles
 - **Character Support:**
   - Complete Hangul Syllables (AC00-D7AF)
   - Hangul Compatibility Jamo (3130-318F) for displaying incomplete characters
   - ASCII characters (0020-007F)
   - Korean punctuation and symbols
+  - Special symbols (←, ·, ‥)
 
-No pre-conversion needed - fonts are loaded directly at runtime!
+No pre-conversion needed - fonts are loaded directly at runtime with bold style support!
 
 ## Project Structure
 
@@ -151,19 +181,22 @@ The application displays **incomplete Hangul characters** as you type:
 
 This is achieved by using **Hangul Compatibility Jamo** (U+3130-U+318F) for standalone display, and **Composed Hangul Syllables** (U+AC00-U+D7AF) for complete characters.
 
-### Popup Functionality
+### Popup Dialog Functionality
 
 The application features a robust popup system that displays input results:
 
 - **Safe Implementation**: Uses custom container objects instead of problematic message box APIs
-- **Korean Text Support**: Displays Korean text with proper font rendering
-- **Auto-dismiss**: Popups automatically disappear after 3 seconds
+- **Korean Text Support**: Displays Korean text with bold font rendering
+- **Dual-Button Interface**:
+  - **Cancel Button** (취소): Gray color (0x808080) for secondary action
+  - **Confirm Button** (확인): Blue color (0x4A90E2) for primary action
+- **Bold Typography**: Title and message text use bold fonts for emphasis
 - **Error Handling**: Shows appropriate messages for empty input
 - **No Segmentation Faults**: Defensive programming prevents crashes
 
 ## Button Layout
 
-The application maintains the same 3x5 grid layout as the GTK version:
+The application maintains the same 3x5 grid layout with enhanced visual design:
 
 ```
 ┌─────────┬─────────┬─────────┐
@@ -173,11 +206,17 @@ The application maintains the same 3x5 grid layout as the GTK version:
 ├─────────┼─────────┼─────────┤
 │  ㅂ(7)   │  ㅅ(8)   │  ㅈ(9)   │  Row 2
 ├─────────┼─────────┼─────────┤
-│ Space(10)│ ㅇㅁ(0)  │ Del(11)  │  Row 3
+│ Space(10)│ ㅇㅁ(0)  │   ←(11)  │  Row 3
 ├─────────┼─────────┼─────────┤
-│  모드     │  지우기   │  엔터     │  Row 4
+│모드(橙色) │  지우기   │ 엔터(绿色)│  Row 4
 └─────────┴─────────┴─────────┘
 ```
+
+**Visual Enhancements:**
+- **Mode Button**: Orange color (0xFF8C00) for easy identification
+- **Enter Button**: Green color (0x28A745) to indicate primary action
+- **Backspace**: Uses left arrow symbol (←) instead of "Del"
+- **Bold Fonts**: All button labels use bold fonts for better readability
 
 ## Features
 
@@ -189,15 +228,26 @@ The application maintains the same 3x5 grid layout as the GTK version:
   - 영문 (English) - Lowercase by default
   - 영문 대문자 (Uppercase English)
   - 숫자 (Numbers) - 0-9
-  - 특수문자 (Special characters) - Symbols and punctuation
+  - 특수문자 (Special characters) - Enhanced symbol layout with period (.) added to button 7 (-_.)
 - ✓ **Smart character composition** with vowel and consonant combining
-- ✓ **Delete/backspace** support for step-by-step character decomposition
+- ✓ **Delete/backspace** support for step-by-step character decomposition with intuitive left arrow (←) symbol
 
 ### UI Features
 - ✓ **Beautiful Korean font rendering** using NanumGothic TrueType fonts
+- ✓ **Bold font support** for enhanced readability:
+  - Text result area uses bold 16px font
+  - All button labels use bold 14px font
+  - Popup dialog titles use bold 20px font
+  - Popup dialog messages use bold 16px font
 - ✓ **Scrollable text area** for long text input
-- ✓ **Safe popup dialogs** with Korean text support (no segmentation faults)
-- ✓ **Auto-dismissing popups** (3-second timeout)
+- ✓ **Enhanced popup dialogs** with dual-button interface (Cancel/Confirm)
+- ✓ **Color-coded buttons** for intuitive interaction:
+  - Orange mode button for input mode switching
+  - Green enter button for primary action
+  - Gray cancel button / Blue confirm button in dialogs
+- ✓ **Modern UI elements**:
+  - Left arrow symbol (←) for backspace/delete
+  - Bold typography throughout the interface
 - ✓ **Mode switching button** to cycle through input modes
 - ✓ **Clear button** to reset input
 - ✓ **320×640 portrait display** optimized for mobile-style layouts
@@ -288,9 +338,10 @@ The application maintains the same 3x5 grid layout as the GTK version:
 
 ### Performance
 
-- **Memory Usage:** ~256KB LVGL heap + ~5MB for fonts (loaded by FreeType)
+- **Memory Usage:** ~256KB LVGL heap + ~7MB for fonts (loaded by FreeType with bold styles)
+- **Font Loading:** Runtime loading of 7 font variants (12px, 14px, 14px bold, 16px, 16px bold, 20px, 20px bold)
 - **Frame Rate:** 30+ FPS (SDL2 refresh rate)
-- **Startup Time:** ~0.5 seconds (including font loading)
+- **Startup Time:** ~0.6 seconds (including all font loading)
 - **Binary Size:** ~600KB (with LVGL compiled in)
 
 ## Development
