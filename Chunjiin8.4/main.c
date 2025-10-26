@@ -1,0 +1,495 @@
+/*
+* Chunjiin Korean Input Method - LVGL GUI
+* Main application file
+*/
+
+#include "lvgl/lvgl.h"
+#include "lvgl/src/drivers/sdl/lv_sdl_window.h"
+#include "lvgl/src/drivers/sdl/lv_sdl_mouse.h"
+#include "lvgl/src/drivers/sdl/lv_sdl_mousewheel.h"
+#include "lvgl/src/drivers/sdl/lv_sdl_keyboard.h"
+#include "lvgl/src/libs/freetype/lv_freetype.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <locale.h>
+#include <string.h>
+#include "chunjiin.h"
+
+typedef struct {
+    lv_obj_t *text_area;
+    lv_obj_t *buttons[12];
+    lv_obj_t *mode_button;
+    lv_obj_t *clear_button;
+    lv_obj_t *enter_button;
+    ChunjiinState state;
+} AppWidgets;
+
+static AppWidgets app_widgets;
+static lv_obj_t *active_mbox = NULL; // Track active message box
+static lv_font_t *korean_font_16 = NULL;
+static lv_font_t *korean_font_20 = NULL;
+static lv_font_t *korean_font_16_bold = NULL;
+static lv_font_t *korean_font_20_bold = NULL;
+static lv_font_t *korean_font_14_bold = NULL;
+static lv_font_t *korean_font_14 = NULL;
+static lv_font_t *korean_font_12 = NULL;
+
+// Font configuration structure
+typedef struct {
+    const char *font_path;
+    uint16_t size;
+    uint32_t style;
+    lv_font_t **font_ptr;
+    const char *font_name;
+} FontConfig;
+
+// wchar_t buffer to UTF-8 string conversion helper
+
+/**
+ * Load a single font with error handling
+ * @param font_path Path to the TTF font file
+ * @param size Font size in pixels
+ * @param style Font style (normal, bold, italic, etc.)
+ * @return Pointer to loaded font, or NULL if failed
+ */
+static lv_font_t* load_korean_font(const char *font_path, uint16_t size, uint32_t style) {
+    if (font_path == NULL) {
+        LV_LOG_ERROR("Font path is NULL");
+        return NULL;
+    }
+
+    // Check if font file exists
+    if (access(font_path, F_OK) != 0) {
+        LV_LOG_ERROR("Font file not found: %s", font_path);
+        return NULL;
+    }
+
+    lv_font_t *font = lv_freetype_font_create(font_path,
+                                              LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+                                              size,
+                                              style);
+
+    if (font == NULL) {
+        LV_LOG_ERROR("Failed to load font from: %s (size: %d)", font_path, size);
+        return NULL;
+    }
+
+    printf("✓ Loaded font: %s (size: %d)\n", font_path, size);
+    return font;
+}
+
+/**
+ * Initialize all Korean fonts
+ * @return true if all fonts loaded successfully, false otherwise
+ */
+static bool init_all_fonts(void) {
+    printf("Initializing Korean fonts...\n");
+
+    // Initialize FreeType library
+    lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
+
+    // Font files - try regular font first, fallback to coding variant
+    const char *font_regular = "assets/NanumGothic-Regular.ttf";
+    const char *font_coding = "assets/NanumGothicCoding.ttf";
+    const char *font_bold = "assets/NanumGothic-Bold.ttf";
+    const char *font_coding_bold = "assets/NanumGothicCoding-Bold.ttf";
+
+    // Determine which font files to use
+    const char *font_file = NULL;
+    const char *font_file_bold = NULL;
+
+    // Check for regular fonts first
+    if (access(font_regular, F_OK) == 0) {
+        font_file = font_regular;
+        printf("Using NanumGothic-Regular.ttf\n");
+    } else if (access(font_coding, F_OK) == 0) {
+        font_file = font_coding;
+        printf("Using NanumGothicCoding.ttf\n");
+    } else {
+        LV_LOG_ERROR("No Korean font file found!");
+        printf("✗ Font files missing in assets/ directory\n");
+        return false;
+    }
+
+    // Check for bold fonts
+    if (access(font_bold, F_OK) == 0) {
+        font_file_bold = font_bold;
+    } else if (access(font_coding_bold, F_OK) == 0) {
+        font_file_bold = font_coding_bold;
+    } else {
+        font_file_bold = font_file; // Use regular font if bold not available
+    }
+
+    printf("Regular font: %s\n", font_file);
+    printf("Bold font: %s\n", font_file_bold);
+    printf("\n");
+
+    // Load regular fonts
+    korean_font_20 = load_korean_font(font_file, 20, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_16 = load_korean_font(font_file, 16, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_14 = load_korean_font(font_file, 14, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_12 = load_korean_font(font_file, 12, LV_FREETYPE_FONT_STYLE_NORMAL);
+
+    // Load bold fonts
+    korean_font_20_bold = load_korean_font(font_file_bold, 20, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_16_bold = load_korean_font(font_file_bold, 16, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_14_bold = load_korean_font(font_file_bold, 14, LV_FREETYPE_FONT_STYLE_NORMAL);
+
+    // Verify all fonts loaded successfully
+    if (!korean_font_16 || !korean_font_20 || !korean_font_14 || !korean_font_12 ||
+        !korean_font_16_bold || !korean_font_20_bold || !korean_font_14_bold) {
+        LV_LOG_ERROR("Failed to load one or more Korean fonts!");
+        printf("✗ Font initialization failed\n");
+        return false;
+    }
+
+    printf("✓ All Korean fonts loaded successfully\n");
+    return true;
+}
+
+// Button click event handler
+static void on_button_clicked(lv_event_t *e) {
+    int button_num = (int)(intptr_t)lv_event_get_user_data(e);
+    //printf("Button clicked: %d, Mode: %d\n", button_num, app_widgets.state.now_mode);
+
+    // Process input
+    chunjiin_process_input(&app_widgets.state, button_num);
+
+    // Update text area
+    char *utf8_text = wchar_to_utf8(app_widgets.state.text_buffer, MAX_TEXT_LEN);
+    //printf("Text buffer after input: %ls\n", app_widgets.state.text_buffer);
+    //printf("UTF-8 text: %s\n", utf8_text);
+    lv_textarea_set_text(app_widgets.text_area, utf8_text);
+}
+
+// Mode button click handler
+static void on_mode_button_clicked(lv_event_t *e) {
+    (void)e;
+    change_mode(&app_widgets.state);
+
+    // Update button labels
+    for (int i = 0; i < 12; i++) {
+        if (app_widgets.buttons[i] == NULL) continue;
+        const wchar_t *wtext = get_button_text(app_widgets.state.now_mode, i);
+        char *utf8_text = wchar_to_utf8(wtext, 20);
+        lv_obj_t *label = lv_obj_get_child(app_widgets.buttons[i], 0);
+        if (label) {
+            lv_label_set_text(label, utf8_text);
+        }
+    }
+}
+
+// Clear button handler
+static void on_clear_clicked(lv_event_t *e) {
+    (void)e;
+    
+    // Defensive: check if text area is valid
+    if (!app_widgets.text_area) {
+        printf("Error: Text area not initialized\n");
+        return;
+    }
+    
+    // Save current mode
+    InputMode current_mode = app_widgets.state.now_mode;
+
+    // Clear text (preserve mode)
+    chunjiin_init(&app_widgets.state);
+    app_widgets.state.now_mode = current_mode;
+    app_widgets.state.cursor_pos = 0;
+    memset(app_widgets.state.text_buffer, 0, sizeof(app_widgets.state.text_buffer));
+    lv_textarea_set_text(app_widgets.text_area, "");
+    
+    // Defensive: reset message box pointer
+    if (active_mbox) {
+        if (lv_obj_is_valid(active_mbox)) {
+            lv_obj_del(active_mbox);
+        }
+        active_mbox = NULL;
+    }
+}
+
+
+// Close button event handler
+static void on_close_button_clicked(lv_event_t *e) {
+    (void)e; // Suppress unused parameter warning
+    if (active_mbox && lv_obj_is_valid(active_mbox)) {
+        lv_obj_del(active_mbox);
+        active_mbox = NULL;
+    }
+}
+
+// Create persistent result window
+static lv_obj_t* create_result_window(const char* title, const char* message) {
+    // Create a container for the window
+    lv_obj_t *window = lv_obj_create(lv_screen_active());
+    if (!window) return NULL;
+    
+    // Set window properties - fixed height
+    lv_obj_set_size(window, 280, 200);
+    lv_obj_center(window);
+    lv_obj_set_style_bg_opa(window, LV_OPA_90, 0);
+    lv_obj_set_style_bg_color(window, lv_color_hex(0x2C2C2C), 0);
+    lv_obj_set_style_border_width(window, 3, 0);
+    lv_obj_set_style_border_color(window, lv_color_hex(0x4A90E2), 0);
+    lv_obj_set_style_radius(window, 15, 0);
+    lv_obj_set_style_pad_all(window, 20, 0);
+    lv_obj_set_style_shadow_width(window, 20, 0);
+    lv_obj_set_style_shadow_color(window, lv_color_black(), 0);
+    
+    // Create title label
+    lv_obj_t *title_label = lv_label_create(window);
+    if (title_label) {
+        lv_label_set_text(title_label, title);
+        lv_obj_set_style_text_color(title_label, lv_color_hex(0x4A90E2), 0);
+        lv_obj_set_style_text_font(title_label, korean_font_20_bold, 0);
+        lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 5);
+    }
+    
+    // Create message label with fixed height
+    lv_obj_t *msg_cont = lv_obj_create(window);
+    lv_obj_set_size(msg_cont, 220, 100);
+    lv_obj_align(msg_cont, LV_ALIGN_TOP_MID, 0, 40); // Position below title
+    lv_obj_set_style_bg_opa(msg_cont, LV_OPA_0, 0);
+    lv_obj_set_style_border_width(msg_cont, 0, 0);
+    lv_obj_set_style_pad_all(msg_cont, 10, 0);
+    
+    lv_obj_t *msg_label = lv_label_create(msg_cont);
+    if (msg_label) {
+        lv_label_set_text(msg_label, message);
+        lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
+        lv_obj_set_style_text_font(msg_label, korean_font_16_bold, 0);
+        lv_obj_align(msg_label, LV_ALIGN_TOP_LEFT, 0, 0);
+        lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(msg_label, 200);
+    }
+    
+    // Create button container for cancel and confirm buttons
+    lv_obj_t *btn_container = lv_obj_create(window);
+    lv_obj_set_size(btn_container, 220, 35);
+    lv_obj_align(btn_container, LV_ALIGN_BOTTOM_MID, 0, -15);
+    lv_obj_set_style_bg_opa(btn_container, LV_OPA_0, 0);
+    lv_obj_set_style_border_width(btn_container, 0, 0);
+    lv_obj_set_style_pad_all(btn_container, 0, 0);
+    lv_obj_set_flex_flow(btn_container, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Create cancel button
+    lv_obj_t *cancel_btn = lv_button_create(btn_container);
+    lv_obj_set_size(cancel_btn, 100, 35);
+    lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_radius(cancel_btn, 8, 0);
+
+    lv_obj_t *cancel_label = lv_label_create(cancel_btn);
+    lv_label_set_text(cancel_label, "취소");
+    lv_obj_set_style_text_color(cancel_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(cancel_label, korean_font_16, 0);
+    lv_obj_center(cancel_label);
+
+    lv_obj_add_event_cb(cancel_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
+
+    // Create confirm button
+    lv_obj_t *confirm_btn = lv_button_create(btn_container);
+    lv_obj_set_size(confirm_btn, 100, 35);
+    lv_obj_set_style_bg_color(confirm_btn, lv_color_hex(0x4A90E2), 0);
+    lv_obj_set_style_radius(confirm_btn, 8, 0);
+
+    lv_obj_t *confirm_label = lv_label_create(confirm_btn);
+    lv_label_set_text(confirm_label, "확인");
+    lv_obj_set_style_text_color(confirm_label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(confirm_label, korean_font_16, 0);
+    lv_obj_center(confirm_label);
+
+    lv_obj_add_event_cb(confirm_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
+    
+    return window;
+}
+
+// Enter button handler - show result window then clear
+static void on_enter_clicked(lv_event_t *e) {
+    (void)e;
+    
+    // Save current mode
+    InputMode current_mode = app_widgets.state.now_mode;
+
+    // Clean up any existing message box first
+    if (active_mbox) {
+        if (lv_obj_is_valid(active_mbox)) {
+            lv_obj_del(active_mbox);
+        }
+        active_mbox = NULL;
+    }
+
+    // Get current text
+    const char *text = lv_textarea_get_text(app_widgets.text_area);
+    
+    // Create window based on content
+    if (text == NULL || text[0] == '\0') {
+        // If buffer is empty, show a warning window
+        active_mbox = create_result_window("주의!!!", "입력된 내용이 없습니다.");
+    } else {
+        // Create window with input result
+        active_mbox = create_result_window("입력 결과", text);
+        
+        // Clear text (preserve mode)
+        chunjiin_init(&app_widgets.state);
+        app_widgets.state.now_mode = current_mode;
+        lv_textarea_set_text(app_widgets.text_area, "");
+    }
+}
+
+void create_ui(void) {
+    chunjiin_init(&app_widgets.state);
+
+    // Initialize all Korean fonts
+    if (!init_all_fonts()) {
+        printf("Error: Failed to initialize fonts. Exiting.\n");
+        return;
+    }
+
+    // Create main container
+    lv_obj_t *main_cont = lv_obj_create(lv_screen_active());
+    lv_obj_set_size(main_cont, 320, 640);
+    lv_obj_center(main_cont);
+    lv_obj_set_flex_flow(main_cont, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(main_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(main_cont, 10, 0);
+    lv_obj_set_style_pad_row(main_cont, 10, 0);
+
+    // Title label
+    lv_obj_t *title_label = lv_label_create(main_cont);
+    lv_label_set_text(title_label, "천지인 한글/영어/숫자/특수키 입력기");
+    lv_obj_set_style_text_font(title_label, korean_font_16, 0);
+
+    // Text area (scrollable)
+    app_widgets.text_area = lv_textarea_create(main_cont);
+    lv_obj_set_size(app_widgets.text_area, 300, 150);
+    lv_textarea_set_text(app_widgets.text_area, "");
+    lv_obj_set_style_text_font(app_widgets.text_area, korean_font_16_bold, 0);
+
+    // Set font for the textarea's internal label
+    lv_obj_t *textarea_label = lv_textarea_get_label(app_widgets.text_area);
+    if (textarea_label) {
+        lv_obj_set_style_text_font(textarea_label, korean_font_16_bold, 0);
+    }
+
+    // Button grid container
+    lv_obj_t *button_grid = lv_obj_create(main_cont);
+    lv_obj_set_size(button_grid, 275, 250);
+    lv_obj_set_style_pad_all(button_grid, 3, 0);
+    lv_obj_set_style_pad_row(button_grid, 3, 0);
+    lv_obj_set_style_pad_column(button_grid, 3, 0);
+    lv_obj_set_layout(button_grid, LV_LAYOUT_GRID);
+
+    // Grid: 3 columns, 5 rows (smaller buttons - 45x45)
+    static int32_t col_dsc[] = {85, 85, 85, LV_GRID_TEMPLATE_LAST};
+    static int32_t row_dsc[] = {45, 45, 45, 45, 45, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(button_grid, col_dsc, row_dsc);
+
+    // Button positions: each row has 3 buttons
+    // Row 0: 천(1), 지(2), 인(3)
+    // Row 1: ㄱ(4), ㄴ(5), ㄷ(6)
+    // Row 2: ㅂ(7), ㅅ(8), ㅈ(9)
+    // Row 3: 공백(10), ㅇㅁ(0), 삭제(11)
+    // Row 4: 모드, 지우기, 엔터
+    int positions[12][2] = {
+        {1, 3}, // 0: Row 3, Col 1 (ㅇㅁ)
+        {0, 0}, {1, 0}, {2, 0}, // 1-3: Row 0 (천, 지, 인)
+        {0, 1}, {1, 1}, {2, 1}, // 4-6: Row 1 (ㄱ, ㄴ, ㄷ)
+        {0, 2}, {1, 2}, {2, 2}, // 7-9: Row 2 (ㅂ, ㅅ, ㅈ)
+        {0, 3}, {2, 3}  // 10-11: Row 3 (Space, Del)
+    };
+
+    // Create number buttons (0-11)
+    for (int i = 0; i < 12; i++) {
+        const wchar_t *wtext = get_button_text(app_widgets.state.now_mode, i);
+        char *utf8_text = wchar_to_utf8(wtext, 20);
+
+        app_widgets.buttons[i] = lv_button_create(button_grid);
+        lv_obj_set_grid_cell(app_widgets.buttons[i], LV_GRID_ALIGN_STRETCH, positions[i][0], 1,
+                            LV_GRID_ALIGN_STRETCH, positions[i][1], 1);
+
+        lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
+        lv_label_set_text(label, utf8_text);
+        lv_obj_set_style_text_font(label, korean_font_14_bold, 0);
+        lv_obj_center(label);
+
+        lv_obj_add_event_cb(app_widgets.buttons[i], on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+    }
+
+    // Row 4: Mode, Clear, Enter buttons
+    app_widgets.mode_button = lv_button_create(button_grid);
+    lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_STRETCH, 0, 1,
+                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_style_bg_color(app_widgets.mode_button, lv_color_hex(0xFF8C00), 0);  // Orange color
+    lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
+    lv_label_set_text(mode_label, "한/영/숫/특");
+    lv_obj_set_style_text_font(mode_label, korean_font_14_bold, 0);
+    lv_obj_center(mode_label);
+    lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
+
+    app_widgets.clear_button = lv_button_create(button_grid);
+    lv_obj_set_grid_cell(app_widgets.clear_button, LV_GRID_ALIGN_STRETCH, 1, 1,
+                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
+    lv_label_set_text(clear_label, "Clear");
+    lv_obj_set_style_text_font(clear_label, korean_font_14_bold, 0);
+    lv_obj_center(clear_label);
+    lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
+
+    app_widgets.enter_button = lv_button_create(button_grid);
+    lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_STRETCH, 2, 1,
+                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_style_bg_color(app_widgets.enter_button, lv_color_hex(0x28A745), 0);  // Green color
+    lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
+    lv_label_set_text(enter_label, "Enter");
+    lv_obj_set_style_text_font(enter_label, korean_font_14_bold, 0);
+    lv_obj_center(enter_label);
+    lv_obj_add_event_cb(app_widgets.enter_button, on_enter_clicked, LV_EVENT_CLICKED, NULL);
+
+    // Info label
+    lv_obj_t *info_label = lv_label_create(main_cont);
+    lv_label_set_text(info_label, "천지인 한글/영어/숫자/특수키 입력 방식");
+    lv_obj_set_style_text_font(info_label, korean_font_12, 0);
+}
+
+int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
+    // Set locale
+    setlocale(LC_ALL, "");
+
+    // Initialize LVGL
+    lv_init();
+
+    // Create SDL window and display
+    lv_display_t *disp = lv_sdl_window_create(320, 640);
+    if (disp == NULL) {
+        printf("Failed to create SDL window!\n");
+        return -1;
+    }
+
+    // Set window title
+    lv_sdl_window_set_title(disp, "천지인 한글 입력기");
+
+    // Create input devices
+    lv_indev_t *mouse = lv_sdl_mouse_create();
+    lv_indev_t *mousewheel = lv_sdl_mousewheel_create();
+    lv_indev_t *keyboard = lv_sdl_keyboard_create();
+    (void)mouse;
+    (void)mousewheel;
+    (void)keyboard;
+
+    // Create UI
+    create_ui();
+
+    // Main loop - call lv_timer_handler periodically (every 5ms)
+    while(1) {
+        lv_timer_handler();
+        usleep(5000);  // 5ms
+    }
+
+    return 0;
+}
