@@ -7,7 +7,7 @@ A simple and functional number input system built with LVGL 8.4 for a 320x640 wi
 - **Number Keypad**: 0-9 digits with clear (지우기) and backspace (←) buttons
 - **Display**: Shows the entered numbers in real-time with top-left alignment
 - **Enter Function**: Shows popup dialog with entered number and clears the text box
-- **Custom UI**: Light green buttons that turn light orange when clicked
+- **Custom UI**: Dodger blue buttons with white text that turn light orange when clicked
 - **Korean Font Support**: Uses NanumGothicCoding-Bold fonts for Korean text display
 - **Responsive**: Real-time text updates as you type
 
@@ -149,10 +149,10 @@ static const char *btnm_map[] = {
 
 ### Button Styling
 The application uses custom button colors:
-- **Default**: Light green (#90EE90)
-- **Pressed**: Light orange (#FFB366)
-- **Focused**: Light green (#90EE90)
-- **Focused + Pressed**: Light orange (#FFB366)
+- **Default**: Dodger blue (#1E90FF) with white text
+- **Pressed**: Light orange (#FFB366) with white text
+- **Focused**: Dodger blue (#1E90FF) with white text
+- **Focused + Pressed**: Light orange (#FFB366) with white text
 
 To customize further:
 1. Modify the color values in the `create_number_input_ui()` function

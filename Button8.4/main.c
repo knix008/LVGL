@@ -230,10 +230,13 @@ static void create_number_input_ui(void)
     }
 
     // Set custom button colors
-    lv_obj_set_style_bg_color(keypad, lv_color_hex(0x90EE90), LV_PART_ITEMS); // Light green default
+    lv_obj_set_style_bg_color(keypad, lv_color_hex(0x1E90FF), LV_PART_ITEMS); // Dodger blue default
     lv_obj_set_style_bg_color(keypad, lv_color_hex(0xFFB366), LV_PART_ITEMS | LV_STATE_PRESSED); // Light orange when pressed
-    lv_obj_set_style_bg_color(keypad, lv_color_hex(0x90EE90), LV_PART_ITEMS | LV_STATE_FOCUSED); // Light green when focused
+    lv_obj_set_style_bg_color(keypad, lv_color_hex(0x1E90FF), LV_PART_ITEMS | LV_STATE_FOCUSED); // Dodger blue when focused
     lv_obj_set_style_bg_color(keypad, lv_color_hex(0xFFB366), LV_PART_ITEMS | LV_STATE_FOCUSED | LV_STATE_PRESSED); // Light orange when focused and pressed
+    
+    // Set button text color to white
+    lv_obj_set_style_text_color(keypad, lv_color_hex(0xFFFFFF), LV_PART_ITEMS);
 
     // Add event callback
     lv_obj_add_event_cb(keypad, button_matrix_cb, LV_EVENT_VALUE_CHANGED, NULL);
