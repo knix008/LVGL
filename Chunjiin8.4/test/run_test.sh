@@ -27,8 +27,9 @@ show_help() {
     echo "  --help      Show this help message"
     echo ""
     echo "Test Suites:"
-    echo "  test_chunjiin        Core functionality tests (5 tests)"
-    echo "  test_chunjiin_extra  Advanced and edge-case tests (20+ tests)"
+    echo "  test_chunjiin           Core functionality tests (5 tests)"
+    echo "  test_chunjiin_extra     Advanced and edge-case tests (20 tests)"
+    echo "  test_regression         Regression and safety tests (16 tests)"
     exit 0
 }
 
@@ -78,12 +79,23 @@ else
     exit 1
 fi
 
+# Run regression tests
+echo -e "\n${BLUE}Running test_regression...${NC}"
+if ./test_regression; then
+    echo -e "${GREEN}✓ Regression tests passed${NC}"
+else
+    echo -e "${RED}✗ Regression tests failed${NC}"
+    exit 1
+fi
+
 # Summary
 echo -e "\n${GREEN}All tests completed successfully!${NC}"
 echo ""
 echo "Test Summary:"
-echo "  Core tests:     5 test functions"
-echo "  Advanced tests: 20+ test functions"
-echo "  Total:          25+ comprehensive test cases"
+echo "  Core tests:             5 test functions"
+echo "  Advanced tests:         20 test functions"
+echo "  Regression tests:       16 test functions"
+echo "  ────────────────────────────────────────"
+echo "  Total:                  41 comprehensive test cases"
 echo ""
 echo "For more information, see README.md"
