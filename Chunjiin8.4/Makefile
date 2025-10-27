@@ -46,8 +46,8 @@ run: $(TARGET)
 setup:
 	@echo "Setting up LVGL..."
 	@if [ ! -d "lvgl" ]; then \
-		echo "Cloning LVGL repository..."; \
-		git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git; \
+		echo "Cloning LVGL v8.4 repository..."; \
+		git clone --depth 1 --branch release/v8.4 https://github.com/lvgl/lvgl.git; \
 	else \
 		echo "LVGL directory already exists"; \
 	fi
@@ -77,4 +77,4 @@ help:
 	@echo "Requirements:"
 	@echo "  - SDL2 development libraries (libsdl2-dev)"
 	@echo "  - FreeType development libraries (libfreetype6-dev)"
-	@echo "  - LVGL v9.2+ (cloned and built by setup.sh)"
+	@echo "  - LVGL v8.4 (cloned and built by setup.sh)"

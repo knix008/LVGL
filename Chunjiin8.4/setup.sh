@@ -116,10 +116,10 @@ if [ -d "lvgl" ]; then
     LVGL_SIZE=$(du -sh lvgl | cut -f1)
     print_info "LVGL size: $LVGL_SIZE"
 else
-    print_info "Cloning LVGL v9.2 from GitHub..."
+    print_info "Cloning LVGL v8.4 from GitHub..."
     print_info "This may take a minute..."
-    git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
-    print_success "LVGL cloned successfully"
+    git clone --depth 1 --branch release/v8.4 https://github.com/lvgl/lvgl.git
+    print_success "LVGL v8.4 cloned successfully"
 fi
 
 echo ""

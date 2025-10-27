@@ -144,3 +144,29 @@ test/test_chunjiin_extra
 
 # LVGL directory and build artifacts
 lvgl/
+
+# Compiler warnings and errors
+*.err
+*.warn
+
+# Profiling data
+gmon.out
+perf.data
+perf.data.old
+
+# Memory analysis
+*.suppressions
+
+# Generated documentation
+docs/_build/
+docs/html/
+docs/latex/
+
+# QtCreator
+*.pro.user*
+*.qbs.user*
+
+# Vim
+.vim/
+.netrwhist
+Session.vim

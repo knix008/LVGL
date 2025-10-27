@@ -1,38 +1,49 @@
-# Chunjiin Korean Input Method - LVGL
+# Chunjiin Korean Input Method - LVGL 8.4
 
-A modern Korean input method application using the Chunjiin (천지인) input system, built with LVGL and SDL2.
+A modern Korean input method application using the Chunjiin (천지인) input system, built with LVGL 8.4 and SDL2.
 
 ## Overview
 
-This application provides a graphical Korean input method using the Chunjiin system, which allows typing Korean characters using a 3x4 numeric keypad layout. The application has been built with LVGL (Light and Versatile Graphics Library) to provide:
-- Excellent embedded system support
+This application provides a graphical Korean input method using the Chunjiin system, which allows typing Korean characters using a 3x4 numeric keypad layout. The application has been built with LVGL 8.4 (Light and Versatile Graphics Library) to provide:
+- Excellent embedded system support with LVGL 8.4
 - Real-time Korean character composition
 - Display of incomplete Hangul characters (partial jamos) as you type
-- Beautiful Korean font rendering using FreeType with NanumGothic fonts (including bold styles)
-- SDL2-based desktop simulation
+- Beautiful Korean font rendering using FreeType with NanumGothic fonts
+- SDL2-based desktop simulation with hardware-accelerated rendering
 - Multiple input modes: 한글 (Hangul), 영문 (English), 숫자 (Numbers), 특수문자 (Special characters)
-- Modern UI with color-coded buttons and bold typography
+- Modern UI with color-coded buttons and optimized typography
 
 ## Recent Enhancements (2025)
 
+### LVGL 8.4 Migration
+- ✅ **Framework Upgrade**: Migrated from LVGL 9.2 to LVGL 8.4
+  - Full SDL2 integration with hardware-accelerated texture rendering
+  - Proper display driver and input device initialization
+  - Double-buffering for smooth rendering
+  - Complete HAL (Hardware Abstraction Layer) implementation
+- 🎬 **Real-time Display**: Direct pixel rendering to SDL2 window
+  - Area-based updates for efficient rendering
+  - lv_tick_inc() for proper timing synchronization
+
 ### Typography & Visual Design
-- ✨ **Bold Font Support**: Added bold font rendering for improved readability
-  - All button labels use bold 14px font
-  - Text result area uses bold 16px font
-  - Popup dialog titles and messages use bold fonts (20px and 16px)
+- 📝 **Clean Font Styling**: Regular (non-bold) fonts for all UI elements
+  - All button labels use regular 14px font
+  - Text result area uses regular 16px font
+  - Popup dialog titles and messages use regular fonts (20px and 16px)
+  - Cleaner, more minimalist appearance
 - 🎨 **Color-Coded Buttons**: Enhanced visual hierarchy
   - Orange mode button (0xFF8C00) for input mode switching
   - Green enter button (0x28A745) for primary action confirmation
   - Gray/Blue dual-button popup dialogs for Cancel/Confirm actions
-- ⬅️ **Modern Symbols**: Replaced "Del" with left arrow symbol (←) for backspace
+- ⬅️ **Modern Symbols**: Left arrow symbol (←) for backspace
 
 ### Enhanced Functionality
 - 🔘 **Dual-Button Popup Dialogs**:
-  - Added cancel button (취소) alongside confirm button (확인)
+  - Cancel button (취소) and confirm button (확인)
   - Better user control over dialog actions
 - ⌨️ **Improved Special Characters**:
-  - Added period (.) to button 7 in special mode
-  - Now supports three characters: hyphen (-), underscore (_), and period (.)
+  - Period (.) available in special character mode
+  - Complete symbol set: hyphen (-), underscore (_), period (.)
 
 ## Prerequisites
 
@@ -71,7 +82,7 @@ Run the provided setup script:
 This will automatically:
 - Check for required system packages
 - Install missing dependencies (with your permission)
-- Clone LVGL v9.2
+- Clone LVGL v8.4
 - Build LVGL static library (one-time process)
 - Build the application
 - Optionally run it
@@ -80,7 +91,7 @@ This will automatically:
 
 1. **Clone LVGL**
    ```bash
-   git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
+   git clone --depth 1 --branch release/v8.4 https://github.com/lvgl/lvgl.git
    ```
 
 2. **Build LVGL Library** (one-time setup)
@@ -119,17 +130,14 @@ The `lv_conf.h` file is pre-configured with:
 
 ## Font Rendering
 
-The application uses **LVGL's FreeType integration** to render Korean fonts directly from TrueType files:
+The application uses **LVGL 8.4's FreeType integration** to render Korean fonts directly from TrueType files:
 
-- **Font Files:** NanumGothic-Regular.ttf (included in `assets/`)
+- **Font Files:** NanumGothicCoding.ttf and NanumGothicCoding-Bold.ttf (included in `assets/`)
 - **Font Sizes and Styles:**
-  - 12px normal - Info labels
-  - 14px normal - Standard UI elements
-  - 14px **bold** - Button labels (all buttons)
-  - 16px normal - Title labels
-  - 16px **bold** - Text result area, popup messages
-  - 20px normal - Large titles
-  - 20px **bold** - Popup dialog titles
+  - 12px regular - Info labels
+  - 14px regular - Button labels and standard UI elements
+  - 16px regular - Text result area and popup messages
+  - 20px regular - Popup dialog titles
 - **Character Support:**
   - Complete Hangul Syllables (AC00-D7AF)
   - Hangul Compatibility Jamo (3130-318F) for displaying incomplete characters
@@ -137,7 +145,7 @@ The application uses **LVGL's FreeType integration** to render Korean fonts dire
   - Korean punctuation and symbols
   - Special symbols (←, ·, ‥)
 
-No pre-conversion needed - fonts are loaded directly at runtime with bold style support!
+No pre-conversion needed - fonts are loaded directly at runtime via FreeType!
 
 ## Project Structure
 
@@ -233,12 +241,12 @@ The application maintains the same 3x5 grid layout with enhanced visual design:
 - ✓ **Delete/backspace** support for step-by-step character decomposition with intuitive left arrow (←) symbol
 
 ### UI Features
-- ✓ **Beautiful Korean font rendering** using NanumGothic TrueType fonts
-- ✓ **Bold font support** for enhanced readability:
-  - Text result area uses bold 16px font
-  - All button labels use bold 14px font
-  - Popup dialog titles use bold 20px font
-  - Popup dialog messages use bold 16px font
+- ✓ **Beautiful Korean font rendering** using NanumGothicCoding TrueType fonts
+- ✓ **Clean, minimalist typography** with regular (non-bold) fonts:
+  - Text result area uses regular 16px font
+  - All button labels use regular 14px font
+  - Popup dialog titles use regular 20px font
+  - Popup dialog messages use regular 16px font
 - ✓ **Scrollable text area** for long text input
 - ✓ **Enhanced popup dialogs** with dual-button interface (Cancel/Confirm)
 - ✓ **Color-coded buttons** for intuitive interaction:
@@ -247,7 +255,7 @@ The application maintains the same 3x5 grid layout with enhanced visual design:
   - Gray cancel button / Blue confirm button in dialogs
 - ✓ **Modern UI elements**:
   - Left arrow symbol (←) for backspace/delete
-  - Bold typography throughout the interface
+  - Clean, readable typography
 - ✓ **Mode switching button** to cycle through input modes
 - ✓ **Clear button** to reset input
 - ✓ **320×640 portrait display** optimized for mobile-style layouts
@@ -322,10 +330,11 @@ The application maintains the same 3x5 grid layout with enhanced visual design:
 
 | Component | Technology |
 |-----------|------------|
-| GUI Framework | LVGL 9.2 |
-| Display Driver | SDL2 |
+| GUI Framework | LVGL 8.4 |
+| Display Driver | SDL2 (hardware-accelerated texture rendering) |
 | Font Rendering | FreeType 2 (runtime TrueType loading) |
 | Layout System | LVGL Grid Layout |
+| Input Device | SDL2 mouse/touch input |
 | Input Method | Chunjiin (천지인) |
 | Character Encoding | UTF-8 / Wide characters (wchar_t) |
 
@@ -338,11 +347,11 @@ The application maintains the same 3x5 grid layout with enhanced visual design:
 
 ### Performance
 
-- **Memory Usage:** ~256KB LVGL heap + ~7MB for fonts (loaded by FreeType with bold styles)
-- **Font Loading:** Runtime loading of 7 font variants (12px, 14px, 14px bold, 16px, 16px bold, 20px, 20px bold)
-- **Frame Rate:** 30+ FPS (SDL2 refresh rate)
-- **Startup Time:** ~0.6 seconds (including all font loading)
-- **Binary Size:** ~600KB (with LVGL compiled in)
+- **Memory Usage:** ~256KB LVGL 8.4 heap + ~5MB for fonts (loaded by FreeType)
+- **Font Loading:** Runtime loading of 4 font variants (12px, 14px, 16px, 20px regular fonts)
+- **Frame Rate:** 60 FPS (with SDL2 hardware-accelerated rendering and vsync)
+- **Startup Time:** ~0.5 seconds (including all font loading)
+- **Binary Size:** ~547KB (with LVGL 8.4 compiled in)
 
 ## Development
 

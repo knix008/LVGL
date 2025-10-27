@@ -1,21 +1,40 @@
 /*
-* Chunjiin Korean Input Method - LVGL GUI
-* Main application file
+* Chunjiin Korean Input Method - LVGL 8.4 GUI
+* Main application file with SDL2 integration
 */
 
-#include "lvgl/lvgl.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_window.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_mouse.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_mousewheel.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_keyboard.h"
-#include "lvgl/src/libs/freetype/lv_freetype.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <locale.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <locale.h>
+#include <time.h>
+#include <unistd.h>
+#include <SDL2/SDL.h>
+
+#include "lvgl/lvgl.h"
+#include "lvgl/src/extra/libs/freetype/lv_freetype.h"
 #include "chunjiin.h"
+
+/*******************************************************************************
+ * Display Configuration (LVGL 8.4 with SDL2)
+ ******************************************************************************/
+#define DISP_HOR_RES 320
+#define DISP_VER_RES 640
+#define BUF_SIZE (DISP_HOR_RES * DISP_VER_RES / 10)  // 10% of screen for double-buffering
+
+static lv_disp_draw_buf_t disp_buf;
+static lv_color_t buf1[BUF_SIZE];
+static lv_color_t buf2[BUF_SIZE];
+
+// SDL2 Window and Renderer
+static SDL_Window *window = NULL;
+static SDL_Renderer *renderer = NULL;
+static SDL_Texture *texture = NULL;
+
+// Input device driver
+static lv_indev_drv_t indev_drv;
+static lv_indev_t *indev;
 
 typedef struct {
     lv_obj_t *text_area;
@@ -45,6 +64,70 @@ typedef struct {
     const char *font_name;
 } FontConfig;
 
+/*******************************************************************************
+ * SDL2 Display Driver
+ ******************************************************************************/
+
+/**
+ * Flush the display buffer to SDL2 texture
+ * Called by LVGL whenever display buffer needs to be rendered
+ */
+static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
+{
+    if (renderer == NULL || texture == NULL) {
+        lv_disp_flush_ready(disp_drv);
+        return;
+    }
+
+    // Lock texture for direct pixel access
+    void *pixels;
+    int pitch;
+    SDL_LockTexture(texture, NULL, &pixels, &pitch);
+
+    uint32_t *pixel_data = (uint32_t *)pixels;
+    (void)pitch;  // Pitch is fixed
+
+    // Copy the LVGL framebuffer to SDL2 texture
+    for (int y = area->y1; y <= area->y2; y++) {
+        for (int x = area->x1; x <= area->x2; x++) {
+            int index = y * DISP_HOR_RES + x;
+            uint32_t color = lv_color_to32(*color_p);
+            pixel_data[index] = color;
+            color_p++;
+        }
+    }
+
+    SDL_UnlockTexture(texture);
+
+    // Render to screen
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+
+    lv_disp_flush_ready(disp_drv);
+}
+
+/*******************************************************************************
+ * Input Device Driver (Mouse/Touch)
+ ******************************************************************************/
+
+/**
+ * Read input device (mouse/touch) state
+ * Called by LVGL to get current input
+ */
+static void indev_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+{
+    (void)drv;  // Unused parameter
+
+    // Get current mouse state
+    int x, y;
+    uint32_t mouse_state = SDL_GetMouseState(&x, &y);
+
+    data->point.x = x;
+    data->point.y = y;
+    data->state = (mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)) ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
+
 // wchar_t buffer to UTF-8 string conversion helper
 
 /**
@@ -54,7 +137,7 @@ typedef struct {
  * @param style Font style (normal, bold, italic, etc.)
  * @return Pointer to loaded font, or NULL if failed
  */
-static lv_font_t* load_korean_font(const char *font_path, uint16_t size, uint32_t style) {
+static lv_font_t* load_korean_font(const char *font_path, uint16_t size, uint16_t style) {
     if (font_path == NULL) {
         LV_LOG_ERROR("Font path is NULL");
         return NULL;
@@ -66,18 +149,19 @@ static lv_font_t* load_korean_font(const char *font_path, uint16_t size, uint32_
         return NULL;
     }
 
-    lv_font_t *font = lv_freetype_font_create(font_path,
-                                              LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
-                                              size,
-                                              style);
+    // Use LVGL 8.4 FreeType API
+    lv_ft_info_t info = {0};
+    info.name = font_path;
+    info.weight = size;
+    info.style = style;
 
-    if (font == NULL) {
+    if (!lv_ft_font_init(&info)) {
         LV_LOG_ERROR("Failed to load font from: %s (size: %d)", font_path, size);
         return NULL;
     }
 
     printf("✓ Loaded font: %s (size: %d)\n", font_path, size);
-    return font;
+    return info.font;
 }
 
 /**
@@ -87,8 +171,11 @@ static lv_font_t* load_korean_font(const char *font_path, uint16_t size, uint32_
 static bool init_all_fonts(void) {
     printf("Initializing Korean fonts...\n");
 
-    // Initialize FreeType library
-    lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
+    // Initialize FreeType library - LVGL 8.4 API with default cache settings
+    if (!lv_freetype_init(0, 0, 0)) {
+        printf("✗ FreeType initialization failed\n");
+        return false;
+    }
 
     // Font files - try regular font first, fallback to coding variant
     const char *font_regular = "assets/NanumGothic-Regular.ttf";
@@ -127,15 +214,15 @@ static bool init_all_fonts(void) {
     printf("\n");
 
     // Load regular fonts
-    korean_font_20 = load_korean_font(font_file, 20, LV_FREETYPE_FONT_STYLE_NORMAL);
-    korean_font_16 = load_korean_font(font_file, 16, LV_FREETYPE_FONT_STYLE_NORMAL);
-    korean_font_14 = load_korean_font(font_file, 14, LV_FREETYPE_FONT_STYLE_NORMAL);
-    korean_font_12 = load_korean_font(font_file, 12, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_20 = load_korean_font(font_file, 20, FT_FONT_STYLE_NORMAL);
+    korean_font_16 = load_korean_font(font_file, 16, FT_FONT_STYLE_NORMAL);
+    korean_font_14 = load_korean_font(font_file, 14, FT_FONT_STYLE_NORMAL);
+    korean_font_12 = load_korean_font(font_file, 12, FT_FONT_STYLE_NORMAL);
 
     // Load bold fonts
-    korean_font_20_bold = load_korean_font(font_file_bold, 20, LV_FREETYPE_FONT_STYLE_NORMAL);
-    korean_font_16_bold = load_korean_font(font_file_bold, 16, LV_FREETYPE_FONT_STYLE_NORMAL);
-    korean_font_14_bold = load_korean_font(font_file_bold, 14, LV_FREETYPE_FONT_STYLE_NORMAL);
+    korean_font_20_bold = load_korean_font(font_file_bold, 20, FT_FONT_STYLE_BOLD);
+    korean_font_16_bold = load_korean_font(font_file_bold, 16, FT_FONT_STYLE_BOLD);
+    korean_font_14_bold = load_korean_font(font_file_bold, 14, FT_FONT_STYLE_BOLD);
 
     // Verify all fonts loaded successfully
     if (!korean_font_16 || !korean_font_20 || !korean_font_14 || !korean_font_12 ||
@@ -223,7 +310,7 @@ static void on_close_button_clicked(lv_event_t *e) {
 // Create persistent result window
 static lv_obj_t* create_result_window(const char* title, const char* message) {
     // Create a container for the window
-    lv_obj_t *window = lv_obj_create(lv_screen_active());
+    lv_obj_t *window = lv_obj_create(lv_scr_act());
     if (!window) return NULL;
     
     // Set window properties - fixed height
@@ -243,7 +330,7 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     if (title_label) {
         lv_label_set_text(title_label, title);
         lv_obj_set_style_text_color(title_label, lv_color_hex(0x4A90E2), 0);
-        lv_obj_set_style_text_font(title_label, korean_font_20_bold, 0);
+        lv_obj_set_style_text_font(title_label, korean_font_20, 0);
         lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 5);
     }
     
@@ -259,7 +346,7 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     if (msg_label) {
         lv_label_set_text(msg_label, message);
         lv_obj_set_style_text_color(msg_label, lv_color_white(), 0);
-        lv_obj_set_style_text_font(msg_label, korean_font_16_bold, 0);
+        lv_obj_set_style_text_font(msg_label, korean_font_16, 0);
         lv_obj_align(msg_label, LV_ALIGN_TOP_LEFT, 0, 0);
         lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
         lv_obj_set_width(msg_label, 200);
@@ -276,7 +363,7 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     // Create cancel button
-    lv_obj_t *cancel_btn = lv_button_create(btn_container);
+    lv_obj_t *cancel_btn = lv_btn_create(btn_container);
     lv_obj_set_size(cancel_btn, 100, 35);
     lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x808080), 0);
     lv_obj_set_style_radius(cancel_btn, 8, 0);
@@ -290,7 +377,7 @@ static lv_obj_t* create_result_window(const char* title, const char* message) {
     lv_obj_add_event_cb(cancel_btn, on_close_button_clicked, LV_EVENT_CLICKED, NULL);
 
     // Create confirm button
-    lv_obj_t *confirm_btn = lv_button_create(btn_container);
+    lv_obj_t *confirm_btn = lv_btn_create(btn_container);
     lv_obj_set_size(confirm_btn, 100, 35);
     lv_obj_set_style_bg_color(confirm_btn, lv_color_hex(0x4A90E2), 0);
     lv_obj_set_style_radius(confirm_btn, 8, 0);
@@ -349,7 +436,7 @@ void create_ui(void) {
     }
 
     // Create main container
-    lv_obj_t *main_cont = lv_obj_create(lv_screen_active());
+    lv_obj_t *main_cont = lv_obj_create(lv_scr_act());
     lv_obj_set_size(main_cont, 320, 640);
     lv_obj_center(main_cont);
     lv_obj_set_flex_flow(main_cont, LV_FLEX_FLOW_COLUMN);
@@ -366,12 +453,12 @@ void create_ui(void) {
     app_widgets.text_area = lv_textarea_create(main_cont);
     lv_obj_set_size(app_widgets.text_area, 300, 150);
     lv_textarea_set_text(app_widgets.text_area, "");
-    lv_obj_set_style_text_font(app_widgets.text_area, korean_font_16_bold, 0);
+    lv_obj_set_style_text_font(app_widgets.text_area, korean_font_16, 0);
 
     // Set font for the textarea's internal label
     lv_obj_t *textarea_label = lv_textarea_get_label(app_widgets.text_area);
     if (textarea_label) {
-        lv_obj_set_style_text_font(textarea_label, korean_font_16_bold, 0);
+        lv_obj_set_style_text_font(textarea_label, korean_font_16, 0);
     }
 
     // Button grid container
@@ -383,8 +470,8 @@ void create_ui(void) {
     lv_obj_set_layout(button_grid, LV_LAYOUT_GRID);
 
     // Grid: 3 columns, 5 rows (smaller buttons - 45x45)
-    static int32_t col_dsc[] = {85, 85, 85, LV_GRID_TEMPLATE_LAST};
-    static int32_t row_dsc[] = {45, 45, 45, 45, 45, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t col_dsc[] = {85, 85, 85, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {45, 45, 45, 45, 45, LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(button_grid, col_dsc, row_dsc);
 
     // Button positions: each row has 3 buttons
@@ -406,45 +493,45 @@ void create_ui(void) {
         const wchar_t *wtext = get_button_text(app_widgets.state.now_mode, i);
         char *utf8_text = wchar_to_utf8(wtext, 20);
 
-        app_widgets.buttons[i] = lv_button_create(button_grid);
+        app_widgets.buttons[i] = lv_btn_create(button_grid);
         lv_obj_set_grid_cell(app_widgets.buttons[i], LV_GRID_ALIGN_STRETCH, positions[i][0], 1,
                             LV_GRID_ALIGN_STRETCH, positions[i][1], 1);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
         lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, korean_font_14_bold, 0);
+        lv_obj_set_style_text_font(label, korean_font_14, 0);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
     }
 
     // Row 4: Mode, Clear, Enter buttons
-    app_widgets.mode_button = lv_button_create(button_grid);
+    app_widgets.mode_button = lv_btn_create(button_grid);
     lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_STRETCH, 0, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_set_style_bg_color(app_widgets.mode_button, lv_color_hex(0xFF8C00), 0);  // Orange color
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
     lv_label_set_text(mode_label, "한/영/숫/특");
-    lv_obj_set_style_text_font(mode_label, korean_font_14_bold, 0);
+    lv_obj_set_style_text_font(mode_label, korean_font_14, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
 
-    app_widgets.clear_button = lv_button_create(button_grid);
+    app_widgets.clear_button = lv_btn_create(button_grid);
     lv_obj_set_grid_cell(app_widgets.clear_button, LV_GRID_ALIGN_STRETCH, 1, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
     lv_label_set_text(clear_label, "Clear");
-    lv_obj_set_style_text_font(clear_label, korean_font_14_bold, 0);
+    lv_obj_set_style_text_font(clear_label, korean_font_14, 0);
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
 
-    app_widgets.enter_button = lv_button_create(button_grid);
+    app_widgets.enter_button = lv_btn_create(button_grid);
     lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_STRETCH, 2, 1,
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_set_style_bg_color(app_widgets.enter_button, lv_color_hex(0x28A745), 0);  // Green color
     lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
     lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, korean_font_14_bold, 0);
+    lv_obj_set_style_text_font(enter_label, korean_font_14, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(app_widgets.enter_button, on_enter_clicked, LV_EVENT_CLICKED, NULL);
 
@@ -454,6 +541,7 @@ void create_ui(void) {
     lv_obj_set_style_text_font(info_label, korean_font_12, 0);
 }
 
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -461,35 +549,121 @@ int main(int argc, char **argv) {
     // Set locale
     setlocale(LC_ALL, "");
 
+    // Initialize SDL2
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        fprintf(stderr, "Failed to initialize SDL2: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // Create window
+    window = SDL_CreateWindow(
+        "Chunjiin Korean Input Method (LVGL 8.4)",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        DISP_HOR_RES,
+        DISP_VER_RES,
+        SDL_WINDOW_SHOWN
+    );
+
+    if (window == NULL) {
+        fprintf(stderr, "Failed to create SDL window: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (renderer == NULL) {
+        fprintf(stderr, "Failed to create renderer: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Create texture for framebuffer
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        DISP_HOR_RES,
+        DISP_VER_RES
+    );
+
+    if (texture == NULL) {
+        fprintf(stderr, "Failed to create texture: %s\n", SDL_GetError());
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    printf("✓ SDL2 initialized\n");
+
     // Initialize LVGL
     lv_init();
 
-    // Create SDL window and display
-    lv_display_t *disp = lv_sdl_window_create(320, 640);
-    if (disp == NULL) {
-        printf("Failed to create SDL window!\n");
-        return -1;
-    }
+    // Initialize display buffer (double-buffering)
+    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, BUF_SIZE);
 
-    // Set window title
-    lv_sdl_window_set_title(disp, "천지인 한글 입력기");
+    // Create and register display driver
+    static lv_disp_drv_t disp_drv;
+    lv_disp_drv_init(&disp_drv);
+    disp_drv.draw_buf = &disp_buf;
+    disp_drv.flush_cb = disp_flush;
+    disp_drv.hor_res = DISP_HOR_RES;
+    disp_drv.ver_res = DISP_VER_RES;
+    lv_disp_drv_register(&disp_drv);
 
-    // Create input devices
-    lv_indev_t *mouse = lv_sdl_mouse_create();
-    lv_indev_t *mousewheel = lv_sdl_mousewheel_create();
-    lv_indev_t *keyboard = lv_sdl_keyboard_create();
-    (void)mouse;
-    (void)mousewheel;
-    (void)keyboard;
+    // Create and register input device driver
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = indev_read;
+    indev = lv_indev_drv_register(&indev_drv);
+
+    printf("✓ LVGL 8.4 initialized with SDL2\n");
 
     // Create UI
     create_ui();
 
-    // Main loop - call lv_timer_handler periodically (every 5ms)
-    while(1) {
+    // Main event loop
+    int running = 1;
+    uint32_t last_time = SDL_GetTicks();
+
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = 0;
+            }
+            else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    running = 0;
+                }
+            }
+        }
+
+        // Update LVGL timing
+        uint32_t current_time = SDL_GetTicks();
+        uint32_t elapsed = current_time - last_time;
+        if (elapsed > 0) {
+            lv_tick_inc(elapsed);
+            last_time = current_time;
+        }
+
+        // Handle LVGL tasks
         lv_timer_handler();
-        usleep(5000);  // 5ms
+
+        // Small delay to reduce CPU usage
+        SDL_Delay(5);
     }
+
+    // Cleanup
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    printf("✓ Application terminated\n");
 
     return 0;
 }
