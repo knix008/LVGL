@@ -54,6 +54,10 @@ All tests completed.
 - **Vowel handling**: All Korean vowel combinations
 - **Double consonants**: ㄲ, ㄸ, ㅃ, ㅆ, ㅉ handling
 - **Final consonants**: All 27 possible final consonant combinations
+- **English input (T9 Keypad)**:
+  - Button layout verification (ABC, DEF, GHI, JKL, MNO, PQR, STU, VWX, YZ.)
+  - Multi-tap character cycling
+  - Period (.) input on button 9
 - **Mode switching**: English (lowercase), English (uppercase), Numbers, Special characters
 - **Backspace/Delete**: Character removal and decomposition
 - **Buffer management**: Boundary conditions and overflow prevention

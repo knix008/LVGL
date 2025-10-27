@@ -204,27 +204,55 @@ The application features a robust popup system that displays input results:
 
 ## Button Layout
 
-The application maintains the same 3x5 grid layout with enhanced visual design:
+The application uses a 3x4 button grid (12 buttons total) with special action buttons below:
 
+### Korean (Hangul) Mode
 ```
 ┌─────────┬─────────┬─────────┐
-│  천(1)   │  지(2)   │  인(3)   │  Row 0
+│  천(1)   │  지(2)   │  인(3)   │  Row 0 - Chunjiin vowels
 ├─────────┼─────────┼─────────┤
-│  ㄱ(4)   │  ㄴ(5)   │  ㄷ(6)   │  Row 1
+│  ㄱ(4)   │  ㄴ(5)   │  ㄷ(6)   │  Row 1 - Consonants
 ├─────────┼─────────┼─────────┤
-│  ㅂ(7)   │  ㅅ(8)   │  ㅈ(9)   │  Row 2
+│  ㅂ(7)   │  ㅅ(8)   │  ㅈ(9)   │  Row 2 - Consonants
 ├─────────┼─────────┼─────────┤
-│ Space(10)│ ㅇㅁ(0)  │   ←(11)  │  Row 3
-├─────────┼─────────┼─────────┤
-│모드(橙色) │  지우기   │ 엔터(绿色)│  Row 4
+│ @?!(0)   │ ㅇㅁ(10) │   ←(11)  │  Row 3 - Special/Space/Delete
 └─────────┴─────────┴─────────┘
 ```
 
-**Visual Enhancements:**
+### English Mode (Standard T9/Phone Keypad)
+```
+┌─────────┬─────────┬─────────┐
+│  @?!(0)  │  ABC(1)  │  DEF(2)  │  Row 0
+├─────────┼─────────┼─────────┤
+│  GHI(3)  │  JKL(4)  │  MNO(5)  │  Row 1
+├─────────┼─────────┼─────────┤
+│  PQR(6)  │  STU(7)  │  VWX(8)  │  Row 2
+├─────────┼─────────┼─────────┤
+│  YZ.(9)  │ Space(10)│   ←(11)  │  Row 3 - Period on button 9
+└─────────┴─────────┴─────────┘
+```
+
+### Button Characteristics
+- **Button 0**: @?! - Special characters in English mode
+- **Buttons 1-9**: Mode-specific characters (Hangul/English letters)
+- **Button 10**: Space key for all modes
+- **Button 11**: Delete/Backspace (←) for all modes
+
+### Action Buttons
+```
+┌──────────────────┬──────────────────┬──────────────────┐
+│  Mode Button     │   Clear Button    │  Enter Button    │
+│  (Orange)        │   (Gray)          │  (Green)         │
+│  한/영/숫/특      │   지우기          │   엔터           │
+└──────────────────┴──────────────────┴──────────────────┘
+```
+
+**Visual Design:**
 - **Mode Button**: Orange color (0xFF8C00) for easy identification
 - **Enter Button**: Green color (0x28A745) to indicate primary action
-- **Backspace**: Uses left arrow symbol (←) instead of "Del"
-- **Bold Fonts**: All button labels use bold fonts for better readability
+- **Clear Button**: Gray color for secondary action
+- **Backspace**: Uses left arrow symbol (←) for intuitive deletion
+- **Typography**: Clean regular fonts (non-bold) for readability
 
 ## Features
 
@@ -232,12 +260,17 @@ The application maintains the same 3x5 grid layout with enhanced visual design:
 - ✓ **Chunjiin Korean input method** with real-time character composition
 - ✓ **Display incomplete characters** (partial jamos) as you type
 - ✓ **Multiple input modes:**
-  - 한글 (Hangul) - Korean characters
-  - 영문 (English) - Lowercase by default
-  - 영문 대문자 (Uppercase English)
-  - 숫자 (Numbers) - 0-9
-  - 특수문자 (Special characters) - Enhanced symbol layout with period (.) added to button 7 (-_.)
+  - 한글 (Hangul) - Korean characters using Chunjiin (천지인) system
+  - 영문 (English) - Lowercase letters using T9/phone keypad layout
+  - 영문 대문자 (Uppercase English) - Uppercase letters
+  - 숫자 (Numbers) - 0-9 numeric input
+  - 특수문자 (Special characters) - Enhanced symbol layout: ~.^!@#$%&*()=+-{}[]<>|:;"'/
 - ✓ **Smart character composition** with vowel and consonant combining
+- ✓ **T9/Phone Keypad Layout** for English input:
+  - Button 1: ABC, Button 2: DEF, Button 3: GHI, Button 4: JKL
+  - Button 5: MNO, Button 6: PQR, Button 7: STU, Button 8: VWX
+  - Button 9: YZ. (period on last button)
+- ✓ **Multi-tap character cycling** - Press same button repeatedly to cycle through characters
 - ✓ **Delete/backspace** support for step-by-step character decomposition with intuitive left arrow (←) symbol
 
 ### UI Features

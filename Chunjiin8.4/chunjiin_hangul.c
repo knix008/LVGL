@@ -108,15 +108,15 @@ void eng_make(ChunjiinState *state, int input) {
         const wchar_t *str = L"";
         switch (input) {
             case 0: str = L"@?!"; break;
-            case 1: str = L".QZ"; break;
-            case 2: str = L"ABC"; break;
-            case 3: str = L"DEF"; break;
-            case 4: str = L"GHI"; break;
-            case 5: str = L"JKL"; break;
-            case 6: str = L"MNO"; break;
-            case 7: str = L"PRS"; break;
-            case 8: str = L"TUV"; break;
-            case 9: str = L"WXY"; break;
+            case 1: str = L"ABC"; break;
+            case 2: str = L"DEF"; break;
+            case 3: str = L"GHI"; break;
+            case 4: str = L"JKL"; break;
+            case 5: str = L"MNO"; break;
+            case 6: str = L"PQR"; break;
+            case 7: str = L"STU"; break;
+            case 8: str = L"VWX"; break;
+            case 9: str = L"YZ."; break;
             default: return;
         }
 

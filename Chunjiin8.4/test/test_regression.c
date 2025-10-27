@@ -362,6 +362,57 @@ void test_regression_type_safety() {
     printf("test_regression_type_safety passed\n");
 }
 
+/**
+ * Regression: English input button layout (T9 Keypad)
+ * Verify that button layout is correct (ABC-DEF-GHI-JKL-MNO-PQR-STU-VWX-YZ.)
+ * This test ensures the standard phone keypad layout is maintained
+ */
+void test_regression_english_button_layout() {
+    ChunjiinState state;
+    chunjiin_init(&state);
+
+    // Switch to English mode
+    change_mode(&state); // MODE_HANGUL -> MODE_UPPER_ENGLISH
+    assert(state.now_mode == MODE_UPPER_ENGLISH);
+
+    // Test button 0: @?!
+    chunjiin_process_input(&state, 0);
+    // Button 0 should produce @?! (special characters)
+    assert(state.cursor_pos > 0);
+
+    // Clear for next test
+    chunjiin_init(&state);
+    change_mode(&state);
+
+    // Test button 1: ABC
+    chunjiin_process_input(&state, 1);
+    assert(state.cursor_pos > 0); // Should produce A
+
+    // Test button 2: DEF
+    chunjiin_init(&state);
+    change_mode(&state);
+    chunjiin_process_input(&state, 2);
+    assert(state.cursor_pos > 0); // Should produce D
+
+    // Test button 6: PQR (was incorrectly PRS)
+    chunjiin_init(&state);
+    change_mode(&state);
+    chunjiin_process_input(&state, 6);
+    assert(state.cursor_pos > 0); // Should produce P
+
+    // Test button 9: YZ. (period should be on button 9)
+    chunjiin_init(&state);
+    change_mode(&state);
+    chunjiin_process_input(&state, 9);
+    assert(state.cursor_pos > 0); // Should produce Y
+
+    // Multi-tap test on button 9 to get period
+    chunjiin_process_input(&state, 9); // Second tap should give Z
+    chunjiin_process_input(&state, 9); // Third tap should give period (.)
+
+    printf("test_regression_english_button_layout passed\n");
+}
+
 int main() {
     printf("Running regression tests...\n\n");
 
@@ -388,6 +439,9 @@ int main() {
     test_regression_init_from_garbage();
     test_regression_no_crash_extreme();
     test_regression_type_safety();
+
+    // English button layout test
+    test_regression_english_button_layout();
 
     printf("\nAll regression tests passed!\n");
     return 0;

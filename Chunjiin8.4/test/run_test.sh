@@ -29,7 +29,7 @@ show_help() {
     echo "Test Suites:"
     echo "  test_chunjiin           Core functionality tests (5 tests)"
     echo "  test_chunjiin_extra     Advanced and edge-case tests (20 tests)"
-    echo "  test_regression         Regression and safety tests (16 tests)"
+    echo "  test_regression         Regression and safety tests (17 tests)"
     exit 0
 }
 
@@ -94,8 +94,8 @@ echo ""
 echo "Test Summary:"
 echo "  Core tests:             5 test functions"
 echo "  Advanced tests:         20 test functions"
-echo "  Regression tests:       16 test functions"
+echo "  Regression tests:       17 test functions"
 echo "  ────────────────────────────────────────"
-echo "  Total:                  41 comprehensive test cases"
+echo "  Total:                  42 comprehensive test cases"
 echo ""
 echo "For more information, see README.md"
