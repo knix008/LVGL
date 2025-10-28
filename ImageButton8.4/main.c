@@ -50,19 +50,6 @@ static void img_scale_anim_cb(void *var, int32_t value)
     lv_obj_set_style_transform_zoom(img, value, 0);
 }
 
-// Animation callback for image rotation effect
-static void img_rotate_anim_cb(void *var, int32_t value)
-{
-    lv_obj_t *img = (lv_obj_t *)var;
-    lv_obj_set_style_transform_angle(img, value, 0);
-}
-
-// Animation callback for image opacity effect
-static void img_opacity_anim_cb(void *var, int32_t value)
-{
-    lv_obj_t *img = (lv_obj_t *)var;
-    lv_obj_set_style_opa(img, value, 0);
-}
 
 
 // Timer callback to remove image border

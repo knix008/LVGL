@@ -85,7 +85,7 @@ static void button_matrix_cb(lv_event_t *e)
     else if (strcmp(text, "Enter") == 0 || strcmp(text, "입력") == 0) {
         // Enter button
         if (buffer_index > 0) {
-            printf("Entered number: %s\n", input_buffer);
+            //printf("Entered number: %s\n", input_buffer);
             
             // Create custom popup dialog with Korean font support
             lv_obj_t *mbox = lv_obj_create(lv_scr_act());
@@ -139,7 +139,7 @@ static void button_matrix_cb(lv_event_t *e)
             buffer_index++;
             input_buffer[buffer_index] = '\0';
             lv_label_set_text(display_label, input_buffer);
-            printf("Number input: %s\n", input_buffer); // Debug output
+            //printf("Number input: %s\n", input_buffer); // Debug output
         }
     }
 }
