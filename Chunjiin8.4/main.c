@@ -499,7 +499,7 @@ void create_ui(void) {
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
         lv_label_set_text(label, utf8_text);
-        lv_obj_set_style_text_font(label, korean_font_14, 0);
+        lv_obj_set_style_text_font(label, korean_font_14_bold, 0);
         lv_obj_center(label);
 
         lv_obj_add_event_cb(app_widgets.buttons[i], on_button_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
@@ -512,7 +512,7 @@ void create_ui(void) {
     lv_obj_set_style_bg_color(app_widgets.mode_button, lv_color_hex(0xFF8C00), 0);  // Orange color
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
     lv_label_set_text(mode_label, "한/영/숫/특");
-    lv_obj_set_style_text_font(mode_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(mode_label, korean_font_14_bold, 0);
     lv_obj_center(mode_label);
     lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
 
@@ -521,7 +521,7 @@ void create_ui(void) {
                         LV_GRID_ALIGN_STRETCH, 4, 1);
     lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
     lv_label_set_text(clear_label, "Clear");
-    lv_obj_set_style_text_font(clear_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(clear_label, korean_font_14_bold, 0);
     lv_obj_center(clear_label);
     lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
 
@@ -531,7 +531,7 @@ void create_ui(void) {
     lv_obj_set_style_bg_color(app_widgets.enter_button, lv_color_hex(0x28A745), 0);  // Green color
     lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
     lv_label_set_text(enter_label, "Enter");
-    lv_obj_set_style_text_font(enter_label, korean_font_14, 0);
+    lv_obj_set_style_text_font(enter_label, korean_font_14_bold, 0);
     lv_obj_center(enter_label);
     lv_obj_add_event_cb(app_widgets.enter_button, on_enter_clicked, LV_EVENT_CLICKED, NULL);
 
