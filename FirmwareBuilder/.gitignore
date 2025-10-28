@@ -64,10 +64,6 @@ firmware-build-*
 manifest.json
 test_results.txt
 
-# Test temporary files
-tests/temp/
-tests/temp/**
-
 # ============================================================================
 # FIRMWARE DOWNLOADER ARTIFACTS
 # ============================================================================
