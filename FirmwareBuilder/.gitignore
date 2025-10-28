@@ -1,0 +1,136 @@
+# ============================================================================
+# BUILD ARTIFACTS
+# ============================================================================
+build/
+bin/
+*.o
+*.a
+*.so
+*.dylib
+*.out
+
+# Compiled binaries
+firmware-builder
+firmware-builder-gui
+test_*
+
+# ============================================================================
+# IDE AND EDITOR FILES
+# ============================================================================
+.vscode/
+.vscode/**
+.idea/
+.idea/**
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.cproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.iml
+*.iws
+*.ipr
+tags
+.tags
+.netrwhist
+
+# ============================================================================
+# TEMPORARY AND BACKUP FILES
+# ============================================================================
+*.tmp
+*.bak
+*.log
+*~
+*.backup
+.tmp
+.cache
+.tmux
+*.swap
+*.pid
+
+# ============================================================================
+# TEST AND BUILD OUTPUTS
+# ============================================================================
+test-output/
+extracted/
+firmware-build/
+firmware-build-*
+*.tar.gz
+*.tar.gz.enc
+manifest.json
+test_results.txt
+
+# Test temporary files
+tests/temp/
+tests/temp/**
+
+# ============================================================================
+# SYSTEM FILES
+# ============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+.Thumbs.db
+$RECYCLE.BIN/
+*.stackdump
+
+# ============================================================================
+# DEVELOPMENT AND DEBUGGING
+# ============================================================================
+core
+core.*
+vgcore.*
+*.dSYM/
+gmon.out
+callgrind.out.*
+perf.data*
+.gdb_history
+.valgrind
+*.prof
+
+# ============================================================================
+# CMAKE (if used)
+# ============================================================================
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+CTestTestfile.cmake
+
+# ============================================================================
+# DOCUMENTATION ARTIFACTS
+# ============================================================================
+doc/
+docs/
+*.doxygen
+
+# ============================================================================
+# DISTRIBUTION/PACKAGE ARTIFACTS
+# ============================================================================
+dist/
+releases/
+*.tar
+*.gz
+*.zip
+*.rpm
+*.deb
+
+# ============================================================================
+# LOCAL CONFIGURATION
+# ============================================================================
+local.conf
+.env
+.env.local
+secrets.txt
+credentials.json
+config.local
