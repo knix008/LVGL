@@ -12,6 +12,7 @@ A professional-grade C firmware builder with compression, CRC checksum, AES-256 
 - **GTK GUI**: User-friendly graphical interface with GTK 3
 - **Static Library**: Reusable firmware builder library
 - **Verification**: Built-in integrity checking
+- **Firmware Downloader**: Complete download, verify, decrypt, decompress, and validate pipeline
 
 ## Requirements
 
@@ -137,12 +138,13 @@ Multiple test runners available for different needs:
 
 ### Test Results
 
-All **43 tests passing** (100%):
+All **53 tests passing** (100%):
 - Compression Module: 5/5 ✅
 - CRC Module: 12/12 ✅
 - Encryption Module: 8/8 ✅
 - Hash Module: 10/10 ✅
 - Integration Tests: 8/8 ✅
+- Firmware Downloader: 10/10 ✅
 
 ### Documentation
 
@@ -254,9 +256,11 @@ Firmware/
 ├── TEST_SUMMARY.txt             # Test summary
 ├── INDEX.md                     # Project index
 ├── COMPLETION_REPORT.txt        # Project completion report
+├── DOWNLOADER_SUMMARY.md        # Firmware downloader documentation
 │
 ├── include/                      # Header files
 │   ├── firmware_builder.h       # Main API
+│   ├── firmware_downloader.h    # Downloader API
 │   ├── compressor.h             # Compression module
 │   ├── crc.h                    # CRC module
 │   ├── encryptor.h              # Encryption module
@@ -272,6 +276,10 @@ Firmware/
 │       ├── encryptor.c          # Encryption implementation
 │       └── hasher.c             # Hash implementation
 │
+├── downloader/                   # Firmware Downloader Module (NEW)
+│   ├── firmware_downloader.c    # Downloader implementation
+│   └── README.md                # Downloader documentation
+│
 ├── tests/                        # Test suite
 │   ├── run_tests.sh             # Basic test runner
 │   ├── test_runner.sh           # Advanced test runner
@@ -282,14 +290,16 @@ Firmware/
 │   ├── test_crc.c               # CRC tests
 │   ├── test_encryptor.c         # Encryption tests
 │   ├── test_hasher.c            # Hash tests
-│   └── test_integration.c       # Integration tests
+│   ├── test_integration.c       # Integration tests
+│   └── test_downloader.c        # Downloader tests (NEW)
 │
 ├── build/                        # Build artifacts (generated)
 └── bin/                          # Compiled binaries (generated)
     ├── firmware-builder         # CLI executable
     ├── firmware-builder-gui     # GUI executable
     ├── libfirmware.a            # Static library
-    └── test_*                   # Test executables
+    ├── test_downloader          # Downloader test executable
+    └── test_*                   # Other test executables
 ```
 
 ## Modules
@@ -353,6 +363,28 @@ Orchestrates the complete build pipeline.
 - `fw_builder_extract()` - Extract and decrypt
 - `fw_builder_free()` - Free resources
 - `fw_builder_print_package()` - Display package info
+
+### Firmware Downloader Module (`firmware_downloader.h`) - NEW!
+Complete firmware download, verification, decryption, decompression, and validation pipeline.
+
+**Key Features:**
+- Download firmware with progress tracking
+- Verify file integrity using SHA-256/512/MD5
+- Decrypt AES-256-CBC encrypted firmware
+- Decompress gzip-compressed firmware
+- Validate CRC32 checksums
+- Complete orchestration pipeline
+
+**Key Functions:**
+- `fw_downloader_create()` / `fw_downloader_free()` - Instance management
+- `fw_downloader_from_file()` - Download/copy firmware
+- `fw_downloader_verify_hash()` - Hash verification
+- `fw_downloader_decrypt()` - AES-256 decryption
+- `fw_downloader_decompress()` - Gzip decompression
+- `fw_downloader_verify_crc()` - CRC32 verification
+- `fw_downloader_process()` - Complete pipeline
+
+For detailed documentation, see [downloader/README.md](downloader/README.md) and [DOWNLOADER_SUMMARY.md](DOWNLOADER_SUMMARY.md)
 
 ## API Examples
 

@@ -95,6 +95,11 @@ echo "📋 Integration Tests"
 echo "─────────────────────────────────────────────────────────────"
 run_test "Integration" "$TEST_DIR/test_integration.c"
 
+echo ""
+echo "📋 Downloader Tests"
+echo "─────────────────────────────────────────────────────────────"
+run_test "Firmware Downloader" "$TEST_DIR/test_downloader.c"
+
 # Summary
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
