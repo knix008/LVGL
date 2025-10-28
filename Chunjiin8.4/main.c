@@ -465,8 +465,8 @@ void create_ui(void) {
     lv_obj_t *button_grid = lv_obj_create(main_cont);
     lv_obj_set_size(button_grid, 300, 330);
     lv_obj_set_style_pad_all(button_grid, 3, 0);
-    lv_obj_set_style_pad_row(button_grid, 3, 0);
-    lv_obj_set_style_pad_column(button_grid, 3, 0);
+    lv_obj_set_style_pad_row(button_grid, 2, 0);
+    lv_obj_set_style_pad_column(button_grid, 2, 0);
     lv_obj_set_layout(button_grid, LV_LAYOUT_GRID);
     lv_obj_set_style_grid_column_align(button_grid, LV_GRID_ALIGN_CENTER, 0);
     lv_obj_set_style_grid_row_align(button_grid, LV_GRID_ALIGN_CENTER, 0);
