@@ -21,6 +21,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "firmware_builder.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,15 +30,6 @@ extern "C" {
 /* ============================================================================
  * Data Types and Structures
  * ============================================================================ */
-
-/**
- * Hash algorithm types supported for verification
- */
-typedef enum {
-    HASH_SHA256,    /**< SHA-256 (256-bit hash) - Default and recommended */
-    HASH_SHA512,    /**< SHA-512 (512-bit hash) */
-    HASH_MD5        /**< MD5 (128-bit hash) - Legacy support */
-} hash_algorithm_t;
 
 /**
  * Download status and progress tracking

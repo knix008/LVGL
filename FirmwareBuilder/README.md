@@ -86,7 +86,7 @@ make clean
 
 ## Testing
 
-The project includes a comprehensive test suite with 43 tests across 5 modules.
+The project includes a comprehensive test suite with 53 tests across 6 modules.
 
 ### Run All Tests
 
@@ -210,7 +210,7 @@ For detailed testing information, see:
 
 #### GUI Features
 
-The GTK GUI application provides an intuitive interface with three main tabs:
+The GTK GUI application provides an intuitive interface with four main tabs:
 
 **1. Build Tab**
 - Select source directory to package
@@ -229,7 +229,17 @@ The GTK GUI application provides an intuitive interface with three main tabs:
 - Provide password for encrypted files
 - Verify integrity during extraction
 
-**3. Info Tab**
+**3. Downloader Tab (NEW!)** ⭐
+- Download firmware files with progress tracking
+- Verify file integrity using hash values (SHA-256, SHA-512, MD5)
+- Decrypt AES-256 encrypted firmware images
+- Decompress gzip-compressed firmware
+- Validate CRC32 checksums
+- Real-time status and logging
+- Non-blocking, cancellable operations
+- Thread-safe progress updates
+
+**4. Info Tab**
 - Complete feature documentation
 - Usage instructions
 - Security information
@@ -261,6 +271,7 @@ Firmware/
 ├── include/                      # Header files
 │   ├── firmware_builder.h       # Main API
 │   ├── firmware_downloader.h    # Downloader API
+│   ├── downloader_gui.h         # Downloader GUI module (NEW!)
 │   ├── compressor.h             # Compression module
 │   ├── crc.h                    # CRC module
 │   ├── encryptor.h              # Encryption module
@@ -269,6 +280,7 @@ Firmware/
 ├── src/                          # Source files
 │   ├── main.c                   # CLI entry point
 │   ├── gui.c                    # GTK GUI application
+│   ├── downloader_gui.c         # Downloader GUI implementation (NEW!)
 │   ├── firmware_builder.c       # Main builder implementation
 │   └── modules/
 │       ├── compressor.c         # Compression implementation
@@ -385,6 +397,32 @@ Complete firmware download, verification, decryption, decompression, and validat
 - `fw_downloader_process()` - Complete pipeline
 
 For detailed documentation, see [downloader/README.md](downloader/README.md) and [DOWNLOADER_SUMMARY.md](DOWNLOADER_SUMMARY.md)
+
+### Downloader GUI Module (`downloader_gui.h`) - NEW!
+GTK 3 graphical interface for the firmware downloader with thread-safe operations.
+
+**Key Features:**
+- User-friendly file selection interface
+- Hash verification with algorithm selection
+- AES-256 encryption/decryption support
+- CRC32 checksum validation
+- Real-time progress tracking
+- Comprehensive operation logging
+- Non-blocking downloads with cancellation support
+- Thread-safe GTK updates
+
+**Key Functions:**
+- `create_downloader_tab()` - Create GUI tab and add to notebook
+- `downloader_gui_init()` - Initialize GUI module
+- `downloader_gui_cleanup()` - Clean up resources
+
+**GUI Components:**
+- File selection frame with browse buttons
+- Verification section (hash algorithm selector, CRC input)
+- Encryption section (toggle, password input)
+- Progress tracking (bar, speed, time remaining)
+- Operation logging with scrollable text view
+- Control buttons (Download, Cancel, Clear)
 
 ## API Examples
 

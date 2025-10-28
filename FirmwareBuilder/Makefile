@@ -17,12 +17,12 @@ DOWNLOADER_DIR = downloader
 CORE_SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/firmware_builder.c
 MODULE_SRCS = $(wildcard $(SRC_DIR)/modules/*.c)
 DOWNLOADER_SRCS = $(wildcard $(DOWNLOADER_DIR)/*.c)
-GUI_SRC = $(SRC_DIR)/gui.c
+GUI_SRCS = $(SRC_DIR)/gui.c $(SRC_DIR)/downloader_gui.c
 
 CORE_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(CORE_SRCS))
 MODULE_OBJS = $(patsubst $(SRC_DIR)/modules/%.c,$(BUILD_DIR)/modules/%.o,$(MODULE_SRCS))
 DOWNLOADER_OBJS = $(patsubst $(DOWNLOADER_DIR)/%.c,$(BUILD_DIR)/downloader/%.o,$(DOWNLOADER_SRCS))
-GUI_OBJ = $(BUILD_DIR)/gui.o
+GUI_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(GUI_SRCS))
 
 # Targets
 TARGET_CLI = $(BIN_DIR)/firmware-builder
@@ -60,15 +60,15 @@ $(BUILD_DIR)/modules/%.o: $(SRC_DIR)/modules/%.c
 $(BUILD_DIR)/downloader/%.o: $(DOWNLOADER_DIR)/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(BUILD_DIR)/gui.o: $(GUI_SRC)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 $(TARGET_CLI): $(CORE_OBJS) $(MODULE_OBJS) $(DOWNLOADER_OBJS)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $^ -o $@ $(LDFLAGS)
 	@echo "✓ Built: $(TARGET_CLI)"
 
-$(TARGET_GUI): $(GUI_OBJ) $(MODULE_OBJS) $(DOWNLOADER_OBJS) $(BUILD_DIR)/firmware_builder.o
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) -I$(INCLUDE_DIR) $^ -o $@ $(LDFLAGS) $(GTK_LIBS)
+$(TARGET_GUI): $(GUI_OBJS) $(MODULE_OBJS) $(DOWNLOADER_OBJS) $(BUILD_DIR)/firmware_builder.o
+	$(CC) $(CFLAGS) $(GTK_CFLAGS) -I$(INCLUDE_DIR) $^ -o $@ $(LDFLAGS) $(GTK_LIBS) -lpthread
 	@echo "✓ Built: $(TARGET_GUI)"
 
 $(TARGET_LIB): $(MODULE_OBJS) $(DOWNLOADER_OBJS) $(BUILD_DIR)/firmware_builder.o

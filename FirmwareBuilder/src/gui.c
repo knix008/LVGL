@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "firmware_builder.h"
+#include "firmware_downloader.h"
+#include "downloader_gui.h"
 #include "compressor.h"
 #include "crc.h"
 #include "hasher.h"
@@ -487,13 +489,24 @@ static void create_info_tab(GtkWidget *notebook)
     gtk_box_pack_start(GTK_BOX(info_box), scrolled, TRUE, TRUE, 0);
 }
 
+static void on_window_destroy(GtkWidget *widget, gpointer data)
+{
+    (void)widget;
+    (void)data;
+
+    /* Cleanup downloader GUI */
+    downloader_gui_cleanup();
+
+    gtk_main_quit();
+}
+
 static void create_gui(void)
 {
     gui.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(gui.window), "Firmware Builder - GTK GUI");
     gtk_window_set_default_size(GTK_WINDOW(gui.window), 800, 700);
     gtk_container_set_border_width(GTK_CONTAINER(gui.window), 10);
-    g_signal_connect(gui.window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(gui.window, "destroy", G_CALLBACK(on_window_destroy), NULL);
 
     /* Main vbox */
     GtkWidget *main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -516,6 +529,8 @@ static void create_gui(void)
     /* Create tabs */
     create_build_tab(notebook);
     create_extract_tab(notebook);
+    downloader_gui_init();
+    create_downloader_tab(notebook, gui.window);
     create_info_tab(notebook);
 
     /* Status bar */
