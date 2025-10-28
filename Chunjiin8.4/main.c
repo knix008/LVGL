@@ -463,15 +463,17 @@ void create_ui(void) {
 
     // Button grid container
     lv_obj_t *button_grid = lv_obj_create(main_cont);
-    lv_obj_set_size(button_grid, 275, 250);
+    lv_obj_set_size(button_grid, 300, 330);
     lv_obj_set_style_pad_all(button_grid, 3, 0);
     lv_obj_set_style_pad_row(button_grid, 3, 0);
     lv_obj_set_style_pad_column(button_grid, 3, 0);
     lv_obj_set_layout(button_grid, LV_LAYOUT_GRID);
+    lv_obj_set_style_grid_column_align(button_grid, LV_GRID_ALIGN_CENTER, 0);
+    lv_obj_set_style_grid_row_align(button_grid, LV_GRID_ALIGN_CENTER, 0);
 
-    // Grid: 3 columns, 5 rows (smaller buttons - 45x45)
-    static lv_coord_t col_dsc[] = {85, 85, 85, LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t row_dsc[] = {45, 45, 45, 45, 45, LV_GRID_TEMPLATE_LAST};
+    // Grid: 3 columns, 5 rows (buttons - 60px height)
+    static lv_coord_t col_dsc[] = {90, 90, 90, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {60, 60, 60, 60, 60, LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(button_grid, col_dsc, row_dsc);
 
     // Button positions: each row has 3 buttons
@@ -494,8 +496,9 @@ void create_ui(void) {
         char *utf8_text = wchar_to_utf8(wtext, 20);
 
         app_widgets.buttons[i] = lv_btn_create(button_grid);
-        lv_obj_set_grid_cell(app_widgets.buttons[i], LV_GRID_ALIGN_STRETCH, positions[i][0], 1,
-                            LV_GRID_ALIGN_STRETCH, positions[i][1], 1);
+        lv_obj_set_grid_cell(app_widgets.buttons[i], LV_GRID_ALIGN_CENTER, positions[i][0], 1,
+                            LV_GRID_ALIGN_CENTER, positions[i][1], 1);
+        lv_obj_set_size(app_widgets.buttons[i], 80, 55);
 
         lv_obj_t *label = lv_label_create(app_widgets.buttons[i]);
         lv_label_set_text(label, utf8_text);
@@ -507,8 +510,9 @@ void create_ui(void) {
 
     // Row 4: Mode, Clear, Enter buttons
     app_widgets.mode_button = lv_btn_create(button_grid);
-    lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_STRETCH, 0, 1,
-                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_grid_cell(app_widgets.mode_button, LV_GRID_ALIGN_CENTER, 0, 1,
+                        LV_GRID_ALIGN_CENTER, 4, 1);
+    lv_obj_set_size(app_widgets.mode_button, 80, 55);
     lv_obj_set_style_bg_color(app_widgets.mode_button, lv_color_hex(0xFF8C00), 0);  // Orange color
     lv_obj_t *mode_label = lv_label_create(app_widgets.mode_button);
     lv_label_set_text(mode_label, "한/영/숫/특");
@@ -517,8 +521,9 @@ void create_ui(void) {
     lv_obj_add_event_cb(app_widgets.mode_button, on_mode_button_clicked, LV_EVENT_CLICKED, NULL);
 
     app_widgets.clear_button = lv_btn_create(button_grid);
-    lv_obj_set_grid_cell(app_widgets.clear_button, LV_GRID_ALIGN_STRETCH, 1, 1,
-                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_grid_cell(app_widgets.clear_button, LV_GRID_ALIGN_CENTER, 1, 1,
+                        LV_GRID_ALIGN_CENTER, 4, 1);
+    lv_obj_set_size(app_widgets.clear_button, 80, 55);
     lv_obj_t *clear_label = lv_label_create(app_widgets.clear_button);
     lv_label_set_text(clear_label, "Clear");
     lv_obj_set_style_text_font(clear_label, korean_font_14_bold, 0);
@@ -526,8 +531,9 @@ void create_ui(void) {
     lv_obj_add_event_cb(app_widgets.clear_button, on_clear_clicked, LV_EVENT_CLICKED, NULL);
 
     app_widgets.enter_button = lv_btn_create(button_grid);
-    lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_STRETCH, 2, 1,
-                        LV_GRID_ALIGN_STRETCH, 4, 1);
+    lv_obj_set_grid_cell(app_widgets.enter_button, LV_GRID_ALIGN_CENTER, 2, 1,
+                        LV_GRID_ALIGN_CENTER, 4, 1);
+    lv_obj_set_size(app_widgets.enter_button, 80, 55);
     lv_obj_set_style_bg_color(app_widgets.enter_button, lv_color_hex(0x28A745), 0);  // Green color
     lv_obj_t *enter_label = lv_label_create(app_widgets.enter_button);
     lv_label_set_text(enter_label, "Enter");
