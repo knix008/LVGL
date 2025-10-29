@@ -31,15 +31,15 @@ static PLOGFONT korean_font = NULL;
 /* Korean character arrays - UTF-8 encoded */
 /* Correct Korean QWERTY (Dubeolsik) layout */
 static const char* korean_chars[] = {
-    "ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ",
-    "ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ",
-    "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"
+    "ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ", // qwertyuiop
+    "ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ",           // asdfghjkl
+    "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"                        // zxcvbnm
 };
 
 static const char* korean_shift_chars[] = {
-    "ㅃ", "ㅉ", "ㄸ", "ㄲ", "ㅆ", "ㅛ", "ㅕ", "ㅑ", "ㅒ", "ㅖ",
-    "ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ",
-    "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"
+    "ㅃ", "ㅉ", "ㄸ", "ㄲ", "ㅆ", "ㅛ", "ㅕ", "ㅑ", "ㅒ", "ㅖ", // qwertyuiop (shift)
+    "ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ",           // asdfghjkl (shift)
+    "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"                        // zxcvbnm (shift)
 };
 
 /* Korean QWERTY key mapping */
@@ -58,21 +58,39 @@ static int button_count = 0;
 /* Map visual key + shift_state to IME keystroke expected by ime_korean.c */
 static char map_key_for_ime(char key, int shift_on)
 {
-    if (!shift_on) return key;
-    /* Only uppercase keys that have shifted meanings in Dubeolsik */
-    switch (key) {
-        /* Double consonants */
-        case 'q': return 'Q'; /* ㅂ -> ㅃ */
-        case 'w': return 'W'; /* ㅈ -> ㅉ */
-        case 'e': return 'E'; /* ㄷ -> ㄸ */
-        case 'r': return 'R'; /* ㄱ -> ㄲ */
-        case 't': return 'T'; /* ㅅ -> ㅆ */
-        /* Alternative vowels */
-        case 'o': return 'O'; /* ㅐ/ㅒ */
-        case 'p': return 'P'; /* ㅔ/ㅖ */
-        case 'k': return 'K'; /* ㅏ/ㅐ */
-        default:
-            return key; /* others unchanged when shifted */
+    // Map key to IME code based on button index and updated character layout
+    // Find the character index for the key
+    int idx = -1;
+    for (int i = 0; i < 26; ++i) {
+        if (key == korean_keys[i]) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == -1) return key;
+
+    // IME key mapping for each button (matches korean_chars order)
+    static const char ime_keys[] = {
+        // qwertyuiop
+        'q','w','e','r','t','y','u','i','o','p',
+        // asdfghjkl
+        'a','s','d','f','g','h','j','k','l',
+        // zxcvbnm
+        'z','x','c','v','b','n','m'
+    };
+    static const char ime_keys_shift[] = {
+        // qwertyuiop
+        'Q','W','E','R','T','Y','U','I','O','P',
+        // asdfghjkl
+        'A','S','D','F','G','H','J','K','L',
+        // zxcvbnm
+        'Z','X','C','V','B','N','M'
+    };
+
+    if (!shift_on) {
+        return ime_keys[idx];
+    } else {
+        return ime_keys_shift[idx];
     }
 }
 

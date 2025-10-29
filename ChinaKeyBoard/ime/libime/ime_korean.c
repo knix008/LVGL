@@ -31,7 +31,7 @@ const char korean_qwerty_consonants[] = "rRseEfaqQtTdwWczxvg";
 
 /* Vowels: ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅛㅜㅠㅡㅣ */
 /* Standard Korean QWERTY (Dubeolsik) layout */
-const char korean_qwerty_vowels[] = "kKioOjpuhynbml";
+const char korean_qwerty_vowels[] = "yuiophjklbnm";
 
 /* Double vowel (diphthong) combinations */
 typedef struct {
@@ -88,20 +88,18 @@ static const int consonant_map[] = {
 /* Standard Dubeolsik layout: kKioOjpuhynbml */
 /* Maps to jamo indices: 0,1,2,3,4,5,6,7,8,12,13,17,18,20 */
 static const int vowel_map[] = {
-    0,  /* k -> ㅏ (index 0) */
-    1,  /* K -> ㅐ (index 1) */
-    2,  /* i -> ㅑ (index 2) */
-    3,  /* o -> ㅒ (index 3) */
-    4,  /* O -> ㅓ (index 4) */
-    5,  /* j -> ㅔ (index 5) */
-    6,  /* p -> ㅕ (index 6) */
-    7,  /* u -> ㅖ (index 7) */
-    8,  /* h -> ㅗ (index 8) */
-    12, /* y -> ㅛ (index 12) */
-    13, /* n -> ㅜ (index 13) */
-    17, /* b -> ㅠ (index 17) */
-    18, /* m -> ㅡ (index 18) */
-    20  /* l -> ㅣ (index 20) */
+    12, /* y -> ㅛ */
+    6,  /* u -> ㅕ */
+    2,  /* i -> ㅑ */
+    1,  /* o -> ㅐ */
+    5,  /* p -> ㅔ */
+    8,  /* h -> ㅗ */
+    4,  /* j -> ㅓ */
+    0,  /* k -> ㅏ */
+    20, /* l -> ㅣ */
+    17, /* b -> ㅠ */
+    13, /* n -> ㅜ */
+    18  /* m -> ㅡ */
 };
 
 static hangul_syllable_t current_syllable = {-1, -1, -1, HANGUL_STATE_NONE};
@@ -324,11 +322,11 @@ int cb_hangul_match_keystrokes(const char* strokes, char* buffer, int buffer_len
         }
     } else { /* Vowel */
         if (current_syllable.state == HANGUL_STATE_CONSONANT) {
-            /* Add vowel to form syllable */
+            /* Add vowel to form syllable (no diphthong check here) */
             current_syllable.medial = jamo_index;
             current_syllable.state = HANGUL_STATE_VOWEL;
         } else if (current_syllable.state == HANGUL_STATE_VOWEL) {
-            /* Check for diphthong combination */
+            /* Only check for diphthong if previous input was a vowel */
             int diphthong_result;
             if (check_diphthong(current_syllable.medial, jamo_index, &diphthong_result)) {
                 /* Form diphthong */
