@@ -1,0 +1,159 @@
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Compiled Static libraries
+*.a
+*.lib
+*.la
+*.lo
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+simple_korean_keypad
+simple_korean_keypad_fixed
+test_korean_qwerty
+
+# Build directories
+build/
+install/
+minigui/
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Core dumps
+core
+*.core
+
+# Dependency files
+*.d
+.deps/
+.libs/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.in
+compile_commands.json
+
+# Autotools
+.dirstamp
+.deps/
+.libs/
+*.la
+*.lo
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.guess
+config.h.in
+config.log
+config.status
+config.sub
+configure
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+stamp-h1
+
+# IDE and Editor files
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## CLion / IntelliJ
+.idea/
+cmake-build-*/
+
+## Eclipse
+.cproject
+.project
+.settings/
+
+## Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+## Emacs
+*~
+\#*\#
+.\#*
+
+## Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+## Tags
+tags
+TAGS
+.tags
+.TAGS
+
+# OS-specific files
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+## Linux
+*~
+.directory
+.Trash-*
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.log
+
+# Documentation build output (if you have Doxygen)
+doc/html/
+doc/latex/
+*.dox
+
+# Test output
+*.test
+test_results/
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Package manager directories
+node_modules/
+bower_components/
+
+# Claude Code session files (optional - uncomment if you don't want to track)
+# .claude/
+
+# Project-specific ignores
+# Add any project-specific files or directories here

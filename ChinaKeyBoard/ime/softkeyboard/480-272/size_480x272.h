@@ -1,0 +1,136 @@
+/*
+ * wangjian<wangjian@minigui.org>
+ */
+
+#ifndef __SIZE_480_272_H
+#define __SIZE_480_272_H
+
+
+
+#define SCREEN_W        480
+#define SCREEN_H        272
+
+/*the size of soft key board window*/
+#define SKB_WIN_W       480
+#define SKB_WIN_H       212 
+
+#define SKB_CLOSE_L     443
+#define SKB_CLOSE_T     2
+#define SKB_CLOSE_R     477
+#define SKB_CLOSE_B     33 
+
+#define SKB_VW_L		0
+#define SKB_VW_T        0
+#define SKB_VW_R		432
+#define SKB_VW_B        34
+    
+#define SKB_VW_PU_L     30
+#define SKB_VW_PU_T     2
+#define SKB_VW_PU_R     (SKB_VW_PU_L+35)
+#define SKB_VW_PU_B     (SKB_VW_PU_T+30)
+ 
+#define SKB_VW_PD_L	    395
+#define SKB_VW_PD_T     2
+#define SKB_VW_PD_R     (SKB_VW_PD_L+35)
+#define SKB_VW_PD_B     (SKB_VW_PD_T+30) 
+
+
+#define SKB_SW_L        101
+#define SKB_SW_T        42  
+#define SKB_SW_R        (SKB_SW_L+377)
+#define SKB_SW_B        (SKB_SW_T+15)
+   
+#define SKB_KW_L        0  
+#define SKB_KW_T        62 
+#define SKB_KW_R        480
+#define SKB_KW_B        212 
+
+#define  ROW1_TY		63  
+#define  ROW1_BY		96  
+    
+#define  ROW2_TY		100
+#define  ROW2_BY		133
+  
+#define  ROW3_TY		137
+#define  ROW3_BY		170
+ 
+#define  ROW4_TY		175
+//#define  ROW4_BY		208
+#define  ROW4_BY		213 //解决最底一行电容屏坐标跳变
+
+/***** rectangle of the keys*****/
+//For en keyboard....
+#define RECT_EN_KEY_1           {  2,  ROW1_TY,  46,  ROW1_BY}
+#define RECT_EN_KEY_2           { 50,  ROW1_TY,  94,  ROW1_BY}
+#define RECT_EN_KEY_3           { 98,  ROW1_TY, 142,  ROW1_BY}
+#define RECT_EN_KEY_4           {146,  ROW1_TY, 190,  ROW1_BY}
+#define RECT_EN_KEY_5           {194,  ROW1_TY, 238,  ROW1_BY}
+#define RECT_EN_KEY_6           {242,  ROW1_TY, 286,  ROW1_BY}
+#define RECT_EN_KEY_7           {289,  ROW1_TY, 334,  ROW1_BY}
+#define RECT_EN_KEY_8           {338,  ROW1_TY, 382,  ROW1_BY}
+#define RECT_EN_KEY_9           {386,  ROW1_TY, 430,  ROW1_BY}
+#define RECT_EN_KEY_10          {434,  ROW1_TY, 478,  ROW1_BY}
+   
+#define RECT_EN_KEY_11          { 26,  ROW2_TY,  70,  ROW2_BY}
+#define RECT_EN_KEY_12          { 74,  ROW2_TY, 118,  ROW2_BY}
+#define RECT_EN_KEY_13          {122,  ROW2_TY, 166,  ROW2_BY}
+#define RECT_EN_KEY_14          {170,  ROW2_TY, 214,  ROW2_BY}
+#define RECT_EN_KEY_15          {218,  ROW2_TY, 262,  ROW2_BY}
+#define RECT_EN_KEY_16          {266,  ROW2_TY, 310,  ROW2_BY}
+#define RECT_EN_KEY_17          {313,  ROW2_TY, 358,  ROW2_BY}
+#define RECT_EN_KEY_18          {362,  ROW2_TY, 406,  ROW2_BY}
+#define RECT_EN_KEY_19          {409,  ROW2_TY, 454,  ROW2_BY}
+ 
+#define RECT_EN_KEY_20          {  2,  ROW3_TY,  70, ROW3_BY}
+#define RECT_EN_KEY_21          { 74,  ROW3_TY, 118, ROW3_BY}
+#define RECT_EN_KEY_22          {122,  ROW3_TY, 166, ROW3_BY}
+#define RECT_EN_KEY_23          {170,  ROW3_TY, 214, ROW3_BY}
+#define RECT_EN_KEY_24          {218,  ROW3_TY, 262, ROW3_BY}
+#define RECT_EN_KEY_25          {266,  ROW3_TY, 310, ROW3_BY}
+#define RECT_EN_KEY_26          {314,  ROW3_TY, 358, ROW3_BY}
+#define RECT_EN_KEY_27          {362,  ROW3_TY, 406, ROW3_BY}
+#define RECT_EN_KEY_28          {409,  ROW3_TY, 478, ROW3_BY}
+ 
+#define RECT_EN_KEY_29          {  2, ROW4_TY,  70, ROW4_BY}
+#define RECT_EN_KEY_30          { 74, ROW4_TY, 166, ROW4_BY}
+#define RECT_EN_KEY_31          {170, ROW4_TY, 358, ROW4_BY}
+#define RECT_EN_KEY_32          {362, ROW4_TY, 478, ROW4_BY}
+     
+//For num keyboard....
+#define RECT_NUM_KEY_1           {  2,  ROW1_TY,  46,  ROW1_BY}
+#define RECT_NUM_KEY_2           { 50,  ROW1_TY,  94,  ROW1_BY}
+#define RECT_NUM_KEY_3           { 97,  ROW1_TY, 142,  ROW1_BY}
+#define RECT_NUM_KEY_4           {146,  ROW1_TY, 190,  ROW1_BY}
+#define RECT_NUM_KEY_5           {194,  ROW1_TY, 238,  ROW1_BY}
+#define RECT_NUM_KEY_6           {242,  ROW1_TY, 286,  ROW1_BY}
+#define RECT_NUM_KEY_7           {289,  ROW1_TY, 334,  ROW1_BY}
+#define RECT_NUM_KEY_8           {338,  ROW1_TY, 382,  ROW1_BY}
+#define RECT_NUM_KEY_9           {386,  ROW1_TY, 430,  ROW1_BY}
+#define RECT_NUM_KEY_10          {434,  ROW1_TY, 478,  ROW1_BY}
+
+#define RECT_NUM_KEY_11          {  2,  ROW2_TY,  46,  ROW2_BY}
+#define RECT_NUM_KEY_12          { 50,  ROW2_TY,  94,  ROW2_BY}
+#define RECT_NUM_KEY_13          { 97,  ROW2_TY, 142,  ROW2_BY}
+#define RECT_NUM_KEY_14          {146,  ROW2_TY, 190,  ROW2_BY}
+#define RECT_NUM_KEY_15          {194,  ROW2_TY, 238,  ROW2_BY}
+#define RECT_NUM_KEY_16          {242,  ROW2_TY, 286,  ROW2_BY}
+#define RECT_NUM_KEY_17          {289,  ROW2_TY, 334,  ROW2_BY}
+#define RECT_NUM_KEY_18          {338,  ROW2_TY, 382,  ROW2_BY}
+#define RECT_NUM_KEY_19          {386,  ROW2_TY, 430,  ROW2_BY}
+#define RECT_NUM_KEY_20          {434,  ROW2_TY, 478,  ROW2_BY}
+ 
+#define RECT_NUM_KEY_21          {  2,  ROW3_TY,  70, ROW3_BY}
+#define RECT_NUM_KEY_22          { 74,  ROW3_TY, 137, ROW3_BY}
+#define RECT_NUM_KEY_23          {141,  ROW3_TY, 204, ROW3_BY}
+#define RECT_NUM_KEY_24          {207,  ROW3_TY, 271, ROW3_BY}
+#define RECT_NUM_KEY_25          {275,  ROW3_TY, 338, ROW3_BY}
+#define RECT_NUM_KEY_26          {342,  ROW3_TY, 405, ROW3_BY}
+#define RECT_NUM_KEY_27          {410,  ROW3_TY, 478, ROW3_BY}
+
+#define RECT_NUM_KEY_28          {  2, ROW4_TY,  70, ROW4_BY}
+#define RECT_NUM_KEY_29          { 74, ROW4_TY, 166, ROW4_BY}
+#define RECT_NUM_KEY_30          {170, ROW4_TY, 358, ROW4_BY}
+#define RECT_NUM_KEY_31          {362, ROW4_TY, 478, ROW4_BY}
+  
+#endif
+
