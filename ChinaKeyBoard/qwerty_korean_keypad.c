@@ -23,11 +23,13 @@ static HWND hEditInput;
 static HWND hStatusLabel;
 static int shift_state = 0;
 static char input_buffer[1024] = "";
-static char stroke_buffer[256] = "";  // Buffer for Korean keystrokes (current composing)
-static char committed_text[2048] = ""; // Buffer for committed text (completed syllables)
+static char stroke_buffer[256] = "";  // (deprecated) kept for compatibility
+static char committed_text[2048] = ""; // (deprecated) kept for compatibility
+static char all_strokes[4096] = "";    // Full keystroke history for realtime parsing
 static PLOGFONT korean_font = NULL;
 
 /* Korean character arrays - UTF-8 encoded */
+/* Correct Korean QWERTY (Dubeolsik) layout */
 static const char* korean_chars[] = {
     "ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ",
     "ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ",
@@ -262,93 +264,76 @@ static void DrawKoreanKeyboard(HDC hdc, int x, int y, int width, int height) {
     DrawText(hdc, "Space", -1, &space_text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-/* Handle Korean character input using IME logic */
-static void HandleKoreanInput(char key) {
-    char prev_output[256] = "";
-    char new_output[256] = "";
-    
-    if (key == '\b') {
-        // Handle backspace
-        if (strlen(stroke_buffer) > 0) {
-            stroke_buffer[strlen(stroke_buffer) - 1] = '\0';
-        } else if (strlen(committed_text) > 0) {
-            // Remove last UTF-8 codepoint from committed text
-            size_t len = strlen(committed_text);
-            if (len > 0) {
-                // Move backwards to the start of previous UTF-8 character
-                size_t i = len - 1;
-                while (i > 0 && ((unsigned char)committed_text[i] & 0xC0) == 0x80) {
-                    i--;
-                }
-                committed_text[i] = '\0';
-            }
-        }
-    } else if (key == ' ') {
-        // Commit current composition and add a space
-        cb_hangul_match_keystrokes(stroke_buffer, prev_output, sizeof(prev_output), 0, 0);
-        if (strlen(prev_output) + strlen(committed_text) + 1 < sizeof(committed_text)) {
-            strcat(committed_text, prev_output);
-            strcat(committed_text, " ");
-        }
-        stroke_buffer[0] = '\0';
-    } else {
-        // Compute previous output (before adding key)
-        cb_hangul_match_keystrokes(stroke_buffer, prev_output, sizeof(prev_output), 0, 0);
-
-        // Tentatively add key
-        char temp_strokes[256];
-        snprintf(temp_strokes, sizeof(temp_strokes), "%s%c", stroke_buffer, key);
-
-        // Compute new output after adding key
-        cb_hangul_match_keystrokes(temp_strokes, new_output, sizeof(new_output), 0, 0);
-
-        // Heuristic: if prev_output is a complete syllable (3-byte UTF-8)
-        // and new_output looks like starting a new syllable (single jamo),
-        // commit prev_output and start new composition with just this key.
-        int prev_is_syllable = (strlen(prev_output) == 3);
-        int new_is_jamo = (strlen(new_output) == 3 ? 0 : strlen(new_output) > 0);
-
-        if (prev_is_syllable && new_is_jamo) {
-            if (strlen(committed_text) + strlen(prev_output) < sizeof(committed_text)) {
-                strcat(committed_text, prev_output);
-            }
-            // Start new composition with current key only
-            stroke_buffer[0] = key;
-            stroke_buffer[1] = '\0';
-            cb_hangul_match_keystrokes(stroke_buffer, new_output, sizeof(new_output), 0, 0);
-        } else {
-            // Keep composing within the same syllable/word
-            size_t len = strlen(stroke_buffer);
-            if (len + 1 < sizeof(stroke_buffer)) {
-                stroke_buffer[len] = key;
-                stroke_buffer[len + 1] = '\0';
-            }
-        }
-    }
-    // Get current composition for display
-    cb_hangul_match_keystrokes(stroke_buffer, new_output, sizeof(new_output), 0, 0);
-
-    // Build display text = committed_text + current composition
+/* Rebuild full display text from all_strokes using IME incrementally */
+static void RebuildDisplayFromStrokes(void)
+{
     char display_buffer[4096];
     display_buffer[0] = '\0';
-    strncat(display_buffer, committed_text, sizeof(display_buffer) - 1);
-    
-    // Append the current composition (complete or incomplete)
-    if (strlen(new_output) > 0) {
-        strncat(display_buffer, new_output, sizeof(display_buffer) - 1 - strlen(display_buffer));
-    }
+    char segment[512];
+    segment[0] = '\0';
+    char out[256] = "";
 
-    // Update the edit control with the full text
+    size_t total = strlen(all_strokes);
+    for (size_t i = 0; i < total; i++) {
+        char ch = all_strokes[i];
+        if (ch == ' ') {
+            cb_hangul_match_keystrokes(segment, out, sizeof(out), 0, 0);
+            if (strlen(out) > 0) {
+                strncat(display_buffer, out, sizeof(display_buffer) - 1 - strlen(display_buffer));
+            }
+            size_t len = strlen(display_buffer);
+            if (len + 1 < sizeof(display_buffer)) {
+                display_buffer[len] = ' ';
+                display_buffer[len + 1] = '\0';
+            }
+            segment[0] = '\0';
+            out[0] = '\0';
+            continue;
+        }
+        size_t seg_len = strlen(segment);
+        if (seg_len + 1 < sizeof(segment)) {
+            segment[seg_len] = ch;
+            segment[seg_len + 1] = '\0';
+        }
+    }
+    cb_hangul_match_keystrokes(segment, out, sizeof(out), 0, 0);
+    if (strlen(out) > 0) {
+        strncat(display_buffer, out, sizeof(display_buffer) - 1 - strlen(display_buffer));
+    }
     SetWindowText(hEditInput, display_buffer);
+}
+
+/* Handle Korean character input using IME logic */
+static void HandleKoreanInput(char key) {
+    
+    if (key == '\b') {
+        size_t len = strlen(all_strokes);
+        if (len > 0) {
+            all_strokes[len - 1] = '\0';
+        }
+    } else if (key == ' ') {
+        size_t len = strlen(all_strokes);
+        if (len + 1 < sizeof(all_strokes)) {
+            all_strokes[len] = ' ';
+            all_strokes[len + 1] = '\0';
+        }
+    } else {
+        size_t len = strlen(all_strokes);
+        if (len + 1 < sizeof(all_strokes)) {
+            all_strokes[len] = key;
+            all_strokes[len + 1] = '\0';
+        }
+    }
+    // Rebuild display from all keystrokes
+    RebuildDisplayFromStrokes();
     
     // Update status label to show stroke buffer
     char status_text[256];
     snprintf(status_text, sizeof(status_text), "Korean Mode: ON | Shift: %s | Strokes: [%s]", 
-             shift_state ? "ON" : "OFF", stroke_buffer);
+             shift_state ? "ON" : "OFF", all_strokes);
     SetWindowText(hStatusLabel, status_text);
     
-    printf("Stroke buffer: [%s] -> Output: [%s] | Full text: [%s]\n", 
-           stroke_buffer, new_output, display_buffer);
+    printf("All strokes: [%s]\n", all_strokes);
 }
 
 static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -439,19 +424,11 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             SetBrushColor(hdc, RGB2Pixel(hdc, 255, 255, 255));
             FillBox(hdc, 0, 0, rect.right, rect.bottom);
 
-            /* Draw title */
-            SetTextColor(hdc, RGB2Pixel(hdc, 0, 0, 128));
-            TextOut(hdc, 20, 5, "Korean Keypad Application - \xED\x95\x9C\xEA\xB5\xAD\xEC\x96\xB4 \xED\x82\xA4\xED\x8C\xA8\xEB\x93\x9C");
 
             /* Draw Korean keyboard layout */
             DrawKoreanKeyboard(hdc, 20, 220, 560, 200);
 
-            /* Draw instructions */
-            SetTextColor(hdc, RGB2Pixel(hdc, 64, 64, 64));
-            TextOut(hdc, 20, 430, "Instructions:");
-            TextOut(hdc, 20, 450, "• Click Korean character buttons to input Korean characters");
-            TextOut(hdc, 20, 470, "• Shift key toggles double consonants (ㅂ→ㅃ, ㅈ→ㅉ, etc.)");
-            TextOut(hdc, 20, 490, "• Korean characters are displayed on visual keyboard");
+
 
             EndPaint(hWnd, hdc);
             return 0;
@@ -463,8 +440,9 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 case IDC_BTN_CLEAR:
                     SetWindowText(hEditInput, "");
                     input_buffer[0] = '\0';
-                    stroke_buffer[0] = '\0';  // Clear stroke buffer too
-                    committed_text[0] = '\0'; // Clear committed text
+                    stroke_buffer[0] = '\0';
+                    committed_text[0] = '\0';
+                    all_strokes[0] = '\0';
                     break;
             }
             break;
