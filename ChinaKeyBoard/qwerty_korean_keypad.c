@@ -26,6 +26,8 @@ static char input_buffer[1024] = "";
 static char stroke_buffer[256] = "";  // (deprecated) kept for compatibility
 static char committed_text[2048] = ""; // (deprecated) kept for compatibility
 static char all_strokes[4096] = "";    // Full keystroke history for realtime parsing
+static char accumulated_output[4096] = ""; // Accumulated output from previous IME calls
+static int last_ime_output_len = 0;    // Track length of previous IME output
 static PLOGFONT korean_font = NULL;
 
 /* Korean character arrays - UTF-8 encoded */
@@ -70,21 +72,30 @@ static char map_key_for_ime(char key, int shift_on)
     if (idx == -1) return key;
 
     // IME key mapping for each button (matches korean_chars order)
+    // For consonants: shift returns uppercase (double consonants)
+    // For vowels: shift returns different vowels (not uppercase, but different character indices)
     static const char ime_keys[] = {
-        // qwertyuiop
-        'q','w','e','r','t','y','u','i','o','p',
+        // qwertyuiop (consonants)
+        'q','w','e','r','t',
+        // yuiop (vowels - base)
+        'y','u','i','o','p',
         // asdfghjkl
         'a','s','d','f','g','h','j','k','l',
         // zxcvbnm
         'z','x','c','v','b','n','m'
     };
+
     static const char ime_keys_shift[] = {
-        // qwertyuiop
-        'Q','W','E','R','T','Y','U','I','O','P',
+        // qwertyuiop (consonants with shift = double consonants)
+        'Q','W','E','R','T',
+        // yuiop (vowels with shift = different vowels)
+        // NOTE: Vowel shift doesn't use uppercase, but different vowel codes
+        // o->O means vowel shift to ㅒ, p->P means vowel shift to ㅖ
+        'y','u','i','O','P',  // For vowels, shift changes the vowel itself
         // asdfghjkl
-        'A','S','D','F','G','H','J','K','L',
+        'a','s','d','f','g','h','j','k','l',
         // zxcvbnm
-        'Z','X','C','V','B','N','M'
+        'z','x','c','v','b','n','m'
     };
 
     if (!shift_on) {
@@ -282,42 +293,26 @@ static void DrawKoreanKeyboard(HDC hdc, int x, int y, int width, int height) {
     DrawText(hdc, "Space", -1, &space_text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-/* Rebuild full display text from all_strokes using IME incrementally */
+/* Rebuild full display text from all_strokes using IME */
+/* Process entire buffer from scratch: divide by spaces, process each word independently */
 static void RebuildDisplayFromStrokes(void)
 {
     char display_buffer[4096];
     display_buffer[0] = '\0';
-    char segment[512];
-    segment[0] = '\0';
-    char out[256] = "";
 
-    size_t total = strlen(all_strokes);
-    for (size_t i = 0; i < total; i++) {
-        char ch = all_strokes[i];
-        if (ch == ' ') {
-            cb_hangul_match_keystrokes(segment, out, sizeof(out), 0, 0);
-            if (strlen(out) > 0) {
-                strncat(display_buffer, out, sizeof(display_buffer) - 1 - strlen(display_buffer));
-            }
-            size_t len = strlen(display_buffer);
-            if (len + 1 < sizeof(display_buffer)) {
-                display_buffer[len] = ' ';
-                display_buffer[len + 1] = '\0';
-            }
-            segment[0] = '\0';
-            out[0] = '\0';
-            continue;
-        }
-        size_t seg_len = strlen(segment);
-        if (seg_len + 1 < sizeof(segment)) {
-            segment[seg_len] = ch;
-            segment[seg_len + 1] = '\0';
-        }
+    int stroke_count = strlen(all_strokes);
+
+    if (stroke_count == 0) {
+        /* No strokes - clear everything */
+        SetWindowText(hEditInput, "");
+        return;
     }
-    cb_hangul_match_keystrokes(segment, out, sizeof(out), 0, 0);
-    if (strlen(out) > 0) {
-        strncat(display_buffer, out, sizeof(display_buffer) - 1 - strlen(display_buffer));
-    }
+
+    /* 입력 버퍼 전체를 IME에 보내서 조합된 결과를 얻음 */
+    cb_hangul_match_keystrokes(all_strokes, display_buffer, sizeof(display_buffer), 0, 0);
+
+    printf("Input: [%s] -> Output: [%s]\n", all_strokes, display_buffer);
+
     SetWindowText(hEditInput, display_buffer);
 }
 
@@ -461,6 +456,8 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     stroke_buffer[0] = '\0';
                     committed_text[0] = '\0';
                     all_strokes[0] = '\0';
+                    accumulated_output[0] = '\0';
+                    last_ime_output_len = 0;
                     break;
             }
             break;
@@ -560,7 +557,7 @@ int MiniGUIMain(int argc, const char* argv[])
 
     CreateInfo.dwStyle = WS_VISIBLE | WS_BORDER | WS_CAPTION;
     CreateInfo.dwExStyle = WS_EX_TOOLWINDOW;
-    CreateInfo.spCaption = "Korean Keypad - \xED\x95\x9C\xEA\xB5\xAD\xEC\x96\xB4 \xED\x82\xA4\xED\x8C\xA8\xEB\x93\x9C (Clickable)";
+    CreateInfo.spCaption = "Korean Keypad - 한글 키패드 (Clickable)";
     CreateInfo.hMenu = 0;
     CreateInfo.hIcon = 0;
     CreateInfo.MainWindowProc = KoreanKeypadProc;

@@ -37,7 +37,7 @@
 
 
 #define SFKB_CONFIG_FILE  "etc/sfkb9.cfg"
-#define SFKB_NUM 4
+#define SFKB_NUM 5 // Add slot for Korean QWERTY keypad
 
 static void (*op_cb)(BOOL) = NULL;
 static key_board_t* keyboard [SFKB_NUM];
@@ -86,43 +86,30 @@ static void ChangeKBDFun(HWND hWnd, SOFTKBD_DATA* pdata, int ime_mode)
 	switch (mode)
 	{
 		case IME_MODE_ALPHABET:
-		{
 			y = 0;
 			break;
-		}
 		case IME_MODE_PY:
-		{
 			y = 1;
 			break;
-		}
 		case IME_MODE_NUMBER:
-		{
 			y = 2;
 			break;
-		}
 		case IME_MODE_SYMBOL:
-		{
 			y = 3;
 			break;
-		}
 		case IME_MODE_KOREAN:
-		{
-			y = 5;
+			y = 4; // Korean QWERTY keypad index
 			break;
-		}
 		default:
-		{
 			ChangeKBDFun(hWnd, pdata, GetNextMode(ime_mode));
 			return;
-		}
-
 	}
 	pdata->current_board_idx = y;
-	pdata->keyboard->clear(pdata->keyboard);
+	if (pdata->keyboard && pdata->keyboard->clear)
+		pdata->keyboard->clear(pdata->keyboard);
 	pdata->keyboard = keyboard[pdata->current_board_idx];
 	SendMessage(hWnd, MSG_ERASEBKGND, 0, 0L);
 	softkey_reset();
-	
 }
 
 static void send_word(HWND target_hwnd, char *word, int type)
@@ -225,6 +212,15 @@ static key_board_t* init_keypad_data(HWND hWnd)
 		_MY_PRINTF("error for initalize Puctuation-keyboard.\n");
 		return NULL;
 	}
+
+	/* for Korean QWERTY key board */
+	if (!(keyboard[4] = (key_board_t*) calloc(1, sizeof(key_board_t))))
+	{
+		_MY_PRINTF("calloc keyboard data for KOREAN QWERTY failed\n");
+		return NULL;
+	}
+	// TODO: Implement init_korean_qwerty_keypad(handle, hWnd, keyboard[4])
+	// If you have a function like init_korean_qwerty_keypad, call it here
 
 	//return the default keyboard at beginning.
 	return keyboard[0];

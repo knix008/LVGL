@@ -15,6 +15,7 @@
 #include "softkeyboard.h"
 #include "../libime/ime_korean.h"
 #include "printlog.h"
+#include "../properties.h"
 #ifdef KBD_TOOLTIP
 #include "tooltip.h"  
 #endif

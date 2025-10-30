@@ -20,9 +20,7 @@
 *.exe
 *.out
 *.app
-simple_korean_keypad
-simple_korean_keypad_fixed
-test_korean_qwerty
+qwerty_korean_keypad
 
 # Build directories
 build/

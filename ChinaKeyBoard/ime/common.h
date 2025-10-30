@@ -395,6 +395,7 @@ int symbol_proc_msg (key_board_t* key_board, HWND hwnd,
 
 void share_key_update(md_key_t *mk, HWND hWnd);
 void EraseBbGround(HWND hWnd, RECT* rc);
+BOOL hit_rect(RECT rect, POINT p);
 
 void kp_proceed_hit(HWND hwnd, view_window_t* view_window,view_window_t* select_window,
 		stroke_window_t* stroke_window, md_key_t* key, action_t* action,

@@ -1,52 +1,58 @@
-/*
-** ime_korean.h: Korean IME header file for Hangul composition
-**
-** Copyright (C) 2024 Korean IME Implementation
-**
-** Create date: 2024/10/29
-**
-*/
+#ifndef QWERTY_KOREAN_H
+#define QWERTY_KOREAN_H
 
-#ifndef __IME_KOREAN_H__
-#define __IME_KOREAN_H__
+#include <stdio.h>
+#include <string.h>
+#include <wchar.h>
+#include <locale.h>
+#include <termios.h>
+#include <unistd.h>
+#include <wctype.h>
+#include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Constants
+#define MAX_KEY_LEN 3
+#define MAX_OUTPUT_LEN 256
 
-/* Korean character composition states */
-typedef enum {
-    HANGUL_STATE_NONE = 0,
-    HANGUL_STATE_CONSONANT,
-    HANGUL_STATE_VOWEL,
-    HANGUL_STATE_FINAL_CONSONANT,
-    HANGUL_STATE_COMPLETE
-} hangul_state_t;
-
-/* Korean syllable structure */
+// Key mapping structure
 typedef struct {
-    int initial;    /* Initial consonant (초성) */
-    int medial;     /* Medial vowel (중성) */
-    int final;      /* Final consonant (종성) */
-    hangul_state_t state;
-} hangul_syllable_t;
+    const char *key;
+    const char *jamo;
+} KeyMap;
 
-/* Korean IME callback functions */
-int cb_hangul_match_keystrokes(const char* strokes, char* buffer, int buffer_len, int index, int case_mode);
-int cb_hangul_compose(const char* strokes, char* buffer, int buffer_len, int index, int case_mode);
+// External declarations for key mappings
+extern KeyMap cho_keymap[];
+extern KeyMap jung_keymap[];
+extern KeyMap jong_keymap[];
 
-/* Korean character mapping functions */
-int korean_char_to_jamo(char c, int* jamo_type, int* jamo_index);
-int hangul_compose_syllable(int initial, int medial, int final);
-int hangul_decompose_syllable(int syllable, int* initial, int* medial, int* final);
+// External declarations for Korean character lists
+extern const char* chosung_list[19];
+extern const char* jungsung_list[21];
+extern const char* jongsung_list[28];
 
-/* Korean QWERTY layout mapping */
-extern const char korean_qwerty_consonants[];
-extern const char korean_qwerty_vowels[];
-extern const int korean_qwerty_jamo_map[];
+// Function prototypes
+int qwerty_get_index(const char *jamo, const char *list[], int size);
+const char* qwerty_get_jamo_buffer(const char *buffer, KeyMap *map, int size);
+void qwerty_print_buffers(char *input_buf, wchar_t *output_buf);
+int qwerty_is_mappable_character(char ch);
+void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len, wchar_t* output_buffer);
 
-#ifdef __cplusplus
-}
-#endif
+// Input handling functions
+void qwerty_handle_backspace(char* input_buffer, size_t* input_len, wchar_t* output_buffer);
+void qwerty_handle_enter(char* input_buffer, size_t* input_len, wchar_t* output_buffer);
+void qwerty_handle_space(char* input_buffer, size_t* input_len, wchar_t* output_buffer);
+void qwerty_handle_character(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch);
 
-#endif /* __IME_KOREAN_H__ */
+// Main processing function
+void qwerty_korean_init(void);
+void qwerty_korean_cleanup(void);
+void qwerty_process_input(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch);
+
+// UTF-8 conversion functions
+void unicode_to_utf8(wchar_t* wstr, char* utf8_str, size_t utf8_size);
+
+// IME callback functions for Korean input
+int cb_hangul_match_keystrokes(const char *strokes, char *buffer, int buffer_len, int index, int mode);
+int cb_hangul_compose(const char *strokes, char *buffer, int buffer_len, int index, int mode);
+
+#endif // QWERTY_KOREAN_H 

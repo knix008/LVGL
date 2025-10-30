@@ -1,406 +1,452 @@
-/*
-** ime_korean.c: Korean IME implementation for Hangul composition
-**
-** Copyright (C) 2024 Korean IME Implementation
-**
-** Create date: 2024/10/29
-**
-*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
+// 한글 입력기 (C IME) 전체 코드: 실시간 조합, 복합 초/중/종성, 백스페이스, 공백, 다중 글자 지원
 #include "ime_korean.h"
+#include <stdlib.h>
+#include <wchar.h>
 
-/* Unicode ranges for Hangul */
-#define HANGUL_SYLLABLE_BASE    0xAC00
-#define HANGUL_SYLLABLE_END     0xD7A3
-#define HANGUL_JAMO_INITIAL_BASE 0x1100
-#define HANGUL_JAMO_MEDIAL_BASE  0x1161  
-#define HANGUL_JAMO_FINAL_BASE   0x11A8
-
-/* Number of jamo */
-#define INITIAL_COUNT 19
-#define MEDIAL_COUNT  21
-#define FINAL_COUNT   28
-
-/* Korean QWERTY layout mapping */
-/* Consonants: ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ */
-const char korean_qwerty_consonants[] = "rRseEfaqQtTdwWczxvg";
-
-/* Vowels: ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅛㅜㅠㅡㅣ */
-/* Standard Korean QWERTY (Dubeolsik) layout */
-const char korean_qwerty_vowels[] = "yuiophjklbnm";
-
-/* Double vowel (diphthong) combinations */
-typedef struct {
-    int base_vowel;     /* Base vowel index */
-    int add_vowel;      /* Added vowel index */
-    int result_vowel;   /* Resulting diphthong index */
-} diphthong_rule_t;
-
-/* Korean diphthong rules: base + add = result */
-static const diphthong_rule_t diphthong_rules[] = {
-    /* ㅗ + ㅏ = ㅘ (wa) */
-    {8, 0, 9},   /* ㅗ + ㅏ = ㅘ */
-    /* ㅗ + ㅐ = ㅙ (wae) */
-    {8, 1, 10},  /* ㅗ + ㅐ = ㅙ */
-    /* ㅗ + ㅣ = ㅚ (oe) */
-    {8, 20, 11}, /* ㅗ + ㅣ = ㅚ */
-    /* ㅜ + ㅓ = ㅝ (wo) */
-    {13, 4, 14}, /* ㅜ + ㅓ = ㅝ */
-    /* ㅜ + ㅔ = ㅞ (we) */
-    {13, 5, 15}, /* ㅜ + ㅔ = ㅞ */
-    /* ㅜ + ㅣ = ㅟ (wi) */
-    {13, 20, 16}, /* ㅜ + ㅣ = ㅟ */
-    /* ㅡ + ㅣ = ㅢ (ui) */
-    {18, 20, 19}, /* ㅡ + ㅣ = ㅢ */
-    /* End marker */
-    {-1, -1, -1}
+KeyMap cho_keymap[] = {
+    {"R", "ㄲ"}, {"r", "ㄱ"}, {"S", "ㄴ"}, {"s", "ㄴ"}, {"E", "ㄸ"},
+    {"e", "ㄷ"},  {"F", "ㄹ"}, {"f", "ㄹ"}, {"A", "ㅁ"}, {"a", "ㅁ"}, {"Q", "ㅃ"}, 
+    {"q", "ㅂ"},  {"T", "ㅆ"}, {"t", "ㅅ"}, {"D", "ㅇ"}, {"d", "ㅇ"},
+    {"W", "ㅉ"}, {"w", "ㅈ"}, {"C", "ㅊ"}, {"c", "ㅊ"}, {"Z", "ㅋ"}, {"z", "ㅋ"},
+    {"X", "ㅌ"}, {"x", "ㅌ"}, {"V", "ㅍ"}, {"v", "ㅍ"}, {"G", "ㅎ"}, {"g", "ㅎ"}
 };
 
-/* Jamo mapping for Korean QWERTY layout */
-/* Maps QWERTY keys to jamo indices */
-static const int consonant_map[] = {
-    0,  /* r -> ㄱ */
-    1,  /* R -> ㄲ */
-    2,  /* s -> ㄴ */
-    3,  /* e -> ㄷ */
-    4,  /* E -> ㄸ */
-    5,  /* f -> ㄹ */
-    6,  /* a -> ㅁ */
-    7,  /* q -> ㅂ */
-    8,  /* Q -> ㅃ */
-    9,  /* t -> ㅅ */
-    10, /* T -> ㅆ */
-    11, /* d -> ㅇ */
-    12, /* w -> ㅈ */
-    13, /* W -> ㅉ */
-    14, /* c -> ㅊ */
-    15, /* z -> ㅋ */
-    16, /* x -> ㅌ */
-    17, /* v -> ㅍ */
-    18  /* g -> ㅎ */
+KeyMap jung_keymap[] = {
+    {"hk", "ㅘ"}, {"ho", "ㅙ"}, {"hl", "ㅚ"}, {"np", "ㅞ"},
+    {"nj", "ㅝ"}, {"np", "ㅞ"}, {"nj", "ㅝ"}, {"nl", "ㅟ"}, 
+    {"y", "ㅛ"}, {"n", "ㅜ"}, {"k", "ㅏ"}, {"o", "ㅐ"}, {"i", "ㅑ"}, 
+    {"O", "ㅒ"}, {"j", "ㅓ"}, {"p", "ㅔ"}, {"u", "ㅕ"}, 
+    {"P", "ㅖ"}, {"h", "ㅗ"}, {"y", "ㅛ"}, {"n", "ㅜ"}, 
+    {"b", "ㅠ"}, {"l", "ㅣ"}, {"m", "ㅡ"}  
 };
 
-/* CORRECTED vowel mapping for Korean QWERTY layout */
-/* Standard Dubeolsik layout: kKioOjpuhynbml */
-/* Maps to jamo indices: 0,1,2,3,4,5,6,7,8,12,13,17,18,20 */
-static const int vowel_map[] = {
-    12, /* y -> ㅛ */
-    6,  /* u -> ㅕ */
-    2,  /* i -> ㅑ */
-    1,  /* o -> ㅐ */
-    5,  /* p -> ㅔ */
-    8,  /* h -> ㅗ */
-    4,  /* j -> ㅓ */
-    0,  /* k -> ㅏ */
-    20, /* l -> ㅣ */
-    17, /* b -> ㅠ */
-    13, /* n -> ㅜ */
-    18  /* m -> ㅡ */
+KeyMap jong_keymap[] = {
+    {"", ""}, {"rt", "ㄳ"}, {"sw", "ㄵ"}, {"sg", "ㄶ"}, {"fr", "ㄺ"},
+    {"fa", "ㄻ"}, {"fq", "ㄼ"}, {"ft", "ㄽ"}, {"fx", "ㄾ"}, {"fv", "ㄿ"},
+    {"fg", "ㅀ"}, {"qt", "ㅄ"}, {"R", "ㄲ"}, {"T", "ㅆ"},
+    {"r", "ㄱ"}, {"s", "ㄴ"}, {"e", "ㄷ"}, {"f", "ㄹ"}, {"a", "ㅁ"},
+    {"q", "ㅂ"}, {"t", "ㅅ"}, {"d", "ㅇ"}, {"w", "ㅈ"}, {"c", "ㅊ"},
+    {"z", "ㅋ"}, {"x", "ㅌ"}, {"v", "ㅍ"}, {"g", "ㅎ"}
 };
 
-static hangul_syllable_t current_syllable = {-1, -1, -1, HANGUL_STATE_NONE};
-
-/* Map initial-consonant index (0..18) to single final index (0..27), -1 if not valid as single final */
-static const int initial_to_final_index[19] = {
-    /* ㄱ ㄲ ㄴ ㄷ ㄸ ㄹ ㅁ ㅂ ㅃ ㅅ ㅆ ㅇ ㅈ ㅉ ㅊ ㅋ ㅌ ㅍ ㅎ */
-       0,  1,  3,  6, -1,  7, 15, 16, -1, 18, 19, 20, 21, -1, 22, 23, 24, 25, 26
+const char* chosung_list[19] = {
+    "ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ",
+    "ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"
+};
+const char* jungsung_list[21] = {
+    "ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ",
+    "ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"
+};
+const char* jongsung_list[28] = {
+    "","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ",
+    "ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ",
+    "ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"
 };
 
-/* Map single final index back to initial-consonant index (0..18) */
-static const int final_to_initial_index[27] = {
-    /* 0:ㄱ 1:ㄲ 2:ㄳ 3:ㄴ 4:ㄵ 5:ㄶ 6:ㄷ 7:ㄹ 8:ㄺ 9:ㄻ 10:ㄼ 11:ㄽ 12:ㄾ 13:ㄿ 14:ㅀ 15:ㅁ 16:ㅂ 17:ㅄ 18:ㅅ 19:ㅆ 20:ㅇ 21:ㅈ 22:ㅊ 23:ㅋ 24:ㅌ 25:ㅍ 26:ㅎ */
-    /* map composite entries to their leading element for safety where needed */
-     0,  1,  0,  2,  2,  2,  3,  5,  5,  5,   5,   5,   5,   5,   5,   6,   7,   7,   9,  10,  11,  12,  14,  15,  16,  17,  18
-};
+// Direct UTF-8 to Unicode conversion without setlocale
+static wchar_t utf8_to_unicode(const char* utf8_str) {
+    if (utf8_str == NULL || strlen(utf8_str) == 0) return 0;
+    
+    unsigned char* bytes = (unsigned char*)utf8_str;
+    wchar_t result = 0;
+    
+    if (bytes[0] < 0x80) {
+        // 1-byte UTF-8 (ASCII)
+        result = bytes[0];
+    } else if ((bytes[0] & 0xE0) == 0xC0) {
+        // 2-byte UTF-8
+        result = ((bytes[0] & 0x1F) << 6) | (bytes[1] & 0x3F);
+    } else if ((bytes[0] & 0xF0) == 0xE0) {
+        // 3-byte UTF-8 (Korean characters)
+        result = ((bytes[0] & 0x0F) << 12) | ((bytes[1] & 0x3F) << 6) | (bytes[2] & 0x3F);
+    } else if ((bytes[0] & 0xF8) == 0xF0) {
+        // 4-byte UTF-8
+        result = ((bytes[0] & 0x07) << 18) | ((bytes[1] & 0x3F) << 12) | 
+                 ((bytes[2] & 0x3F) << 6) | (bytes[3] & 0x3F);
+    }
+    
+    return result;
+}
 
-typedef struct {
-    int base_final;       /* existing single final index */
-    int add_final_single; /* additional single final index */
-    int combined_final;   /* resulting combined final index */
-} final_combine_rule_t;
+// Function to convert Unicode to UTF-8 (public function)
+void unicode_to_utf8(wchar_t* wstr, char* utf8_str, size_t utf8_size) {
+    if (wstr == NULL || utf8_str == NULL || utf8_size == 0) return;
+    
+    size_t utf8_len = 0;
+    size_t wstr_len = wcslen(wstr);
+    
+    for (size_t i = 0; i < wstr_len && utf8_len < utf8_size - 4; i++) {
+        wchar_t wc = wstr[i];
+        
+        // Convert Unicode to UTF-8
+        if (wc < 0x80) {
+            utf8_str[utf8_len++] = (char)wc;
+        } else if (wc < 0x800) {
+            utf8_str[utf8_len++] = 0xC0 | (wc >> 6);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        } else if (wc < 0x10000) {
+            utf8_str[utf8_len++] = 0xE0 | (wc >> 12);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        } else {
+            utf8_str[utf8_len++] = 0xF0 | (wc >> 18);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 12) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+            utf8_str[utf8_len++] = 0x80 | (wc & 0x3F);
+        }
+    }
+    
+    utf8_str[utf8_len] = '\0';
+}
 
-/* Rules to combine two finals into a complex final (종성 결합) */
-static const final_combine_rule_t final_combine_rules[] = {
-    {0, 18, 2},   /* ㄱ + ㅅ = ㄳ */
-    {3, 21, 4},   /* ㄴ + ㅈ = ㄵ */
-    {3, 26, 5},   /* ㄴ + ㅎ = ㄶ */
-    {7, 0,  8},   /* ㄹ + ㄱ = ㄺ */
-    {7, 15, 9},   /* ㄹ + ㅁ = ㄻ */
-    {7, 16, 10},  /* ㄹ + ㅂ = ㄼ */
-    {7, 18, 11},  /* ㄹ + ㅅ = ㄽ */
-    {7, 24, 12},  /* ㄹ + ㅌ = ㄾ */
-    {7, 25, 13},  /* ㄹ + ㅍ = ㄿ */
-    {7, 26, 14},  /* ㄹ + ㅎ = ㅀ */
-    {16, 18, 17}, /* ㅂ + ㅅ = ㅄ */
-    {-1,-1,-1}
-};
+void qwerty_korean_init(void) {
+    // No locale setup needed - using direct UTF-8 conversion
+    printf("Korean input system initialized (no locale required)\n");
+}
 
-typedef struct {
-    int combined_final;   /* combined final index */
-    int left_final;       /* remaining single final index to keep */
-    int moved_initial;    /* initial index to move to next syllable */
-} final_split_rule_t;
+void qwerty_korean_cleanup(void) {
+    // No cleanup needed
+    printf("Korean input system cleaned up\n");
+}
 
-/* Rules to split complex final when a vowel follows: keep left, move right to next onset */
-static const final_split_rule_t final_split_rules[] = {
-    {2,  0,  9},  /* ㄳ -> ㄱ + ㅅ */
-    {4,  3, 12},  /* ㄵ -> ㄴ + ㅈ */
-    {5,  3, 18},  /* ㄶ -> ㄴ + ㅎ */
-    {8,  7,  0},  /* ㄺ -> ㄹ + ㄱ */
-    {9,  7,  6},  /* ㄻ -> ㄹ + ㅁ */
-    {10, 7,  7},  /* ㄼ -> ㄹ + ㅂ */
-    {11, 7,  9},  /* ㄽ -> ㄹ + ㅅ */
-    {12, 7, 16},  /* ㄾ -> ㄹ + ㅌ */
-    {13, 7, 17},  /* ㄿ -> ㄹ + ㅍ */
-    {14, 7, 18},  /* ㅀ -> ㄹ + ㅎ */
-    {17, 16, 9},  /* ㅄ -> ㅂ + ㅅ */
-    {-1,-1,-1}
-};
-
-/* Try to combine existing final with an added consonant; returns new final index or -1 if not combinable */
-static int try_combine_final(int current_final_index, int new_consonant_initial_index)
-{
-    int add_final = initial_to_final_index[new_consonant_initial_index];
-    if (current_final_index < 0 || add_final < 0) return -1;
-    const final_combine_rule_t* r = final_combine_rules;
-    while (r->base_final != -1) {
-        if (r->base_final == current_final_index && r->add_final_single == add_final)
-            return r->combined_final;
-        r++;
+int qwerty_get_index(const char *jamo, const char *list[], int size) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(jamo, list[i]) == 0) {
+            return i;
+        }
     }
     return -1;
 }
 
-/* If current final is combined and a vowel follows, split it; returns 1 if split done */
-static int try_split_final_on_vowel(int* final_index, int* next_initial_index)
-{
-    const final_split_rule_t* r = final_split_rules;
-    while (r->combined_final != -1) {
-        if (*final_index == r->combined_final) {
-            *final_index = r->left_final;
-            *next_initial_index = r->moved_initial;
-            return 1;
-        }
-        r++;
+const char* qwerty_get_jamo_buffer(const char *buffer, KeyMap *map, int size) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(buffer, map[i].key) == 0) return map[i].jamo;
     }
+    return NULL;
+}
+
+void qwerty_print_buffers(char *input_buf, wchar_t *output_buf) {
+    printf("\r\033[K");
+    printf("Input: [%s] | Output: [", input_buf);
+    if (wcslen(output_buf) > 0) {
+        // Convert wide characters to UTF-8 for console display
+        char utf8_output[1024] = {0};
+        size_t utf8_len = 0;
+        
+        for (size_t i = 0; i < wcslen(output_buf) && utf8_len < sizeof(utf8_output) - 4; i++) {
+            wchar_t wc = output_buf[i];
+            
+            // Convert Unicode to UTF-8
+            if (wc < 0x80) {
+                utf8_output[utf8_len++] = (char)wc;
+            } else if (wc < 0x800) {
+                utf8_output[utf8_len++] = 0xC0 | (wc >> 6);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            } else if (wc < 0x10000) {
+                utf8_output[utf8_len++] = 0xE0 | (wc >> 12);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            } else {
+                utf8_output[utf8_len++] = 0xF0 | (wc >> 18);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 12) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | ((wc >> 6) & 0x3F);
+                utf8_output[utf8_len++] = 0x80 | (wc & 0x3F);
+            }
+        }
+        
+        // Print UTF-8 string, with fallback to hex if needed
+        printf("%s", utf8_output);
+        
+        // Alternative: If UTF-8 doesn't display properly, you can uncomment this:
+        // printf("(Unicode: ");
+        // for (size_t i = 0; i < wcslen(output_buf); i++) {
+        //     printf("U+%04X ", (unsigned int)output_buf[i]);
+        // }
+        // printf(")");
+    }
+    printf("]");
+    fflush(stdout);
+}
+
+// Check if a character has a valid mapping in any of the key maps
+int qwerty_is_mappable_character(char ch) {
+    // Space is always mappable
+    if (ch == ' ') {
+        return 1;
+    }
+    
+    char single_pattern[4] = {ch, '\0'};
+    
+    // Check if it's a choseong
+    if (qwerty_get_jamo_buffer(single_pattern, cho_keymap, sizeof(cho_keymap)/sizeof(KeyMap))) {
+        return 1;
+    }
+    
+    // Check if it's a jungseong
+    if (qwerty_get_jamo_buffer(single_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap))) {
+        return 1;
+    }
+    
+    // Check if it's a jongseong
+    if (qwerty_get_jamo_buffer(single_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap))) {
+        return 1;
+    }
+    
     return 0;
 }
 
-/* Check if two vowels can form a diphthong */
-static int check_diphthong(int base_vowel, int add_vowel, int* result_vowel)
-{
-    const diphthong_rule_t* rule = diphthong_rules;
-    
-    while (rule->base_vowel != -1) {
-        if (rule->base_vowel == base_vowel && rule->add_vowel == add_vowel) {
-            *result_vowel = rule->result_vowel;
-            return 1; /* Found matching diphthong rule */
-        }
-        rule++;
+// Input handling functions
+void qwerty_handle_backspace(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
+    if (*input_len > 0) {
+        input_buffer[--(*input_len)] = '\0';
+        input_buffer[*input_len] = '\0';
+        
+        // Clear output buffer
+        output_buffer[0] = L'\0';
+        
+        // Call the main Korean character composition logic
+        qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
     }
-    
-    return 0; /* No diphthong rule found */
 }
 
-/* Map Korean QWERTY key to jamo */
-int korean_char_to_jamo(char c, int* jamo_type, int* jamo_index)
-{
-    const char* pos;
-    
-    /* Check if it's a consonant */
-    pos = strchr(korean_qwerty_consonants, c);
-    if (pos) {
-        *jamo_type = 0; /* consonant */
-        *jamo_index = consonant_map[pos - korean_qwerty_consonants];
-        return 1;
-    }
-    
-    /* Check if it's a vowel */
-    pos = strchr(korean_qwerty_vowels, c);
-    if (pos) {
-        *jamo_type = 1; /* vowel */
-        *jamo_index = vowel_map[pos - korean_qwerty_vowels];
-        return 1;
-    }
-    
-    return 0; /* Not a Korean character */
+void qwerty_handle_enter(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
+    printf("\n");
+    // Clear all buffers
+    input_buffer[0] = '\0';
+    output_buffer[0] = L'\0';
+    *input_len = 0;
+    printf("Output: []\n");
+    fflush(stdout);
 }
 
-/* Compose Hangul syllable from jamo */
-int hangul_compose_syllable(int initial, int medial, int final)
-{
-    if (initial < 0 || initial >= INITIAL_COUNT || 
-        medial < 0 || medial >= MEDIAL_COUNT ||
-        final < -1 || final >= FINAL_COUNT) {
-        return 0;
+void qwerty_handle_space(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
+    if (*input_len < MAX_OUTPUT_LEN - 1) {
+        input_buffer[(*input_len)++] = ' ';
+        input_buffer[*input_len] = '\0';
     }
-    
-    int syllable = HANGUL_SYLLABLE_BASE + 
-                   (initial * 21 * 28) + 
-                   (medial * 28) + 
-                   (final + 1);
-    
-    return syllable;
+    // Add space to output buffer
+    output_buffer[*input_len-1] = L' ';
+    output_buffer[*input_len] = L'\0';
 }
 
-/* Decompose Hangul syllable to jamo */
-int hangul_decompose_syllable(int syllable, int* initial, int* medial, int* final)
-{
-    if (syllable < HANGUL_SYLLABLE_BASE || syllable > HANGUL_SYLLABLE_END) {
-        return 0;
+void qwerty_handle_character(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch) {
+    // Check if character is mappable before adding to input buffer
+    if (!qwerty_is_mappable_character((char)ch)) {
+        // Ignore unmappable characters
+        return;
     }
-    
-    int code = syllable - HANGUL_SYLLABLE_BASE;
-    *initial = code / (21 * 28);
-    *medial = (code % (21 * 28)) / 28;
-    *final = (code % 28) - 1;
-    
-    return 1;
+    // Add character to input buffer
+    if (*input_len < MAX_OUTPUT_LEN - 1) {
+        input_buffer[(*input_len)++] = (char)ch;
+        input_buffer[*input_len] = '\0';
+    }
+
+    // Call the main Korean character composition logic
+    qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
 }
 
-/* Korean IME callback for keystroke matching and composition */
-int cb_hangul_match_keystrokes(const char* strokes, char* buffer, int buffer_len, int index, int case_mode)
-{
-    (void)index;
-    (void)case_mode;
-    if (!strokes || !buffer || buffer_len <= 0) {
-        return 0;
-    }
-    
-    int len = strlen(strokes);
-    if (len == 0) {
-        buffer[0] = '\0';
-        current_syllable.state = HANGUL_STATE_NONE;
-        current_syllable.initial = current_syllable.medial = current_syllable.final = -1;
-        return 0;
-    }
-    
-    /* Get the last input character */
-    char last_char = strokes[len - 1];
-    int jamo_type, jamo_index;
-    
-    if (!korean_char_to_jamo(last_char, &jamo_type, &jamo_index)) {
-        /* Not a Korean character, treat as Latin */
-        if (buffer_len > 1) {
-            buffer[0] = last_char;
-            buffer[1] = '\0';
-        }
-        return 1;
-    }
-    
-    /* Process Korean character composition */
-    if (jamo_type == 0) { /* Consonant */
-        if (current_syllable.state == HANGUL_STATE_NONE) {
-            /* Start new syllable */
-            current_syllable.initial = jamo_index;
-            current_syllable.medial = -1;
-            current_syllable.final = -1;
-            current_syllable.state = HANGUL_STATE_CONSONANT;
-        } else if (current_syllable.state == HANGUL_STATE_VOWEL) {
-            /* Add final consonant (as single final index) */
-            int fin = initial_to_final_index[jamo_index];
-            if (fin >= 0) {
-                current_syllable.final = fin;
-                current_syllable.state = HANGUL_STATE_FINAL_CONSONANT;
-            }
-        } else {
-            /* We already have a final; try to make complex final, otherwise start new syllable */
-            int combined = try_combine_final(current_syllable.final, jamo_index);
-            if (combined >= 0) {
-                current_syllable.final = combined;
-                current_syllable.state = HANGUL_STATE_FINAL_CONSONANT;
-            } else {
-                current_syllable.initial = jamo_index;
-                current_syllable.medial = -1;
-                current_syllable.final = -1;
-                current_syllable.state = HANGUL_STATE_CONSONANT;
-            }
-        }
-    } else { /* Vowel */
-        if (current_syllable.state == HANGUL_STATE_CONSONANT) {
-            /* Add vowel to form syllable (no diphthong check here) */
-            current_syllable.medial = jamo_index;
-            current_syllable.state = HANGUL_STATE_VOWEL;
-        } else if (current_syllable.state == HANGUL_STATE_VOWEL) {
-            /* Only check for diphthong if previous input was a vowel */
-            int diphthong_result;
-            if (check_diphthong(current_syllable.medial, jamo_index, &diphthong_result)) {
-                /* Form diphthong */
-                current_syllable.medial = diphthong_result;
-                printf("Diphthong formed: %d + %d = %d\n", current_syllable.medial, jamo_index, diphthong_result);
-            } else {
-                /* Cannot form diphthong, start new syllable */
-                current_syllable.initial = 11; /* ㅇ as placeholder */
-                current_syllable.medial = jamo_index;
-                current_syllable.final = -1;
-                current_syllable.state = HANGUL_STATE_VOWEL;
-            }
-        } else {
-            /* We have a final consonant and a new vowel comes: try to split complex final */
-            int moved_initial = -1;
-            if (current_syllable.state == HANGUL_STATE_FINAL_CONSONANT &&
-                try_split_final_on_vowel(&current_syllable.final, &moved_initial)) {
-                /* Compose previous syllable into buffer now */
-            } else if (current_syllable.state == HANGUL_STATE_FINAL_CONSONANT && current_syllable.final >= 0) {
-                /* Single final: move entire final to next initial */
-                moved_initial = final_to_initial_index[current_syllable.final];
-                current_syllable.final = -1; /* previous syllable loses final */
-            }
 
-            /* Compose previous syllable to buffer */
-            if (current_syllable.initial >= 0 && current_syllable.medial >= 0) {
-                int prev = hangul_compose_syllable(current_syllable.initial, current_syllable.medial, current_syllable.final);
-                if (prev > 0 && buffer_len >= 4) {
-                    buffer[0] = 0xE0 | ((prev >> 12) & 0x0F);
-                    buffer[1] = 0x80 | ((prev >> 6) & 0x3F);
-                    buffer[2] = 0x80 | (prev & 0x3F);
-                    buffer[3] = '\0';
+void qwerty_process_input(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch) {
+    if (ch == 0x7f) {  // 백스페이스
+        qwerty_handle_backspace(input_buffer, input_len, output_buffer);
+    } else if (ch == '\n' || ch == '\r') {  // Enter key
+        qwerty_handle_enter(input_buffer, input_len, output_buffer);
+    } else if (ch == ' ') {  // 공백
+        qwerty_handle_space(input_buffer, input_len, output_buffer);
+    } else {
+        qwerty_handle_character(input_buffer, input_len, output_buffer, ch);
+    }
+    // print the buffer status
+    qwerty_print_buffers(input_buffer, output_buffer);
+}
+
+// Main Korean character composition logic
+void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len, wchar_t* output_buffer) {
+    wchar_t temp_output[MAX_OUTPUT_LEN];
+    temp_output[0] = L'\0';
+    size_t temp_len = 0;
+    
+    // Process input buffer progressively to show intermediate states
+    size_t i = 0;
+    while (i < input_len && temp_len < MAX_OUTPUT_LEN - 1) {
+        char current_char = input_buffer[i];
+        
+        // Check if current character is a choseong
+        char single_pattern[4] = {current_char, '\0'};
+        const char* cho_jamo = qwerty_get_jamo_buffer(single_pattern, cho_keymap, sizeof(cho_keymap)/sizeof(KeyMap));
+        
+        if (cho_jamo) {
+            // Found a choseong, check for jungseong next
+            const char* jung_jamo = NULL;
+            int jung_advance = 0;
+            
+            // Check for compound jungseong first (2 characters)
+            if (i + 2 < input_len) {
+                char jung2_pattern[4] = {input_buffer[i+1], input_buffer[i+2], '\0'};
+                jung_jamo = qwerty_get_jamo_buffer(jung2_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap));
+                if (jung_jamo) {
+                    jung_advance = 2;
                 }
             }
-
-            /* Start next syllable with moved initial and current vowel */
-            if (moved_initial < 0) moved_initial = 11; /* fallback ㅇ */
-            current_syllable.initial = moved_initial;
-            current_syllable.medial = jamo_index;
-            current_syllable.final = -1;
-            current_syllable.state = HANGUL_STATE_VOWEL;
+            
+            // If no compound jungseong, check for single jungseong
+            if (!jung_jamo && i + 1 < input_len) {
+                char next_char = input_buffer[i + 1];
+                char next_pattern[4] = {next_char, '\0'};
+                jung_jamo = qwerty_get_jamo_buffer(next_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap));
+                if (jung_jamo) {
+                    jung_advance = 1;
+                }
+            }
+            
+            if (jung_jamo) {
+                // Found choseong + jungseong, check for jongseong
+                int cho_idx = qwerty_get_index(cho_jamo, chosung_list, 19);
+                int jung_idx = qwerty_get_index(jung_jamo, jungsung_list, 21);
+                
+                if (cho_idx >= 0 && jung_idx >= 0) {
+                    // Check for compound jongseong first (2 characters)
+                    int jong_idx = 0;
+                    int jong_advance = 0;
+                    
+                    if (i + 2 + jung_advance < input_len) {
+                        char jong2_pattern[4] = {input_buffer[i+1+jung_advance], input_buffer[i+2+jung_advance], '\0'};
+                        const char* jong2_jamo = qwerty_get_jamo_buffer(jong2_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap));
+                        if (jong2_jamo && strlen(jong2_jamo) > 0) {
+                            int idx = qwerty_get_index(jong2_jamo, jongsung_list, 28);
+                            if (idx > 0) { 
+                                jong_idx = idx; 
+                                jong_advance = 2;
+                            }
+                        }
+                    }
+                    
+                    // If no compound jongseong, check for single jongseong
+                    if (jong_idx == 0 && i + 1 + jung_advance < input_len) {
+                        char jong1_pattern[4] = {input_buffer[i+1+jung_advance], '\0'};
+                        const char* jong1_jamo = qwerty_get_jamo_buffer(jong1_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap));
+                        if (jong1_jamo && strlen(jong1_jamo) > 0) {
+                            int idx = qwerty_get_index(jong1_jamo, jongsung_list, 28);
+                            if (idx > 0) { 
+                                jong_idx = idx; 
+                                jong_advance = 1;
+                            }
+                        }
+                    }
+                    
+                    // Check if there's a jungseong after the jongseong
+                    if (jong_advance > 0 && i + 1 + jung_advance + jong_advance < input_len) {
+                        char after_jong_char = input_buffer[i + 1 + jung_advance + jong_advance];
+                        char after_jong_pattern[4] = {after_jong_char, '\0'};
+                        const char* after_jung_jamo = qwerty_get_jamo_buffer(after_jong_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap));
+                        
+                        if (after_jung_jamo) {
+                            // There's a jungseong after compound jongseong
+                            // Split the compound jongseong: first char becomes jongseong, second becomes choseong
+                            if (jong_advance == 2) {
+                                // For compound jongseong, get the first character
+                                char first_jong_char = input_buffer[i+1+jung_advance];
+                                char first_jong_pattern[4] = {first_jong_char, '\0'};
+                                const char* first_jong_jamo = qwerty_get_jamo_buffer(first_jong_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap));
+                                if (first_jong_jamo && strlen(first_jong_jamo) > 0) {
+                                    int idx = qwerty_get_index(first_jong_jamo, jongsung_list, 28);
+                                    if (idx > 0) { 
+                                        jong_idx = idx; 
+                                        jong_advance = 1; // Only advance by 1, second char will be processed next
+                                    }
+                                }
+                            } else {
+                                // For single jongseong, don't use it
+                                jong_idx = 0;
+                                jong_advance = 0;
+                            }
+                        }
+                        // If there's a choseong after jongseong, don't split the compound jongseong
+                        // The compound jongseong stays intact and the choseong starts a new syllable
+                    }
+                    
+                    // Compose syllable
+                    wchar_t syll = 0xAC00 + (cho_idx * 21 * 28) + (jung_idx * 28) + jong_idx;
+                    temp_output[temp_len++] = syll;
+                    i += 1 + jung_advance + jong_advance;
+                    
+                    continue;
+                }
+            }
+            
+            // No jungseong found, display individual choseong
+            wchar_t wc = utf8_to_unicode(cho_jamo);
+            if (wc != 0) {
+                temp_output[temp_len++] = wc;
+            }
+            i++;
+        } else {
+            // Check if it's a jungseong
+            const char* jung_jamo = qwerty_get_jamo_buffer(single_pattern, jung_keymap, sizeof(jung_keymap)/sizeof(KeyMap));
+            if (jung_jamo) {
+                // Display individual jungseong
+                wchar_t wc = utf8_to_unicode(jung_jamo);
+                if (wc != 0) {
+                    temp_output[temp_len++] = wc;
+                }
+                i++;
+            } else {
+                // Check if it's a jongseong
+                const char* jong_jamo = qwerty_get_jamo_buffer(single_pattern, jong_keymap, sizeof(jong_keymap)/sizeof(KeyMap));
+                if (jong_jamo && strlen(jong_jamo) > 0) {
+                    // Display individual jongseong
+                    wchar_t wc = utf8_to_unicode(jong_jamo);
+                    if (wc != 0) {
+                        temp_output[temp_len++] = wc;
+                    }
+                } else {
+                    // Not a Korean character, keep it in the input buffer
+                    // and start a new Korean syllable after it
+                    // For now, we'll just advance past it
+                }
+                i++;
+            }
         }
     }
     
-    /* Compose the syllable */
-    if (current_syllable.initial >= 0 && current_syllable.medial >= 0) {
-        int syllable = hangul_compose_syllable(current_syllable.initial, 
-                                               current_syllable.medial, 
-                                               current_syllable.final);
-        
-        /* Convert to UTF-8 */
-        if (syllable > 0 && buffer_len >= 4) {
-            /* Simple UTF-8 encoding for Korean syllables */
-            buffer[0] = 0xE0 | ((syllable >> 12) & 0x0F);
-            buffer[1] = 0x80 | ((syllable >> 6) & 0x3F);
-            buffer[2] = 0x80 | (syllable & 0x3F);
-            buffer[3] = '\0';
-        }
-    } else if (current_syllable.state == HANGUL_STATE_CONSONANT) {
-        /* Just a consonant, output as jamo */
-        if (buffer_len >= 4) {
-            int jamo_code = HANGUL_JAMO_INITIAL_BASE + current_syllable.initial;
-            buffer[0] = 0xE0 | ((jamo_code >> 12) & 0x0F);
-            buffer[1] = 0x80 | ((jamo_code >> 6) & 0x3F);
-            buffer[2] = 0x80 | (jamo_code & 0x3F);
-            buffer[3] = '\0';
-        }
-    }
+    temp_output[temp_len] = L'\0';
     
-    return 1;
+    // Update output buffer
+    wcscpy(output_buffer, temp_output);
 }
 
-/* Compose function - same as match for Korean */
-int cb_hangul_compose(const char* strokes, char* buffer, int buffer_len, int index, int case_mode)
+// IME callback function for matching keystrokes
+// This function converts input strokes to Korean characters
+int cb_hangul_match_keystrokes(const char *strokes, char *buffer, int buffer_len, int index, int mode)
 {
-    return cb_hangul_match_keystrokes(strokes, buffer, buffer_len, index, case_mode);
+    wchar_t w_output[MAX_OUTPUT_LEN];
+    int input_len = 0;
+    
+    // Clear output
+    if (strokes == NULL || buffer == NULL || buffer_len <= 0) {
+        return 0;
+    }
+    
+    input_len = strlen(strokes);
+    if (input_len == 0) {
+        buffer[0] = '\0';
+        return 0;
+    }
+    
+    // Process the input strokes
+    qwerty_compose_korean_characters(strokes, input_len, w_output);
+    
+    // Convert wide characters to UTF-8
+    unicode_to_utf8(w_output, buffer, buffer_len);
+    
+    return 0;
+}
+
+// IME callback function for composing Korean characters
+// This is a placeholder for the translate_word callback
+int cb_hangul_compose(const char *strokes, char *buffer, int buffer_len, int index, int mode)
+{
+    // Same as match_keystrokes for Korean input
+    return cb_hangul_match_keystrokes(strokes, buffer, buffer_len, index, mode);
 }
