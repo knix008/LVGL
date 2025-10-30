@@ -21,6 +21,8 @@
 *.out
 *.app
 qwerty_korean_keypad
+test_korean_simple
+test_korean_input
 
 # Build directories
 build/
