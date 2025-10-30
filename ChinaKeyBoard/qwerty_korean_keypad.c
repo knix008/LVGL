@@ -14,6 +14,7 @@
 #include <minigui/window.h>
 #include <minigui/control.h>
 #include "ime/libime/ime_korean.h"
+#include "ime/common.h"
 
 #define IDC_EDIT_INPUT      100
 #define IDC_BTN_CLEAR       101
@@ -225,7 +226,7 @@ static void DrawKoreanKeyboard(HDC hdc, int x, int y, int width, int height) {
         DrawText(hdc, char_to_show, -1, &text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
     
-    /* Third row: Shift + ㅋㅌㅊㅍㅠㅜㅡ + Backspace */
+    /* Third row: Shift + ㅋㅌㅊㅍㅠㅜㅡ + Left Arrow (Backspace) */
     /* Shift key */
     RECT shift_rect = {x, y + 2 * (key_height + key_spacing), 
                        x + key_width, y + 3 * key_height + 2 * key_spacing};
@@ -264,7 +265,7 @@ static void DrawKoreanKeyboard(HDC hdc, int x, int y, int width, int height) {
         DrawText(hdc, char_to_show, -1, &text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
     
-    /* Backspace key */
+    /* Backspace key (Left Arrow) */
     RECT backspace_rect = {x + 8 * (key_width + key_spacing), y + 2 * (key_height + key_spacing),
                            x + 10 * key_width + 8 * key_spacing, y + 3 * key_height + 2 * key_spacing};
     SetBrushColor(hdc, RGB2Pixel(hdc, 255, 200, 200));
@@ -276,7 +277,7 @@ static void DrawKoreanKeyboard(HDC hdc, int x, int y, int width, int height) {
     SetTextColor(hdc, RGB2Pixel(hdc, 0, 0, 0));
     SetBkMode(hdc, BM_TRANSPARENT);
     RECT backspace_text_rect = backspace_rect;
-    DrawText(hdc, "⌫", -1, &backspace_text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawText(hdc, "←", -1, &backspace_text_rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     
     /* Fourth row: Space bar */
     RECT space_rect = {x + 2 * (key_width + key_spacing), y + 3 * (key_height + key_spacing),
@@ -342,7 +343,7 @@ static void HandleKoreanInput(char key) {
     
     // Update status label to show stroke buffer
     char status_text[256];
-    snprintf(status_text, sizeof(status_text), "Korean Mode: ON | Shift: %s | Strokes: [%s]", 
+    snprintf(status_text, sizeof(status_text), "Korean Mode: ON | Shift: %s", 
              shift_state ? "ON" : "OFF", all_strokes);
     SetWindowText(hStatusLabel, status_text);
     
@@ -503,9 +504,14 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         case MSG_KEYDOWN:
         {
             /* Handle physical keyboard input */
-            char key = (char)wParam;
+            int key_code = (int)wParam;
             
-            if (key == 16) { /* Shift key */
+            /* Check for left arrow key (backspace) */
+            if (key_code == SCANCODE_CURSORBLOCKLEFT || key_code == 0xE04B) {
+                HandleKoreanInput('\b');
+            }
+            /* Check for shift key */
+            else if (key_code == 16) {
                 shift_state = !shift_state;
                 char status_text[64];
                 snprintf(status_text, sizeof(status_text), 
@@ -515,6 +521,7 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 InvalidateRect(hWnd, NULL, TRUE);
                 printf("Shift state: %s\n", shift_state ? "ON" : "OFF");
             } else {
+                char key = (char)key_code;
                 /* Normalize to lowercase letters for mapping table, then apply shift mapping */
                 if (key >= 'A' && key <= 'Z') {
                     key = (char)(key - 'A' + 'a');
@@ -557,7 +564,7 @@ int MiniGUIMain(int argc, const char* argv[])
 
     CreateInfo.dwStyle = WS_VISIBLE | WS_BORDER | WS_CAPTION;
     CreateInfo.dwExStyle = WS_EX_TOOLWINDOW;
-    CreateInfo.spCaption = "Korean Keypad - 한글 키패드 (Clickable)";
+    CreateInfo.spCaption = "Korean Qwerty Keypad";
     CreateInfo.hMenu = 0;
     CreateInfo.hIcon = 0;
     CreateInfo.MainWindowProc = KoreanKeypadProc;
