@@ -1,0 +1,29 @@
+# Build artifacts
+*.o
+webcam_capture
+
+# LVGL build directory
+lvgl/build/
+lvgl/lib/
+lvgl/
+
+# Generated fonts
+assets/fonts/
+assets/NanumGothic.ttf
+
+# Photos
+*.ppm
+*.jpg
+*.png
+photos_jpg/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
