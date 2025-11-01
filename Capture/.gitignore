@@ -1,29 +1,29 @@
-# Build artifacts
+# Compiled output
 *.o
+*.a
+camera
 webcam_capture
 
-# LVGL build directory
+# LVGL build artifacts
 lvgl/build/
 lvgl/lib/
-lvgl/
 
-# Generated fonts
-assets/fonts/
-assets/NanumGothic.ttf
-
-# Photos
+# Captured photos
+photo_*.jpg
 *.ppm
-*.jpg
-*.png
-photos_jpg/
 
-# Editor files
+# IDE and editor files
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
-.vscode/
-.idea/
 
-# System files
+# OS files
 .DS_Store
 Thumbs.db
+
+# Debug files
+*.log
+core
+vgcore.*

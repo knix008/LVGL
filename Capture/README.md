@@ -1,214 +1,186 @@
 # Webcam Photo Capture Application
 
-A webcam photo capture application built with LVGL (Light and Versatile Graphics Library) on Linux with Korean language support.
+A webcam photo capture application built with LVGL GUI library, featuring Korean language support and live camera preview.
 
 ## Features
 
-- Live webcam preview using V4L2 (Video4Linux2)
-- Modern GUI with LVGL v9.2
-- **Korean language interface (한국어 지원)**
-- Click-to-capture functionality
-- Photo counter
-- Saves photos in PPM format
-- Window size: 340x640 pixels
-- Camera preview: 320x240 pixels
-- **Modular architecture** (separated logic and GUI)
+- **Live Webcam Preview** - Real-time camera feed display (320x240 @ 15 FPS)
+- **Photo Capture** - Save high-quality JPEG photos with timestamp filenames
+- **Korean UI** - Full Korean language interface using NanumGothicCoding font
+- **Touch/Mouse Control** - Click the blue "촬영" (Capture) button to take photos
+- **Status Display** - Real-time status messages and photo count
+
+## Window Specifications
+
+- **Window Size**: 340x640 pixels
+- **Camera Resolution**: 320x240 pixels
+- **Video Format**: RGB24 via V4L2
+- **Photo Format**: JPEG (90% quality)
 
 ## Requirements
 
-- Linux operating system
+### System Dependencies
 - GCC compiler
 - SDL2 development libraries
-- FreeType development libraries
-- V4L2 compatible webcam
-- Git
-- Python 3
-- Node.js and npm (for font generation)
-- lv_font_conv (installed automatically by setup script)
+- FreeType2 development libraries
+- libjpeg development libraries
+- V4L2 (Video4Linux2) support
+- Webcam device at `/dev/video0`
 
-## Installation
+### Installation (Ubuntu/Debian)
+```bash
+sudo apt-get install build-essential
+sudo apt-get install libsdl2-dev
+sudo apt-get install libfreetype6-dev
+sudo apt-get install libjpeg-dev
+sudo apt-get install v4l-utils
+```
 
-Run the automated setup script:
+### User Permissions
+Add your user to the `video` group to access the webcam:
+```bash
+sudo usermod -a -G video $USER
+```
+Then log out and log back in for the changes to take effect.
 
+## Building
+
+### First Time Setup
+Run the setup script to install dependencies and build LVGL:
 ```bash
 ./setup.sh
 ```
 
-This script will:
-1. Check for required system packages (SDL2, GCC, Git, FreeType, Python3, Node.js)
-2. Install missing packages (with your permission)
-3. Install lv_font_conv (font converter)
-4. Download Nanum Gothic Korean font
-5. Generate Korean fonts for LVGL
-6. Check webcam availability
-7. Clone LVGL v9.2
-8. Build the LVGL library
-9. Build the webcam capture application
-
-## Manual Build
-
-If you prefer to build manually:
-
+### Regular Build
 ```bash
-# 1. Download Korean font
-wget https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf -O assets/NanumGothic.ttf
-
-# 2. Install lv_font_conv
-sudo npm install -g lv_font_conv
-
-# 3. Generate Korean fonts
-./generate_fonts.py
-
-# 4. Build LVGL library
-mkdir -p lvgl/build lvgl/lib
-find lvgl/src -name "*.c" -exec gcc -Wall -Wextra -O2 -I. -Ilvgl $(pkg-config --cflags freetype2) -c {} -o lvgl/build/{}.o \;
-ar rcs lvgl/lib/liblvgl.a lvgl/build/*.o
-
-# 5. Build the application
 make
 ```
 
-## Usage
-
-1. Connect your webcam (should appear as /dev/video0)
-2. Run the application:
-
+### Clean Build
 ```bash
-./webcam_capture
+make clean
+make
 ```
 
-3. The GUI will display (in Korean):
-   - Title: "웹캠 캡처" (Webcam Capture)
-   - Live camera preview
-   - "촬영" button (Capture)
-   - Photo counter: "사진: N"
-   - Status messages in Korean
+### Deep Clean (including LVGL)
+```bash
+make distclean
+make
+```
 
-4. Click the "촬영" (CAPTURE) button to take a photo
-5. Photos are saved with timestamps: `photo_YYYYMMDD_HHMMSS.ppm`
-6. Press ESC or close window to exit
-
-## Converting PPM Files
-
-PPM files can be converted to other formats using ImageMagick:
+## Running
 
 ```bash
-# Install ImageMagick
-sudo apt-get install imagemagick
-
-# Convert to JPEG
-convert photo_20241101_120000.ppm photo.jpg
-
-# Convert to PNG
-convert photo_20241101_120000.ppm photo.png
+./camera
 ```
+
+Or use the makefile target:
+```bash
+make run
+```
+
+### Controls
+- **Click "촬영" button** - Capture and save photo
+- **ESC key** - Exit application
+- **Close window** - Exit application
 
 ## Project Structure
 
 ```
-.
-├── main.c              # Main application entry point
-├── camera.c/h          # Camera capture logic (V4L2)
-├── gui.c/h             # GUI components (LVGL)
+Capture/
+├── main.c              # Application entry point, SDL/LVGL initialization
+├── camera.c/h          # V4L2 webcam capture logic
+├── gui.c/h             # LVGL GUI interface with Korean fonts
 ├── Makefile            # Build configuration
-├── setup.sh            # Automated setup script
-├── generate_fonts.py   # Korean font generator
-├── convert_photos.sh   # PPM to JPEG converter
-├── lv_conf.h           # LVGL configuration
-├── lvgl/               # LVGL library (cloned)
-├── assets/             # Assets directory
-│   ├── NanumGothic.ttf # Korean font file
-│   └── fonts/          # Generated LVGL fonts
-└── README.md           # This file
+├── setup.sh            # Dependency checker and LVGL builder
+├── rebuild_lvgl.sh     # LVGL library rebuild script
+├── lv_conf.h           # LVGL configuration (FreeType enabled)
+├── assets/             # Font files directory
+│   ├── NanumGothicCoding.ttf
+│   └── NanumGothicCoding-Bold.ttf
+└── lvgl/               # LVGL library (git submodule)
 ```
 
 ## Architecture
 
-The application follows a modular design:
+### Modules
 
-- **[camera.c](camera.c)** / **[camera.h](camera.h)**: Camera hardware abstraction
-  - V4L2 device initialization
-  - Frame capture thread
-  - Photo saving functionality
+1. **main.c** - Initializes LVGL with SDL2 driver, manages main event loop
+2. **camera.c** - V4L2 webcam interface, JPEG encoding, threaded frame capture
+3. **gui.c** - LVGL widgets, Korean font loading via FreeType, UI layout
 
-- **[gui.c](gui.c)** / **[gui.h](gui.h)**: User interface layer
-  - LVGL GUI components
-  - Korean language text
-  - Event handling callbacks
+### Key Technical Details
 
-- **[main.c](main.c)**: Application coordinator
-  - SDL2 initialization
-  - LVGL setup
-  - Main event loop
+- Uses LVGL v9.2 with built-in SDL2 driver (`lv_sdl_window_create()`)
+- Multi-threaded camera capture with pthread
+- Memory-mapped V4L2 buffers for efficient frame capture
+- FreeType integration for dynamic TTF font rendering
+- RGB888 color format for image display
+- Frame rate limiting (15 FPS) for optimal performance
 
-## Technical Details
+## Output
 
-### Camera Access
-- Uses V4L2 (Video4Linux2) API for webcam access
-- Memory-mapped buffers for efficient frame capture
-- Separate thread for camera frame processing
-- RGB24 format for compatibility
+Captured photos are saved in the current directory with timestamped filenames:
+```
+photo_YYYYMMDD_HHMMSS.jpg
+```
 
-### GUI
-- SDL2 backend for windowing
-- LVGL canvas for camera preview
-- Touch/mouse input support
-- Real-time frame display
-
-### Threading
-- Main thread: GUI and event handling
-- Camera thread: Frame capture and processing
+Example: `photo_20251101_144323.jpg`
 
 ## Troubleshooting
 
-### Camera not found
-```
-Error: Opening video device: No such file or directory
-```
-- Check if webcam is connected: `ls -l /dev/video*`
-- Check camera permissions: `sudo chmod 666 /dev/video0`
-- Test camera with: `v4l2-ctl --device=/dev/video0 --list-formats`
+### Camera not detected
+```bash
+# Check available video devices
+ls -l /dev/video*
 
-### Build errors
-```
-Error: LVGL library not found
-```
-- Run `./setup.sh` to build LVGL library
-
-### SDL2 errors
-```
-Error: SDL2 development libraries not found
-```
-- Install SDL2: `sudo apt-get install libsdl2-dev`
-
-## Customization
-
-### Change Camera Device
-Edit [main.c:18](main.c#L18):
-```c
-#define VIDEO_DEVICE "/dev/video0"  // Change to your camera device
+# Test camera with v4l2
+v4l2-ctl --list-devices
 ```
 
-### Change Window Size
-Edit [main.c:14-15](main.c#L14):
-```c
-#define WINDOW_WIDTH  340
-#define WINDOW_HEIGHT 640
+### Permission denied error
+```bash
+# Check if you're in the video group
+groups
+
+# Add yourself to video group
+sudo usermod -a -G video $USER
+# Then logout and login again
 ```
 
-### Change Camera Resolution
-Edit [main.c:16-17](main.c#L16):
-```c
-#define CAMERA_WIDTH  320
-#define CAMERA_HEIGHT 240
+### FreeType initialization failed
+```bash
+# Rebuild LVGL with FreeType support
+./rebuild_lvgl.sh
 ```
+
+### Button not clickable
+Make sure you're using LVGL's SDL driver (already configured in main.c).
+
+## Development
+
+### Adding New Features
+- GUI modifications: Edit `gui.c`
+- Camera settings: Edit `camera.c`
+- Main loop changes: Edit `main.c`
+
+### Changing Window Size
+Update `WINDOW_WIDTH` and `WINDOW_HEIGHT` in `main.c`
+
+### Changing Camera Resolution
+Update `CAMERA_WIDTH` and `CAMERA_HEIGHT` in `camera.h`
+
+## Korean Language Support
+
+The application uses NanumGothicCoding fonts loaded via FreeType for Korean text rendering:
+- Status messages in Korean
+- UI labels in Korean (웹캠 캡처, 촬영, 준비, etc.)
+- Font sizes: 12px, 14px, 16px, 20px, 24px
 
 ## License
 
 This project uses LVGL which is licensed under the MIT license.
 
-## Credits
+## Author
 
-- LVGL: https://lvgl.io/
-- SDL2: https://www.libsdl.org/
-- V4L2: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/v4l2.html
+Built with LVGL v9.2, SDL2, and FreeType2.
