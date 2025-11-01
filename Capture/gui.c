@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <SDL2/SDL.h>
 
 // Display configuration
 #define WINDOW_WIDTH  340
@@ -24,8 +26,12 @@ static lv_obj_t *camera_img = NULL;
 static lv_obj_t *capture_btn = NULL;
 static lv_obj_t *status_label = NULL;
 static lv_obj_t *photo_count_label = NULL;
+static lv_obj_t *flash_overlay = NULL;
 static uint8_t *img_buffer = NULL;
 static lv_image_dsc_t img_dsc;
+
+// Audio variables
+static SDL_AudioDeviceID audio_device = 0;
 
 // FreeType fonts
 static lv_font_t *font_12 = NULL;
@@ -139,6 +145,7 @@ int gui_init(void)
     img_dsc.header.cf = LV_COLOR_FORMAT_RGB888;
     img_dsc.header.w = CAMERA_WIDTH;
     img_dsc.header.h = CAMERA_HEIGHT;
+    img_dsc.header.stride = CAMERA_WIDTH * 3;  // Stride in bytes per row
     img_dsc.data = img_buffer;
     img_dsc.data_size = CAMERA_WIDTH * CAMERA_HEIGHT * 3;
 
@@ -183,6 +190,15 @@ int gui_init(void)
     lv_obj_set_style_text_font(info, font_12, 0);
     lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(info, LV_ALIGN_BOTTOM_MID, 0, -20);
+
+    // Create flash overlay (initially hidden)
+    flash_overlay = lv_obj_create(screen);
+    lv_obj_set_size(flash_overlay, WINDOW_WIDTH, WINDOW_HEIGHT);
+    lv_obj_set_style_bg_color(flash_overlay, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(flash_overlay, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(flash_overlay, 0, 0);
+    lv_obj_add_flag(flash_overlay, LV_OBJ_FLAG_HIDDEN);  // Start hidden
+    lv_obj_move_foreground(flash_overlay);  // Ensure it's on top
 
     printf("GUI initialized with Korean language support\n");
     return 0;
@@ -243,6 +259,81 @@ lv_obj_t *gui_get_camera_canvas(void)
 }
 
 /**
+ * Timer callback to hide flash overlay
+ */
+static void flash_timer_cb(lv_timer_t *timer)
+{
+    lv_obj_add_flag(flash_overlay, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_del(timer);  // Delete the timer after use
+}
+
+/**
+ * Show white flash overlay for brighter photos
+ */
+void gui_show_flash(uint32_t duration_ms)
+{
+    if (!flash_overlay) return;
+
+    // Show the white overlay
+    lv_obj_clear_flag(flash_overlay, LV_OBJ_FLAG_HIDDEN);
+    lv_refr_now(NULL);  // Force immediate refresh
+
+    // Create a one-shot timer to hide it after duration
+    lv_timer_create(flash_timer_cb, duration_ms, NULL);
+}
+
+/**
+ * Generate and play shutter sound effect
+ */
+void gui_play_shutter_sound(void)
+{
+    // Initialize audio if not already done
+    if (audio_device == 0) {
+        // Initialize SDL audio subsystem
+        if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
+            fprintf(stderr, "Failed to initialize SDL audio: %s\n", SDL_GetError());
+            return;
+        }
+
+        SDL_AudioSpec want, have;
+        SDL_zero(want);
+        want.freq = 44100;
+        want.format = AUDIO_S16SYS;
+        want.channels = 1;
+        want.samples = 2048;
+
+        audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+        if (audio_device == 0) {
+            fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
+            return;
+        }
+        printf("Audio device opened successfully (ID: %d)\n", audio_device);
+    }
+
+    // Generate a short beep sound (camera shutter effect)
+    const int sample_rate = 44100;
+    const int duration_ms = 100;
+    const int num_samples = (sample_rate * duration_ms) / 1000;
+    Sint16 *buffer = malloc(num_samples * sizeof(Sint16));
+
+    if (!buffer) return;
+
+    // Generate a two-tone beep (simulating mechanical shutter)
+    for (int i = 0; i < num_samples; i++) {
+        double t = (double)i / sample_rate;
+        double frequency = (i < num_samples / 2) ? 1200.0 : 800.0;  // High then low
+        double envelope = (1.0 - (double)i / num_samples);  // Fade out
+        buffer[i] = (Sint16)(sin(2.0 * M_PI * frequency * t) * 8000.0 * envelope);
+    }
+
+    // Queue audio and play
+    SDL_QueueAudio(audio_device, buffer, num_samples * sizeof(Sint16));
+    SDL_PauseAudioDevice(audio_device, 0);  // Start playback
+
+    free(buffer);
+}
+
+/**
  * Cleanup GUI resources
  */
 void gui_cleanup(void)
@@ -256,6 +347,12 @@ void gui_cleanup(void)
 
     // Note: lv_freetype_uninit() is called automatically by lv_deinit()
     // in main.c, so we don't need to call it here
+
+    // Close audio device
+    if (audio_device != 0) {
+        SDL_CloseAudioDevice(audio_device);
+        audio_device = 0;
+    }
 
     if (img_buffer) {
         free(img_buffer);

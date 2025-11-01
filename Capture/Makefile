@@ -17,6 +17,10 @@ SDL_LIBS = $(shell pkg-config --libs sdl2)
 FREETYPE_CFLAGS = $(shell pkg-config --cflags freetype2)
 FREETYPE_LIBS = $(shell pkg-config --libs freetype2)
 
+# FFmpeg configuration
+FFMPEG_CFLAGS = $(shell pkg-config --cflags libavformat libavcodec libavdevice libswscale libavutil)
+FFMPEG_LIBS = $(shell pkg-config --libs libavformat libavcodec libavdevice libswscale libavutil)
+
 # Source files
 SOURCES = main.c camera.c gui.c
 
@@ -31,12 +35,12 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS) $(LVGL_LIB)
 	@echo "Linking $(TARGET)..."
-	$(CC) $(OBJECTS) $(LVGL_LIB) $(SDL_LIBS) $(FREETYPE_LIBS) $(LDFLAGS) -o $(TARGET)
+	$(CC) $(OBJECTS) $(LVGL_LIB) $(SDL_LIBS) $(FREETYPE_LIBS) $(FFMPEG_LIBS) $(LDFLAGS) -o $(TARGET)
 	@echo "Build complete: $(TARGET)"
 
 %.o: %.c
 	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) $(FREETYPE_CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) $(FREETYPE_CFLAGS) $(FFMPEG_CFLAGS) -c $< -o $@
 
 $(LVGL_LIB):
 	@echo "Error: LVGL library not found at $(LVGL_LIB)"

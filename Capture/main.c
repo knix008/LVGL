@@ -28,6 +28,15 @@ static void capture_photo_callback(void *user_data)
 
     printf("Capture button clicked!\n");
 
+    // Play shutter sound
+    gui_play_shutter_sound();
+
+    // Show white flash for 200ms to provide lighting
+    gui_show_flash(200);
+
+    // Wait a bit for the flash to be visible and camera to adjust
+    lv_delay_ms(100);
+
     // Create filename with timestamp
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
@@ -141,7 +150,7 @@ int main(int argc, char *argv[])
 
     // Main loop - use LVGL timer handler
     printf("Entering main loop...\n");
-    int frame_count = 0;
+    //int frame_count = 0;
     int update_skip = 0;
     while (1) {
         // Update camera preview only every 3rd frame (~15 FPS instead of 200 FPS)
@@ -152,10 +161,10 @@ int main(int argc, char *argv[])
                 uint8_t *frame = camera_get_frame();
                 if (frame) {
                     gui_update_camera_preview(frame);
-                    frame_count++;
-                    if (frame_count % 30 == 0) {
-                        printf("Camera frames updated: %d\n", frame_count);
-                    }
+                    //frame_count++;
+                    //if (frame_count % 30 == 0) {
+                    //    printf("Camera frames updated: %d\n", frame_count);
+                    //}
                 }
             }
         }

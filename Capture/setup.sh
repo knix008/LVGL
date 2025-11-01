@@ -63,29 +63,6 @@ else
     print_success "Git found"
 fi
 
-# Check for Python3
-if ! command -v python3 &> /dev/null; then
-    print_error "Python3 not found"
-    MISSING_PACKAGES+=("python3")
-else
-    print_success "Python3 found"
-fi
-
-# Check for Node.js and npm (for lv_font_conv)
-if ! command -v node &> /dev/null; then
-    print_error "Node.js not found"
-    MISSING_PACKAGES+=("nodejs")
-else
-    print_success "Node.js found"
-fi
-
-if ! command -v npm &> /dev/null; then
-    print_error "npm not found"
-    MISSING_PACKAGES+=("npm")
-else
-    print_success "npm found"
-fi
-
 # Check for FreeType
 if ! pkg-config --exists freetype2; then
     print_error "FreeType development libraries not found"
@@ -100,6 +77,14 @@ if [ -f "/usr/include/jpeglib.h" ] || [ -f "/usr/local/include/jpeglib.h" ]; the
 else
     print_error "libjpeg development library not found"
     MISSING_PACKAGES+=("libjpeg-dev")
+fi
+
+# Check for FFmpeg libraries
+if pkg-config --exists libavformat libavcodec libavdevice libswscale libavutil; then
+    print_success "FFmpeg development libraries found"
+else
+    print_error "FFmpeg development libraries not found"
+    MISSING_PACKAGES+=("libavformat-dev" "libavcodec-dev" "libavdevice-dev" "libswscale-dev" "libavutil-dev")
 fi
 
 # Install missing packages if any

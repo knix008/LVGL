@@ -5,12 +5,14 @@ camera
 webcam_capture
 
 # LVGL build artifacts
+lvgl/
 lvgl/build/
 lvgl/lib/
 
 # Captured photos
 photo_*.jpg
 *.ppm
+*.jpg
 
 # IDE and editor files
 .vscode/
