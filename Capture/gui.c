@@ -12,6 +12,7 @@
 #include <string.h>
 #include <math.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 // Display configuration
 #define WINDOW_WIDTH  340
@@ -20,6 +21,9 @@
 // Font paths
 #define FONT_PATH_REGULAR "assets/NanumGothicCoding.ttf"
 #define FONT_PATH_BOLD    "assets/NanumGothicCoding-Bold.ttf"
+
+// Shutter sound path
+#define SHUTTER_SOUND_PATH "assets/CameraShuffter.mp3"
 
 // GUI objects
 static lv_obj_t *camera_img = NULL;
@@ -31,7 +35,7 @@ static uint8_t *img_buffer = NULL;
 static lv_image_dsc_t img_dsc;
 
 // Audio variables
-static SDL_AudioDeviceID audio_device = 0;
+static Mix_Chunk *shutter_sound = NULL;
 
 // FreeType fonts
 static lv_font_t *font_12 = NULL;
@@ -283,54 +287,39 @@ void gui_show_flash(uint32_t duration_ms)
 }
 
 /**
- * Generate and play shutter sound effect
+ * Load and play shutter sound from MP3 file
  */
 void gui_play_shutter_sound(void)
 {
-    // Initialize audio if not already done
-    if (audio_device == 0) {
+    // Initialize SDL_mixer if not already done
+    if (shutter_sound == NULL) {
         // Initialize SDL audio subsystem
         if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
             fprintf(stderr, "Failed to initialize SDL audio: %s\n", SDL_GetError());
             return;
         }
 
-        SDL_AudioSpec want, have;
-        SDL_zero(want);
-        want.freq = 44100;
-        want.format = AUDIO_S16SYS;
-        want.channels = 1;
-        want.samples = 2048;
-
-        audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-        if (audio_device == 0) {
-            fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
+        // Initialize SDL_mixer with MP3 support
+        if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+            fprintf(stderr, "Failed to initialize SDL_mixer: %s\n", Mix_GetError());
             return;
         }
-        printf("Audio device opened successfully (ID: %d)\n", audio_device);
+
+        // Load the shutter sound MP3 file
+        shutter_sound = Mix_LoadWAV(SHUTTER_SOUND_PATH);
+        if (shutter_sound == NULL) {
+            fprintf(stderr, "Failed to load shutter sound '%s': %s\n",
+                    SHUTTER_SOUND_PATH, Mix_GetError());
+            return;
+        }
+
+        printf("Shutter sound loaded successfully from %s\n", SHUTTER_SOUND_PATH);
     }
 
-    // Generate a short beep sound (camera shutter effect)
-    const int sample_rate = 44100;
-    const int duration_ms = 100;
-    const int num_samples = (sample_rate * duration_ms) / 1000;
-    Sint16 *buffer = malloc(num_samples * sizeof(Sint16));
-
-    if (!buffer) return;
-
-    // Generate a two-tone beep (simulating mechanical shutter)
-    for (int i = 0; i < num_samples; i++) {
-        double t = (double)i / sample_rate;
-        double frequency = (i < num_samples / 2) ? 1200.0 : 800.0;  // High then low
-        double envelope = (1.0 - (double)i / num_samples);  // Fade out
-        buffer[i] = (Sint16)(sin(2.0 * M_PI * frequency * t) * 8000.0 * envelope);
+    // Play the shutter sound on first available channel
+    if (Mix_PlayChannel(-1, shutter_sound, 0) == -1) {
+        fprintf(stderr, "Failed to play shutter sound: %s\n", Mix_GetError());
     }
-
-    // Queue audio and play
-    SDL_QueueAudio(audio_device, buffer, num_samples * sizeof(Sint16));
-    SDL_PauseAudioDevice(audio_device, 0);  // Start playback
-
-    free(buffer);
 }
 
 /**
@@ -348,11 +337,12 @@ void gui_cleanup(void)
     // Note: lv_freetype_uninit() is called automatically by lv_deinit()
     // in main.c, so we don't need to call it here
 
-    // Close audio device
-    if (audio_device != 0) {
-        SDL_CloseAudioDevice(audio_device);
-        audio_device = 0;
+    // Free shutter sound and close SDL_mixer
+    if (shutter_sound != NULL) {
+        Mix_FreeChunk(shutter_sound);
+        shutter_sound = NULL;
     }
+    Mix_CloseAudio();
 
     if (img_buffer) {
         free(img_buffer);

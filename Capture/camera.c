@@ -19,12 +19,17 @@
 static AVFormatContext *fmt_ctx = NULL;
 static AVCodecContext *codec_ctx = NULL;
 static struct SwsContext *sws_ctx = NULL;
+static struct SwsContext *sws_ctx_full = NULL;
 static int video_stream_index = -1;
 static pthread_t camera_thread;
 static bool camera_running = false;
 static uint8_t *camera_frame_data = NULL;
+static uint8_t *camera_frame_full = NULL;  // Full resolution frame buffer
+static int full_width = 0;
+static int full_height = 0;
 static pthread_mutex_t frame_mutex = PTHREAD_MUTEX_INITIALIZER;
 static AVFrame *frame_rgb = NULL;
+static AVFrame *frame_rgb_full = NULL;
 
 // Forward declarations
 static void *camera_thread_func(void *arg);
@@ -58,19 +63,18 @@ int camera_init(void)
         }
     }
 
-    // Open video device
+    // Open video device - first without specifying resolution to query capabilities
     AVDictionary *options = NULL;
-    av_dict_set(&options, "input_format", "mjpeg", 0);  // Try MJPEG first
-    av_dict_set(&options, "video_size", "320x240", 0);
-    av_dict_set(&options, "framerate", "30", 0);
-
-    // Try to open with v4l2 input format
     const AVInputFormat *input_fmt = av_find_input_format("v4l2");
     if (!input_fmt) {
         fprintf(stderr, "v4l2 input format not found\n");
-        av_dict_free(&options);
         return -1;
     }
+
+    // Try opening without specifying resolution to get the default/maximum
+    av_dict_set(&options, "input_format", "mjpeg", 0);  // Use MJPEG for best quality
+    av_dict_set(&options, "framerate", "30", 0);
+    // Don't set video_size - let the driver choose the best available
 
     ret = avformat_open_input(&fmt_ctx, VIDEO_DEVICE, input_fmt, &options);
     av_dict_free(&options);
@@ -142,7 +146,11 @@ int camera_init(void)
         return -1;
     }
 
-    // Allocate RGB frame
+    // Store full resolution dimensions
+    full_width = codec_ctx->width;
+    full_height = codec_ctx->height;
+
+    // Allocate RGB frame for preview (downscaled)
     frame_rgb = av_frame_alloc();
     if (!frame_rgb) {
         fprintf(stderr, "Could not allocate RGB frame\n");
@@ -164,7 +172,42 @@ int camera_init(void)
         return -1;
     }
 
-    // Initialize software scaler context
+    // Allocate RGB frame for full resolution capture
+    frame_rgb_full = av_frame_alloc();
+    if (!frame_rgb_full) {
+        fprintf(stderr, "Could not allocate full RGB frame\n");
+        av_frame_free(&frame_rgb);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&fmt_ctx);
+        return -1;
+    }
+
+    frame_rgb_full->format = AV_PIX_FMT_RGB24;
+    frame_rgb_full->width = full_width;
+    frame_rgb_full->height = full_height;
+
+    ret = av_frame_get_buffer(frame_rgb_full, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate full RGB frame buffer\n");
+        av_frame_free(&frame_rgb_full);
+        av_frame_free(&frame_rgb);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&fmt_ctx);
+        return -1;
+    }
+
+    // Allocate buffer for full resolution frame data
+    camera_frame_full = malloc(full_width * full_height * 3);
+    if (!camera_frame_full) {
+        fprintf(stderr, "Failed to allocate full frame buffer\n");
+        av_frame_free(&frame_rgb_full);
+        av_frame_free(&frame_rgb);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&fmt_ctx);
+        return -1;
+    }
+
+    // Initialize software scaler context for preview (downscaled)
     sws_ctx = sws_getContext(
         codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
         CAMERA_WIDTH, CAMERA_HEIGHT, AV_PIX_FMT_RGB24,
@@ -172,6 +215,23 @@ int camera_init(void)
 
     if (!sws_ctx) {
         fprintf(stderr, "Could not initialize sws context\n");
+        av_frame_free(&frame_rgb_full);
+        av_frame_free(&frame_rgb);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&fmt_ctx);
+        return -1;
+    }
+
+    // Initialize software scaler context for full resolution
+    sws_ctx_full = sws_getContext(
+        codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+        full_width, full_height, AV_PIX_FMT_RGB24,
+        SWS_BILINEAR, NULL, NULL, NULL);
+
+    if (!sws_ctx_full) {
+        fprintf(stderr, "Could not initialize full sws context\n");
+        sws_freeContext(sws_ctx);
+        av_frame_free(&frame_rgb_full);
         av_frame_free(&frame_rgb);
         avcodec_free_context(&codec_ctx);
         avformat_close_input(&fmt_ctx);
@@ -180,8 +240,9 @@ int camera_init(void)
 
     printf("Camera initialized successfully with FFmpeg\n");
     printf("  Format: %s\n", codec->name);
-    printf("  Resolution: %dx%d\n", codec_ctx->width, codec_ctx->height);
-    printf("  Target: %dx%d RGB24\n", CAMERA_WIDTH, CAMERA_HEIGHT);
+    printf("  Native Resolution: %dx%d (auto-detected maximum)\n", codec_ctx->width, codec_ctx->height);
+    printf("  Preview: %dx%d RGB24 (downscaled for display)\n", CAMERA_WIDTH, CAMERA_HEIGHT);
+    printf("  Capture: %dx%d RGB24 (full resolution)\n", full_width, full_height);
 
     return 0;
 }
@@ -191,9 +252,18 @@ int camera_init(void)
  */
 void camera_cleanup(void)
 {
+    if (sws_ctx_full) {
+        sws_freeContext(sws_ctx_full);
+        sws_ctx_full = NULL;
+    }
+
     if (sws_ctx) {
         sws_freeContext(sws_ctx);
         sws_ctx = NULL;
+    }
+
+    if (frame_rgb_full) {
+        av_frame_free(&frame_rgb_full);
     }
 
     if (frame_rgb) {
@@ -206,6 +276,11 @@ void camera_cleanup(void)
 
     if (fmt_ctx) {
         avformat_close_input(&fmt_ctx);
+    }
+
+    if (camera_frame_full) {
+        free(camera_frame_full);
+        camera_frame_full = NULL;
     }
 
     if (camera_frame_data) {
@@ -268,19 +343,35 @@ static void *camera_thread_func(void *arg)
                     break;
                 }
 
-                // Convert to RGB24
+                // Convert to RGB24 for preview (downscaled)
                 sws_scale(sws_ctx,
                          (const uint8_t * const*)frame->data, frame->linesize,
                          0, codec_ctx->height,
                          frame_rgb->data, frame_rgb->linesize);
 
-                // Copy RGB data to buffer
+                // Convert to RGB24 for full resolution capture
+                sws_scale(sws_ctx_full,
+                         (const uint8_t * const*)frame->data, frame->linesize,
+                         0, codec_ctx->height,
+                         frame_rgb_full->data, frame_rgb_full->linesize);
+
+                // Copy RGB data to buffers
                 pthread_mutex_lock(&frame_mutex);
+
+                // Copy preview frame
                 for (int y = 0; y < CAMERA_HEIGHT; y++) {
                     memcpy(camera_frame_data + y * CAMERA_WIDTH * 3,
                            frame_rgb->data[0] + y * frame_rgb->linesize[0],
                            CAMERA_WIDTH * 3);
                 }
+
+                // Copy full resolution frame
+                for (int y = 0; y < full_height; y++) {
+                    memcpy(camera_frame_full + y * full_width * 3,
+                           frame_rgb_full->data[0] + y * frame_rgb_full->linesize[0],
+                           full_width * 3);
+                }
+
                 pthread_mutex_unlock(&frame_mutex);
             }
         }
@@ -348,11 +439,11 @@ bool camera_is_running(void)
 }
 
 /**
- * Save current frame to file in JPEG format
+ * Save current frame to file in JPEG format at full camera resolution
  */
 int camera_save_photo(const char *filename)
 {
-    if (!camera_frame_data) {
+    if (!camera_frame_full) {
         fprintf(stderr, "No camera data available\n");
         return -1;
     }
@@ -376,25 +467,25 @@ int camera_save_photo(const char *filename)
     jpeg_create_compress(&cinfo);
     jpeg_stdio_dest(&cinfo, fp);
 
-    // Set image parameters
-    cinfo.image_width = CAMERA_WIDTH;
-    cinfo.image_height = CAMERA_HEIGHT;
+    // Set image parameters (use full resolution)
+    cinfo.image_width = full_width;
+    cinfo.image_height = full_height;
     cinfo.input_components = 3;           // RGB
     cinfo.in_color_space = JCS_RGB;
 
     // Set default compression parameters
     jpeg_set_defaults(&cinfo);
-    jpeg_set_quality(&cinfo, 90, TRUE);   // Quality: 90 (0-100)
+    jpeg_set_quality(&cinfo, 95, TRUE);   // Higher quality for full-res
 
     // Start compression
     jpeg_start_compress(&cinfo, TRUE);
 
     // Write scanlines
-    row_stride = CAMERA_WIDTH * 3;
+    row_stride = full_width * 3;
     pthread_mutex_lock(&frame_mutex);
 
     while (cinfo.next_scanline < cinfo.image_height) {
-        row_pointer[0] = &camera_frame_data[cinfo.next_scanline * row_stride];
+        row_pointer[0] = &camera_frame_full[cinfo.next_scanline * row_stride];
         jpeg_write_scanlines(&cinfo, row_pointer, 1);
     }
 
@@ -405,6 +496,6 @@ int camera_save_photo(const char *filename)
     jpeg_destroy_compress(&cinfo);
     fclose(fp);
 
-    printf("Photo saved: %s\n", filename);
+    printf("Photo saved: %s (%dx%d)\n", filename, full_width, full_height);
     return 0;
 }

@@ -5,9 +5,10 @@ A webcam photo capture application built with LVGL GUI library, featuring Korean
 ## Features
 
 - **Live Webcam Preview** - Real-time camera feed display (320x240 @ 15 FPS)
-- **Photo Capture** - Save high-quality JPEG photos with timestamp filenames
+- **High-Resolution Photo Capture** - Automatically saves at camera's maximum resolution (e.g., 1920x1080)
+- **Dynamic Resolution Detection** - Automatically detects and uses camera's maximum supported resolution
 - **White Flash Effect** - Screen flash when capturing for better lighting
-- **Shutter Sound** - Audible feedback with synthetic camera shutter sound
+- **Realistic Shutter Sound** - MP3 audio playback for authentic camera shutter sound
 - **Korean UI** - Full Korean language interface using NanumGothicCoding font
 - **Touch/Mouse Control** - Click the blue "촬영" (Capture) button to take photos
 - **Status Display** - Real-time status messages and photo count
@@ -15,16 +16,18 @@ A webcam photo capture application built with LVGL GUI library, featuring Korean
 ## Window Specifications
 
 - **Window Size**: 340x640 pixels
-- **Camera Resolution**: 320x240 pixels
-- **Video Format**: RGB24 via FFmpeg
-- **Photo Format**: JPEG (90% quality)
-- **Audio**: SDL2 audio with synthetic shutter sound (44.1kHz, mono)
+- **Preview Resolution**: 320x240 pixels (downscaled for smooth display)
+- **Capture Resolution**: Auto-detected maximum (e.g., 1920x1080 for Full HD cameras)
+- **Video Format**: RGB24 via FFmpeg with automatic color space conversion
+- **Photo Format**: JPEG (95% quality for full-resolution captures)
+- **Audio**: MP3 playback via SDL2_mixer for realistic shutter sound
 
 ## Requirements
 
 ### System Dependencies
 - GCC compiler
 - SDL2 development libraries
+- SDL2_mixer development libraries (for MP3 audio playback)
 - FreeType2 development libraries
 - libjpeg development libraries
 - FFmpeg development libraries (libavformat, libavcodec, libavdevice, libswscale, libavutil)
@@ -33,7 +36,7 @@ A webcam photo capture application built with LVGL GUI library, featuring Korean
 ### Installation (Ubuntu/Debian)
 ```bash
 sudo apt-get install build-essential
-sudo apt-get install libsdl2-dev
+sudo apt-get install libsdl2-dev libsdl2-mixer-dev
 sudo apt-get install libfreetype6-dev
 sudo apt-get install libjpeg-dev
 sudo apt-get install libavformat-dev libavcodec-dev libavdevice-dev libswscale-dev libavutil-dev
@@ -93,15 +96,16 @@ make run
 ```
 Capture/
 ├── main.c              # Application entry point, SDL/LVGL initialization
-├── camera.c/h          # FFmpeg-based webcam capture logic
-├── gui.c/h             # LVGL GUI with Korean fonts, flash, and audio
-├── Makefile            # Build configuration
+├── camera.c/h          # FFmpeg-based webcam capture with dual-resolution support
+├── gui.c/h             # LVGL GUI with Korean fonts, flash, and MP3 audio
+├── Makefile            # Build configuration with SDL2_mixer
 ├── setup.sh            # Dependency checker and LVGL builder
 ├── rebuild_lvgl.sh     # LVGL library rebuild script
 ├── lv_conf.h           # LVGL configuration (FreeType enabled)
-├── assets/             # Font files directory
+├── assets/             # Asset files directory
 │   ├── NanumGothicCoding.ttf
-│   └── NanumGothicCoding-Bold.ttf
+│   ├── NanumGothicCoding-Bold.ttf
+│   └── CameraShuffter.mp3  # Shutter sound file
 └── lvgl/               # LVGL library (git submodule)
 ```
 
@@ -110,20 +114,21 @@ Capture/
 ### Modules
 
 1. **main.c** - Initializes LVGL with SDL2 driver, manages main event loop
-2. **camera.c** - FFmpeg-based webcam interface, JPEG encoding, threaded frame capture
-3. **gui.c** - LVGL widgets, Korean font loading via FreeType, UI layout
+2. **camera.c** - FFmpeg-based webcam interface with dual-resolution support, JPEG encoding, threaded frame capture
+3. **gui.c** - LVGL widgets, Korean font loading via FreeType, MP3 audio playback, UI layout
 
 ### Key Technical Details
 
 - Uses LVGL v9.2 with built-in SDL2 driver (`lv_sdl_window_create()`)
-- FFmpeg for robust video capture (libavformat, libavcodec, libavdevice, libswscale)
-- Multi-threaded camera capture with pthread
+- FFmpeg for robust video capture with dynamic resolution detection
+- **Dual-resolution buffer system**: 320x240 for preview, full resolution (e.g., 1920x1080) for capture
+- Multi-threaded camera capture with pthread and mutex-based synchronization
 - Automatic color space conversion (any format to RGB888)
 - FreeType integration for dynamic TTF font rendering
 - RGB888 color format for image display
 - Frame rate limiting (15 FPS) for optimal performance
 - White flash overlay using LVGL timers for improved photo brightness
-- Synthetic audio generation with SDL2 for shutter sound (two-tone beep)
+- MP3 audio playback using SDL2_mixer for realistic camera shutter sound
 
 ## Output
 
@@ -194,8 +199,11 @@ speaker-test -t sine -f 1000 -l 1
 ### Changing Window Size
 Update `WINDOW_WIDTH` and `WINDOW_HEIGHT` in `main.c`
 
-### Changing Camera Resolution
-Update `CAMERA_WIDTH` and `CAMERA_HEIGHT` in `camera.h`
+### Changing Preview Resolution
+Update `CAMERA_WIDTH` and `CAMERA_HEIGHT` in `camera.h` (capture resolution is auto-detected)
+
+### Changing Shutter Sound
+Replace `assets/CameraShuffter.mp3` with your own MP3 audio file
 
 ## Korean Language Support
 

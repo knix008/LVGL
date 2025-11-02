@@ -11,7 +11,7 @@ LDFLAGS = -lpthread -lm -ljpeg
 
 # SDL2 configuration
 SDL_CFLAGS = $(shell pkg-config --cflags sdl2)
-SDL_LIBS = $(shell pkg-config --libs sdl2)
+SDL_LIBS = $(shell pkg-config --libs sdl2 SDL2_mixer)
 
 # FreeType configuration
 FREETYPE_CFLAGS = $(shell pkg-config --cflags freetype2)
