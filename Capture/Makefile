@@ -50,6 +50,7 @@ $(LVGL_LIB):
 clean:
 	@echo "Cleaning build files..."
 	rm -f $(OBJECTS) $(TARGET)  *.jpg
+	make -C test clean
 	@echo "Clean complete"
 
 distclean: clean
