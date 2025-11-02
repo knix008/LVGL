@@ -150,16 +150,20 @@ int camera_init(void)
     full_width = codec_ctx->width;
     full_height = codec_ctx->height;
 
-    // Allocate RGB frame for preview (downscaled)
+    // Debug: Print pixel format info
+    printf("  Pixel format: %s (id: %d)\n",
+           av_get_pix_fmt_name(codec_ctx->pix_fmt), codec_ctx->pix_fmt);
+
+    // Allocate BGR frame for preview (downscaled, BGR for LVGL)
     frame_rgb = av_frame_alloc();
     if (!frame_rgb) {
-        fprintf(stderr, "Could not allocate RGB frame\n");
+        fprintf(stderr, "Could not allocate BGR frame\n");
         avcodec_free_context(&codec_ctx);
         avformat_close_input(&fmt_ctx);
         return -1;
     }
 
-    frame_rgb->format = AV_PIX_FMT_RGB24;
+    frame_rgb->format = AV_PIX_FMT_BGR24;
     frame_rgb->width = CAMERA_WIDTH;
     frame_rgb->height = CAMERA_HEIGHT;
 
@@ -207,10 +211,11 @@ int camera_init(void)
         return -1;
     }
 
-    // Initialize software scaler context for preview (downscaled)
+    // Initialize software scaler context for preview (downscaled from full res)
+    // Use BGR24 for LVGL compatibility (LVGL's RGB888 expects BGR byte order)
     sws_ctx = sws_getContext(
-        codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
-        CAMERA_WIDTH, CAMERA_HEIGHT, AV_PIX_FMT_RGB24,
+        full_width, full_height, AV_PIX_FMT_RGB24,
+        CAMERA_WIDTH, CAMERA_HEIGHT, AV_PIX_FMT_BGR24,
         SWS_BILINEAR, NULL, NULL, NULL);
 
     if (!sws_ctx) {
@@ -222,7 +227,7 @@ int camera_init(void)
         return -1;
     }
 
-    // Initialize software scaler context for full resolution
+    // Initialize software scaler context for full resolution (YUV to RGB)
     sws_ctx_full = sws_getContext(
         codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
         full_width, full_height, AV_PIX_FMT_RGB24,
@@ -237,6 +242,25 @@ int camera_init(void)
         avformat_close_input(&fmt_ctx);
         return -1;
     }
+
+    // Get the pixel format name to check if it's YUVJ (full range JPEG)
+    const char *pix_fmt_name = av_get_pix_fmt_name(codec_ctx->pix_fmt);
+    printf("  Detected pixel format: %s\n", pix_fmt_name);
+
+    // For YUVJ formats, explicitly set color space to ensure consistency
+    if (pix_fmt_name && strstr(pix_fmt_name, "yuvj")) {
+        const int *inv_table = NULL, *table = NULL;
+        int src_range, dst_range, brightness, contrast, saturation;
+
+        // Get current color space details
+        sws_getColorspaceDetails(sws_ctx_full, (int**)&inv_table, &src_range,
+                                (int**)&table, &dst_range,
+                                &brightness, &contrast, &saturation);
+
+        // Log what swscaler is using by default
+        printf("  Default color space - src_range: %d, dst_range: %d\n", src_range, dst_range);
+    }
+
 
     printf("Camera initialized successfully with FFmpeg\n");
     printf("  Format: %s\n", codec->name);
@@ -343,17 +367,17 @@ static void *camera_thread_func(void *arg)
                     break;
                 }
 
-                // Convert to RGB24 for preview (downscaled)
-                sws_scale(sws_ctx,
-                         (const uint8_t * const*)frame->data, frame->linesize,
-                         0, codec_ctx->height,
-                         frame_rgb->data, frame_rgb->linesize);
-
-                // Convert to RGB24 for full resolution capture
+                // First: Convert YUV to RGB24 at full resolution
                 sws_scale(sws_ctx_full,
                          (const uint8_t * const*)frame->data, frame->linesize,
                          0, codec_ctx->height,
                          frame_rgb_full->data, frame_rgb_full->linesize);
+
+                // Second: Downscale full RGB to preview size
+                sws_scale(sws_ctx,
+                         (const uint8_t * const*)frame_rgb_full->data, frame_rgb_full->linesize,
+                         0, full_height,
+                         frame_rgb->data, frame_rgb->linesize);
 
                 // Copy RGB data to buffers
                 pthread_mutex_lock(&frame_mutex);

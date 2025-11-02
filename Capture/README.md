@@ -16,9 +16,10 @@ A webcam photo capture application built with LVGL GUI library, featuring Korean
 ## Window Specifications
 
 - **Window Size**: 340x640 pixels
-- **Preview Resolution**: 320x240 pixels (downscaled for smooth display)
+- **Preview Resolution**: 320x240 pixels (downscaled for smooth display, BGR24 format)
 - **Capture Resolution**: Auto-detected maximum (e.g., 1920x1080 for Full HD cameras)
-- **Video Format**: RGB24 via FFmpeg with automatic color space conversion
+- **Video Format**: YUVJ422P (MJPEG) converted to RGB24 via FFmpeg
+- **Color Handling**: Dual-format system - BGR24 for live preview, RGB24 for JPEG capture
 - **Photo Format**: JPEG (95% quality for full-resolution captures)
 - **Audio**: MP3 playback via SDL2_mixer for realistic shutter sound
 
@@ -121,11 +122,13 @@ Capture/
 
 - Uses LVGL v9.2 with built-in SDL2 driver (`lv_sdl_window_create()`)
 - FFmpeg for robust video capture with dynamic resolution detection
-- **Dual-resolution buffer system**: 320x240 for preview, full resolution (e.g., 1920x1080) for capture
+- **Dual-resolution buffer system**: 320x240 BGR24 for preview, 1920x1080 RGB24 for capture
+- **Dual-format color handling**:
+  - Preview: YUV → RGB24 → BGR24 (for LVGL display compatibility)
+  - Capture: YUV → RGB24 (for correct JPEG encoding)
 - Multi-threaded camera capture with pthread and mutex-based synchronization
-- Automatic color space conversion (any format to RGB888)
+- Automatic color space conversion with full-range JPEG support
 - FreeType integration for dynamic TTF font rendering
-- RGB888 color format for image display
 - Frame rate limiting (15 FPS) for optimal performance
 - White flash overlay using LVGL timers for improved photo brightness
 - MP3 audio playback using SDL2_mixer for realistic camera shutter sound
