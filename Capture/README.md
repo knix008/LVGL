@@ -102,11 +102,16 @@ Capture/
 ├── Makefile            # Build configuration with SDL2_mixer
 ├── setup.sh            # Dependency checker and LVGL builder
 ├── rebuild_lvgl.sh     # LVGL library rebuild script
+├── run_tests.sh        # Test suite runner script
 ├── lv_conf.h           # LVGL configuration (FreeType enabled)
 ├── assets/             # Asset files directory
 │   ├── NanumGothicCoding.ttf
 │   ├── NanumGothicCoding-Bold.ttf
 │   └── CameraShuffter.mp3  # Shutter sound file
+├── test/               # Unit tests directory
+│   ├── Makefile
+│   ├── test_camera.c
+│   └── test_integration.c
 └── lvgl/               # LVGL library (git submodule)
 ```
 
@@ -207,6 +212,35 @@ Update `CAMERA_WIDTH` and `CAMERA_HEIGHT` in `camera.h` (capture resolution is a
 
 ### Changing Shutter Sound
 Replace `assets/CameraShuffter.mp3` with your own MP3 audio file
+
+## Testing
+
+### Running Tests
+Run all unit tests and integration tests:
+```bash
+./run_tests.sh
+```
+
+### Test Suite
+The test suite includes:
+- **test_camera.c**: Unit tests for camera module
+  - Camera initialization
+  - Frame capture
+  - Photo saving
+  - Start/stop functionality
+- **test_integration.c**: Integration tests
+  - Full camera workflow
+  - Multiple photo captures
+  - Fallback/test pattern mode
+
+### Manual Testing
+Build and run tests manually:
+```bash
+cd test
+make clean
+make all
+make run
+```
 
 ## Korean Language Support
 

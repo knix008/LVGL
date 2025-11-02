@@ -29,3 +29,9 @@ Thumbs.db
 *.log
 core
 vgcore.*
+
+# Test artifacts
+test/*.o
+test/test_camera
+test/test_integration
+test/*.jpg
