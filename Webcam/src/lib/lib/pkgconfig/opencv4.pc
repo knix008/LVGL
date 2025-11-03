@@ -9,5 +9,5 @@ Name: OpenCV
 Description: Open Source Computer Vision Library
 Version: 4.12.0
 Libs: -L${exec_prefix}/lib -lopencv_world
-Libs.private: -L${exec_prefix}/lib/opencv4/3rdparty -llibprotobuf -llibwebp -lade -L/usr/lib/x86_64-linux-gnu -ljpeg -lpng -lz -ldl -lm -lpthread -lrt
+Libs.private: -L${exec_prefix}/lib/opencv4/3rdparty -llibprotobuf -lade -L/usr/lib/x86_64-linux-gnu -ljpeg -lwebp -lwebpmux -lwebpdemux -lpng -lz -ldl -lm -lpthread -lrt
 Cflags: -I${includedir}

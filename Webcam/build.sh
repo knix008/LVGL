@@ -8,6 +8,15 @@ echo "Building OpenCV 4.12.0 (CPU-only) and YOLOv8 Detection Program"
 mkdir -p lib
 mkdir -p build
 
+# Setup LVGL if not already present
+if [ ! -d "lvgl" ] || [ ! "$(ls -A lvgl)" ]; then
+    echo "Setting up LVGL Graphics Library..."
+    git clone --branch release/v9.2 --depth 1 https://github.com/lvgl/lvgl.git lvgl
+    echo "LVGL v9.2 has been cloned successfully!"
+else
+    echo "LVGL directory already exists, skipping clone..."
+fi
+
 # Check if OpenCV source exists
 if [ ! -d "src/opencv" ] || [ ! -f "src/opencv/CMakeLists.txt" ]; then
     echo "Downloading OpenCV 4.12.0..."
@@ -144,4 +153,6 @@ cmake .. \
 make -j$(nproc)
 
 echo "Build completed successfully!"
-echo "Executable: build/yolov8n_detection" 
+echo "Executables:"
+echo "  - build/face_detection"
+echo "  - build/webcam_viewer_simple" 

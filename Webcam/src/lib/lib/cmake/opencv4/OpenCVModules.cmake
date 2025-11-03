@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget libwebp libprotobuf ade ocv.3rdparty.flatbuffers ocv.3rdparty.v4l ocv.3rdparty.ffmpeg ocv.3rdparty.obsensor ocv.3rdparty.gtk3 opencv_world)
+foreach(_expectedTarget libprotobuf ade ocv.3rdparty.flatbuffers ocv.3rdparty.v4l ocv.3rdparty.ffmpeg ocv.3rdparty.obsensor ocv.3rdparty.gtk3 opencv_world)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -49,9 +49,6 @@ get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
-
-# Create imported target libwebp
-add_library(libwebp STATIC IMPORTED)
 
 # Create imported target libprotobuf
 add_library(libprotobuf STATIC IMPORTED)
@@ -100,7 +97,7 @@ set_target_properties(ocv.3rdparty.gtk3 PROPERTIES
 add_library(opencv_world STATIC IMPORTED)
 
 set_target_properties(opencv_world PROPERTIES
-  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:dl>;\$<LINK_ONLY:m>;\$<LINK_ONLY:pthread>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:Eigen3::Eigen>;\$<LINK_ONLY:ocv.3rdparty.flatbuffers>;\$<LINK_ONLY:libprotobuf>;/usr/lib/x86_64-linux-gnu/libjpeg.so;\$<LINK_ONLY:libwebp>;/usr/lib/x86_64-linux-gnu/libpng.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;\$<LINK_ONLY:ocv.3rdparty.v4l>;\$<LINK_ONLY:ocv.3rdparty.ffmpeg>;\$<LINK_ONLY:ocv.3rdparty.obsensor>;\$<LINK_ONLY:ocv.3rdparty.gtk3>;\$<LINK_ONLY:ade>"
+  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:dl>;\$<LINK_ONLY:m>;\$<LINK_ONLY:pthread>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:Eigen3::Eigen>;\$<LINK_ONLY:ocv.3rdparty.flatbuffers>;\$<LINK_ONLY:libprotobuf>;/usr/lib/x86_64-linux-gnu/libjpeg.so;/usr/lib/x86_64-linux-gnu/libwebp.so;/usr/lib/x86_64-linux-gnu/libwebpmux.so;/usr/lib/x86_64-linux-gnu/libwebpdemux.so;/usr/lib/x86_64-linux-gnu/libpng.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;/usr/lib/x86_64-linux-gnu/libz.so;\$<LINK_ONLY:ocv.3rdparty.v4l>;\$<LINK_ONLY:ocv.3rdparty.ffmpeg>;\$<LINK_ONLY:ocv.3rdparty.obsensor>;\$<LINK_ONLY:ocv.3rdparty.gtk3>;\$<LINK_ONLY:ade>"
 )
 
 if(CMAKE_VERSION VERSION_LESS 3.0.0)
