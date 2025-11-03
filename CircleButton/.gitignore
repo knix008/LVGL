@@ -1,0 +1,27 @@
+# Build artifacts
+*.o
+*.a
+button_demo
+
+# LVGL library
+lvgl/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary files
+*.tmp
+*.log
