@@ -6,8 +6,6 @@ webcam_capture
 
 # LVGL build artifacts
 lvgl/
-lvgl/build/
-lvgl/lib/
 
 # Captured photos
 photo_*.jpg

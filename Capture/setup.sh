@@ -87,6 +87,14 @@ else
     MISSING_PACKAGES+=("libavformat-dev" "libavcodec-dev" "libavdevice-dev" "libswscale-dev" "libavutil-dev")
 fi
 
+# Check for SDL2_mixer
+if pkg-config --exists SDL2_mixer; then
+    print_success "SDL2_mixer found"
+else
+    print_error "SDL2_mixer development library not found"
+    MISSING_PACKAGES+=("libsdl2-mixer-dev")
+fi
+
 # Install missing packages if any
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     echo ""
@@ -121,67 +129,37 @@ fi
 
 echo ""
 
-# 3. Check and install lv_font_conv
-echo "Step 3: Checking font converter..."
-echo ""
-
-if command -v lv_font_conv &> /dev/null; then
-    print_success "lv_font_conv found"
-else
-    print_info "lv_font_conv not found, installing..."
-    sudo npm install -g lv_font_conv
-    if command -v lv_font_conv &> /dev/null; then
-        print_success "lv_font_conv installed"
-    else
-        print_error "Failed to install lv_font_conv"
-        exit 1
-    fi
-fi
-
-echo ""
-
-# 4. Download Korean font
-echo "Step 4: Checking Korean font..."
+# 3. Check Korean fonts
+echo "Step 3: Checking Korean fonts..."
 echo ""
 
 mkdir -p assets
 
-if [ -f "assets/NanumGothic.ttf" ]; then
-    print_success "Nanum Gothic font found"
-else
+FONTS_FOUND=0
+if [ -f "assets/NanumGothicCoding.ttf" ]; then
+    print_success "NanumGothicCoding.ttf found"
+    FONTS_FOUND=1
+fi
+
+if [ -f "assets/NanumGothicCoding-Bold.ttf" ]; then
+    print_success "NanumGothicCoding-Bold.ttf found"
+    FONTS_FOUND=1
+fi
+
+if [ $FONTS_FOUND -eq 0 ]; then
     print_info "Downloading Nanum Gothic font..."
-    wget -q https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf -O assets/NanumGothic.ttf
-    if [ -f "assets/NanumGothic.ttf" ]; then
-        print_success "Font downloaded"
-    else
+    mkdir -p assets
+    if ! wget -q https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf -O assets/NanumGothic.ttf; then
         print_error "Failed to download font"
         exit 1
     fi
+    print_success "Font downloaded"
 fi
 
 echo ""
 
-# 5. Generate Korean fonts
-echo "Step 5: Generating Korean fonts for LVGL..."
-echo ""
-
-if [ -d "assets/fonts" ] && [ "$(ls -A assets/fonts/*.c 2>/dev/null)" ]; then
-    print_info "Fonts already generated, skipping"
-else
-    print_info "Generating fonts (this may take a minute)..."
-    ./generate_fonts.py
-    if [ $? -eq 0 ]; then
-        print_success "Fonts generated"
-    else
-        print_error "Font generation failed"
-        exit 1
-    fi
-fi
-
-echo ""
-
-# 6. Check webcam access
-echo "Step 6: Checking webcam access..."
+# 4. Check webcam access
+echo "Step 4: Checking webcam access..."
 echo ""
 
 if [ -c "/dev/video0" ]; then
@@ -192,8 +170,8 @@ fi
 
 echo ""
 
-# 7. Build LVGL library
-echo "Step 7: Building LVGL library..."
+# 5. Build LVGL library
+echo "Step 5: Building LVGL library..."
 echo ""
 
 # Check if LVGL needs to be rebuilt (force rebuild if requested)
@@ -201,40 +179,89 @@ if [ -f "lvgl/lib/liblvgl.a" ] && [ "$1" != "--rebuild" ]; then
     print_info "LVGL library already exists, skipping build"
     print_info "Use './setup.sh --rebuild' to force rebuild LVGL with FreeType"
 else
-    print_info "Building LVGL static library..."
-    
+    print_info "Building LVGL static library with FreeType support..."
+
     # Create build and lib directories for LVGL
     mkdir -p lvgl/build
     mkdir -p lvgl/lib
-    
-    # Find all LVGL source files
-    LVGL_SOURCES=$(find lvgl/src -name "*.c")
-    
-    print_info "Compiling LVGL sources..."
-    for src in $LVGL_SOURCES; do
-        obj="lvgl/build/$(basename ${src%.c}.o)"
-        if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
-            echo "  Compiling $src"
-            gcc -Wall -Wextra -O2 -I. -Ilvgl $(pkg-config --cflags freetype2) -c "$src" -o "$obj"
-        fi
-    done
-    
-    print_info "Creating static library..."
-    ar rcs lvgl/lib/liblvgl.a lvgl/build/*.o
-    print_success "LVGL library built: lvgl/lib/liblvgl.a"
+
+    # Use Python for efficient compilation
+    python3 << 'PYTHON_SCRIPT'
+import os
+import subprocess
+import glob
+import sys
+
+build_dir = "lvgl/build"
+lib_dir = "lvgl/lib"
+os.makedirs(build_dir, exist_ok=True)
+os.makedirs(lib_dir, exist_ok=True)
+
+# Get all LVGL source files
+sources = sorted(glob.glob("lvgl/src/**/*.c", recursive=True))
+total = len(sources)
+print(f"Found {total} LVGL source files")
+
+# Compile each file
+compiled = 0
+failed = []
+for i, src in enumerate(sources):
+    obj = os.path.join(build_dir, os.path.basename(src).replace(".c", ".o"))
+    result = subprocess.run(
+        f'gcc -Wall -Wextra -O2 -I. -Ilvgl $(pkg-config --cflags freetype2) -c "{src}" -o "{obj}"',
+        shell=True, capture_output=True, text=True
+    )
+    if result.returncode == 0:
+        compiled += 1
+    else:
+        failed.append((src, result.stderr))
+
+    # Show progress every 50 files
+    if (i + 1) % 50 == 0 or (i + 1) == total:
+        print(f"  Progress: {i+1}/{total} files compiled", file=sys.stderr)
+
+if failed:
+    print(f"✗ {len(failed)} compilation errors:", file=sys.stderr)
+    for src, err in failed[:3]:  # Show first 3 errors
+        print(f"  {src}: {err[:100]}", file=sys.stderr)
+    sys.exit(1)
+
+print(f"✓ Successfully compiled {compiled}/{total} files")
+
+# Create static library
+obj_files = " ".join(glob.glob(f"{build_dir}/*.o"))
+result = subprocess.run(f"ar rcs {lib_dir}/liblvgl.a {obj_files}", shell=True, capture_output=True, text=True)
+if result.returncode == 0:
+    print(f"✓ LVGL library created: {lib_dir}/liblvgl.a")
+else:
+    print(f"✗ Error creating library: {result.stderr}", file=sys.stderr)
+    sys.exit(1)
+PYTHON_SCRIPT
+
+    if [ $? -eq 0 ]; then
+        print_success "LVGL library built successfully"
+    else
+        print_error "LVGL compilation failed"
+        exit 1
+    fi
 fi
 
 echo ""
 
-# 8. Build the webcam capture application
-echo "Step 8: Building webcam capture application..."
+# 6. Build the webcam capture application
+echo "Step 6: Building webcam capture application..."
 echo ""
 
 if [ -f "Makefile" ]; then
     print_info "Building application..."
     make clean
     make
-    print_success "Application built successfully: webcam_capture"
+    if [ $? -eq 0 ]; then
+        print_success "Application built successfully"
+    else
+        print_error "Application build failed"
+        exit 1
+    fi
 else
     print_error "Makefile not found"
     exit 1
@@ -246,8 +273,11 @@ echo " Setup Complete!"
 echo "========================================="
 echo ""
 echo "To run the application:"
-echo "  ./webcam_capture"
+echo "  ./camera"
 echo ""
 echo "Make sure your webcam is connected to /dev/video0"
 echo "Photos will be saved as JPEG files in the current directory"
+echo ""
+echo "To rebuild LVGL with FreeType support, run:"
+echo "  ./setup.sh --rebuild"
 echo ""

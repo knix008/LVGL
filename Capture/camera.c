@@ -65,7 +65,7 @@ int camera_init(void)
 
     // Open video device - first without specifying resolution to query capabilities
     AVDictionary *options = NULL;
-    const AVInputFormat *input_fmt = av_find_input_format("v4l2");
+    AVInputFormat *input_fmt = (AVInputFormat *)av_find_input_format("v4l2");
     if (!input_fmt) {
         fprintf(stderr, "v4l2 input format not found\n");
         return -1;
