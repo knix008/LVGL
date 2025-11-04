@@ -106,8 +106,13 @@ static void cleanup(void)
     camera_stop();
     camera_cleanup();
 
-    // Cleanup GUI
-    gui_cleanup();
+    // Cleanup GUI only if LVGL is still initialized
+    // If LVGL already called lv_deinit(), GUI resources are already freed
+    if (lv_is_initialized()) {
+        gui_cleanup();
+    } else {
+        printf("LVGL already deinitialized, skipping GUI cleanup\n");
+    }
 
     printf("Cleanup complete\n");
 }
@@ -194,15 +199,19 @@ int main(int argc, char *argv[])
         }
 
         // Handle LVGL tasks - returns time until next task
-        // When window is closed, LVGL will call exit(0) directly (LV_SDL_DIRECT_EXIT=1)
         uint32_t time_till_next = lv_timer_handler();
+
+        // Check if LVGL has been deinitialized (window closed) AFTER timer handler
+        // When LV_SDL_DIRECT_EXIT=0, LVGL calls lv_deinit() on window close
+        if (!lv_is_initialized()) {
+            printf("Window closed, exiting main loop...\n");
+            break;
+        }
 
         lv_delay_ms(time_till_next < 5 ? time_till_next : 5);  // Max 5ms delay
     }
 
     // Cleanup
-    // Note: This code is unreachable when LV_SDL_DIRECT_EXIT=1
-    // LVGL will call exit(0) directly when the window is closed
     cleanup();
 
     printf("Application closed\n");

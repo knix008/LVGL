@@ -224,8 +224,14 @@ void gui_update_camera_preview(uint8_t *frame_data)
     // Copy frame data to image buffer
     memcpy(img_buffer, frame_data, CAMERA_WIDTH * CAMERA_HEIGHT * 3);
 
-    // Force image refresh - no need to re-set source since we're modifying the buffer in place
-    lv_obj_invalidate(camera_img);
+    // Only update LVGL objects if initialized
+    if (lv_is_initialized()) {
+        // Re-set the image source to notify LVGL of the update
+        lv_image_set_src(camera_img, &img_dsc);
+
+        // Force image refresh
+        lv_obj_invalidate(camera_img);
+    }
 }
 
 /**
@@ -334,8 +340,14 @@ void gui_update_camera_preview_with_faces(uint8_t *frame_data, const FaceDetecti
                       0, 255, 0, 2);  // Green color (R=0, G=255, B=0)
     }
 
-    // Force image refresh - no need to re-set source since we're modifying the buffer in place
-    lv_obj_invalidate(camera_img);
+    // Only update LVGL objects if initialized
+    if (lv_is_initialized()) {
+        // Re-set the image source to notify LVGL of the update
+        lv_image_set_src(camera_img, &img_dsc);
+
+        // Force image refresh
+        lv_obj_invalidate(camera_img);
+    }
 
     // Initialize confidence labels if not already done
     if (!conf_labels_initialized) {
@@ -489,12 +501,17 @@ void gui_play_shutter_sound(void)
  */
 void gui_cleanup(void)
 {
-    // Destroy FreeType fonts
-    if (font_12) lv_freetype_font_delete(font_12);
-    if (font_14) lv_freetype_font_delete(font_14);
-    if (font_16) lv_freetype_font_delete(font_16);
-    if (font_20) lv_freetype_font_delete(font_20);
-    if (font_24) lv_freetype_font_delete(font_24);
+    // Only cleanup FreeType fonts if LVGL is still initialized
+    if (lv_is_initialized()) {
+        // Destroy FreeType fonts
+        if (font_12) lv_freetype_font_delete(font_12);
+        if (font_14) lv_freetype_font_delete(font_14);
+        if (font_16) lv_freetype_font_delete(font_16);
+        if (font_20) lv_freetype_font_delete(font_20);
+        if (font_24) lv_freetype_font_delete(font_24);
+
+        font_12 = font_14 = font_16 = font_20 = font_24 = NULL;
+    }
 
     // Note: lv_freetype_uninit() is called automatically by lv_deinit()
     // in main.c, so we don't need to call it here
@@ -506,6 +523,7 @@ void gui_cleanup(void)
     }
     Mix_CloseAudio();
 
+    // Free image buffer (safe to do even if LVGL is deinitialized)
     if (img_buffer) {
         free(img_buffer);
         img_buffer = NULL;
