@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <jpeglib.h>
 #include <libavformat/avformat.h>
@@ -276,41 +277,83 @@ int camera_init(void)
  */
 void camera_cleanup(void)
 {
+    printf("Starting camera cleanup...\n");
+
+    // Step 1: First, make sure camera thread is stopped
+    if (camera_running) {
+        printf("Camera still running, stopping it...\n");
+        camera_stop();
+    }
+
+    // Step 2: Give system a moment to stabilize
+    printf("Stabilizing device...\n");
+    usleep(200000);  // 200ms delay
+
+    // Step 3: Free software scaling contexts (safe to free even if in use)
     if (sws_ctx_full) {
+        printf("Freeing scaling context (full)...\n");
         sws_freeContext(sws_ctx_full);
         sws_ctx_full = NULL;
     }
 
     if (sws_ctx) {
+        printf("Freeing scaling context...\n");
         sws_freeContext(sws_ctx);
         sws_ctx = NULL;
     }
 
+    // Step 4: Free frame buffers
     if (frame_rgb_full) {
+        printf("Freeing RGB frame (full)...\n");
         av_frame_free(&frame_rgb_full);
+        frame_rgb_full = NULL;
     }
 
     if (frame_rgb) {
+        printf("Freeing RGB frame...\n");
         av_frame_free(&frame_rgb);
+        frame_rgb = NULL;
     }
 
+    // Step 5: Free codec context
     if (codec_ctx) {
+        printf("Freeing codec context...\n");
         avcodec_free_context(&codec_ctx);
+        codec_ctx = NULL;
     }
 
+    // Step 6: Close format context and release device
+    // This must be done LAST and very carefully
     if (fmt_ctx) {
+        printf("Closing input format and releasing device (this is critical)...\n");
+        fflush(stdout);  // Flush output before critical operation
+
+        // Close gracefully - avformat_close_input returns void
         avformat_close_input(&fmt_ctx);
+        printf("Device closed, waiting for driver to stabilize...\n");
+        fmt_ctx = NULL;
+
+        // Give driver time to cleanup and release device
+        usleep(500000);  // 500ms delay for device reset
+        printf("Device released successfully\n");
     }
 
+    // Step 7: Free camera frame data buffers
     if (camera_frame_full) {
+        printf("Freeing full resolution frame buffer...\n");
         free(camera_frame_full);
         camera_frame_full = NULL;
     }
 
     if (camera_frame_data) {
+        printf("Freeing preview frame buffer...\n");
         free(camera_frame_data);
         camera_frame_data = NULL;
     }
+
+    // Step 8: Reset state variables
+    video_stream_index = -1;
+    camera_running = false;
 
     printf("Camera cleanup complete\n");
 }
@@ -438,9 +481,21 @@ int camera_start(void)
 void camera_stop(void)
 {
     if (camera_running) {
+        printf("Stopping camera capture thread...\n");
         camera_running = false;
-        if (fmt_ctx) {  // Only join thread if camera was actually running
-            pthread_join(camera_thread, NULL);
+
+        // Give thread a moment to notice the flag
+        usleep(100000);  // 100ms
+
+        // Wait for thread to finish (with timeout protection)
+        if (fmt_ctx) {
+            printf("Waiting for camera thread to join...\n");
+            int ret = pthread_join(camera_thread, NULL);
+            if (ret != 0) {
+                fprintf(stderr, "Warning: pthread_join failed with code %d\n", ret);
+            } else {
+                printf("Camera thread joined successfully\n");
+            }
         }
         printf("Camera capture stopped\n");
     }

@@ -10,7 +10,7 @@
 #include <stdbool.h>
 
 // Camera configuration
-#define VIDEO_DEVICE "/dev/video2"
+#define VIDEO_DEVICE "/dev/video0"
 #define CAMERA_WIDTH  320
 #define CAMERA_HEIGHT 240
 #define BUFFER_COUNT 4

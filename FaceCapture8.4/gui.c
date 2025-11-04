@@ -260,83 +260,8 @@ void gui_update_camera_preview_with_faces(uint8_t *frame_data, const FaceDetecti
     if (!camera_img || !img_buffer || !frame_data || !faces)
         return;
 
-    // Copy frame data to image buffer
+    // Copy frame data to image buffer (fastest operation)
     memcpy(img_buffer, frame_data, CAMERA_WIDTH * CAMERA_HEIGHT * 3);
-
-    // Draw face detection boxes on the frame
-    for (int i = 0; i < faces->count; i++) {
-        const FaceBox *box = &faces->boxes[i];
-
-        // Convert normalized coordinates to pixel coordinates
-        int x1 = (int)(box->x * CAMERA_WIDTH);
-        int y1 = (int)(box->y * CAMERA_HEIGHT);
-        int x2 = (int)((box->x + box->width) * CAMERA_WIDTH);
-        int y2 = (int)((box->y + box->height) * CAMERA_HEIGHT);
-
-        // Clamp to image bounds
-        if (x1 < 0) x1 = 0;
-        if (y1 < 0) y1 = 0;
-        if (x2 >= CAMERA_WIDTH) x2 = CAMERA_WIDTH - 1;
-        if (y2 >= CAMERA_HEIGHT) y2 = CAMERA_HEIGHT - 1;
-
-        // Draw rectangle (green color: RGB 0, 255, 0)
-        // Top horizontal line
-        for (int x = x1; x <= x2; x++) {
-            for (int t = 0; t < 2; t++) {  // 2 pixel thickness
-                if (y1 + t < CAMERA_HEIGHT) {
-                    int idx = ((y1 + t) * CAMERA_WIDTH + x) * 3;
-                    if (idx >= 0 && idx + 2 < CAMERA_WIDTH * CAMERA_HEIGHT * 3) {
-                        img_buffer[idx] = 0;      // R
-                        img_buffer[idx + 1] = 255; // G
-                        img_buffer[idx + 2] = 0;   // B
-                    }
-                }
-            }
-        }
-
-        // Bottom horizontal line
-        for (int x = x1; x <= x2; x++) {
-            for (int t = 0; t < 2; t++) {
-                if (y2 - t >= 0 && y2 - t < CAMERA_HEIGHT) {
-                    int idx = ((y2 - t) * CAMERA_WIDTH + x) * 3;
-                    if (idx >= 0 && idx + 2 < CAMERA_WIDTH * CAMERA_HEIGHT * 3) {
-                        img_buffer[idx] = 0;
-                        img_buffer[idx + 1] = 255;
-                        img_buffer[idx + 2] = 0;
-                    }
-                }
-            }
-        }
-
-        // Left vertical line
-        for (int y = y1; y <= y2; y++) {
-            for (int t = 0; t < 2; t++) {
-                if (x1 + t < CAMERA_WIDTH) {
-                    int idx = (y * CAMERA_WIDTH + (x1 + t)) * 3;
-                    if (idx >= 0 && idx + 2 < CAMERA_WIDTH * CAMERA_HEIGHT * 3) {
-                        img_buffer[idx] = 0;
-                        img_buffer[idx + 1] = 255;
-                        img_buffer[idx + 2] = 0;
-                    }
-                }
-            }
-        }
-
-        // Right vertical line
-        for (int y = y1; y <= y2; y++) {
-            for (int t = 0; t < 2; t++) {
-                if (x2 - t >= 0 && x2 - t < CAMERA_WIDTH) {
-                    int idx = (y * CAMERA_WIDTH + (x2 - t)) * 3;
-                    if (idx >= 0 && idx + 2 < CAMERA_WIDTH * CAMERA_HEIGHT * 3) {
-                        img_buffer[idx] = 0;
-                        img_buffer[idx + 1] = 255;
-                        img_buffer[idx + 2] = 0;
-                    }
-                }
-            }
-        }
-
-    }
 
     // Re-set the image source to notify LVGL of the update
     lv_image_set_src(camera_img, &img_dsc);
