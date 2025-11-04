@@ -163,9 +163,8 @@ int main(int argc, char *argv[])
     //int frame_count = 0;
     int update_skip = 0;
     FaceDetectionResult face_result;
-    int running = 1;
 
-    while (running) {
+    while (1) {
         // Update camera preview only every 3rd frame (~15 FPS instead of 200 FPS)
         if (camera_is_running()) {
             update_skip++;
@@ -195,18 +194,15 @@ int main(int argc, char *argv[])
         }
 
         // Handle LVGL tasks - returns time until next task
+        // When window is closed, LVGL will call exit(0) directly (LV_SDL_DIRECT_EXIT=1)
         uint32_t time_till_next = lv_timer_handler();
-
-        // Check for quit signal (ESC key or window close)
-        if (lv_screen_active() == NULL) {
-            printf("Window closed, exiting main loop...\n");
-            running = 0;
-        }
 
         lv_delay_ms(time_till_next < 5 ? time_till_next : 5);  // Max 5ms delay
     }
 
     // Cleanup
+    // Note: This code is unreachable when LV_SDL_DIRECT_EXIT=1
+    // LVGL will call exit(0) directly when the window is closed
     cleanup();
 
     printf("Application closed\n");

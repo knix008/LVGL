@@ -21,9 +21,41 @@ FREETYPE_LIBS = $(shell pkg-config --libs freetype2)
 FFMPEG_CFLAGS = $(shell pkg-config --cflags libavformat libavcodec libavdevice libswscale libavutil)
 FFMPEG_LIBS = $(shell pkg-config --libs libavformat libavcodec libavdevice libswscale libavutil)
 
+# Detect CPU architecture and OS for ONNX Runtime
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+# Determine ONNX Runtime directory based on architecture and OS
+ifeq ($(UNAME_S),Linux)
+    ifeq ($(UNAME_M),x86_64)
+        ONNX_DIR = onnxruntime-linux-x64-1.16.3
+    else ifeq ($(UNAME_M),aarch64)
+        ONNX_DIR = onnxruntime-linux-aarch64-1.16.3
+    else ifeq ($(UNAME_M),arm64)
+        ONNX_DIR = onnxruntime-linux-aarch64-1.16.3
+    else
+        $(error Unsupported Linux architecture: $(UNAME_M))
+    endif
+else ifeq ($(UNAME_S),Darwin)
+    ifeq ($(UNAME_M),x86_64)
+        ONNX_DIR = onnxruntime-osx-x64-1.16.3
+    else ifeq ($(UNAME_M),arm64)
+        ONNX_DIR = onnxruntime-osx-arm64-1.16.3
+    else
+        $(error Unsupported macOS architecture: $(UNAME_M))
+    endif
+else
+    $(error Unsupported operating system: $(UNAME_S))
+endif
+
 # ONNX Runtime configuration
-ONNX_CFLAGS = -I./onnxruntime-linux-x64-1.16.3/include
-ONNX_LIBS = -L./onnxruntime-linux-x64-1.16.3/lib -lonnxruntime -Wl,-rpath,./onnxruntime-linux-x64-1.16.3/lib
+ONNX_CFLAGS = -I./$(ONNX_DIR)/include
+ONNX_LIBS = -L./$(ONNX_DIR)/lib -lonnxruntime -Wl,-rpath,./$(ONNX_DIR)/lib
+
+# Print detected configuration
+$(info Detected OS: $(UNAME_S))
+$(info Detected Architecture: $(UNAME_M))
+$(info Using ONNX Runtime: $(ONNX_DIR))
 
 # Source files
 SOURCES = main.c camera.c gui.c face_detection.c
@@ -54,13 +86,11 @@ $(LVGL_LIB):
 clean:
 	@echo "Cleaning build files..."
 	rm -f $(OBJECTS) $(TARGET)
-	make -C test clean
 	@echo "Clean complete"
 
 cleanall: clean
 	@echo "Cleaning all generated files..."
 	rm -f $(OBJECTS) $(TARGET) lvgl
-	make -C test clean
 	@echo "All clean complete"
 
 distclean: clean

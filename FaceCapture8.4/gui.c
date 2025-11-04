@@ -224,10 +224,7 @@ void gui_update_camera_preview(uint8_t *frame_data)
     // Copy frame data to image buffer
     memcpy(img_buffer, frame_data, CAMERA_WIDTH * CAMERA_HEIGHT * 3);
 
-    // Re-set the image source to notify LVGL of the update
-    lv_image_set_src(camera_img, &img_dsc);
-
-    // Force image refresh
+    // Force image refresh - no need to re-set source since we're modifying the buffer in place
     lv_obj_invalidate(camera_img);
 }
 
@@ -253,6 +250,64 @@ static void init_confidence_labels(void)
 }
 
 /**
+ * Draw a rectangle on the RGB image buffer
+ */
+static void draw_rectangle(uint8_t *buffer, int img_width, int img_height,
+                          int x, int y, int width, int height,
+                          uint8_t r, uint8_t g, uint8_t b, int thickness)
+{
+    // Clamp coordinates to image bounds
+    if (x < 0) { width += x; x = 0; }
+    if (y < 0) { height += y; y = 0; }
+    if (x + width > img_width) width = img_width - x;
+    if (y + height > img_height) height = img_height - y;
+
+    if (width <= 0 || height <= 0) return;
+
+    // Draw top and bottom horizontal lines
+    for (int t = 0; t < thickness && t < height; t++) {
+        for (int i = 0; i < width; i++) {
+            // Top line
+            int top_idx = ((y + t) * img_width + (x + i)) * 3;
+            if (top_idx >= 0 && top_idx < img_width * img_height * 3 - 2) {
+                buffer[top_idx] = r;
+                buffer[top_idx + 1] = g;
+                buffer[top_idx + 2] = b;
+            }
+
+            // Bottom line
+            int bottom_idx = ((y + height - 1 - t) * img_width + (x + i)) * 3;
+            if (bottom_idx >= 0 && bottom_idx < img_width * img_height * 3 - 2) {
+                buffer[bottom_idx] = r;
+                buffer[bottom_idx + 1] = g;
+                buffer[bottom_idx + 2] = b;
+            }
+        }
+    }
+
+    // Draw left and right vertical lines
+    for (int t = 0; t < thickness && t < width; t++) {
+        for (int i = 0; i < height; i++) {
+            // Left line
+            int left_idx = ((y + i) * img_width + (x + t)) * 3;
+            if (left_idx >= 0 && left_idx < img_width * img_height * 3 - 2) {
+                buffer[left_idx] = r;
+                buffer[left_idx + 1] = g;
+                buffer[left_idx + 2] = b;
+            }
+
+            // Right line
+            int right_idx = ((y + i) * img_width + (x + width - 1 - t)) * 3;
+            if (right_idx >= 0 && right_idx < img_width * img_height * 3 - 2) {
+                buffer[right_idx] = r;
+                buffer[right_idx + 1] = g;
+                buffer[right_idx + 2] = b;
+            }
+        }
+    }
+}
+
+/**
  * Update camera preview with face detection overlay
  */
 void gui_update_camera_preview_with_faces(uint8_t *frame_data, const FaceDetectionResult *faces)
@@ -263,10 +318,23 @@ void gui_update_camera_preview_with_faces(uint8_t *frame_data, const FaceDetecti
     // Copy frame data to image buffer (fastest operation)
     memcpy(img_buffer, frame_data, CAMERA_WIDTH * CAMERA_HEIGHT * 3);
 
-    // Re-set the image source to notify LVGL of the update
-    lv_image_set_src(camera_img, &img_dsc);
+    // Draw rectangles on the image buffer for each detected face
+    for (int i = 0; i < faces->count; i++) {
+        const FaceBox *box = &faces->boxes[i];
 
-    // Force image refresh
+        // Convert normalized coordinates to pixel coordinates
+        int x = (int)(box->x * CAMERA_WIDTH);
+        int y = (int)(box->y * CAMERA_HEIGHT);
+        int width = (int)(box->width * CAMERA_WIDTH);
+        int height = (int)(box->height * CAMERA_HEIGHT);
+
+        // Draw green rectangle with thickness 2
+        draw_rectangle(img_buffer, CAMERA_WIDTH, CAMERA_HEIGHT,
+                      x, y, width, height,
+                      0, 255, 0, 2);  // Green color (R=0, G=255, B=0)
+    }
+
+    // Force image refresh - no need to re-set source since we're modifying the buffer in place
     lv_obj_invalidate(camera_img);
 
     // Initialize confidence labels if not already done
