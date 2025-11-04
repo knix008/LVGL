@@ -81,15 +81,6 @@ onnxruntime-linux-*/
 *.temp
 .cache/
 
-# Photos captured by the application
-*.jpg
-*.jpeg
-*.png
-*.ppm
-photo_*.jpg
-photo_*.jpeg
-photo_*.png
-
 # OS generated files
 .DS_Store
 .DS_Store?
