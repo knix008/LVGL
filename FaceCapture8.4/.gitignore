@@ -48,18 +48,9 @@ dist/
 
 # LVGL build artifacts
 lvgl/
-lvgl/lib/
-lvgl/build/
-
-# Keep LVGL source code but ignore build artifacts
-!lvgl/src/
-!lvgl/demos/
-!lvgl/examples/
 
 # ONNX Runtime directory (downloaded/extracted)
 onnxruntime-linux-*/
-!onnxruntime-linux-*/*.md
-!onnxruntime-linux-*/LICENSE
 
 # IDE and editor files
 .vscode/
