@@ -144,8 +144,17 @@ bool face_detection_init(const char *model_path) {
     }
 
     // Set number of threads
-    ort_api->SetIntraOpNumThreads(session_options, 4);
-    ort_api->SetSessionGraphOptimizationLevel(session_options, ORT_ENABLE_BASIC);
+    status = ort_api->SetIntraOpNumThreads(session_options, 4);
+    if (status != NULL) {
+        fprintf(stderr, "Warning: Failed to set thread count: %s\n", ort_api->GetErrorMessage(status));
+        ort_api->ReleaseStatus(status);
+    }
+    
+    status = ort_api->SetSessionGraphOptimizationLevel(session_options, ORT_ENABLE_BASIC);
+    if (status != NULL) {
+        fprintf(stderr, "Warning: Failed to set optimization level: %s\n", ort_api->GetErrorMessage(status));
+        ort_api->ReleaseStatus(status);
+    }
 
     // Create session
     status = ort_api->CreateSession(ort_env, model_path, session_options, &ort_session);
@@ -243,9 +252,27 @@ bool face_detection_detect(const uint8_t *rgb_data, int width, int height, FaceD
 
     // Get output shape
     OrtTensorTypeAndShapeInfo* output_info = NULL;
-    ort_api->GetTensorTypeAndShape(output_tensor, &output_info);
+    status = ort_api->GetTensorTypeAndShape(output_tensor, &output_info);
+    if (status != NULL) {
+        fprintf(stderr, "Failed to get tensor shape: %s\n", ort_api->GetErrorMessage(status));
+        ort_api->ReleaseStatus(status);
+        ort_api->ReleaseValue(output_tensor);
+        ort_api->ReleaseValue(input_tensor_ort);
+        free(input_tensor);
+        return false;
+    }
+    
     size_t output_count = 0;
-    ort_api->GetTensorShapeElementCount(output_info, &output_count);
+    status = ort_api->GetTensorShapeElementCount(output_info, &output_count);
+    if (status != NULL) {
+        fprintf(stderr, "Failed to get tensor element count: %s\n", ort_api->GetErrorMessage(status));
+        ort_api->ReleaseStatus(status);
+        ort_api->ReleaseTensorTypeAndShapeInfo(output_info);
+        ort_api->ReleaseValue(output_tensor);
+        ort_api->ReleaseValue(input_tensor_ort);
+        free(input_tensor);
+        return false;
+    }
 
     // YOLOv8 output format: [1, 5, num_predictions]
     // 5 = [x, y, w, h, confidence]

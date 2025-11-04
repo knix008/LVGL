@@ -16,6 +16,8 @@ A real-time webcam capture application with AI-powered face detection, built usi
 - 🎵 **Shutter sound** effect on photo capture
 - ⚡ **Flash effect** for better photo lighting
 - 🖼️ **Visual feedback** with green bounding boxes
+- 🔒 **Robust thread management** with proper cleanup and cancellation
+- ⚡ **Responsive exit** - window closes immediately even when camera is running
 
 ## Demo
 
@@ -284,6 +286,14 @@ gdb ./camera
 (gdb) bt  # After crash
 ```
 
+### Window Won't Close
+
+If the application doesn't exit when closing the window:
+- The camera thread now has a 2-second timeout mechanism
+- After timeout, the thread is forcefully cancelled
+- Check terminal output for "Camera thread joined successfully" message
+- If issue persists, check for blocking system calls in camera driver
+
 ## Technical Details
 
 ### Face Detection Pipeline
@@ -309,8 +319,9 @@ gdb ./camera
 ### Threading Model
 
 - **Main thread**: LVGL event loop, GUI updates
-- **Camera thread**: FFmpeg frame capture (pthread)
+- **Camera thread**: FFmpeg frame capture (pthread) with cancellation support
 - **Inference**: Synchronous on main thread
+- **Thread cleanup**: 2-second timeout with forced cancellation if needed
 
 ## API Reference
 
@@ -432,7 +443,14 @@ For issues, questions, or suggestions:
 
 ## Version History
 
-### v1.0.0 (Current)
+### v1.1.0 (Current)
+- Fixed: Application now exits properly when camera is running
+- Fixed: All compiler warnings resolved
+- Improved: Camera thread with cancellation points
+- Improved: Robust thread cleanup with 2-second timeout
+- Enhanced: Better error handling in ONNX Runtime API calls
+
+### v1.0.0
 - Initial release
 - Real-time face detection
 - Confidence display

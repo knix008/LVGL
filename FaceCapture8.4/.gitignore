@@ -39,6 +39,7 @@ main
 # Core dumps
 core
 core.*
+vgcore.*
 
 # Build directories
 build/
@@ -46,10 +47,19 @@ dist/
 *.egg-info/
 
 # LVGL build artifacts
-lvgl
+lvgl/
+lvgl/lib/
+lvgl/build/
 
-# Onnx runtime directory
+# Keep LVGL source code but ignore build artifacts
+!lvgl/src/
+!lvgl/demos/
+!lvgl/examples/
+
+# ONNX Runtime directory (downloaded/extracted)
 onnxruntime-linux-*/
+!onnxruntime-linux-*/*.md
+!onnxruntime-linux-*/LICENSE
 
 # IDE and editor files
 .vscode/
@@ -77,6 +87,8 @@ onnxruntime-linux-*/
 *.png
 *.ppm
 photo_*.jpg
+photo_*.jpeg
+photo_*.png
 
 # OS generated files
 .DS_Store
@@ -96,6 +108,7 @@ __pycache__/
 # Test artifacts
 test/*.o
 test/camera
+test/*.out
 
 # Documentation build artifacts
 docs/_build/
@@ -104,10 +117,13 @@ docs/.doctrees/
 # Backup files
 *.orig
 *.rej
+*~
 
 # Ctags and etags
 tags
 TAGS
+.tags
+.tags_sorted_by_file
 
 # Dependency directories (if using)
 vendor/
@@ -117,6 +133,7 @@ third_party/
 .env
 .env.local
 config.local
+local_config.h
 
 # Coverage reports
 *.gcov
@@ -124,16 +141,19 @@ config.local
 *.gcno
 coverage/
 htmlcov/
+*.lcov
 
 # Valgrind output
 *.valgrind
-vgcore.*
+massif.out.*
+callgrind.out.*
 
 # CMake
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile.bak
+CMakeLists.txt.user
 
 # Qt Creator
 *.pro.user
@@ -143,7 +163,30 @@ Makefile.bak
 .cproject
 .project
 .settings/
+.metadata/
 
 # Clangd
 .clangd/
 compile_commands.json
+.cache/
+
+# Code analysis tools
+.clang-tidy
+.clang-format
+cppcheck_results.xml
+
+# Perf profiling
+perf.data
+perf.data.old
+
+# Additional development files
+*.patch
+*.diff
+
+# Keep important assets and models
+!assets/
+!models/
+!assets/*.ttf
+!assets/*.mp3
+!models/*.onnx
+!models/*.pt

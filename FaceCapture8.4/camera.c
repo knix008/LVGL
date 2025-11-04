@@ -3,12 +3,15 @@
  * Camera capture logic implementation using FFmpeg
  */
 
+#define _GNU_SOURCE  // For pthread_tryjoin_np
 #include "camera.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <time.h>
+#include <errno.h>
 #include <jpeglib.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -365,6 +368,10 @@ static void *camera_thread_func(void *arg)
 {
     (void)arg;
 
+    // Enable thread cancellation
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
     AVPacket *packet = av_packet_alloc();
     AVFrame *frame = av_frame_alloc();
 
@@ -376,6 +383,9 @@ static void *camera_thread_func(void *arg)
     }
 
     while (camera_running) {
+        // Add cancellation point
+        pthread_testcancel();
+        
         int ret = av_read_frame(fmt_ctx, packet);
 
         if (ret < 0) {
@@ -386,6 +396,9 @@ static void *camera_thread_func(void *arg)
             char errbuf[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errbuf, sizeof(errbuf));
             fprintf(stderr, "Error reading frame: %s\n", errbuf);
+            
+            // Add cancellation point after error
+            pthread_testcancel();
             continue;
         }
 
@@ -396,6 +409,7 @@ static void *camera_thread_func(void *arg)
             if (ret < 0) {
                 fprintf(stderr, "Error sending packet to decoder\n");
                 av_packet_unref(packet);
+                pthread_testcancel();
                 continue;
             }
 
@@ -444,11 +458,15 @@ static void *camera_thread_func(void *arg)
         }
 
         av_packet_unref(packet);
+        
+        // Add cancellation point at end of loop iteration
+        pthread_testcancel();
     }
 
     av_packet_free(&packet);
     av_frame_free(&frame);
 
+    printf("Camera thread exiting cleanly\n");
     return NULL;
 }
 
@@ -484,15 +502,27 @@ void camera_stop(void)
         printf("Stopping camera capture thread...\n");
         camera_running = false;
 
-        // Give thread a moment to notice the flag
-        usleep(100000);  // 100ms
-
-        // Wait for thread to finish (with timeout protection)
+        // Wait for thread to finish with a manual timeout mechanism
         if (fmt_ctx) {
             printf("Waiting for camera thread to join...\n");
-            int ret = pthread_join(camera_thread, NULL);
-            if (ret != 0) {
-                fprintf(stderr, "Warning: pthread_join failed with code %d\n", ret);
+            
+            // Try to join with a simple timeout mechanism
+            int timeout_ms = 2000;  // 2 second timeout
+            int elapsed_ms = 0;
+            int join_result = pthread_tryjoin_np(camera_thread, NULL);
+            
+            while (join_result == EBUSY && elapsed_ms < timeout_ms) {
+                usleep(100000);  // Sleep 100ms
+                elapsed_ms += 100;
+                join_result = pthread_tryjoin_np(camera_thread, NULL);
+            }
+            
+            if (join_result == EBUSY) {
+                fprintf(stderr, "Warning: Camera thread join timed out after %dms, canceling thread...\n", timeout_ms);
+                pthread_cancel(camera_thread);
+                pthread_join(camera_thread, NULL);  // Wait for cancellation to complete
+            } else if (join_result != 0 && join_result != EBUSY) {
+                fprintf(stderr, "Warning: pthread_tryjoin_np failed with code %d\n", join_result);
             } else {
                 printf("Camera thread joined successfully\n");
             }
