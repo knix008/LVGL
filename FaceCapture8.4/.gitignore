@@ -1,0 +1,149 @@
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.la
+*.lo
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+camera
+main
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Core dumps
+core
+core.*
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# LVGL build artifacts
+lvgl
+
+# Onnx runtime directory
+onnxruntime-linux-*/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.bak
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Photos captured by the application
+*.jpg
+*.jpeg
+*.png
+*.ppm
+photo_*.jpg
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package manager directories
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Test artifacts
+test/*.o
+test/camera
+
+# Documentation build artifacts
+docs/_build/
+docs/.doctrees/
+
+# Backup files
+*.orig
+*.rej
+
+# Ctags and etags
+tags
+TAGS
+
+# Dependency directories (if using)
+vendor/
+third_party/
+
+# Local configuration
+.env
+.env.local
+config.local
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+coverage/
+htmlcov/
+
+# Valgrind output
+*.valgrind
+vgcore.*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.bak
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+
+# Eclipse
+.cproject
+.project
+.settings/
+
+# Clangd
+.clangd/
+compile_commands.json
