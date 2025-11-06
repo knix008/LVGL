@@ -72,6 +72,18 @@ void cleanup_handler(int sig) {
     exit(0);
 }
 
+// Function to show popup with Korean output
+static void show_popup_result(const char* utf8_output) {
+    // Create popup message with Korean output
+    char popup_message[MAX_OUTPUT_LEN * 4 + 100] = {0};
+    snprintf(popup_message, sizeof(popup_message),
+             "Korean Input Result:\n\n%s", utf8_output);
+
+    // Show MessageBox with the result
+    MessageBox(hMainWnd, popup_message, "Input Result",
+               MB_OK | MB_ICONINFORMATION);
+}
+
 // Function to update text box with Korean output
 static void update_textbox() {
     // Display Korean output buffer contents
@@ -201,10 +213,27 @@ static void handle_key_click(int key_id) {
             qwerty_process_input(input_buffer, &input_len, output_buffer, 0x7f);
             update_textbox();
             return;
-        case IDC_KEY_ENTER:
-            qwerty_process_input(input_buffer, &input_len, output_buffer, '\n');
-            update_textbox();
+        case IDC_KEY_ENTER: {
+            // Show popup with current result
+            char utf8_output[MAX_OUTPUT_LEN * 4] = {0};
+            unicode_to_utf8(output_buffer, utf8_output, sizeof(utf8_output));
+
+            if (strlen(utf8_output) > 0) {
+                show_popup_result(utf8_output);
+            }
+
+            // Clear all buffers
+            input_buffer[0] = '\0';
+            output_buffer[0] = L'\0';
+            input_len = 0;
+
+            // Update textbox to show cleared content
+            SetWindowText(hTextBox, "");
+            InvalidateRect(hTextBox, NULL, TRUE);
+            UpdateWindow(hTextBox, TRUE);
+
             return;
+        }
     }
 
     if (key_char != 0) {
