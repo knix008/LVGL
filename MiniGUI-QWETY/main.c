@@ -9,6 +9,7 @@
 #include <minigui/gdi.h>
 #include <minigui/window.h>
 #include <minigui/ctrl/edit.h>
+#include <minigui/ctrl/static.h>
 #include "qwerty_korean.h"
 
 // Control IDs
@@ -76,14 +77,36 @@ static void update_textbox() {
     // Display Korean output buffer contents
     char utf8_output[MAX_OUTPUT_LEN * 4] = {0};
     unicode_to_utf8(output_buffer, utf8_output, sizeof(utf8_output));
-    
-    // Update static control text with Korean output
-    SetWindowText(hTextBox, utf8_output);
-    
+
+    // Manually wrap text by adding newlines when needed
+    char wrapped_output[MAX_OUTPUT_LEN * 4] = {0};
+    int line_len = 0;
+    int max_line_chars = 40; // Approximate characters per line (adjust based on font size)
+    int out_idx = 0;
+
+    for (int i = 0; i < strlen(utf8_output); i++) {
+        wrapped_output[out_idx++] = utf8_output[i];
+
+        // Count characters (handle UTF-8 multi-byte characters)
+        if ((utf8_output[i] & 0xC0) != 0x80) {  // Not a UTF-8 continuation byte
+            line_len++;
+        }
+
+        // Add newline if line is too long
+        if (line_len >= max_line_chars) {
+            wrapped_output[out_idx++] = '\n';
+            line_len = 0;
+        }
+    }
+    wrapped_output[out_idx] = '\0';
+
+    // Update static control text with wrapped Korean output
+    SetWindowText(hTextBox, wrapped_output);
+
     // Force textbox to refresh
     InvalidateRect(hTextBox, NULL, TRUE);
     UpdateWindow(hTextBox, TRUE);
-    
+
     // Force main window repaint to show Korean text on main window too
     InvalidateRect(hMainWnd, NULL, TRUE);
     UpdateWindow(hMainWnd, TRUE);
@@ -118,7 +141,7 @@ static void update_button_labels() {
 // Function to handle key button clicks
 static void handle_key_click(int key_id) {
     char key_char = 0;
-    
+
     // Handle shift key toggle
     if (key_id == IDC_KEY_SHIFT) {
         shift_pressed = !shift_pressed;
@@ -169,8 +192,22 @@ static void handle_key_click(int key_id) {
         case IDC_KEY_B: key_char = shift_pressed ? 'b' : 'b'; break;
         case IDC_KEY_N: key_char = shift_pressed ? 'n' : 'n'; break;
         case IDC_KEY_M: key_char = shift_pressed ? 'm' : 'm'; break;
-        case IDC_KEY_SPACE: key_char = ' '; break;
-        case IDC_KEY_BACK: 
+        case IDC_KEY_SPACE:
+            printf("Space key pressed!\n");
+            qwerty_process_input(input_buffer, &input_len, output_buffer, ' ');
+            update_textbox();
+            // Reset shift after space
+            if (shift_pressed) {
+                shift_pressed = FALSE;
+                update_button_labels();
+                if (hKeyButtons[26]) {
+                    SetWindowBkColor(hKeyButtons[26], PIXEL_lightwhite);
+                    InvalidateRect(hKeyButtons[26], NULL, TRUE);
+                    UpdateWindow(hKeyButtons[26], TRUE);
+                }
+            }
+            return;
+        case IDC_KEY_BACK:
             qwerty_process_input(input_buffer, &input_len, output_buffer, 0x7f);
             update_textbox();
             return;
@@ -179,10 +216,20 @@ static void handle_key_click(int key_id) {
             update_textbox();
             return;
     }
-    
+
     if (key_char != 0) {
         qwerty_process_input(input_buffer, &input_len, output_buffer, key_char);
         update_textbox();
+        // Reset shift after typing a character (one-shot shift)
+        if (shift_pressed) {
+            shift_pressed = FALSE;
+            update_button_labels();
+            if (hKeyButtons[26]) {
+                SetWindowBkColor(hKeyButtons[26], PIXEL_lightwhite);
+                InvalidateRect(hKeyButtons[26], NULL, TRUE);
+                UpdateWindow(hKeyButtons[26], TRUE);
+            }
+        }
     }
 }
 
@@ -222,12 +269,16 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                        korean_font->family, korean_font->charset, korean_font->size);
             }
             
-            // Create text box - use MLEDIT control for auto word-wrapping
-            hTextBox = CreateWindow("mledit", "Korean Character Output Display:",
-                WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY | ES_AUTOWRAP,
+            // Create text box - use static control with left alignment for multiline text display
+            hTextBox = CreateWindow("static", "",
+                WS_VISIBLE | WS_CHILD | WS_BORDER | SS_NOTIFY | SS_LEFT,
                 IDC_TEXTBOX,
                 20, 20, 550, 120,
                 hWnd, 0);
+
+            // Set background color to white for better visibility
+            SetWindowBkColor(hTextBox, PIXEL_lightwhite);
+
             // Apply Korean font to text box for Korean character display
             if (korean_font) {
                 SetWindowFont(hTextBox, korean_font);

@@ -220,13 +220,27 @@ void qwerty_handle_enter(char* input_buffer, size_t* input_len, wchar_t* output_
 }
 
 void qwerty_handle_space(char* input_buffer, size_t* input_len, wchar_t* output_buffer) {
+    printf("qwerty_handle_space: input_len before = %zu\n", *input_len);
+
     if (*input_len < MAX_OUTPUT_LEN - 1) {
         input_buffer[(*input_len)++] = ' ';
         input_buffer[*input_len] = '\0';
     }
-    // Add space to output buffer
-    output_buffer[*input_len-1] = L' ';
-    output_buffer[*input_len] = L'\0';
+
+    // Recompose Korean characters to get correct output
+    qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
+
+    // Find the end of output buffer and add space
+    size_t output_len = wcslen(output_buffer);
+    printf("qwerty_handle_space: output_len before space = %zu\n", output_len);
+
+    if (output_len < MAX_OUTPUT_LEN - 1) {
+        output_buffer[output_len] = L' ';
+        output_buffer[output_len + 1] = L'\0';
+        printf("qwerty_handle_space: Added space at position %zu\n", output_len);
+    }
+
+    printf("qwerty_handle_space: output_len after space = %zu\n", wcslen(output_buffer));
 }
 
 void qwerty_handle_character(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch) {
@@ -270,7 +284,15 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
     size_t i = 0;
     while (i < input_len && temp_len < MAX_OUTPUT_LEN - 1) {
         char current_char = input_buffer[i];
-        
+
+        // Handle space character - add it directly to output
+        if (current_char == ' ') {
+            temp_output[temp_len++] = L' ';
+            temp_output[temp_len] = L'\0';
+            i++;
+            continue;
+        }
+
         // Check if current character is a choseong
         char single_pattern[4] = {current_char, '\0'};
         const char* cho_jamo = qwerty_get_jamo_buffer(single_pattern, cho_keymap, sizeof(cho_keymap)/sizeof(KeyMap));
