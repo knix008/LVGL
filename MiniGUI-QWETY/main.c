@@ -196,16 +196,6 @@ static void handle_key_click(int key_id) {
             printf("Space key pressed!\n");
             qwerty_process_input(input_buffer, &input_len, output_buffer, ' ');
             update_textbox();
-            // Reset shift after space
-            if (shift_pressed) {
-                shift_pressed = FALSE;
-                update_button_labels();
-                if (hKeyButtons[26]) {
-                    SetWindowBkColor(hKeyButtons[26], PIXEL_lightwhite);
-                    InvalidateRect(hKeyButtons[26], NULL, TRUE);
-                    UpdateWindow(hKeyButtons[26], TRUE);
-                }
-            }
             return;
         case IDC_KEY_BACK:
             qwerty_process_input(input_buffer, &input_len, output_buffer, 0x7f);
@@ -220,16 +210,6 @@ static void handle_key_click(int key_id) {
     if (key_char != 0) {
         qwerty_process_input(input_buffer, &input_len, output_buffer, key_char);
         update_textbox();
-        // Reset shift after typing a character (one-shot shift)
-        if (shift_pressed) {
-            shift_pressed = FALSE;
-            update_button_labels();
-            if (hKeyButtons[26]) {
-                SetWindowBkColor(hKeyButtons[26], PIXEL_lightwhite);
-                InvalidateRect(hKeyButtons[26], NULL, TRUE);
-                UpdateWindow(hKeyButtons[26], TRUE);
-            }
-        }
     }
 }
 
