@@ -16,11 +16,11 @@
 #include "ime/libime/ime_korean.h"
 #include "ime/common.h"
 
-#define IDC_EDIT_INPUT      100
+#define IDC_STATIC_OUTPUT   100
 #define IDC_BTN_CLEAR       101
 #define IDC_STATIC_STATUS   102
 
-static HWND hEditInput;
+static HWND hStaticOutput;
 static HWND hStatusLabel;
 static int shift_state = 0;
 static char input_buffer[1024] = "";
@@ -305,7 +305,7 @@ static void RebuildDisplayFromStrokes(void)
 
     if (stroke_count == 0) {
         /* No strokes - clear everything */
-        SetWindowText(hEditInput, "");
+        SetWindowText(hStaticOutput, "");
         return;
     }
 
@@ -314,7 +314,7 @@ static void RebuildDisplayFromStrokes(void)
 
     printf("Input: [%s] -> Output: [%s]\n", all_strokes, display_buffer);
 
-    SetWindowText(hEditInput, display_buffer);
+    SetWindowText(hStaticOutput, display_buffer);
 }
 
 /* Handle Korean character input using IME logic */
@@ -385,18 +385,18 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                        korean_font->family, korean_font->charset, korean_font->size);
             }
 
-            /* Input text field */
-            hEditInput = CreateWindow(
-                "EDIT",
+            /* Output text field (STATIC control for top-left alignment) */
+            hStaticOutput = CreateWindow(
+                "STATIC",
                 "",
-                WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_MULTILINE,
-                IDC_EDIT_INPUT,
+                WS_CHILD | WS_VISIBLE | WS_BORDER,
+                IDC_STATIC_OUTPUT,
                 20, 20, 560, 100,
                 hWnd, 0);
 
-            /* Set Korean font for edit control */
+            /* Set Korean font for output control */
             if (korean_font) {
-                SetWindowFont(hEditInput, korean_font);
+                SetWindowFont(hStaticOutput, korean_font);
             }
 
             /* Control buttons */
@@ -452,7 +452,7 @@ static LRESULT KoreanKeypadProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
             switch (LOWORD(wParam)) {
                 case IDC_BTN_CLEAR:
-                    SetWindowText(hEditInput, "");
+                    SetWindowText(hStaticOutput, "");
                     input_buffer[0] = '\0';
                     stroke_buffer[0] = '\0';
                     committed_text[0] = '\0';
