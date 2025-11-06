@@ -8,6 +8,7 @@
 #include <minigui/minigui.h>
 #include <minigui/gdi.h>
 #include <minigui/window.h>
+#include <minigui/ctrl/edit.h>
 #include "qwerty_korean.h"
 
 // Control IDs
@@ -221,9 +222,9 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                        korean_font->family, korean_font->charset, korean_font->size);
             }
             
-            // Create text box - use static control for Korean output display
-            hTextBox = CreateWindow("static", "Korean Character Output Display:",
-                WS_VISIBLE | WS_CHILD | WS_BORDER,
+            // Create text box - use MLEDIT control for auto word-wrapping
+            hTextBox = CreateWindow("mledit", "Korean Character Output Display:",
+                WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY | ES_AUTOWRAP,
                 IDC_TEXTBOX,
                 20, 20, 550, 120,
                 hWnd, 0);
