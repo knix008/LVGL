@@ -220,7 +220,7 @@ Main application file containing:
 Build configuration that:
 - Compiles main.c with LVGL
 - Links SDL2 and FreeType libraries
-- Generates the `button_demo` executable
+- Generates the `button` executable
 - Provides `clean`, `distclean`, and `run` targets
 
 ### lv_conf.h
