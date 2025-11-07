@@ -81,24 +81,6 @@ static void btn_color_anim_cb(void *var, int32_t value)
     lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN);
 }
 
-// Animation callback for toggle button 2 color change (green colors)
-static void toggle_btn2_color_anim_cb(void *var, int32_t value)
-{
-    lv_obj_t *btn = (lv_obj_t *)var;
-    lv_color_t color;
-
-    // Toggle button 2 color animation (green to dark gray)
-    if (value < 500) {
-        // Dark gray color (OFF state)
-        color = lv_color_hex(0x424242);
-    } else {
-        // Green color (ON state)
-        color = lv_color_hex(0x4CAF50);
-    }
-
-    lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN);
-}
-
 static void button_event_handler(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -106,7 +88,7 @@ static void button_event_handler(lv_event_t *e)
 
     if (code == LV_EVENT_CLICKED) {
         printf("Button clicked!\n");
-        
+
         // Find the image object within the button
         lv_obj_t *img = NULL;
         uint32_t child_cnt = lv_obj_get_child_cnt(obj);
@@ -117,17 +99,17 @@ static void button_event_handler(lv_event_t *e)
                 break;
             }
         }
-        
+
         if (img != NULL) {
-            // Simple and safe visual effect - add a temporary border to the image
+            // Add a temporary border to the image
             lv_obj_set_style_border_width(img, 3, 0);
             lv_obj_set_style_border_color(img, lv_color_hex(0x00FF00), 0);
-            
+
             // Create a timer to remove the border after 200ms
             lv_timer_t *border_timer = lv_timer_create(remove_border_timer_cb, 200, img);
             lv_timer_set_repeat_count(border_timer, 1);
         }
-        
+
         // Button color animation
         lv_anim_t btn_anim;
         lv_anim_init(&btn_anim);
@@ -142,6 +124,53 @@ static void button_event_handler(lv_event_t *e)
     }
     else if (code == LV_EVENT_LONG_PRESSED) {
         printf("Button long pressed!\n");
+    }
+}
+
+static void gif_button_event_handler(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+
+    if (code == LV_EVENT_CLICKED) {
+        printf("GIF button clicked!\n");
+
+        // Find the GIF object within the button
+        lv_obj_t *gif = NULL;
+        uint32_t child_cnt = lv_obj_get_child_cnt(obj);
+        for (uint32_t i = 0; i < child_cnt; i++) {
+            lv_obj_t *child = lv_obj_get_child(obj, i);
+            // Check if child is a GIF widget by checking its class
+            if (lv_obj_check_type(child, &lv_gif_class)) {
+                gif = child;
+                break;
+            }
+        }
+
+        if (gif != NULL) {
+            // Add a temporary border to the GIF
+            lv_obj_set_style_border_width(gif, 3, 0);
+            lv_obj_set_style_border_color(gif, lv_color_hex(0x00FF00), 0);
+
+            // Create a timer to remove the border after 200ms
+            lv_timer_t *border_timer = lv_timer_create(remove_border_timer_cb, 200, gif);
+            lv_timer_set_repeat_count(border_timer, 1);
+        }
+
+        // Button color animation
+        lv_anim_t btn_anim;
+        lv_anim_init(&btn_anim);
+        lv_anim_set_var(&btn_anim, obj);
+        lv_anim_set_values(&btn_anim, 1000, 500);
+        lv_anim_set_time(&btn_anim, 300);
+        lv_anim_set_exec_cb(&btn_anim, btn_color_anim_cb);
+        lv_anim_set_path_cb(&btn_anim, lv_anim_path_ease_in_out);
+        lv_anim_set_playback_time(&btn_anim, 300);
+        lv_anim_set_playback_delay(&btn_anim, 0);
+        lv_anim_start(&btn_anim);
+    }
+    else if (code == LV_EVENT_LONG_PRESSED) {
+        printf("GIF button long pressed!\n");
     }
 }
 
@@ -174,41 +203,6 @@ static void toggle_button_event_handler(lv_event_t *e)
             lv_anim_set_values(&color_anim, 1000, 0);
             lv_anim_set_time(&color_anim, 300);
             lv_anim_set_exec_cb(&color_anim, btn_color_anim_cb);
-            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
-            lv_anim_start(&color_anim);
-        }
-    }
-}
-
-static void toggle_button_2_event_handler(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-
-    if (code == LV_EVENT_VALUE_CHANGED) {
-        if (lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-            printf("Toggle button 2 is ON\n");
-
-            // Animated color change to green
-            lv_anim_t color_anim;
-            lv_anim_init(&color_anim);
-            lv_anim_set_var(&color_anim, obj);
-            lv_anim_set_values(&color_anim, 0, 1000);
-            lv_anim_set_time(&color_anim, 300);
-            lv_anim_set_exec_cb(&color_anim, toggle_btn2_color_anim_cb);
-            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
-            lv_anim_start(&color_anim);
-        }
-        else {
-            printf("Toggle button 2 is OFF\n");
-
-            // Animated color change to dark gray
-            lv_anim_t color_anim;
-            lv_anim_init(&color_anim);
-            lv_anim_set_var(&color_anim, obj);
-            lv_anim_set_values(&color_anim, 1000, 0);
-            lv_anim_set_time(&color_anim, 300);
-            lv_anim_set_exec_cb(&color_anim, toggle_btn2_color_anim_cb);
             lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
             lv_anim_start(&color_anim);
         }
@@ -387,7 +381,7 @@ static void create_buttons(void)
 
     // Toggle Button 1 (full width)
     lv_obj_t *toggle_btn1 = lv_btn_create(scr);
-    lv_obj_set_pos(toggle_btn1, 20, 295);
+    lv_obj_set_pos(toggle_btn1, 20, 380);
     lv_obj_set_size(toggle_btn1, 280, 70);
     lv_obj_set_style_bg_color(toggle_btn1, lv_color_hex(0x757575), LV_PART_MAIN);
     lv_obj_set_style_border_width(toggle_btn1, 2, LV_PART_MAIN);
@@ -403,23 +397,37 @@ static void create_buttons(void)
     }
     lv_obj_set_style_text_color(toggle_label1, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
 
-    // Toggle Button 2 (full width)
-    lv_obj_t *toggle_btn2 = lv_btn_create(scr);
-    lv_obj_set_pos(toggle_btn2, 20, 380);
-    lv_obj_set_size(toggle_btn2, 280, 70);
-    lv_obj_set_style_bg_color(toggle_btn2, lv_color_hex(0x424242), LV_PART_MAIN);
-    lv_obj_set_style_border_width(toggle_btn2, 2, LV_PART_MAIN);
-    lv_obj_set_style_border_color(toggle_btn2, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_add_flag(toggle_btn2, LV_OBJ_FLAG_CHECKABLE);
-    lv_obj_add_event_cb(toggle_btn2, toggle_button_2_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    // GIF Image Button (full width with image)
+    lv_obj_t *btn_gif = lv_btn_create(scr);
+    lv_obj_set_pos(btn_gif, 20, 295);
+    lv_obj_set_size(btn_gif, 280, 70);
+    lv_obj_set_style_bg_color(btn_gif, lv_color_hex(0xFF9800), LV_PART_MAIN);
+    lv_obj_set_style_border_width(btn_gif, 2, LV_PART_MAIN);
+    lv_obj_set_style_border_color(btn_gif, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_add_event_cb(btn_gif, gif_button_event_handler, LV_EVENT_CLICKED, NULL);
 
-    lv_obj_t *toggle_label2 = lv_label_create(toggle_btn2);
-    lv_label_set_text(toggle_label2, "토글 버튼 #2");
-    lv_obj_center(toggle_label2);
+    // Set flex layout on button for image and label
+    lv_obj_set_layout(btn_gif, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn_gif, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_gif, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btn_gif, 8, 0);
+    lv_obj_set_style_pad_left(btn_gif, 8, 0);
+    lv_obj_set_style_pad_right(btn_gif, 8, 0);
+
+    // GIF Image
+    lv_obj_t *gif = lv_gif_create(btn_gif);
+    lv_obj_set_flex_grow(gif, 0);
+    // Load the GIF image
+    lv_gif_set_src(gif, "A:assets/images/button_gif.gif");
+
+    // Label
+    lv_obj_t *label_gif = lv_label_create(btn_gif);
+    lv_label_set_text(label_gif, "GIF 버튼");
     if (korean_font_16) {
-        lv_obj_set_style_text_font(toggle_label2, korean_font_16, LV_PART_MAIN);
+        lv_obj_set_style_text_font(label_gif, korean_font_16, LV_PART_MAIN);
     }
-    lv_obj_set_style_text_color(toggle_label2, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_obj_set_style_text_color(label_gif, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+    lv_obj_set_flex_grow(label_gif, 1);
 
     // Disabled Button (full width)
     lv_obj_t *disabled_btn = lv_btn_create(scr);
