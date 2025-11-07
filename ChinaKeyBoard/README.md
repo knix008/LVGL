@@ -40,26 +40,21 @@ ChinaKeyBoard/
 ### Prerequisites
 
 - GCC compiler
-- MiniGUI development libraries
+- MiniGUI development libraries (system-wide or local installation)
 - FreeType, PNG, JPEG libraries
 
 ### Build Commands
 
 ```bash
-# Check dependencies
-make check-deps
+# Build the main application
+./build.sh
 
-# Setup MiniGUI (if not already built)
-make setup-minigui
+# Build Korean IME tests
+make test_simple      # Build simple test
+make test_korean      # Build comprehensive test
 
-# Build the application
-make
-
-# Build and run Korean IME tests
-make test_korean
-
-# Run all tests
-./run_test.sh
+# Clean build artifacts
+make clean
 ```
 
 ## Running
@@ -100,35 +95,82 @@ b → ㅠ      n → ㅜ      m → ㅡ
 
 ## Testing
 
-The project includes comprehensive test suites for the Korean IME:
+The project includes comprehensive test suites for the Korean IME with automated test execution and reporting.
+
+### Test Setup
+
+The project includes a `Makefile` that:
+- Automatically detects system-wide or local MiniGUI installation via `pkg-config`
+- Compiles test programs with proper include paths
+- Links against MiniGUI libraries for complete IME functionality
+- Supports both simple and comprehensive test targets
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests with automated build and reporting
 ./run_test.sh
 
-# Run simple test (quick verification)
+# Build and run simple test only (quick verification)
+make test_simple
 ./test_korean_simple
 
-# Run comprehensive test (all cases)
+# Build and run comprehensive test (all test cases)
+make test_korean
 ./test_korean_input
+
+# Clean build artifacts
+make clean
 ```
 
 ### Test Coverage
 
-The test suite includes:
-- **Single chosung + jungsung**: Basic syllable composition
-- **Double chosung**: Tensed consonants (ㄲ, ㄸ, ㅃ, ㅆ, ㅉ)
-- **Compound jungsung**: Complex vowels (ㅘ, ㅙ, ㅚ, ㅟ, etc.)
-- **Jongsung (final consonants)**: Single and compound endings
-- **Korean words**: Common words (안녕, 한국, 컴퓨터, 사랑, 친구, etc.)
-- **Korean phrases**: 
-  - Formal greetings: 안녕하세요
-  - Polite expressions: 감사합니다, 죄송합니다
-  - Daily conversation: 사랑합니다, 값이얼마예요, 오래간만입니다
+The comprehensive test suite includes 67 test cases covering:
 
-Total: 67 test cases with 100% pass rate
+**Basic Composition Tests**
+- **Single chosung + jungsung**: Basic syllable composition (15 tests)
+  - Examples: r→ㄱ, rk→가, sj→너, el→디, etc.
+- **Double chosung**: Tensed consonants (5 tests)
+  - Examples: Rk→까, Ej→떠, Ql→삐, Th→쏘, Wn→쭈
+
+**Vowel Variations Tests**
+- **Compound jungsung**: Complex vowels (6 tests)
+  - Examples: rhk→과, sho→놰, ehl→되, etc.
+
+**Final Consonant Tests**
+- **Jongsung**: Single final consonants (10 tests)
+  - Examples: rkr→각, sjs→넌, fhf→롤, etc.
+- **Compound jongsung**: Multiple final consonants (10 tests)
+  - Examples: rkrt→갃, sjsw→넍, elsg→딚, etc.
+
+**Complex Composition Tests**
+- **Advanced combinations**: Multiple syllables (4 tests)
+  - Examples: rkrdk→각아, sjsrkr→넌각, etc.
+
+**Real-World Tests**
+- **Korean words**: Common vocabulary (10 tests)
+  - 안녕 (hello), 한국어 (Korean language), 테스트 (test), 사랑 (love), etc.
+- **Korean phrases**: Complete sentences (6 tests)
+  - 안녕하세요 (formal greeting)
+  - 감사합니다 (thank you)
+  - 죄송합니다 (sorry)
+  - 사랑합니다 (I love you)
+  - 값이얼마에요 (How much is this?)
+  - 오래간만입니다 (Long time no see)
+
+### Test Results
+
+**Status**: ✅ All tests passing
+- **Total tests**: 67
+- **Passed**: 67
+- **Failed**: 0
+- **Success rate**: 100%
+
+The test suite validates that the Korean IME correctly handles:
+- Unicode Hangul syllable composition
+- Complex consonant and vowel combinations
+- Final consonant variations and combinations
+- Real-world Korean text input and composition
 
 ## Key Features Implementation
 
@@ -156,11 +198,45 @@ Syllable code = 0xAC00 + (cho × 21 × 28) + (jung × 28) + jong
 - Clickable buttons for touch/mouse input
 - Real-time character preview
 
-## Compilation Flags
+## Build Configuration
 
+### Makefile Details
+
+The `Makefile` provides an automated build system for Korean IME tests:
+
+**Key Features:**
+- **Smart Library Detection**: Uses `pkg-config` to find system MiniGUI installation
+- **Fallback Configuration**: Falls back to local `install` directory if system MiniGUI unavailable
+- **Test Targets**: Provides both simple and comprehensive test compilation
+- **Dependency Management**: Automatically tracks source file dependencies
+
+**Example Usage:**
+```bash
+# Build all tests
+make
+
+# Build specific test
+make test_korean_simple
+
+# Rebuild from scratch
+make clean && make
+
+# Run with verbose output
+make VERBOSE=1
+```
+
+### Compilation Flags
+
+Core application flags:
 - `-DNATIVE`: Native Linux build
 - `-D_STAND_ALONE`: Standalone application
 - `-DKBD_TOOLTIP`: Enable keyboard tooltips
+
+Test compilation flags:
+- `-Wall -Wextra`: Enable all warnings
+- `-g`: Include debug symbols
+- `-I./ime/libime`: Include Korean IME headers
+- `-I./ime`: Include IME framework headers
 
 ## File Formats
 
