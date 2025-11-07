@@ -43,15 +43,6 @@ static lv_font_t *korean_font_20 = NULL;
  * Button Click Handlers
  ******************************************************************************/
 
-// Animation callback for image scaling effect
-static void img_scale_anim_cb(void *var, int32_t value)
-{
-    lv_obj_t *img = (lv_obj_t *)var;
-    lv_obj_set_style_transform_zoom(img, value, 0);
-}
-
-
-
 // Timer callback to remove image border
 static void remove_border_timer_cb(lv_timer_t *timer)
 {
@@ -65,7 +56,7 @@ static void btn_color_anim_cb(void *var, int32_t value)
 {
     lv_obj_t *btn = (lv_obj_t *)var;
     lv_color_t color;
-    
+
     // Check if this is a toggle button by looking for the checkable flag
     if (lv_obj_has_flag(btn, LV_OBJ_FLAG_CHECKABLE)) {
         // Toggle button color animation (blue to gray)
@@ -86,7 +77,25 @@ static void btn_color_anim_cb(void *var, int32_t value)
             color = lv_color_hex(0xFF9800);
         }
     }
-    
+
+    lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN);
+}
+
+// Animation callback for toggle button 2 color change (green colors)
+static void toggle_btn2_color_anim_cb(void *var, int32_t value)
+{
+    lv_obj_t *btn = (lv_obj_t *)var;
+    lv_color_t color;
+
+    // Toggle button 2 color animation (green to dark gray)
+    if (value < 500) {
+        // Dark gray color (OFF state)
+        color = lv_color_hex(0x424242);
+    } else {
+        // Green color (ON state)
+        color = lv_color_hex(0x4CAF50);
+    }
+
     lv_obj_set_style_bg_color(btn, color, LV_PART_MAIN);
 }
 
@@ -144,7 +153,7 @@ static void toggle_button_event_handler(lv_event_t *e)
     if (code == LV_EVENT_VALUE_CHANGED) {
         if (lv_obj_has_state(obj, LV_STATE_CHECKED)) {
             printf("Toggle button is ON\n");
-            
+
             // Animated color change to blue
             lv_anim_t color_anim;
             lv_anim_init(&color_anim);
@@ -154,20 +163,10 @@ static void toggle_button_event_handler(lv_event_t *e)
             lv_anim_set_exec_cb(&color_anim, btn_color_anim_cb);
             lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
             lv_anim_start(&color_anim);
-            
-            // Scale animation for emphasis
-            lv_anim_t scale_anim;
-            lv_anim_init(&scale_anim);
-            lv_anim_set_var(&scale_anim, obj);
-            lv_anim_set_values(&scale_anim, 1000, 1050);
-            lv_anim_set_time(&scale_anim, 200);
-            lv_anim_set_exec_cb(&scale_anim, img_scale_anim_cb);
-            lv_anim_set_path_cb(&scale_anim, lv_anim_path_bounce);
-            lv_anim_start(&scale_anim);
         }
         else {
             printf("Toggle button is OFF\n");
-            
+
             // Animated color change to gray
             lv_anim_t color_anim;
             lv_anim_init(&color_anim);
@@ -177,16 +176,41 @@ static void toggle_button_event_handler(lv_event_t *e)
             lv_anim_set_exec_cb(&color_anim, btn_color_anim_cb);
             lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
             lv_anim_start(&color_anim);
-            
-            // Scale animation for emphasis
-            lv_anim_t scale_anim;
-            lv_anim_init(&scale_anim);
-            lv_anim_set_var(&scale_anim, obj);
-            lv_anim_set_values(&scale_anim, 1000, 950);
-            lv_anim_set_time(&scale_anim, 200);
-            lv_anim_set_exec_cb(&scale_anim, img_scale_anim_cb);
-            lv_anim_set_path_cb(&scale_anim, lv_anim_path_bounce);
-            lv_anim_start(&scale_anim);
+        }
+    }
+}
+
+static void toggle_button_2_event_handler(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        if (lv_obj_has_state(obj, LV_STATE_CHECKED)) {
+            printf("Toggle button 2 is ON\n");
+
+            // Animated color change to green
+            lv_anim_t color_anim;
+            lv_anim_init(&color_anim);
+            lv_anim_set_var(&color_anim, obj);
+            lv_anim_set_values(&color_anim, 0, 1000);
+            lv_anim_set_time(&color_anim, 300);
+            lv_anim_set_exec_cb(&color_anim, toggle_btn2_color_anim_cb);
+            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
+            lv_anim_start(&color_anim);
+        }
+        else {
+            printf("Toggle button 2 is OFF\n");
+
+            // Animated color change to dark gray
+            lv_anim_t color_anim;
+            lv_anim_init(&color_anim);
+            lv_anim_set_var(&color_anim, obj);
+            lv_anim_set_values(&color_anim, 1000, 0);
+            lv_anim_set_time(&color_anim, 300);
+            lv_anim_set_exec_cb(&color_anim, toggle_btn2_color_anim_cb);
+            lv_anim_set_path_cb(&color_anim, lv_anim_path_ease_in_out);
+            lv_anim_start(&color_anim);
         }
     }
 }
@@ -383,11 +407,11 @@ static void create_buttons(void)
     lv_obj_t *toggle_btn2 = lv_btn_create(scr);
     lv_obj_set_pos(toggle_btn2, 20, 380);
     lv_obj_set_size(toggle_btn2, 280, 70);
-    lv_obj_set_style_bg_color(toggle_btn2, lv_color_hex(0x757575), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(toggle_btn2, lv_color_hex(0x424242), LV_PART_MAIN);
     lv_obj_set_style_border_width(toggle_btn2, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(toggle_btn2, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_add_flag(toggle_btn2, LV_OBJ_FLAG_CHECKABLE);
-    lv_obj_add_event_cb(toggle_btn2, toggle_button_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(toggle_btn2, toggle_button_2_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *toggle_label2 = lv_label_create(toggle_btn2);
     lv_label_set_text(toggle_label2, "토글 버튼 #2");
@@ -526,6 +550,10 @@ int main(void)
 
     // Initialize LVGL
     lv_init();
+
+    // Initialize image decoders
+    lv_png_init();
+    lv_split_jpeg_init();
 
     // Initialize display buffer (double-buffering)
     lv_disp_draw_buf_init(&disp_buf, buf1, buf2, BUF_SIZE);

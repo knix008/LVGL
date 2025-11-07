@@ -914,6 +914,9 @@
     #define LV_FS_UEFI_LETTER '\0'      /**< Set an upper-case driver-identifier letter for this driver (e.g. 'A'). */
 #endif
 
+/** PNG decoder library (wrapper for LODEPNG/LIBPNG) */
+#define LV_USE_PNG 1
+
 /** LODEPNG decoder library */
 #define LV_USE_LODEPNG 1
 
@@ -922,6 +925,10 @@
 
 /** BMP decoder library */
 #define LV_USE_BMP 1
+
+/** JPG + split JPG decoder library.
+ *  Split JPG is a custom format optimized for embedded systems. */
+#define LV_USE_SJPG 1
 
 /** JPG + split JPG decoder library.
  *  Split JPG is a custom format optimized for embedded systems. */

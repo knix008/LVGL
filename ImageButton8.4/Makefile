@@ -15,18 +15,21 @@ FREETYPE_CFLAGS = $(shell pkg-config --cflags freetype2)
 FREETYPE_LIBS = $(shell pkg-config --libs freetype2)
 
 # PNG flags (for image decoding)
-PNG_LIBS = $(shell pkg-config --libs libpng 2>/dev/null || echo "-lpng")
+PNG_LIBS = $(shell pkg-config --libs libpng 2>/dev/null || echo "-lpng16")
+
+# JPEG flags (for JPG image decoding)
+JPEG_LIBS = $(shell pkg-config --libs libjpeg 2>/dev/null || echo "-ljpeg")
 
 # Combine all flags
 CFLAGS += $(SDL2_CFLAGS) $(FREETYPE_CFLAGS)
-LDFLAGS = $(SDL2_LIBS) $(FREETYPE_LIBS) $(PNG_LIBS)
+LDFLAGS = $(SDL2_LIBS) $(FREETYPE_LIBS) $(PNG_LIBS) $(JPEG_LIBS)
 
 # Source files
 SOURCES = main.c
 LVGL_LIB = lvgl/lib/liblvgl.a
 
 # Output executable
-TARGET = button_demo
+TARGET = button
 
 # Default target
 all: $(TARGET)

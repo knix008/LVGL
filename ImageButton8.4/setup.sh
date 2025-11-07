@@ -161,7 +161,7 @@ if [ ! -f "lvgl/lib/liblvgl.a" ]; then
     for src in $LVGL_SOURCES; do
         obj="lvgl/build/$(basename ${src%.c}.o)"
         if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
-            gcc -Wall -Wextra -O2 -I. -Ilvgl -DLV_CONF_INCLUDE_SIMPLE $(pkg-config --cflags sdl2) $(pkg-config --cflags freetype2) -c "$src" -o "$obj"
+            gcc -Wall -Wextra -O2 -I. -Ilvgl -DLV_CONF_INCLUDE_SIMPLE $(pkg-config --cflags sdl2) $(pkg-config --cflags freetype2) $(pkg-config --cflags libpng 2>/dev/null) $(pkg-config --cflags libjpeg 2>/dev/null) -c "$src" -o "$obj"
         fi
     done
     
