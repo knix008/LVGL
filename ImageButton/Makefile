@@ -21,7 +21,7 @@ OBJ = $(SRC:.c=.o)
 
 # No need to compile SDL drivers separately - they're already in liblvgl.a
 
-TARGET = image_button_app
+TARGET = button
 
 # Default target
 all: check_lvgl $(TARGET)

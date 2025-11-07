@@ -1,12 +1,13 @@
 # LVGL Image Button Demo Application
 
-A fully interactive demonstration application showcasing image buttons with multiple image formats (PNG, JPG, BMP) using LVGL (Light and Versatile Graphics Library). Features clickable buttons with images as labels, visual feedback on interactions, and configurable sizing.
+A fully interactive demonstration application showcasing image buttons with multiple image formats (PNG, JPG, GIF, BMP) using LVGL (Light and Versatile Graphics Library). Features clickable buttons with images as labels, visual feedback on interactions, and configurable sizing.
 
 ## Features
 
 ✨ **Multi-Format Image Support**
 - PNG images with transparency support (tested & working)
 - JPG/JPEG images with compression (tested & working)
+- GIF images with animation support (tested & working)
 - BMP bitmap images (tested & working)
 
 🎨 **Interactive Image Buttons**
@@ -33,6 +34,7 @@ A fully interactive demonstration application showcasing image buttons with mult
 |--------|-----------|-----------|----------|
 | **PNG** | ~11.5 KB | 32x32 px | Lossless compression, transparency support |
 | **JPG** | ~1.1 KB | 32x32 px | Lossy compression, smallest file size |
+| **GIF** | ~1.1 KB | 32x32 px | Animation support, auto-play |
 | **BMP** | ~3.2 KB | 32x32 px | Uncompressed, simple format |
 
 ## Project Structure
@@ -43,6 +45,7 @@ ImageButton/
 │   ├── images/                    # Image button assets
 │   │   ├── button_png.png        # PNG image (32x32)
 │   │   ├── button_jpg.jpg        # JPG image (32x32)
+│   │   ├── button_gif.gif        # GIF animated image (32x32)
 │   │   └── button_bmp.bmp        # BMP image (32x32)
 │   └── fonts/
 │       └── NanumGothicCoding-Bold.ttf  # Custom font (16px, 12px)
@@ -182,10 +185,12 @@ Edit `image_button_app.c` (lines 14-35) to adjust button and image sizes:
 
 ```c
 static const button_info_t buttons[] = {
-    {"PNG Button", "A:assets/images/button_png.png", "PNG format description"},
-    {"JPG Button", "A:assets/images/button_jpg.jpg", "JPG format description"},
-    {"BMP Button", "A:assets/images/button_bmp.bmp", "BMP format description"},
+    {"PNG Button", "A:assets/images/button_png.png", "PNG format description", false},
+    {"JPG Button", "A:assets/images/button_jpg.jpg", "JPG format description", false},
+    {"GIF Button", "A:assets/images/button_gif.gif", "GIF format description", true},
+    {"BMP Button", "A:assets/images/button_bmp.bmp", "BMP format description", false},
     // Add new buttons here
+    // Set the last parameter to 'true' for GIF buttons, 'false' for static images
 };
 ```
 

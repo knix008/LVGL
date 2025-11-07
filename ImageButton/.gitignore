@@ -22,5 +22,5 @@ lvgl/lib/*.a
 .DS_Store
 Thumbs.db
 
-# Application binary
-image_button_app
+# Application binaries
+button

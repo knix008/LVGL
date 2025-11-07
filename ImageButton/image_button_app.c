@@ -48,13 +48,15 @@ typedef struct {
     const char * name;
     const char * image_path;
     const char * description;
+    bool is_gif;  // Flag to indicate if this is a GIF button
 } button_info_t;
 
 // Button information array (use POSIX filesystem driver with A: prefix, matching ImageButtonUI pattern)
 static const button_info_t buttons[] = {
-    {"PNG Button", "A:assets/images/button_png.png", "PNG format with transparency support"},
-    {"JPG Button", "A:assets/images/button_jpg.jpg", "JPEG format with compression"},
-    {"BMP Button", "A:assets/images/button_bmp.bmp", "Bitmap format without compression"}
+    {"PNG Button", "A:assets/images/button_png.png", "PNG format with transparency support", false},
+    {"JPG Button", "A:assets/images/button_jpg.jpg", "JPEG format with compression", false},
+    {"GIF Button", "A:assets/images/button_gif.gif", "GIF format with animation support", true},
+    {"BMP Button", "A:assets/images/button_bmp.bmp", "Bitmap format without compression", false}
 };
 
 /**
@@ -216,6 +218,68 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
 }
 
 /**
+ * @brief Create a button with a GIF image and text (following ImageButton8.4 pattern)
+ */
+lv_obj_t * create_gif_button(lv_obj_t * parent, const char * gif_path,
+                             const char * text,
+                             lv_coord_t x, lv_coord_t y,
+                             lv_coord_t width, lv_coord_t height)
+{
+    // Create a regular button (not imagebutton)
+    lv_obj_t * btn = lv_btn_create(parent);
+    lv_obj_set_pos(btn, x, y);
+    lv_obj_set_size(btn, width, height);
+
+    // Set a flex layout on the button to arrange its children (GIF and label)
+    lv_obj_set_layout(btn, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW); // Arrange children in a row
+    lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER); // Center items
+    lv_obj_set_style_pad_row(btn, 8, 0); // Space between GIF and label
+    lv_obj_set_style_pad_left(btn, 8, 0);
+    lv_obj_set_style_pad_right(btn, 8, 0);
+
+    // Create a GIF widget inside the button
+    lv_obj_t * gif = lv_gif_create(btn);
+
+    // Calculate widget size based on button height minus padding
+    lv_coord_t widget_size = height - 8;
+
+    // Disable flex grow to maintain explicit sizing
+    lv_obj_set_flex_grow(gif, 0);
+
+    // Set widget size to available space
+    lv_obj_set_size(gif, widget_size, widget_size);
+
+    // Add styling to respond to button press
+    lv_obj_set_style_opa(gif, LV_OPA_COVER, 0);
+    lv_obj_set_style_opa(gif, LV_OPA_70, LV_STATE_PRESSED);
+
+    // Load the GIF
+    lv_gif_set_src(gif, gif_path);
+
+    printf("  GIF loaded: %s, display size: %dx%d\n",
+           gif_path, widget_size, widget_size);
+
+    // Create a label next to the GIF (Flexbox will position it)
+    lv_obj_t * label = lv_label_create(btn);
+    lv_label_set_text(label, text);
+    lv_obj_set_style_text_color(label, lv_color_white(), 0);
+    lv_obj_set_style_text_font(label, custom_font_12 ? custom_font_12 : custom_font, 0);
+
+    // Allow label to expand and fill remaining space
+    lv_obj_set_flex_grow(label, 1);
+
+    printf("GIF button created at (%d, %d) with size %dx%d\n", (int)x, (int)y, (int)width, (int)height);
+
+    // Add event handlers
+    lv_obj_add_event_cb(btn, button_image_press_handler, LV_EVENT_PRESSED, NULL);
+    lv_obj_add_event_cb(btn, button_image_press_handler, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb(btn, button_click_handler, LV_EVENT_CLICKED, NULL);
+
+    return btn;
+}
+
+/**
  * @brief Create a label to display button information
  */
 lv_obj_t * create_info_label(lv_obj_t * parent, const char * text, 
@@ -317,14 +381,24 @@ void image_button_app_init(void)
     lv_obj_set_flex_align(btn_container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_row(btn_container, 10, 0); // Spacing between buttons
 
-    // Create 3 image buttons inside the flex container
+    // Create image buttons inside the flex container
     for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
-        // Create the image button with text on it
+        // Create the appropriate button type based on whether it's a GIF
         // The layout manager will handle positioning, so x/y are 0.
         // Use the defined button size constants for easy adjustment
-        lv_obj_t * btn = create_image_button(btn_container, buttons[i].image_path,
-                                           buttons[i].name,
-                                           0, 0, BUTTON_WIDTH, BUTTON_HEIGHT);
+        lv_obj_t * btn;
+
+        if (buttons[i].is_gif) {
+            // Create GIF button using specialized function
+            btn = create_gif_button(btn_container, buttons[i].image_path,
+                                   buttons[i].name,
+                                   0, 0, BUTTON_WIDTH, BUTTON_HEIGHT);
+        } else {
+            // Create regular image button
+            btn = create_image_button(btn_container, buttons[i].image_path,
+                                     buttons[i].name,
+                                     0, 0, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
 
         // Set user data to identify which button this is
         lv_obj_set_user_data(btn, (void*)(intptr_t)i);

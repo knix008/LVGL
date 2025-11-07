@@ -48,15 +48,32 @@ lv_obj_t * create_image_button(lv_obj_t * parent, const char * image_path,
                                lv_coord_t width, lv_coord_t height);
 
 /**
+ * @brief Create a button with a GIF image and text
+ *
+ * @param parent Parent object for the button
+ * @param gif_path Path to the GIF file
+ * @param text Text to display on the button
+ * @param x X position of the button
+ * @param y Y position of the button
+ * @param width Width of the button
+ * @param height Height of the button
+ * @return Pointer to the created button object
+ */
+lv_obj_t * create_gif_button(lv_obj_t * parent, const char * gif_path,
+                             const char * text,
+                             lv_coord_t x, lv_coord_t y,
+                             lv_coord_t width, lv_coord_t height);
+
+/**
  * @brief Create a label to display button information
- * 
+ *
  * @param parent Parent object for the label
  * @param text Text to display
  * @param x X position of the label
  * @param y Y position of the label
  * @return Pointer to the created label object
  */
-lv_obj_t * create_info_label(lv_obj_t * parent, const char * text, 
+lv_obj_t * create_info_label(lv_obj_t * parent, const char * text,
                             lv_coord_t x, lv_coord_t y);
 
 #ifdef __cplusplus
