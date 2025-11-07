@@ -6,8 +6,7 @@
 *.dll
 
 # Executables
-button_demo
-*.exe
+button
 
 # Build directories
 build/
