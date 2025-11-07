@@ -14,21 +14,25 @@ This project demonstrates:
 ## Features
 
 ### UI Components
-- **3 Interactive Buttons with Images**: Orange buttons (70x280px) with visual effects and click feedback
+- **3 Interactive Buttons with Static Images**: Orange buttons (280x70px) with visual effects and click feedback
   - Button 1: PNG image (button_png.png) with green border flash effect
-  - Button 2: BMP image (button_bmp.bmp) with green border flash effect  
+  - Button 2: BMP image (button_bmp.bmp) with green border flash effect
   - Button 3: JPG image (button_jpg.jpg) with green border flash effect
-- **2 Toggle Buttons**: Gray buttons that toggle between states with animated color transitions
+- **1 GIF Image Button**: Orange button with animated GIF displaying visual feedback on click
+  - GIF 버튼: Displays animated GIF with green border flash effect
+  - Smooth color animation when clicked
+- **1 Toggle Button**: Gray button that toggles between states with animated color transitions
   - Gray (OFF) to Blue (ON) with smooth color animation
-  - Subtle scale effects for visual emphasis
+  - Proper event handling and state tracking
 - **1 Disabled Button**: Non-interactive button to show disabled state
 - **Korean UI Text**: All text displayed in Korean using NanumGothicCoding font
 - **Title and Info Label**: Provides user guidance in Korean
 - **Display Resolution**: 320x640 portrait orientation
 
 ### Technical Features
-- **Multi-Format Image Support**: PNG, BMP, and JPG images
-- **Image Decoders**: LibPNG for PNG, native BMP decoder, TJPGD for JPG
+- **Multi-Format Image Support**: PNG, BMP, JPG, and GIF images
+- **Image Decoders**: LibPNG for PNG, native BMP decoder, TJPGD for JPG, LVGL GIF decoder
+- **Animated GIF Support**: LVGL 8.4 built-in GIF widget for frame-by-frame animation
 - **Flex Layout**: Buttons use flex layout for proper image and label alignment
 - **Double Buffering**: Smooth rendering with LVGL's display buffer
 - **Mouse Input**: Real-time mouse click detection and handling
@@ -37,6 +41,7 @@ This project demonstrates:
 - **SDL2 Backend**: Cross-platform display and input
 - **Visual Effects**: Safe and reliable visual feedback animations
   - Green border flash effect on image buttons (200ms duration)
+  - Green border flash effect on GIF button with color animation
   - Smooth color transitions for toggle buttons
   - Timer-based animation cleanup to prevent visual artifacts
 
@@ -61,7 +66,8 @@ ImageButton8.4/
     └── images/
         ├── button_png.png          # PNG image (32x32)
         ├── button_bmp.bmp          # BMP image (32x32)
-        └── button_jpg.jpg          # JPG image (32x32)
+        ├── button_jpg.jpg          # JPG image (32x32)
+        └── button_gif.gif          # Animated GIF (multiple frames)
 ```
 
 ## Prerequisites
@@ -123,16 +129,21 @@ make run
 ## Usage
 
 ### Interaction
-- **Click Image Buttons**: 
+- **Click Image Buttons (PNG/BMP/JPG)**:
   - Orange buttons change to green with smooth color animation
   - Green border flashes around the image for 200ms
   - Images remain visible and stable throughout the animation
-- **Click Toggle Buttons**: 
-  - Toggle buttons change color between gray (OFF) and blue (ON)
+- **Click GIF Button**:
+  - Orange button changes color with animation on click
+  - Green border flashes around the GIF for 200ms
+  - GIF animation continues playing during the effect
+  - Visual feedback similar to image buttons
+- **Click Toggle Button**:
+  - Toggle button changes color between gray (OFF) and blue (ON)
   - Smooth animated color transitions
-  - Subtle scale effects for visual emphasis
+  - Proper state tracking and feedback
 - **Disabled Button**: The disabled button cannot be clicked
-- **Console Output**: Button events are printed to console (e.g., "Button clicked!", "Toggle button is ON")
+- **Console Output**: Button events are printed to console (e.g., "Button clicked!", "Toggle button is ON", "GIF button clicked!")
 
 ### Exit
 - Close the window, or
@@ -157,12 +168,12 @@ lv_obj_set_size(btn1, 280, 70);     // Width, Height
 ```
 
 Current layout (portrait 320x640):
-- Button 1: (20, 40) - 280x70px
-- Button 2: (20, 125) - 280x70px
-- Button 3: (20, 210) - 280x70px
-- Toggle 1: (20, 295) - 280x70px
-- Toggle 2: (20, 380) - 280x70px
-- Disabled: (20, 465) - 280x70px
+- Button 1 (PNG): (20, 40) - 280x70px
+- Button 2 (BMP): (20, 125) - 280x70px
+- Button 3 (JPG): (20, 210) - 280x70px
+- GIF Button: (20, 295) - 280x70px
+- Toggle Button 1: (20, 380) - 280x70px
+- Disabled Button: (20, 465) - 280x70px
 
 ### Font Sizes
 Modify the font weight in `init_korean_fonts()` function:
@@ -269,7 +280,7 @@ Edit the event handlers:
    info_20.name = "assets/fonts/YourFont.ttf";
    ```
 
-### Adding Images to Buttons
+### Adding Static Images to Buttons
 1. Place image file in `assets/images/`
 2. Create an image widget and set its source:
    ```c
@@ -279,6 +290,18 @@ Edit the event handlers:
    ```
 3. Supported formats: PNG, BMP, JPG
 4. For PNG support, ensure `LV_USE_LIBPNG 1` in `lv_conf.h` and rebuild with `bash setup.sh`
+
+### Adding Animated GIF to Buttons
+1. Place GIF file in `assets/images/`
+2. Create a GIF widget and set its source:
+   ```c
+   lv_obj_t *gif = lv_gif_create(btn);
+   lv_obj_set_flex_grow(gif, 0);
+   lv_gif_set_src(gif, "A:assets/images/your_image.gif");
+   ```
+3. LVGL 8.4 automatically handles GIF frame animations
+4. GIF animation runs continuously until the object is deleted
+5. Ensure `LV_USE_GIF 1` in `lv_conf.h` (enabled by default in LVGL 8.4)
 
 ## Performance Notes
 
@@ -290,12 +313,13 @@ Edit the event handlers:
 
 ## Image Assets
 
-The project includes three sample images for demonstration:
+The project includes four sample images for demonstration:
 - **button_png.png** - PNG image (32x32px, 8-bit RGB)
 - **button_bmp.bmp** - BMP image (32x32px, 24-bit)
 - **button_jpg.jpg** - JPEG image (32x32px, baseline)
+- **button_gif.gif** - Animated GIF (32x32px, multiple frames)
 
-These images are for demonstration purposes. Replace them with your own images as needed.
+All images are 32x32 pixels for consistency. The GIF file contains multiple frames that animate continuously. Replace these files with your own images as needed (maintaining the same filenames and 32x32px dimensions for best results).
 
 ## License
 
@@ -314,10 +338,17 @@ This project uses:
 
 ## Recent Updates
 
+### v1.3.0 - GIF Animation Support
+- **Added animated GIF button** - supports multiple frame animations with visual effects
+- **GIF button event handler** - dedicated handler for GIF widget detection and effect application
+- **Visual effects on GIF** - green border flash effect (200ms) with smooth color animation
+- **Layout optimization** - GIF button positioned alongside image buttons
+- **Reduced toggle buttons** - now featuring 1 toggle button with proper state management
+
 ### v1.2.0 - Visual Effects & Animation
 - **Fixed image disappearing issue** - images now stay visible when clicked
 - **Added green border flash effect** - 200ms duration for image buttons
-- **Improved toggle button animations** - smooth color transitions with scale effects
+- **Improved toggle button animations** - smooth color transitions
 - **Safe animation implementation** - timer-based cleanup prevents visual artifacts
 - **Simplified visual effects** - removed problematic transform animations
 - **Enhanced user feedback** - reliable visual responses to button interactions
