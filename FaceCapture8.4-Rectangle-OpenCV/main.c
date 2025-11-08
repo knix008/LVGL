@@ -217,13 +217,13 @@ int main(int argc, char *argv[])
         SDL_Event event;
         if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_QUIT, SDL_QUIT) > 0) {
             fprintf(stderr, "\n=== SDL QUIT EVENT DETECTED (PEEK) ===\n");
-            fprintf(stderr, "Stopping camera to release /dev/video0...\n");
+            fprintf(stderr, "Forcing immediate cleanup and exit...\n");
             fflush(stderr);
 
-            // CRITICAL: Stop camera FIRST to release the V4L2 device
-            camera_stop();
+            // Just call cleanup directly - it will stop camera
+            camera_cleanup();
 
-            fprintf(stderr, "Camera stopped, exiting now!\n");
+            fprintf(stderr, "Cleanup done, exiting NOW!\n");
             fflush(stderr);
             _exit(0);
         }
@@ -232,13 +232,13 @@ int main(int argc, char *argv[])
         if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_WINDOWEVENT, SDL_WINDOWEVENT) > 0) {
             if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
                 fprintf(stderr, "\n=== SDL WINDOW CLOSE EVENT DETECTED ===\n");
-                fprintf(stderr, "Stopping camera to release /dev/video0...\n");
+                fprintf(stderr, "Forcing immediate cleanup and exit...\n");
                 fflush(stderr);
 
-                // CRITICAL: Stop camera FIRST to release the V4L2 device
-                camera_stop();
+                // Just call cleanup directly - it will stop camera
+                camera_cleanup();
 
-                fprintf(stderr, "Camera stopped, exiting now!\n");
+                fprintf(stderr, "Cleanup done, exiting NOW!\n");
                 fflush(stderr);
                 _exit(0);
             }
