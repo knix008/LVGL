@@ -1,0 +1,52 @@
+# Compiled executable
+button
+
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Compiled libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# LVGL compiled objects
+lvgl/
+
+# Demos compiled objects
+lvgl/demos/**/*.o
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Dependency files
+*.d
+
+# Core dumps
+core
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
