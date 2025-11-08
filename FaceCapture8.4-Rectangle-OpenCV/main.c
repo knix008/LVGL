@@ -22,7 +22,6 @@
 
 // Global variables
 static int photo_count = 0;
-static volatile int cleanup_started = 0;
 
 /**
  * Capture button callback
@@ -99,39 +98,10 @@ static int init_lvgl(void)
 }
 
 /**
- * Watchdog thread that force-kills the process if cleanup hangs
- */
-static void *watchdog_thread(void *arg)
-{
-    (void)arg;
-
-    // Wait for cleanup to start
-    while (!cleanup_started) {
-        usleep(10000);  // 10ms
-    }
-
-    // Now wait 1 second for cleanup to finish
-    printf("Watchdog: Cleanup started, waiting 1 second...\n");
-    sleep(1);
-
-    // If we're still here after 1 second, force exit
-    fprintf(stderr, "\n!!! WATCHDOG TIMEOUT !!!\n");
-    fprintf(stderr, "Cleanup took more than 1 second, FORCE KILLING PROCESS NOW!\n");
-    fflush(stderr);
-    fflush(stdout);
-    _exit(1);  // Nuclear option - kill everything NOW
-
-    return NULL;
-}
-
-/**
  * Cleanup resources
  */
 static void cleanup(void)
 {
-    // Signal that cleanup has started
-    cleanup_started = 1;
-
     printf("Starting cleanup...\n");
 
     // Cleanup face detection
