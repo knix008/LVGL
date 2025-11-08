@@ -23,6 +23,7 @@ using namespace cv;
 static VideoCapture *camera_cap = NULL;
 static pthread_t camera_thread;
 static bool camera_running = false;
+static bool camera_released = false;  // Track if camera has been released
 static uint8_t *camera_frame_data = NULL;
 static uint8_t *camera_frame_full = NULL;  // Full resolution frame buffer
 static int full_width = 0;
@@ -126,11 +127,7 @@ void camera_cleanup(void)
         camera_stop();
     }
 
-    // Step 2: Give system a moment to stabilize
-    printf("Stabilizing device...\n");
-    usleep(200000);  // 200ms delay
-
-    // Step 3: Free Mat objects
+    // Step 2: Free Mat objects (no delay needed after thread is stopped)
     if (current_frame) {
         printf("Freeing current frame...\n");
         delete current_frame;
@@ -143,16 +140,12 @@ void camera_cleanup(void)
         preview_frame = NULL;
     }
 
-    // Step 4: Release camera capture
+    // Step 4: Delete camera capture object (already released in camera_stop)
     if (camera_cap) {
-        printf("Releasing camera capture...\n");
-        camera_cap->release();
+        printf("Deleting camera capture object...\n");
         delete camera_cap;
         camera_cap = NULL;
-
-        printf("Device released, waiting for driver to stabilize...\n");
-        usleep(500000);  // 500ms delay for device reset
-        printf("Device released successfully\n");
+        printf("Camera object deleted successfully\n");
     }
 
     // Step 5: Free camera frame data buffers
@@ -170,6 +163,7 @@ void camera_cleanup(void)
 
     // Step 6: Reset state variables
     camera_running = false;
+    camera_released = false;
 
     printf("Camera cleanup complete\n");
 }
@@ -193,9 +187,16 @@ static void *camera_thread_func(void *arg)
         // Add cancellation point
         pthread_testcancel();
 
+        // Enable async cancellation during blocking OpenCV calls
+        int oldtype;
+        pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
+
         // Capture frame from camera with grab/retrieve for interruptibility
         // This allows us to check camera_running between grab and retrieve
         bool grabbed = camera_cap->grab();
+
+        // Restore deferred cancellation
+        pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &oldtype);
 
         // Check if we should exit before retrieving
         if (!camera_running) {
@@ -203,15 +204,22 @@ static void *camera_thread_func(void *arg)
         }
 
         if (!grabbed) {
-            fprintf(stderr, "Error grabbing frame from camera\n");
+            // Don't print error on every failed grab to avoid spam
             pthread_testcancel();
             usleep(10000);  // Sleep 10ms before retry
             continue;
         }
 
+        // Enable async cancellation for retrieve
+        pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
+
         // Retrieve the grabbed frame
-        if (!camera_cap->retrieve(frame_bgr)) {
-            fprintf(stderr, "Error retrieving frame from camera\n");
+        bool retrieved = camera_cap->retrieve(frame_bgr);
+
+        // Restore deferred cancellation
+        pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &oldtype);
+
+        if (!retrieved) {
             pthread_testcancel();
             usleep(10000);  // Sleep 10ms before retry
             continue;
@@ -219,7 +227,6 @@ static void *camera_thread_func(void *arg)
 
         // Check if frame is empty
         if (frame_bgr.empty()) {
-            fprintf(stderr, "Empty frame received\n");
             pthread_testcancel();
             continue;
         }
@@ -300,31 +307,59 @@ void camera_stop(void)
         printf("Stopping camera capture thread...\n");
         camera_running = false;
 
-        // Wait for thread to finish with a manual timeout mechanism
-        if (camera_cap) {
-            printf("Waiting for camera thread to join...\n");
+        // IMPORTANT: Release camera FIRST to unblock any grab() calls
+        // This is the key to making the thread exit quickly
+        if (camera_cap && !camera_released) {
+            printf("Releasing camera to unblock thread...\n");
+            camera_cap->release();
+            camera_released = true;
+        }
 
-            // Try to join with a shorter timeout since we're using grab/retrieve
-            int timeout_ms = 500;  // 500ms timeout (one or two frame intervals)
-            int elapsed_ms = 0;
-            int join_result = pthread_tryjoin_np(camera_thread, NULL);
+        // Now wait for thread to finish
+        printf("Waiting for camera thread to join...\n");
 
-            while (join_result == EBUSY && elapsed_ms < timeout_ms) {
-                usleep(50000);  // Sleep 50ms
-                elapsed_ms += 50;
+        // Try to join with a very short timeout now that camera is released
+        int timeout_ms = 200;  // 200ms should be plenty after release
+        int elapsed_ms = 0;
+        int join_result = pthread_tryjoin_np(camera_thread, NULL);
+
+        while (join_result == EBUSY && elapsed_ms < timeout_ms) {
+            usleep(20000);  // Sleep 20ms
+            elapsed_ms += 20;
+            join_result = pthread_tryjoin_np(camera_thread, NULL);
+        }
+
+        if (join_result == EBUSY) {
+            // Thread is still blocked, cancel it immediately
+            printf("Thread still running after %dms, forcing cancellation...\n", timeout_ms);
+            pthread_cancel(camera_thread);
+
+            // Try to join for a short time after cancellation
+            int cancel_timeout = 100;  // 100ms max wait for cancellation
+            int cancel_elapsed = 0;
+            join_result = pthread_tryjoin_np(camera_thread, NULL);
+
+            while (join_result == EBUSY && cancel_elapsed < cancel_timeout) {
+                usleep(10000);  // Sleep 10ms
+                cancel_elapsed += 10;
                 join_result = pthread_tryjoin_np(camera_thread, NULL);
             }
 
             if (join_result == EBUSY) {
-                fprintf(stderr, "Warning: Camera thread join timed out after %dms, canceling thread...\n", timeout_ms);
-                pthread_cancel(camera_thread);
-                pthread_join(camera_thread, NULL);  // Wait for cancellation to complete
-            } else if (join_result != 0 && join_result != EBUSY) {
-                fprintf(stderr, "Warning: pthread_tryjoin_np failed with code %d\n", join_result);
+                // Thread won't die even after cancellation
+                // This is very bad, but the alarm in main.c will force exit if needed
+                fprintf(stderr, "ERROR: Camera thread won't terminate after %dms!\n", timeout_ms + cancel_timeout);
+                fprintf(stderr, "Detaching thread and continuing (alarm will force exit if hung)...\n");
+                pthread_detach(camera_thread);
             } else {
-                printf("Camera thread joined successfully\n");
+                printf("Camera thread cancelled successfully\n");
             }
+        } else if (join_result != 0 && join_result != EBUSY) {
+            fprintf(stderr, "Warning: pthread_tryjoin_np failed with code %d\n", join_result);
+        } else {
+            printf("Camera thread joined successfully\n");
         }
+
         printf("Camera capture stopped\n");
     }
 }

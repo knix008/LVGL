@@ -286,10 +286,13 @@ gdb ./camera
 ### Window Won't Close
 
 If the application doesn't exit when closing the window:
-- The camera thread now has a 2-second timeout mechanism
-- After timeout, the thread is forcefully cancelled
-- Check terminal output for "Camera thread joined successfully" message
-- If issue persists, check for blocking system calls in camera driver
+- The entire cleanup process has a **2-second alarm timeout**
+- If cleanup hangs for any reason, process is force-killed with `_exit(1)`
+- Camera thread termination tries graceful shutdown first (200ms)
+- Then pthread cancellation (100ms)
+- Then detaches thread and relies on alarm to kill process
+- Check terminal output for cleanup messages
+- See [THREAD_CLEANUP_FIX.md](THREAD_CLEANUP_FIX.md) for details
 
 ## Technical Details
 
@@ -318,7 +321,11 @@ If the application doesn't exit when closing the window:
 - **Main thread**: LVGL event loop, GUI updates
 - **Camera thread**: OpenCV frame capture (pthread) with cancellation support
 - **Inference**: Synchronous on main thread
-- **Thread cleanup**: 2-second timeout with forced cancellation if needed
+- **Thread cleanup**:
+  - Graceful shutdown with 200ms timeout
+  - pthread_cancel with 100ms timeout
+  - Process-wide alarm forces _exit(1) after 2 seconds total
+  - See [THREAD_CLEANUP_FIX.md](THREAD_CLEANUP_FIX.md)
 
 ## API Reference
 
@@ -418,6 +425,9 @@ Contributions are welcome! Please:
 
 - [FACE_DETECTION.md](FACE_DETECTION.md) - Face detection implementation details
 - [CONFIDENCE_DISPLAY.md](CONFIDENCE_DISPLAY.md) - Confidence visualization guide
+- [THREAD_CLEANUP_FIX.md](THREAD_CLEANUP_FIX.md) - Thread cleanup and force exit mechanism
+- [THREAD_HANG_FIX.md](THREAD_HANG_FIX.md) - Async thread cancellation approach
+- [MIGRATION_NOTES.md](MIGRATION_NOTES.md) - FFmpeg to OpenCV migration guide
 
 ## Support
 
@@ -440,7 +450,15 @@ For issues, questions, or suggestions:
 
 ## Version History
 
-### v2.0.0 (Current)
+### v2.1.0 (Current)
+- **Fixed**: Process now exits within 2 seconds even if camera thread hangs
+- Added: POSIX alarm-based cleanup timeout (force _exit after 2 seconds)
+- Improved: Thread cleanup escalation (graceful → cancel → detach → force exit)
+- Enhanced: Thread termination tries multiple strategies before force kill
+- Added: THREAD_CLEANUP_FIX.md documentation
+- Removed: signal.h and sys/types.h from camera.cpp (not needed)
+
+### v2.0.0
 - **Major**: Migrated from FFmpeg to OpenCV for video capture
 - Changed: camera.c → camera.cpp (C++ implementation)
 - Improved: Simpler and more maintainable video capture code

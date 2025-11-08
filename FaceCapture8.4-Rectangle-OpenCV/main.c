@@ -12,6 +12,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <pthread.h>
+#include <SDL2/SDL.h>
 
 // Display configuration
 #define WINDOW_WIDTH  340
@@ -19,6 +22,7 @@
 
 // Global variables
 static int photo_count = 0;
+static volatile int cleanup_started = 0;
 
 /**
  * Capture button callback
@@ -95,21 +99,59 @@ static int init_lvgl(void)
 }
 
 /**
+ * Watchdog thread that force-kills the process if cleanup hangs
+ */
+static void *watchdog_thread(void *arg)
+{
+    (void)arg;
+
+    // Wait for cleanup to start
+    while (!cleanup_started) {
+        usleep(10000);  // 10ms
+    }
+
+    // Now wait 1 second for cleanup to finish
+    printf("Watchdog: Cleanup started, waiting 1 second...\n");
+    sleep(1);
+
+    // If we're still here after 1 second, force exit
+    fprintf(stderr, "\n!!! WATCHDOG TIMEOUT !!!\n");
+    fprintf(stderr, "Cleanup took more than 1 second, FORCE KILLING PROCESS NOW!\n");
+    fflush(stderr);
+    fflush(stdout);
+    _exit(1);  // Nuclear option - kill everything NOW
+
+    return NULL;
+}
+
+/**
  * Cleanup resources
  */
 static void cleanup(void)
 {
+    // Signal that cleanup has started
+    cleanup_started = 1;
+
+    printf("Starting cleanup...\n");
+
     // Cleanup face detection
+    printf("Cleaning up face detection...\n");
     face_detection_cleanup();
+    printf("Face detection cleaned up\n");
 
     // Stop camera
+    printf("Stopping camera...\n");
     camera_stop();
+    printf("Cleaning up camera...\n");
     camera_cleanup();
+    printf("Camera cleaned up\n");
 
     // Cleanup GUI only if LVGL is still initialized
     // If LVGL already called lv_deinit(), GUI resources are already freed
     if (lv_is_initialized()) {
+        printf("Cleaning up GUI...\n");
         gui_cleanup();
+        printf("GUI cleaned up\n");
     } else {
         printf("LVGL already deinitialized, skipping GUI cleanup\n");
     }
@@ -170,6 +212,45 @@ int main(int argc, char *argv[])
     FaceDetectionResult face_result;
 
     while (1) {
+        // IMPORTANT: Peek at SDL events BEFORE LVGL processes them
+        // This ensures we see SDL_QUIT even if LVGL timers are running
+        SDL_Event event;
+        if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_QUIT, SDL_QUIT) > 0) {
+            fprintf(stderr, "\n=== SDL QUIT EVENT DETECTED (PEEK) ===\n");
+            fprintf(stderr, "Stopping camera to release /dev/video0...\n");
+            fflush(stderr);
+
+            // CRITICAL: Stop camera FIRST to release the V4L2 device
+            camera_stop();
+
+            fprintf(stderr, "Camera stopped, exiting now!\n");
+            fflush(stderr);
+            _exit(0);
+        }
+
+        // Also check for window close events
+        if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_WINDOWEVENT, SDL_WINDOWEVENT) > 0) {
+            if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                fprintf(stderr, "\n=== SDL WINDOW CLOSE EVENT DETECTED ===\n");
+                fprintf(stderr, "Stopping camera to release /dev/video0...\n");
+                fflush(stderr);
+
+                // CRITICAL: Stop camera FIRST to release the V4L2 device
+                camera_stop();
+
+                fprintf(stderr, "Camera stopped, exiting now!\n");
+                fflush(stderr);
+                _exit(0);
+            }
+        }
+
+        // Also check LVGL initialization
+        if (!lv_is_initialized()) {
+            fprintf(stderr, "\n=== LVGL DEINITIALIZED ===\n");
+            fflush(stderr);
+            _exit(0);
+        }
+
         // Update camera preview only every 3rd frame (~15 FPS instead of 200 FPS)
         if (camera_is_running()) {
             update_skip++;
@@ -190,30 +271,18 @@ int main(int argc, char *argv[])
                     } else {
                         gui_update_camera_preview(frame);
                     }
-                    //frame_count++;
-                    //if (frame_count % 30 == 0) {
-                    //    printf("Camera frames updated: %d\n", frame_count);
-                    //}
                 }
             }
         }
 
         // Handle LVGL tasks - returns time until next task
+        // LVGL will consume the SDL events here
         uint32_t time_till_next = lv_timer_handler();
-
-        // Check if LVGL has been deinitialized (window closed) AFTER timer handler
-        // When LV_SDL_DIRECT_EXIT=0, LVGL calls lv_deinit() on window close
-        if (!lv_is_initialized()) {
-            printf("Window closed, exiting main loop...\n");
-            break;
-        }
 
         lv_delay_ms(time_till_next < 5 ? time_till_next : 5);  // Max 5ms delay
     }
 
-    // Cleanup
-    cleanup();
-
-    printf("Application closed\n");
-    return 0;
+    // Should never reach here
+    printf("Main loop exited unexpectedly\n");
+    _exit(0);
 }
