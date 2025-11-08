@@ -74,6 +74,9 @@ int camera_init(void)
     camera_cap->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
     camera_cap->set(CAP_PROP_FPS, 30);
 
+    // Set buffer size to 1 for lower latency and better responsiveness on close
+    camera_cap->set(CAP_PROP_BUFFERSIZE, 1);
+
     // Let camera auto-select its maximum resolution
     // Query what resolution we got
     full_width = (int)camera_cap->get(CAP_PROP_FRAME_WIDTH);
@@ -190,9 +193,25 @@ static void *camera_thread_func(void *arg)
         // Add cancellation point
         pthread_testcancel();
 
-        // Capture frame from camera
-        if (!camera_cap->read(frame_bgr)) {
-            fprintf(stderr, "Error reading frame from camera\n");
+        // Capture frame from camera with grab/retrieve for interruptibility
+        // This allows us to check camera_running between grab and retrieve
+        bool grabbed = camera_cap->grab();
+
+        // Check if we should exit before retrieving
+        if (!camera_running) {
+            break;
+        }
+
+        if (!grabbed) {
+            fprintf(stderr, "Error grabbing frame from camera\n");
+            pthread_testcancel();
+            usleep(10000);  // Sleep 10ms before retry
+            continue;
+        }
+
+        // Retrieve the grabbed frame
+        if (!camera_cap->retrieve(frame_bgr)) {
+            fprintf(stderr, "Error retrieving frame from camera\n");
             pthread_testcancel();
             usleep(10000);  // Sleep 10ms before retry
             continue;
@@ -285,14 +304,14 @@ void camera_stop(void)
         if (camera_cap) {
             printf("Waiting for camera thread to join...\n");
 
-            // Try to join with a simple timeout mechanism
-            int timeout_ms = 2000;  // 2 second timeout
+            // Try to join with a shorter timeout since we're using grab/retrieve
+            int timeout_ms = 500;  // 500ms timeout (one or two frame intervals)
             int elapsed_ms = 0;
             int join_result = pthread_tryjoin_np(camera_thread, NULL);
 
             while (join_result == EBUSY && elapsed_ms < timeout_ms) {
-                usleep(100000);  // Sleep 100ms
-                elapsed_ms += 100;
+                usleep(50000);  // Sleep 50ms
+                elapsed_ms += 50;
                 join_result = pthread_tryjoin_np(camera_thread, NULL);
             }
 
