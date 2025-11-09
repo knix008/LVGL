@@ -1,0 +1,64 @@
+# Compiled executable
+button
+
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Compiled libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# LVGL library and sources (cloned by setup.sh)
+lvgl/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Dependency files
+*.d
+
+# Core dumps
+core
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
