@@ -151,21 +151,39 @@ fi
 echo ""
 
 # 4. Build LVGL library
-echo "Step 5: Building LVGL library..."
+echo "Step 4: Building LVGL library..."
 echo ""
 
 # Check if LVGL needs to be rebuilt (force rebuild if requested)
 if [ -f "lvgl/lib/liblvgl.a" ] && [ "$1" != "--rebuild" ]; then
     print_info "LVGL library already exists, skipping build"
-    print_info "Use './setup.sh --rebuild' to force rebuild LVGL with FreeType"
+    print_info "Use './setup.sh --rebuild' to force rebuild LVGL"
 else
-    print_info "Building LVGL static library with FreeType support..."
+    print_info "Building LVGL static library..."
 
     # Create build and lib directories for LVGL
     mkdir -p lvgl/build
     mkdir -p lvgl/lib
 
-    if [ $? -eq 0 ]; then
+    # Find all LVGL source files
+    print_info "Compiling LVGL sources..."
+    cd lvgl
+
+    # Compile all LVGL source files to object files
+    find src -name "*.c" | while read src_file; do
+        obj_file="build/$(echo $src_file | sed 's/\.c$/\.o/' | sed 's/\//_/g')"
+        gcc -c "$src_file" -I. -I.. -O2 -DLV_CONF_INCLUDE_SIMPLE \
+            $(pkg-config --cflags freetype2) \
+            -o "$obj_file" 2>/dev/null
+    done
+
+    # Create static library from all object files
+    print_info "Creating static library..."
+    ar rcs lib/liblvgl.a build/*.o
+
+    cd ..
+
+    if [ -f "lvgl/lib/liblvgl.a" ]; then
         print_success "LVGL library built successfully"
     else
         print_error "LVGL compilation failed"

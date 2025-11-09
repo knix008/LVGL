@@ -1,10 +1,11 @@
-# Round Button Demo - LVGL 8.4
+# Round Button Demo - LVGL 9.2
 
-A demonstration application showcasing round buttons with Korean text using LVGL 8.4 and SDL2.
+A demonstration application showcasing round buttons with Korean text using LVGL 9.2 and SDL2.
 
 ## Features
 
 - **Round Buttons**: Four beautifully styled circular buttons with gradients and shadows
+- **Circular Hit Detection**: Only the circular area is clickable, corners are ignored
 - **Korean Font Support**: Uses FreeType to render Korean text with NanumGothicCoding font
 - **Modern UI**: Gradient backgrounds, smooth shadows, and clean design
 - **No Shrink Effect**: Buttons maintain their size when pressed
@@ -92,10 +93,13 @@ make run
 ## Makefile Targets
 
 - `make` or `make all` - Build the application
-- `make clean` - Remove all build files
+- `make clean` - Remove application build files
+- `make clean-all` - Remove application and LVGL library build files
 - `make run` - Build and run the application
-- `make rebuild` - Clean and rebuild
+- `make rebuild` - Clean and rebuild application
 - `make help` - Show available targets
+
+**Note**: The Makefile only compiles the application code. The LVGL library is built separately using `setup.sh`.
 
 ## Configuration
 
@@ -144,6 +148,16 @@ Each button features:
 - Drop shadow (15px width, 5px offset)
 - No scale transform on press (maintains size)
 - Custom color schemes per button type
+- Reusable style objects for clean code architecture
+
+### Circular Hit Detection
+
+The application implements custom hit testing to ensure only the circular area responds to clicks:
+- Uses `LV_EVENT_HIT_TEST` event for custom hit detection
+- Employs the `LV_OBJ_FLAG_ADV_HITTEST` flag to enable advanced hit testing
+- Distance formula: `(x - center_x)² + (y - center_y)² ≤ radius²`
+- Clicks in the rectangular corners (outside the circle) are ignored
+- Only clicks inside the circular boundary trigger button events
 
 ## Troubleshooting
 
@@ -165,8 +179,16 @@ The application checks for window closure automatically. If it doesn't exit:
 
 If compilation fails:
 - Ensure all dependencies are installed: `pkg-config --libs sdl2 freetype2`
+- Run `./setup.sh` to build LVGL library first
 - Run `make clean` before rebuilding
-- Check that LVGL is cloned: `ls lvgl/`
+- Check that LVGL library exists: `ls lvgl/lib/liblvgl.a`
+
+### Circular Click Detection Not Working
+
+If clicks in the corners still trigger button events:
+- Ensure `LV_OBJ_FLAG_ADV_HITTEST` flag is set on all buttons
+- Verify that `LV_EVENT_HIT_TEST` event callback is registered
+- Check that `lv_obj_event_private.h` is included in main.c
 
 ## License
 

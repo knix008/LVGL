@@ -19,11 +19,8 @@ build/
 dist/
 *.egg-info/
 
-# LVGL compiled objects
+# LVGL library and sources (cloned by setup.sh)
 lvgl/
-
-# Demos compiled objects
-lvgl/demos/**/*.o
 
 # Editor and IDE files
 .vscode/
@@ -50,3 +47,18 @@ core
 *.temp
 *.bak
 *.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
