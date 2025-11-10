@@ -188,19 +188,6 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             float h = value_at(i, 3);
             float conf = value_at(i, 4);
 
-            // Debug: Print first few raw values to understand the format
-            /*
-            if (i < 3 && conf > 0.001f) {
-                std::cout << "Raw values [" << i << "]: x=" << x << ", y=" << y 
-                         << ", w=" << w << ", h=" << h << ", conf=" << conf << std::endl;
-            }
-
-            // Debug: Print first few confidence values
-            if (i < 5) {
-                std::cout << "Row " << i << " confidence: " << conf << std::endl;
-            }
-            */
-
             if (conf < CONFIDENCE_THRESHOLD) continue;
 
             int class_id = 0;
@@ -231,16 +218,6 @@ std::vector<cv::Rect> WebcamIPCApp::postprocess_output_dynamic(const cv::Mat& in
             int top = static_cast<int>((y - 0.5f * h) * scale_y);
             int width = static_cast<int>(w * scale_x);
             int height = static_cast<int>(h * scale_y);
-
-                    // Debug: Print detection details for high confidence detections
-        /*
-        if (conf > 0.01f) {  // Only print for reasonable confidence
-            std::cout << "Detection " << i << ": x=" << x << ", y=" << y 
-                     << ", w=" << w << ", h=" << h << ", conf=" << conf
-                     << " -> rect(" << left << "," << top << "," << width << "x" << height << ")"
-                     << " [aspect=" << (static_cast<float>(width) / height) << "]" << std::endl;
-        }
-        */
 
             // Clamp to image bounds
             left = std::max(0, std::min(img_w - 1, left));
