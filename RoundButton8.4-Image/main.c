@@ -30,14 +30,17 @@ static lv_font_t *korean_font = NULL;
 /* Icon font for buttons (kept for fallback) */
 static lv_font_t *icon_font = NULL;
 
-/* Image format to use: "png", "jpg", "bmp", or "gif"
- * Change this to test different image formats:
- * - PNG: Best quality with transparency support (recommended)
- * - JPG: Good for photos, smaller file size, no transparency
- * - BMP: Uncompressed, larger file size
- * - GIF: Supports transparency and animation
+/* Image formats for each button
+ * Each button uses a different format to demonstrate all supported types:
+ * - Button 1 (Play): PNG - Best quality with transparency
+ * - Button 2 (OK): JPG - Smaller file size
+ * - Button 3 (Pause): BMP - Uncompressed format
+ * - Button 4 (Stop): GIF - Animation support
  */
-#define IMAGE_FORMAT "png"
+#define IMG_FORMAT_BTN1 "png"
+#define IMG_FORMAT_BTN2 "jpg"
+#define IMG_FORMAT_BTN3 "bmp"
+#define IMG_FORMAT_BTN4 "gif"
 
 /* Reusable button styles */
 static lv_style_t style_circle_btn_blue;
@@ -150,9 +153,12 @@ static void button_event_handler(lv_event_t *e)
     lv_obj_t *btn = lv_event_get_target(e);
 
     if (code == LV_EVENT_CLICKED) {
-        lv_obj_t *img = lv_obj_get_child(btn, 0);
-        const void *img_src = lv_image_get_src(img);
-        printf("Button clicked: %s\n", (const char*)img_src);
+        /* Get the image path from button's user data */
+        const char *img_path = (const char*)lv_obj_get_user_data(btn);
+
+        if (img_path) {
+            printf("Button clicked: %s\n", img_path);
+        }
     }
 }
 
@@ -161,55 +167,55 @@ static void button_event_handler(lv_event_t *e)
  */
 static void init_button_styles(void)
 {
-    /* Blue circle button style */
+    /* Blue circle button style - RGB(33, 150, 243) to match icon background */
     lv_style_init(&style_circle_btn_blue);
     lv_style_set_radius(&style_circle_btn_blue, LV_RADIUS_CIRCLE);
-    lv_style_set_bg_color(&style_circle_btn_blue, lv_color_hex(0x2196F3));
-    lv_style_set_bg_grad_color(&style_circle_btn_blue, lv_color_hex(0x1976D2));
+    lv_style_set_bg_color(&style_circle_btn_blue, lv_color_make(33, 150, 243));
+    lv_style_set_bg_grad_color(&style_circle_btn_blue, lv_color_make(33, 150, 243));
     lv_style_set_bg_grad_dir(&style_circle_btn_blue, LV_GRAD_DIR_VER);
     lv_style_set_border_width(&style_circle_btn_blue, 0);
     lv_style_set_shadow_width(&style_circle_btn_blue, 15);
-    lv_style_set_shadow_color(&style_circle_btn_blue, lv_color_hex(0x1976D2));
+    lv_style_set_shadow_color(&style_circle_btn_blue, lv_color_make(33, 150, 243));
     lv_style_set_shadow_offset_y(&style_circle_btn_blue, 5);
     lv_style_set_text_color(&style_circle_btn_blue, lv_color_white());
     /* Disable scale on press */
     lv_style_set_transform_scale(&style_circle_btn_blue, 256);
 
-    /* Green circle button style */
+    /* Green circle button style - RGB(76, 175, 80) to match icon background */
     lv_style_init(&style_circle_btn_green);
     lv_style_set_radius(&style_circle_btn_green, LV_RADIUS_CIRCLE);
-    lv_style_set_bg_color(&style_circle_btn_green, lv_color_hex(0x4CAF50));
-    lv_style_set_bg_grad_color(&style_circle_btn_green, lv_color_hex(0x388E3C));
+    lv_style_set_bg_color(&style_circle_btn_green, lv_color_make(76, 175, 80));
+    lv_style_set_bg_grad_color(&style_circle_btn_green, lv_color_make(76, 175, 80));
     lv_style_set_bg_grad_dir(&style_circle_btn_green, LV_GRAD_DIR_VER);
     lv_style_set_border_width(&style_circle_btn_green, 0);
     lv_style_set_shadow_width(&style_circle_btn_green, 15);
-    lv_style_set_shadow_color(&style_circle_btn_green, lv_color_hex(0x388E3C));
+    lv_style_set_shadow_color(&style_circle_btn_green, lv_color_make(76, 175, 80));
     lv_style_set_shadow_offset_y(&style_circle_btn_green, 5);
     lv_style_set_text_color(&style_circle_btn_green, lv_color_white());
     lv_style_set_transform_scale(&style_circle_btn_green, 256);
 
-    /* Orange circle button style */
+    /* Orange circle button style - RGB(255, 152, 0) to match icon background */
     lv_style_init(&style_circle_btn_orange);
     lv_style_set_radius(&style_circle_btn_orange, LV_RADIUS_CIRCLE);
-    lv_style_set_bg_color(&style_circle_btn_orange, lv_color_hex(0xFF9800));
-    lv_style_set_bg_grad_color(&style_circle_btn_orange, lv_color_hex(0xF57C00));
+    lv_style_set_bg_color(&style_circle_btn_orange, lv_color_make(255, 152, 0));
+    lv_style_set_bg_grad_color(&style_circle_btn_orange, lv_color_make(255, 152, 0));
     lv_style_set_bg_grad_dir(&style_circle_btn_orange, LV_GRAD_DIR_VER);
     lv_style_set_border_width(&style_circle_btn_orange, 0);
     lv_style_set_shadow_width(&style_circle_btn_orange, 15);
-    lv_style_set_shadow_color(&style_circle_btn_orange, lv_color_hex(0xF57C00));
+    lv_style_set_shadow_color(&style_circle_btn_orange, lv_color_make(255, 152, 0));
     lv_style_set_shadow_offset_y(&style_circle_btn_orange, 5);
     lv_style_set_text_color(&style_circle_btn_orange, lv_color_white());
     lv_style_set_transform_scale(&style_circle_btn_orange, 256);
 
-    /* Red circle button style */
+    /* Red circle button style - RGB(244, 67, 54) to match icon background */
     lv_style_init(&style_circle_btn_red);
     lv_style_set_radius(&style_circle_btn_red, LV_RADIUS_CIRCLE);
-    lv_style_set_bg_color(&style_circle_btn_red, lv_color_hex(0xF44336));
-    lv_style_set_bg_grad_color(&style_circle_btn_red, lv_color_hex(0xD32F2F));
+    lv_style_set_bg_color(&style_circle_btn_red, lv_color_make(244, 67, 54));
+    lv_style_set_bg_grad_color(&style_circle_btn_red, lv_color_make(244, 67, 54));
     lv_style_set_bg_grad_dir(&style_circle_btn_red, LV_GRAD_DIR_VER);
     lv_style_set_border_width(&style_circle_btn_red, 0);
     lv_style_set_shadow_width(&style_circle_btn_red, 15);
-    lv_style_set_shadow_color(&style_circle_btn_red, lv_color_hex(0xD32F2F));
+    lv_style_set_shadow_color(&style_circle_btn_red, lv_color_make(244, 67, 54));
     lv_style_set_shadow_offset_y(&style_circle_btn_red, 5);
     lv_style_set_text_color(&style_circle_btn_red, lv_color_white());
     lv_style_set_transform_scale(&style_circle_btn_red, 256);
@@ -273,8 +279,10 @@ static void create_round_buttons(void)
     lv_obj_add_event_cb(btn1, button_visual_effect_handler, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(btn1, button_visual_effect_handler, LV_EVENT_PRESS_LOST, NULL);
 
+    lv_obj_set_user_data(btn1, (void*)"A:assets/icons/play." IMG_FORMAT_BTN1);  /* Store path */
+
     lv_obj_t *img1 = lv_image_create(btn1);
-    lv_image_set_src(img1, "A:assets/icons/play." IMAGE_FORMAT);
+    lv_image_set_src(img1, "A:assets/icons/play." IMG_FORMAT_BTN1);  /* PNG format */
     lv_obj_add_flag(img1, LV_OBJ_FLAG_EVENT_BUBBLE);  /* Allow events to bubble to button */
     lv_obj_align(img1, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_transform_pivot_x(img1, lv_pct(50), 0);  /* Set pivot to center (50%) */
@@ -292,8 +300,10 @@ static void create_round_buttons(void)
     lv_obj_add_event_cb(btn2, button_visual_effect_handler, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(btn2, button_visual_effect_handler, LV_EVENT_PRESS_LOST, NULL);
 
+    lv_obj_set_user_data(btn2, (void*)"A:assets/icons/ok." IMG_FORMAT_BTN2);  /* Store path */
+
     lv_obj_t *img2 = lv_image_create(btn2);
-    lv_image_set_src(img2, "A:assets/icons/ok." IMAGE_FORMAT);
+    lv_image_set_src(img2, "A:assets/icons/ok." IMG_FORMAT_BTN2);  /* JPG format */
     lv_obj_add_flag(img2, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_align(img2, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_transform_pivot_x(img2, lv_pct(50), 0);
@@ -311,8 +321,10 @@ static void create_round_buttons(void)
     lv_obj_add_event_cb(btn3, button_visual_effect_handler, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(btn3, button_visual_effect_handler, LV_EVENT_PRESS_LOST, NULL);
 
+    lv_obj_set_user_data(btn3, (void*)"A:assets/icons/pause." IMG_FORMAT_BTN3);  /* Store path */
+
     lv_obj_t *img3 = lv_image_create(btn3);
-    lv_image_set_src(img3, "A:assets/icons/pause." IMAGE_FORMAT);
+    lv_image_set_src(img3, "A:assets/icons/pause." IMG_FORMAT_BTN3);  /* BMP format */
     lv_obj_add_flag(img3, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_align(img3, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_transform_pivot_x(img3, lv_pct(50), 0);
@@ -330,8 +342,10 @@ static void create_round_buttons(void)
     lv_obj_add_event_cb(btn4, button_visual_effect_handler, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(btn4, button_visual_effect_handler, LV_EVENT_PRESS_LOST, NULL);
 
-    lv_obj_t *img4 = lv_image_create(btn4);
-    lv_image_set_src(img4, "A:assets/icons/stop." IMAGE_FORMAT);
+    lv_obj_set_user_data(btn4, (void*)"A:assets/icons/stop." IMG_FORMAT_BTN4);  /* Store path */
+
+    lv_obj_t *img4 = lv_gif_create(btn4);  /* GIF requires lv_gif widget */
+    lv_gif_set_src(img4, "A:assets/icons/stop." IMG_FORMAT_BTN4);  /* GIF format */
     lv_obj_add_flag(img4, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_obj_align(img4, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_transform_pivot_x(img4, lv_pct(50), 0);
@@ -349,6 +363,9 @@ int main(int argc, char **argv)
     /* Initialize LVGL */
     lv_init();
 
+    /* Initialize BMP decoder */
+    lv_bmp_init();
+
     /* Initialize hardware abstraction layer */
     hal_init();
 
@@ -357,7 +374,11 @@ int main(int argc, char **argv)
 
     printf("Round Image Button Demo Running...\n");
     printf("Window size: %dx%d\n", WINDOW_WIDTH, WINDOW_HEIGHT);
-    printf("Image format: %s\n", IMAGE_FORMAT);
+    printf("Image formats per button:\n");
+    printf("  Button 1 (Play): %s\n", IMG_FORMAT_BTN1);
+    printf("  Button 2 (OK):   %s\n", IMG_FORMAT_BTN2);
+    printf("  Button 3 (Pause): %s\n", IMG_FORMAT_BTN3);
+    printf("  Button 4 (Stop): %s\n", IMG_FORMAT_BTN4);
     printf("Click the buttons to see the effect!\n");
 
     /* Main loop */
