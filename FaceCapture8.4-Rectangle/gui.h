@@ -66,6 +66,11 @@ void gui_show_flash(uint32_t duration_ms);
 void gui_play_shutter_sound(void);
 
 /**
+ * Signal that GUI is exiting - prevents GUI updates after cleanup starts
+ */
+void gui_signal_exit(void);
+
+/**
  * Cleanup GUI resources
  */
 void gui_cleanup(void);

@@ -39,6 +39,9 @@ static lv_image_dsc_t img_dsc;
 static lv_obj_t *conf_labels[MAX_CONF_LABELS] = {NULL};
 static int conf_labels_initialized = 0;
 
+// Exit flag to prevent accessing GUI objects after cleanup starts
+static volatile int gui_exiting = 0;
+
 // Audio variables
 static Mix_Chunk *shutter_sound = NULL;
 
@@ -218,6 +221,10 @@ int gui_init(void)
  */
 void gui_update_camera_preview(uint8_t *frame_data)
 {
+    // Exit early if cleanup has started to prevent accessing freed objects
+    if (gui_exiting || !lv_is_initialized())
+        return;
+
     if (!camera_img || !img_buffer || !frame_data)
         return;
 
@@ -377,6 +384,10 @@ static void draw_rectangle(uint8_t *buffer, int img_width, int img_height,
  */
 void gui_update_camera_preview_with_faces(uint8_t *frame_data, const FaceDetectionResult *faces)
 {
+    // Exit early if cleanup has started to prevent accessing freed objects
+    if (gui_exiting || !lv_is_initialized())
+        return;
+
     if (!camera_img || !img_buffer || !frame_data || !faces)
         return;
 
@@ -566,12 +577,29 @@ void gui_play_shutter_sound(void)
 }
 
 /**
+ * Signal that GUI is exiting - prevents GUI updates after cleanup starts
+ */
+void gui_signal_exit(void)
+{
+    gui_exiting = 1;
+}
+
+/**
  * Cleanup GUI resources
  */
 void gui_cleanup(void)
 {
+    // Signal exit to prevent GUI updates from accessing freed objects
+    gui_signal_exit();
+
     // Only cleanup FreeType fonts if LVGL is still initialized
     if (lv_is_initialized()) {
+        // Clear confidence labels to prevent dangling pointers
+        for (int i = 0; i < MAX_CONF_LABELS; i++) {
+            conf_labels[i] = NULL;
+        }
+        conf_labels_initialized = false;
+
         // Destroy FreeType fonts
         if (font_12) lv_freetype_font_delete(font_12);
         if (font_14) lv_freetype_font_delete(font_14);

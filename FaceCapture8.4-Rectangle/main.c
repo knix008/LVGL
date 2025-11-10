@@ -26,6 +26,7 @@
 static int photo_count = 0;
 static volatile bool should_exit = false;
 static volatile bool cleanup_done = false;
+static volatile bool display_event_handling = false;  // Prevent recursive display events
 static lv_display_t *main_display = NULL;
 
 // Forward declarations
@@ -138,13 +139,24 @@ static void* force_exit_thread(void* arg)
 static void display_event_cb(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    
+
+    // Prevent recursive display event handling during cleanup
+    if (display_event_handling) {
+        printf("Display event already being handled, ignoring recursive call\n");
+        return;
+    }
+
     if (code == LV_EVENT_DELETE) {
+        display_event_handling = true;
         printf("Display delete event received, performing immediate cleanup and exit...\n");
         fflush(stdout);
-        exit_handler();
+        // Signal GUI to stop accepting updates
+        gui_signal_exit();
+        // Don't call exit_handler here as it will call lv_deinit() which triggers
+        // more display events. Instead, do minimal cleanup and exit.
+        printf("Skipping full cleanup from event callback to avoid recursion\n");
         fflush(stdout);
-        _exit(0);  // Force exit immediately
+        _exit(0);  // Force exit immediately without further cleanup
     }
 }
 
