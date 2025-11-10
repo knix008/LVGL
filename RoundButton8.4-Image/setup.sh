@@ -79,14 +79,6 @@ else
     MISSING_PACKAGES+=("libjpeg-dev")
 fi
 
-# Check for SDL2_mixer
-if pkg-config --exists SDL2_mixer; then
-    print_success "SDL2_mixer found"
-else
-    print_error "SDL2_mixer development library not found"
-    MISSING_PACKAGES+=("libsdl2-mixer-dev")
-fi
-
 # Install missing packages if any
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     echo ""
