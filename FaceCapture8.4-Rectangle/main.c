@@ -12,6 +12,11 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <SDL2/SDL.h>
+#include <pthread.h>
+#include <sys/types.h>
 
 // Display configuration
 #define WINDOW_WIDTH  340
@@ -19,6 +24,14 @@
 
 // Global variables
 static int photo_count = 0;
+static volatile bool should_exit = false;
+static volatile bool cleanup_done = false;
+static lv_display_t *main_display = NULL;
+
+// Forward declarations
+static void exit_handler(void);
+static void display_event_cb(lv_event_t *e);
+static void* force_exit_thread(void* arg);
 
 /**
  * Capture button callback
@@ -72,11 +85,15 @@ static int init_lvgl(void)
     lv_init();
 
     // Create SDL window and display using LVGL's built-in SDL driver
-    lv_display_t *display = lv_sdl_window_create(WINDOW_WIDTH, WINDOW_HEIGHT);
-    if (!display) {
+    main_display = lv_sdl_window_create(WINDOW_WIDTH, WINDOW_HEIGHT);
+    if (!main_display) {
         fprintf(stderr, "Failed to create SDL window\n");
         return -1;
     }
+
+    // Add event callback to detect display deletion (window close)
+    lv_display_add_event_cb(main_display, display_event_cb, LV_EVENT_DELETE, NULL);
+    printf("Display event callback registered\n");
 
     // Create mouse input device
     lv_indev_t *mouse = lv_sdl_mouse_create();
@@ -95,10 +112,79 @@ static int init_lvgl(void)
 }
 
 /**
- * Cleanup resources
+ * Force exit thread - ensures process terminates within 3 seconds
  */
-static void cleanup(void)
+static void* force_exit_thread(void* arg)
 {
+    (void)arg;
+    
+    printf("Force exit thread started - will terminate process in 3 seconds if not exited naturally.\n");
+    sleep(3);
+    
+    printf("Force exit timeout reached - terminating process with extreme prejudice.\n");
+    fflush(stdout);
+    
+    // Try different termination methods in order
+    //kill(getpid(), SIGKILL);  // Send SIGKILL to ourselves
+    //abort();                  // If SIGKILL somehow fails, abort
+    _Exit(1);                // If abort fails, use _Exit
+    
+    return NULL;  // Should never reach here
+}
+
+/**
+ * Display event callback - handles display close events
+ */
+static void display_event_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    
+    if (code == LV_EVENT_DELETE) {
+        printf("Display delete event received, performing immediate cleanup and exit...\n");
+        fflush(stdout);
+        exit_handler();
+        fflush(stdout);
+        _exit(0);  // Force exit immediately
+    }
+}
+
+/**
+ * Signal handler for graceful shutdown
+ */
+static void signal_handler(int signum)
+{
+    printf("\nReceived signal %d, initiating graceful shutdown...\n", signum);
+    should_exit = true;
+    
+    // For immediate response, also perform cleanup and exit
+    if (signum == SIGTERM || signum == SIGINT) {
+        printf("Performing immediate cleanup and exit...\n");
+        fflush(stdout);  // Ensure output is written
+        exit_handler();
+        fflush(stdout);  // Ensure cleanup messages are written
+        _exit(0);  // Use _exit() to avoid calling atexit handlers again
+    }
+}
+
+/**
+ * Exit handler to ensure cleanup when application exits
+ */
+static void exit_handler(void)
+{
+    // Prevent duplicate cleanup
+    if (cleanup_done) {
+        printf("Cleanup already performed, skipping...\n");
+        return;
+    }
+    cleanup_done = true;
+    
+    printf("Exit handler called, performing cleanup...\n");
+    
+    // Start force exit thread to ensure we don't hang forever
+    pthread_t force_thread;
+    pthread_create(&force_thread, NULL, force_exit_thread, NULL);
+    pthread_detach(force_thread);
+    
     // Cleanup face detection
     face_detection_cleanup();
 
@@ -110,11 +196,37 @@ static void cleanup(void)
     // If LVGL already called lv_deinit(), GUI resources are already freed
     if (lv_is_initialized()) {
         gui_cleanup();
+        
+        // Deinitialize LVGL if still initialized
+        printf("Deinitializing LVGL...\n");
+        lv_deinit();
     } else {
         printf("LVGL already deinitialized, skipping GUI cleanup\n");
     }
 
+    // Clean up SDL subsystems
+    printf("Cleaning up SDL...\n");
+    SDL_Quit();
+
     printf("Cleanup complete\n");
+    
+    // Force immediate termination using multiple methods
+    printf("Forcing process termination...\n");
+    fflush(stdout);
+    fflush(stderr);
+    
+    // Try exit methods in order of preference
+    printf("Attempting _exit(0)...\n");
+    fflush(stdout);
+    _exit(0);  // Should terminate immediately
+}
+
+/**
+ * Cleanup resources
+ */
+static void cleanup(void)
+{
+    exit_handler();
 }
 
 /**
@@ -129,6 +241,13 @@ int main(int argc, char *argv[])
     printf("  웹캠 캡처 애플리케이션\n");  // Korean: Webcam Capture Application
     printf("========================================\n");
 
+    // Register exit handler to ensure cleanup
+    atexit(exit_handler);
+    
+    // Register signal handlers for graceful shutdown
+    signal(SIGINT, signal_handler);   // Ctrl+C
+    signal(SIGTERM, signal_handler);  // Termination request
+    
     // Initialize LVGL with SDL
     if (init_lvgl() != 0) {
         return 1;
@@ -169,7 +288,16 @@ int main(int argc, char *argv[])
     int update_skip = 0;
     FaceDetectionResult face_result;
 
-    while (1) {
+    while (!should_exit) {
+        // LVGL handles SDL events internally, including window close events
+        // Our display_event_cb will be called when the window is closed
+
+        // Check for exit signal first
+        if (should_exit) {
+            printf("Exit signal received, breaking main loop...\n");
+            break;
+        }
+
         // Update camera preview only every 3rd frame (~15 FPS instead of 200 FPS)
         if (camera_is_running()) {
             update_skip++;
@@ -201,14 +329,20 @@ int main(int argc, char *argv[])
         // Handle LVGL tasks - returns time until next task
         uint32_t time_till_next = lv_timer_handler();
 
-        // Check if LVGL has been deinitialized (window closed) AFTER timer handler
-        // When LV_SDL_DIRECT_EXIT=0, LVGL calls lv_deinit() on window close
+        // Check if LVGL has been deinitialized (window closed)
+        // With LV_SDL_DIRECT_EXIT=0, LVGL calls lv_deinit() on window close
         if (!lv_is_initialized()) {
-            printf("Window closed, exiting main loop...\n");
-            break;
+            printf("LVGL deinitialized (window closed), performing immediate cleanup and exit...\n");
+            fflush(stdout);
+            exit_handler();
+            fflush(stdout);
+            _exit(0);  // Force exit immediately
         }
 
-        lv_delay_ms(time_till_next < 5 ? time_till_next : 5);  // Max 5ms delay
+        // Use a shorter delay and check exit condition more frequently
+        uint32_t delay_time = time_till_next < 5 ? time_till_next : 5;
+        if (delay_time > 1) delay_time = 1;  // Max 1ms delay for more responsive exit
+        lv_delay_ms(delay_time);
     }
 
     // Cleanup
