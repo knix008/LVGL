@@ -1,0 +1,180 @@
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Directoreis
+images/
+lvgl/
+face_embeddings/
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.la
+*.lo
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+facerecog
+main
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# LVGL build artifacts
+lvgl/
+
+# ONNX Runtime directory (downloaded/extracted)
+onnxruntime-linux-*/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.bak
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package manager directories
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Test artifacts
+test/*.o
+test/camera
+test/*.out
+
+# Documentation build artifacts
+docs/_build/
+docs/.doctrees/
+
+# Backup files
+*.orig
+*.rej
+*~
+
+# Ctags and etags
+tags
+TAGS
+.tags
+.tags_sorted_by_file
+
+# Dependency directories (if using)
+vendor/
+third_party/
+
+# Local configuration
+.env
+.env.local
+config.local
+local_config.h
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+coverage/
+htmlcov/
+*.lcov
+
+# Valgrind output
+*.valgrind
+massif.out.*
+callgrind.out.*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.bak
+CMakeLists.txt.user
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+
+# Eclipse
+.cproject
+.project
+.settings/
+.metadata/
+
+# Clangd
+.clangd/
+compile_commands.json
+.cache/
+
+# Code analysis tools
+.clang-tidy
+.clang-format
+cppcheck_results.xml
+
+# Perf profiling
+perf.data
+perf.data.old
+
+# Additional development files
+*.patch
+*.diff
+
+# Keep important assets and models
+!assets/
+!models/
+!assets/*.ttf
+!assets/*.mp3
+!models/*.onnx
+!models/*.pt
+!images/
