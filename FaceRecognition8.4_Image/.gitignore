@@ -1,0 +1,48 @@
+# Build directories
+build/
+*.o
+*.a
+*.so
+*.dylib
+
+# Executables
+face_recognition
+a.out
+*.exe
+
+# Dependencies
+lvgl/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+tags
+.clangd/
+
+# Generated files
+*.gch
+*.pch
+CMakeFiles/
+cmake_install.cmake
+Makefile.in
+
+# Dataset and database
+dataset/A
+dataset/B
+*.db
+*.csv
+
+# Runtime files
+*.log
+*.tmp
+core
+core.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
