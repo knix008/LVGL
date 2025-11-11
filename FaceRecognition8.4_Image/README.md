@@ -93,18 +93,48 @@ The application provides four main buttons:
 3. **Register** - Registers a detected face for a person
 4. **Recognize** - Identifies a person from a detected face
 
+### Image File Naming Convention for Registration
+
+For the automatic batch registration to work correctly, image files must follow this naming pattern:
+
+```
+PersonName.sequence.jpg
+```
+
+**Examples:**
+- `A.1.1.jpg` → Registers as person "A"
+- `B.2.2.jpg` → Registers as person "B"
+- `John.1.jpg` → Registers as person "John"
+- `Jane.sample1.jpg` → Registers as person "Jane"
+
+**Format Rules:**
+- **PersonName**: The identifier for the person (what will be displayed during recognition)
+- **First dot (.)**:  Separates the person name from the sequence
+- **Sequence**: Any suffix after the first dot (typically used for numbering like 1.1, 2.2, etc.)
+- **File extension**: Supported formats are .jpg, .jpeg, .png, .bmp, .gif, .tiff
+
+**Important:**
+- Each image file MUST contain exactly ONE face
+- Only images with exactly one detected face will be registered
+- The person name is extracted from everything BEFORE the first dot
+
 ### Workflow
 
-1. Click "Load Image" to load a JPG, PNG, or other supported image format
-2. Click "Detect Faces" to find all faces in the image
-3. For registration:
+1. **Registration (Batch):**
+   - Place image files in `./dataset/` directory with correct naming (PersonName.*.jpg)
+   - Each file should contain exactly one face
+   - Click "Register" button to process all images
+   - The system will automatically create person directories and store face embeddings
+
+2. **Recognition:**
+   - Click "Load Image" to load a test image from the current directory
+   - Click "Detect Faces" to find faces in the image
+   - Click "Recognize" to identify the person (must have exactly one face)
+
+3. **Individual Recognition Workflow:**
    - Load an image with one face
-   - Click "Detect Faces"
-   - Click "Register" and enter the person's ID and name
-4. For recognition:
-   - Load an image with one face
-   - Click "Detect Faces"
-   - Click "Recognize" to identify the person
+   - Click "Detect Faces" to find the face
+   - Click "Recognize" to identify the person from registered database
 
 ## Module Documentation
 
@@ -236,13 +266,22 @@ Replace Haar Cascade with:
 ### Version 8.4 - Memory Management and Stability Fixes
 
 #### Canvas Buffer Memory Management
-- **Issue**: Canvas buffer allocation failures after multiple image loads
-- **Root Cause**: Each `display_image()` call allocated a new buffer without properly freeing old ones, exhausting LVGL's 256KB memory pool
-- **Solution**: Implemented proper memory lifecycle management using LVGL's pool-based allocation system
+- **Issue**: Canvas buffer allocation failures after multiple image loads + incorrect image colors
+- **Root Cause**:
+  1. Each `display_image()` call allocated a new buffer without reuse, exhausting LVGL's 256KB memory pool
+  2. Incorrect color format (3-byte RGB) for LVGL 8.4 which expects 4-byte XRGB with 32-bit color depth
+  3. Image loader converts BGR→RGB for storage, but LVGL XRGB8888 requires BGR byte order in memory
+- **Solution**: Implemented smart buffer reuse strategy + correct RGB→BGR conversion + proper channel order
 - **Changes**:
-  - Track canvas buffer pointer for consistency
-  - Allocate new buffers only when needed
-  - Rely on LVGL's `lv_deinit()` for complete cleanup instead of manual freeing
+  - Added `canvas_buffer_size` member variable to track allocated buffer size
+  - Only allocate new buffer if image size exceeds current buffer capacity
+  - Reuse existing buffer for images smaller than or equal to current capacity
+  - Convert RGB (from image_loader) back to BGR for LVGL XRGB8888 format
+  - Add alpha channel while maintaining BGR order
+  - Use `LV_COLOR_FORMAT_XRGB8888` color format constant (4 bytes per pixel)
+  - Proper channel merge order: B, G, R, A (matching LVGL XRGB8888 byte layout)
+  - Rely on LVGL's `lv_deinit()` for cleanup of all allocated buffers
+  - Result: Correct color display + significant memory pool savings with only one allocation per unique max size
 
 #### Graceful Application Shutdown
 - **Issue**: Core dump when closing the application
@@ -277,12 +316,37 @@ Replace Haar Cascade with:
   - Minimum size enforcement (10x10 pixels)
   - High-quality INTER_LINEAR interpolation
 
+#### Face Detection False Positives
+- **Issue**: Single-face images (e.g., A.1.1.jpg) detected as multiple faces
+- **Root Cause**: Haar Cascade with `minNeighbors=4` too lenient + overlapping detections from same face at different scales
+- **Solution**: Increased strictness and implemented improved IoU-based clustering for detection merging
+- **Changes**:
+  - Increased `minNeighbors` from 4 to 6 in Haar Cascade detection
+  - Replaced simple overlap check with Intersection over Union (IoU) clustering
+  - Groups detections with IoU > 0.1 (10% overlap) into clusters
+  - Uses iterative grouping to handle transitive overlaps (A overlaps B, B overlaps C → all grouped together)
+  - Merges each cluster into single detection using union of all rectangles
+
+#### Face Recognition Not Working
+- **Issue**: Recognizer always returned false with "Recognizer has not been trained yet" message
+- **Root Cause**: Recognition callback loaded registered person IDs but never loaded their face images or trained the recognizer before attempting recognition
+- **Solution**: Load registered face images from database and train recognizer before recognition
+- **Changes**:
+  - Scan each registered person's directory for stored face images (face_*.png)
+  - Load and preprocess all face images: convert BGR→RGB, resize to 200x200, convert to grayscale
+  - Train LBPH recognizer with all loaded face images and proper labels
+  - Map label indices back to person IDs for result interpretation
+  - Call `recognize_face()` only after successful training
+- **Result**: Recognition now works correctly, identifying registered persons from test images
+
 ### Bug Fixes Summary
 1. ✅ Fixed filename parsing crash in registration (missing dot in filename)
 2. ✅ Fixed registration freezing during face database processing
 3. ✅ Fixed popup dialogs being non-dismissible
 4. ✅ Fixed canvas buffer allocation failure on repeated operations
 5. ✅ Fixed core dump on application close
+6. ✅ Fixed multiple faces detected in single-face images (false positives)
+7. ✅ Fixed face recognition not working (recognizer not being trained)
 
 ## Troubleshooting
 

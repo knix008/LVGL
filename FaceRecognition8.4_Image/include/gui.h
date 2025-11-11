@@ -25,8 +25,10 @@ public:
     // Create main screen and UI elements
     bool create_main_screen();
 
-    // Display image on screen
-    bool display_image(const cv::Mat& image);
+    // Display image on screen (default: image is in RGB format from image_loader)
+    // Set is_rgb=false if image is already in BGR format
+    // Set auto_resize=false to skip resizing (e.g., if already resized in callback)
+    bool display_image(const cv::Mat& image, bool is_rgb = true, bool auto_resize = true);
 
     // Display detected faces on image
     bool display_detection_result(const cv::Mat& image, const std::vector<Face>& faces);
@@ -76,6 +78,7 @@ private:
     lv_obj_t* info_label;       // For information display
     cv::Mat current_display_image;  // Store current displayed image
     uint8_t* canvas_buffer;     // Track allocated canvas buffer for cleanup
+    int canvas_buffer_size;     // Size of currently allocated buffer
 
     // Callback functions
     std::function<void()> on_load_image;

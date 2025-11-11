@@ -66,21 +66,67 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& image) {
         gray_image,
         faces,
         1.1,                    // scale factor
-        4,                      // min neighbors
+        6,                      // min neighbors (increased from 4 to filter out false positives)
         0,                      // flags
         cv::Size(min_face_width, min_face_height),  // min face size
         cv::Size()              // max face size
     );
 
+    // Merge overlapping detections to avoid counting the same face multiple times
+    // Uses Intersection over Union (IoU) to group similar detections
+    std::vector<cv::Rect> merged_faces;
+    std::vector<bool> used(faces.size(), false);
+
+    for (size_t i = 0; i < faces.size(); i++) {
+        if (used[i]) continue;
+
+        // Start a new group with this face
+        std::vector<cv::Rect> group;
+        group.push_back(faces[i]);
+        used[i] = true;
+
+        // Find all overlapping faces using IoU threshold
+        bool found_more = true;
+        while (found_more) {
+            found_more = false;
+            for (size_t j = i + 1; j < faces.size(); j++) {
+                if (used[j]) continue;
+
+                // Calculate IoU (Intersection over Union)
+                cv::Rect intersection = faces[j] & group.back();
+                double intersection_area = static_cast<double>(intersection.width * intersection.height);
+                double union_area = static_cast<double>(faces[j].area() + group.back().area() - intersection_area);
+
+                double iou = (union_area > 0) ? (intersection_area / union_area) : 0.0;
+
+                // If IoU > 0.1 (10% overlap), consider them the same face
+                if (iou > 0.1) {
+                    group.push_back(faces[j]);
+                    used[j] = true;
+                    found_more = true;
+                    break;  // Restart the search with new merged rect
+                }
+            }
+        }
+
+        // Merge all faces in the group using union of all rectangles
+        cv::Rect merged = group[0];
+        for (size_t k = 1; k < group.size(); k++) {
+            merged = merged | group[k];
+        }
+
+        merged_faces.push_back(merged);
+    }
+
     // Convert detected rectangles to Face structures
-    for (const auto& rect : faces) {
+    for (const auto& rect : merged_faces) {
         Face face;
         face.bbox = rect;
         face.confidence = 0.8f; // Cascade classifier doesn't provide confidence, use fixed value
         detected_faces.push_back(face);
     }
 
-    std::cout << "Detected " << detected_faces.size() << " faces in image" << std::endl;
+    std::cout << "Detected " << detected_faces.size() << " faces in image (after merging overlaps)" << std::endl;
 
     return detected_faces;
 }

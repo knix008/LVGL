@@ -11,7 +11,8 @@
 GUI::GUI(int width, int height)
     : screen_width(width), screen_height(height), is_running(true),
       main_screen(nullptr), image_label(nullptr), image_canvas(nullptr),
-      status_label(nullptr), info_label(nullptr), canvas_buffer(nullptr) {
+      status_label(nullptr), info_label(nullptr), canvas_buffer(nullptr),
+      canvas_buffer_size(0) {
 }
 
 GUI::~GUI() {
@@ -232,7 +233,7 @@ void GUI::recognize_person_btn_event_cb(lv_event_t* e) {
     }
 }
 
-bool GUI::display_image(const cv::Mat& image) {
+bool GUI::display_image(const cv::Mat& image, bool is_rgb, bool auto_resize) {
     if (image.empty()) {
         std::cerr << "Empty image provided" << std::endl;
         return false;
@@ -246,8 +247,8 @@ bool GUI::display_image(const cv::Mat& image) {
     int canvas_width = screen_width - 20;   // 300px
     int canvas_height = 180;                 // Fixed canvas height
 
-    // Always resize if image is larger than canvas
-    if (display_image.cols > canvas_width || display_image.rows > canvas_height) {
+    // Resize if image is larger than canvas and auto_resize is enabled
+    if (auto_resize && (display_image.cols > canvas_width || display_image.rows > canvas_height)) {
         float scale = std::min(static_cast<float>(canvas_width) / display_image.cols,
                               static_cast<float>(canvas_height) / display_image.rows);
         int new_width = static_cast<int>(display_image.cols * scale);
@@ -260,47 +261,77 @@ bool GUI::display_image(const cv::Mat& image) {
         cv::resize(display_image, display_image, cv::Size(new_width, new_height), 0, 0, cv::INTER_LINEAR);
     }
 
-    // Ensure image is in RGB format (3 channels)
+    // Ensure image is in BGR format for LVGL XRGB8888 display
+    // is_rgb parameter indicates if input is RGB (true) or already BGR (false)
+
     if (display_image.channels() == 1) {
-        cv::cvtColor(display_image, display_image, cv::COLOR_GRAY2RGB);
+        // Grayscale - convert to BGR
+        cv::cvtColor(display_image, display_image, cv::COLOR_GRAY2BGR);
     } else if (display_image.channels() == 3) {
-        cv::cvtColor(display_image, display_image, cv::COLOR_BGR2RGB);
+        if (is_rgb) {
+            // RGB from image_loader, convert to BGR for LVGL
+            cv::cvtColor(display_image, display_image, cv::COLOR_RGB2BGR);
+        }
+        // else: already BGR (e.g., from draw_faces), no conversion needed
     } else if (display_image.channels() == 4) {
-        cv::cvtColor(display_image, display_image, cv::COLOR_BGRA2RGB);
+        // Remove alpha and convert RGBA to BGR
+        cv::cvtColor(display_image, display_image, cv::COLOR_RGBA2BGR);
     }
+
+    // Now add alpha channel to make 4-channel image for LVGL XRGB8888
+    // LVGL XRGB8888 in memory: byte0=B, byte1=G, byte2=R, byte3=X(unused alpha)
+    std::vector<cv::Mat> channels;
+    cv::split(display_image, channels);  // Split into B, G, R
+
+    // Create alpha channel (all 255 = fully opaque)
+    cv::Mat alpha(display_image.rows, display_image.cols, CV_8UC1, cv::Scalar(255));
+
+    // Merge back in correct order: B, G, R, A (this is what LVGL expects for XRGB8888)
+    channels.push_back(alpha);
+    cv::merge(channels, display_image);
 
     int width = display_image.cols;
     int height = display_image.rows;
-    int buffer_size = width * height * 3;
+    int buffer_size = width * height * 4;  // 4 bytes per pixel for RGBA
 
     // Draw image on canvas using LVGL's canvas buffer management
     if (image_canvas) {
-        // Allocate new buffer for the image
-        // Note: We don't manually free old buffers - LVGL's lv_deinit() handles all cleanup
         uint8_t* new_buffer = nullptr;
 
         if (lv_is_initialized()) {
-            new_buffer = (uint8_t*)lv_malloc(buffer_size);
+            // Only allocate a new buffer if needed (larger than current buffer)
+            // This prevents memory pool exhaustion from repeated allocations
+            if (canvas_buffer == nullptr || buffer_size > canvas_buffer_size) {
+                // Need to allocate a new (larger) buffer
+                new_buffer = (uint8_t*)lv_malloc(buffer_size);
 
-            if (new_buffer == nullptr) {
-                std::cerr << "Failed to allocate canvas buffer (" << buffer_size << " bytes)" << std::endl;
-                std::cerr << "  Image size: " << width << "x" << height << std::endl;
-                return false;
+                if (new_buffer == nullptr) {
+                    std::cerr << "Failed to allocate canvas buffer (" << buffer_size << " bytes)" << std::endl;
+                    std::cerr << "  Image size: " << width << "x" << height << std::endl;
+                    std::cerr << "  Current buffer size: " << canvas_buffer_size << " bytes" << std::endl;
+                    std::cerr << "  This may indicate LVGL memory pool is exhausted (256KB limit)" << std::endl;
+                    return false;
+                }
+
+                // Update to new buffer
+                canvas_buffer = new_buffer;
+                canvas_buffer_size = buffer_size;
+            } else {
+                // Reuse existing buffer - it's large enough
+                new_buffer = canvas_buffer;
             }
         } else {
             std::cerr << "LVGL not initialized, cannot allocate buffer" << std::endl;
             return false;
         }
 
-        // Update to new buffer (old buffer will be cleaned up by LVGL's lv_deinit())
-        canvas_buffer = new_buffer;
-
         // Copy image data to buffer
         std::memcpy(canvas_buffer, display_image.data, buffer_size);
 
         // Set the canvas buffer with the image data
-        // LV_COLOR_FORMAT_RGB888 = 3 bytes per pixel (RGB)
-        lv_canvas_set_buffer(image_canvas, canvas_buffer, width, height, LV_COLOR_FORMAT_RGB888);
+        // LV_COLOR_FORMAT_XRGB8888 = 4 bytes per pixel (XRGB with 32-bit color depth)
+        // X channel is ignored alpha, RGB contains the actual color data
+        lv_canvas_set_buffer(image_canvas, canvas_buffer, width, height, LV_COLOR_FORMAT_XRGB8888);
 
         // Resize canvas to match image dimensions
         lv_obj_set_size(image_canvas, width, height);
@@ -327,7 +358,8 @@ bool GUI::display_detection_result(const cv::Mat& image, const std::vector<Face>
     std::string info = "Detected " + std::to_string(faces.size()) + " faces";
     lv_label_set_text(info_label, info.c_str());
 
-    return display_image(image);
+    // Image from draw_faces is already in BGR format and pre-resized, so is_rgb=false, auto_resize=false
+    return display_image(image, false, false);
 }
 
 void GUI::show_recognition_result(const RecognitionResult& result) {

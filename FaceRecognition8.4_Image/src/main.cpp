@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <vector>
+#include <map>
 
 #include "image_loader.h"
 #include "face_detector.h"
@@ -149,8 +150,38 @@ int main(int /* argc */, char* /* argv */[]) {
                 g_gui->show_error_message("Detection", "No faces detected");
             } else {
                 std::cout << "Detected " << detected_faces.size() << " face(s)" << std::endl;
-                // Draw detected faces on image
-                cv::Mat display_image = face_detector->draw_faces(current_image.mat, detected_faces);
+
+                // Resize image to fit canvas before drawing boxes
+                // Canvas dimensions: 300x180 max (screen_width - 20 = 300)
+                cv::Mat resized_image = current_image.mat.clone();
+                int canvas_width = 300;
+                int canvas_height = 180;
+
+                if (resized_image.cols > canvas_width || resized_image.rows > canvas_height) {
+                    float scale = std::min(static_cast<float>(canvas_width) / resized_image.cols,
+                                          static_cast<float>(canvas_height) / resized_image.rows);
+                    int new_width = static_cast<int>(resized_image.cols * scale);
+                    int new_height = static_cast<int>(resized_image.rows * scale);
+
+                    if (new_width < 10) new_width = 10;
+                    if (new_height < 10) new_height = 10;
+
+                    cv::resize(resized_image, resized_image, cv::Size(new_width, new_height), 0, 0, cv::INTER_LINEAR);
+
+                    // Scale face bounding boxes to match resized image
+                    float scale_x = static_cast<float>(new_width) / current_image.mat.cols;
+                    float scale_y = static_cast<float>(new_height) / current_image.mat.rows;
+
+                    for (auto& face : detected_faces) {
+                        face.bbox.x = static_cast<int>(face.bbox.x * scale_x);
+                        face.bbox.y = static_cast<int>(face.bbox.y * scale_y);
+                        face.bbox.width = static_cast<int>(face.bbox.width * scale_x);
+                        face.bbox.height = static_cast<int>(face.bbox.height * scale_y);
+                    }
+                }
+
+                // Draw detected faces on resized image
+                cv::Mat display_image = face_detector->draw_faces(resized_image, detected_faces);
                 g_gui->display_detection_result(display_image, detected_faces);
             }
         });
@@ -286,44 +317,93 @@ int main(int /* argc */, char* /* argv */[]) {
 
             std::cout << "Found " << all_persons.size() << " registered person(s)" << std::endl;
 
-            // Load all registered face embeddings
+            // Load all registered face images for training
             std::vector<cv::Mat> training_faces;
             std::vector<int> labels;
+            std::map<int, std::string> label_to_person_id;  // Map label to person_id
 
             int label_id = 0;
             for (size_t i = 0; i < all_persons.size(); i++) {
                 const auto& person_id = all_persons[i];
-                // Load embeddings from database
-                // For now, train with extracted faces from database
                 std::string person_dir = "./dataset/" + person_id;
+
+                // Try to load face images from the person directory
+                try {
+                    for (const auto& entry : std::filesystem::directory_iterator(person_dir)) {
+                        if (entry.is_regular_file()) {
+                            std::string filename = entry.path().filename().string();
+                            // Check for face image files (face_*.png)
+                            if (filename.find("face_") == 0 && filename.find(".png") != std::string::npos) {
+                                // Load the face image
+                                cv::Mat face_img = cv::imread(entry.path().string());
+                                if (!face_img.empty()) {
+                                    // Convert BGR to RGB if necessary
+                                    cv::Mat rgb_face;
+                                    cv::cvtColor(face_img, rgb_face, cv::COLOR_BGR2RGB);
+
+                                    // Resize to standard size
+                                    cv::Mat resized_face;
+                                    cv::resize(rgb_face, resized_face, cv::Size(200, 200));
+
+                                    // Convert to grayscale
+                                    cv::Mat gray_face;
+                                    cv::cvtColor(resized_face, gray_face, cv::COLOR_RGB2GRAY);
+
+                                    training_faces.push_back(gray_face);
+                                    labels.push_back(label_id);
+
+                                    std::cout << "  Loaded face image: " << filename
+                                              << " (label: " << label_id << ")" << std::endl;
+                                }
+                            }
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Error loading faces for person " << person_id << ": " << e.what() << std::endl;
+                }
+
+                // Map this label to person_id
+                label_to_person_id[label_id] = person_id;
                 label_id++;
             }
 
-            // Get test face embedding
-            auto test_embedding = face_recognizer->get_face_embedding(face_image);
-            if (test_embedding.empty()) {
-                g_gui->show_error_message("Error", "Failed to extract face embedding");
+            if (training_faces.empty()) {
+                g_gui->show_error_message("Error", "No face images found in database for training");
                 return;
             }
 
-            // Find closest match in database
-            last_recognition.is_registered = false;
-            last_recognition.person_id = "";
-            last_recognition.person_name = "Unknown";
-            last_recognition.confidence = 0.0f;
+            std::cout << "Training recognizer with " << training_faces.size() << " face images" << std::endl;
 
-            // This is a simplified recognition - you would normally compare embeddings
-            // For now, use the face recognizer's recognition function
+            // Train the recognizer with loaded face images
+            if (!face_recognizer->train_faces(training_faces, labels)) {
+                g_gui->show_error_message("Error", "Failed to train recognizer");
+                return;
+            }
+
+            std::cout << "Recognizer trained successfully" << std::endl;
+
+            // Now recognize the test face
             last_recognition = face_recognizer->recognize_face(face_image);
 
             if (last_recognition.is_registered) {
-                std::string person_name;
-                if (face_database->get_person_info(last_recognition.person_id, person_name)) {
-                    last_recognition.person_name = person_name;
+                // Get the person name from the label
+                // person_id format is "Person_X" where X is the label index
+                try {
+                    int predicted_label = std::stoi(last_recognition.person_id.substr(7));  // Extract number from "Person_X" (7 chars = length of "Person_")
+                    std::string person_name;
+                    if (label_to_person_id.find(predicted_label) != label_to_person_id.end()) {
+                        std::string person_id = label_to_person_id[predicted_label];
+                        if (face_database->get_person_info(person_id, person_name)) {
+                            last_recognition.person_name = person_name;
+                        }
+                    }
+                    g_gui->show_success_message("Recognition Result",
+                        last_recognition.person_name + "\n(Confidence: " +
+                        std::to_string(static_cast<int>(last_recognition.confidence * 100)) + "%)");
+                } catch (const std::exception& e) {
+                    std::cerr << "Error parsing recognition result: " << e.what() << std::endl;
+                    g_gui->show_error_message("Error", "Failed to process recognition result");
                 }
-                g_gui->show_success_message("Recognition Result",
-                    last_recognition.person_name + "\n(Confidence: " +
-                    std::to_string(static_cast<int>(last_recognition.confidence * 100)) + "%)");
             } else {
                 g_gui->show_error_message("Recognition Result", "Unknown person");
             }
