@@ -184,6 +184,31 @@ else
     # Create build and lib directories for LVGL
     mkdir -p lvgl/build
     mkdir -p lvgl/lib
+    # Find all LVGL source files
+    print_info "Compiling LVGL sources..."
+    cd lvgl
+
+    # Compile all LVGL source files to object files
+    find src -name "*.c" | while read src_file; do
+        obj_file="build/$(echo $src_file | sed 's/\.c$/\.o/' | sed 's/\//_/g')"
+        gcc -c "$src_file" -I. -I.. -O2 -DLV_CONF_INCLUDE_SIMPLE \
+            $(pkg-config --cflags freetype2) \
+            -o "$obj_file" 2>/dev/null
+    done
+
+    # Create static library from all object files
+    print_info "Creating static library..."
+    ar rcs lib/liblvgl.a build/*.o
+
+    cd ..
+
+    if [ -f "lvgl/lib/liblvgl.a" ]; then
+        print_success "LVGL library built successfully"
+    else
+        print_error "LVGL compilation failed"
+        exit 1
+    fi
+fi
 
 echo ""
 
