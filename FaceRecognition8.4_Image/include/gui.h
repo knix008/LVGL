@@ -79,6 +79,7 @@ private:
     cv::Mat current_display_image;  // Store current displayed image
     uint8_t* canvas_buffer;     // Track allocated canvas buffer for cleanup
     int canvas_buffer_size;     // Size of currently allocated buffer
+    bool canvas_buffer_from_lvgl; // True if allocated with lv_mem_alloc, false if malloc
 
     // Callback functions
     std::function<void()> on_load_image;

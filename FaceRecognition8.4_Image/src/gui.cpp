@@ -1,32 +1,46 @@
 #include "gui.h"
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 #include <unistd.h>
+#include <SDL2/SDL.h>
 
-// Include LVGL SDL2 driver headers
-#include "lvgl/src/drivers/sdl/lv_sdl_window.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_mouse.h"
-#include "lvgl/src/drivers/sdl/lv_sdl_keyboard.h"
+// LVGL 8.4 image decoders
+#include "lvgl/src/extra/libs/freetype/lv_freetype.h"
+#include "lvgl/src/extra/libs/png/lv_png.h"
+#include "lvgl/src/extra/libs/bmp/lv_bmp.h"
+#include "lvgl/src/extra/libs/sjpg/lv_sjpg.h"
+
+// LVGL 8.4 compatible with SDL2 display
 
 GUI::GUI(int width, int height)
     : screen_width(width), screen_height(height), is_running(true),
       main_screen(nullptr), image_label(nullptr), image_canvas(nullptr),
       status_label(nullptr), info_label(nullptr), canvas_buffer(nullptr),
-      canvas_buffer_size(0) {
+      canvas_buffer_size(0), canvas_buffer_from_lvgl(false) {
 }
 
 GUI::~GUI() {
-    // Don't try to free canvas_buffer here
-    // When LVGL calls lv_deinit(), it deallocates the entire memory pool
-    // Trying to free individual allocations after lv_deinit() causes crashes
-    // LVGL's memory cleanup is automatic and complete
-    canvas_buffer = nullptr;
+    // Free the canvas buffer using the correct allocator
+    if (canvas_buffer != nullptr) {
+        if (canvas_buffer_from_lvgl) {
+            lv_mem_free(canvas_buffer);
+        } else {
+            free(canvas_buffer);
+        }
+        canvas_buffer = nullptr;
+    }
 }
 
 bool GUI::initialize() {
     // Initialize LVGL
     std::cout << "Initializing LVGL..." << std::endl;
     lv_init();
+
+    // Note: Image decoders are initialized based on lv_conf.h settings
+    // PNG, JPEG, BMP support is configured in lv_conf.h with:
+    // LV_USE_LODEPNG=1, LV_USE_TJPGD=1, etc.
+    // No explicit initialization needed in most cases
 
     // Initialize SDL2 display driver
     // LVGL with SDL2 requires the SDL2 window to be created
@@ -54,55 +68,177 @@ bool GUI::initialize() {
     return true;
 }
 
+// Global SDL objects
+static SDL_Window* sdl_window = nullptr;
+static SDL_Renderer* sdl_renderer = nullptr;
+static SDL_Texture* sdl_texture = nullptr;
+static lv_indev_t* sdl_indev = nullptr;
+
+// Flush callback for display driver - Based on Chunjiin8.4
+static void disp_flush_cb(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p) {
+    if (sdl_renderer == nullptr || sdl_texture == nullptr) {
+        lv_disp_flush_ready(disp_drv);
+        return;
+    }
+
+    // Lock texture for direct pixel access
+    void * pixels;
+    int pitch;
+    SDL_LockTexture(sdl_texture, NULL, &pixels, &pitch);
+
+    uint32_t * pixel_data = (uint32_t *)pixels;
+
+    // Copy the LVGL framebuffer to SDL2 texture
+    // LVGL uses RGB565 by default, convert to ARGB8888 for SDL2
+    for (int y = area->y1; y <= area->y2; y++) {
+        for (int x = area->x1; x <= area->x2; x++) {
+            if (x >= 0 && x < 320 && y >= 0 && y < 640) {
+                int index = y * 320 + x;
+                // Get 16-bit RGB565 color from LVGL and convert to 32-bit ARGB8888
+                lv_color_t lv_col = *color_p;
+                uint32_t color = lv_color_to32(lv_col);
+                pixel_data[index] = color;
+            }
+            color_p++;
+        }
+    }
+
+    SDL_UnlockTexture(sdl_texture);
+
+    // Render to screen
+    SDL_RenderClear(sdl_renderer);
+    SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
+    SDL_RenderPresent(sdl_renderer);
+
+    lv_disp_flush_ready(disp_drv);
+}
+
+// Input device callback - Based on Chunjiin8.4
+static void indev_read_cb(lv_indev_drv_t * drv, lv_indev_data_t * data) {
+    (void)drv;  // Unused parameter
+
+    // Get current mouse state
+    int x, y;
+    uint32_t mouse_state = SDL_GetMouseState(&x, &y);
+
+    data->point.x = x;
+    data->point.y = y;
+    data->state = (mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)) ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
+
 bool GUI::init_display_driver() {
-    // Create SDL2 window for LVGL (matching FaceRecognition8.4 pattern)
-    std::cout << "Creating SDL2 window (" << screen_width << "x" << screen_height << ")..." << std::endl;
-
-    lv_display_t* disp = lv_sdl_window_create(screen_width, screen_height);
-
-    if (disp == nullptr) {
-        std::cerr << "Failed to create SDL2 window" << std::endl;
-        std::cerr << "Ensure SDL2 is installed: apt-get install libsdl2-dev" << std::endl;
-        std::cerr << "Ensure X11 display is available (set DISPLAY environment variable)" << std::endl;
+    // Initialize SDL - Based on Chunjiin8.4
+    std::cout << "Initializing SDL2..." << std::endl;
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return false;
     }
 
-    // Set window title
-    lv_sdl_window_set_title(disp, "Face Recognition Application");
+    // Create SDL window
+    std::cout << "Creating SDL2 window (" << screen_width << "x" << screen_height << ")..." << std::endl;
+    sdl_window = SDL_CreateWindow(
+        "Face Recognition Application",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        screen_width,
+        screen_height,
+        SDL_WINDOW_SHOWN
+    );
 
-    std::cout << "SDL2 window created successfully (" << screen_width << "x" << screen_height << ")" << std::endl;
+    if (sdl_window == nullptr) {
+        std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return false;
+    }
+
+    // Create SDL renderer with V-sync
+    sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (sdl_renderer == nullptr) {
+        std::cerr << "Failed to create SDL renderer: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(sdl_window);
+        SDL_Quit();
+        return false;
+    }
+
+    // Create SDL texture for rendering using ARGB8888 format (Chunjiin8.4 compatible)
+    sdl_texture = SDL_CreateTexture(
+        sdl_renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        screen_width,
+        screen_height
+    );
+
+    if (sdl_texture == nullptr) {
+        std::cerr << "Failed to create SDL texture: " << SDL_GetError() << std::endl;
+        SDL_DestroyRenderer(sdl_renderer);
+        SDL_DestroyWindow(sdl_window);
+        SDL_Quit();
+        return false;
+    }
+
+    std::cout << "SDL2 initialized successfully" << std::endl;
+
+    // Create display buffer with double-buffering (Chunjiin8.4 pattern)
+    // Buffer size: 20,480 pixels (320 * 64) for efficient partial updates
+    static lv_disp_draw_buf_t draw_buf_dsc;
+    static lv_color_t buf_1[320 * 64];  // First buffer (20% of screen)
+    static lv_color_t buf_2[320 * 64];  // Second buffer for double-buffering
+    lv_disp_draw_buf_init(&draw_buf_dsc, buf_1, buf_2, 320 * 64);
+
+    // Initialize display driver
+    static lv_disp_drv_t disp_drv;
+    lv_disp_drv_init(&disp_drv);
+
+    // Set display resolution
+    disp_drv.hor_res = screen_width;
+    disp_drv.ver_res = screen_height;
+
+    // Set the draw buffer
+    disp_drv.draw_buf = &draw_buf_dsc;
+
+    // Set flush callback (required)
+    disp_drv.flush_cb = disp_flush_cb;
+
+    // Register the display driver
+    lv_disp_t* disp = lv_disp_drv_register(&disp_drv);
+
+    if (disp == nullptr) {
+        std::cerr << "Failed to register display driver" << std::endl;
+        SDL_DestroyTexture(sdl_texture);
+        SDL_DestroyRenderer(sdl_renderer);
+        SDL_DestroyWindow(sdl_window);
+        SDL_Quit();
+        return false;
+    }
+
+    std::cout << "Display driver registered successfully" << std::endl;
     return true;
 }
 
 bool GUI::init_input_device() {
-    // Initialize SDL2 input devices (mouse and keyboard)
-    // Based on FaceRecognition8.4 pattern - warnings only, not critical
+    // Initialize SDL2 input devices - Based on Chunjiin8.4
+    std::cout << "Initializing input device driver..." << std::endl;
 
-    std::cout << "Initializing SDL2 mouse..." << std::endl;
-    lv_indev_t* mouse = lv_sdl_mouse_create();
-    if (mouse == nullptr) {
-        std::cerr << "Warning: Failed to create SDL2 mouse input device" << std::endl;
-        // Not critical, continue anyway
-    } else {
-        std::cout << "SDL2 mouse created successfully" << std::endl;
+    // Create and register input device driver for mouse/touch
+    static lv_indev_drv_t indev_drv;
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = indev_read_cb;
+    sdl_indev = lv_indev_drv_register(&indev_drv);
+
+    if (sdl_indev == nullptr) {
+        std::cerr << "Failed to register input device" << std::endl;
+        return false;
     }
 
-    std::cout << "Initializing SDL2 keyboard..." << std::endl;
-    lv_indev_t* keyboard = lv_sdl_keyboard_create();
-    if (keyboard == nullptr) {
-        std::cerr << "Warning: Failed to create SDL2 keyboard input device" << std::endl;
-        // Not critical, continue anyway
-    } else {
-        std::cout << "SDL2 keyboard created successfully" << std::endl;
-    }
-
-    std::cout << "SDL2 input devices initialized" << std::endl;
-    return true;  // Return true even if devices failed - display is more important
+    std::cout << "Input device driver registered successfully" << std::endl;
+    return true;
 }
 
 bool GUI::create_main_screen() {
-    // Get or create default screen
-    main_screen = lv_screen_active();
+    // Get or create default screen (LVGL 8.4 compatible)
+    main_screen = lv_scr_act();
     if (main_screen == nullptr) {
         std::cerr << "Failed to get active screen" << std::endl;
         return false;
@@ -115,7 +251,7 @@ bool GUI::create_main_screen() {
     lv_obj_t* title = lv_label_create(main_screen);
     lv_label_set_text(title, "Face Recognition Application");
     lv_obj_set_width(title, screen_width);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 10, 10);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
 
     // Create image display area with canvas (smaller to fit in memory)
@@ -124,11 +260,31 @@ bool GUI::create_main_screen() {
     int img_height = 180;                 // Reduced from 300px to 180px (180*300*3 = 162KB)
 
     image_canvas = lv_canvas_create(main_screen);
+
+    // Initialize canvas with a default buffer (will be replaced when image is loaded)
+    // Allocate initial buffer for the canvas
+    int default_buffer_size = img_width * img_height * 4;  // RGBA32
+    uint8_t* default_buffer = (uint8_t*)lv_mem_alloc(default_buffer_size);
+    if (default_buffer == nullptr) {
+        std::cerr << "Failed to allocate default canvas buffer" << std::endl;
+        return false;
+    }
+
+    // Initialize the canvas with the default buffer
+    lv_canvas_set_buffer(image_canvas, default_buffer, img_width, img_height, LV_IMG_CF_RGBA8888);
+
+    // Store this as our initial canvas buffer (will be managed by display_image)
+    canvas_buffer = default_buffer;
+    canvas_buffer_size = default_buffer_size;
+    canvas_buffer_from_lvgl = true;  // Allocated with lv_mem_alloc
+
     lv_obj_set_size(image_canvas, img_width, img_height);
     lv_obj_align(image_canvas, LV_ALIGN_TOP_MID, 0, 40);  // Below title
     lv_obj_set_style_bg_color(image_canvas, lv_color_make(200, 200, 200), 0);
+    lv_obj_set_style_bg_opa(image_canvas, LV_OPA_COVER, 0);
     lv_obj_set_style_border_color(image_canvas, lv_color_black(), 0);
-    lv_obj_set_style_border_width(image_canvas, 1, 0);
+    lv_obj_set_style_border_width(image_canvas, 2, 0);
+    lv_obj_set_style_border_opa(image_canvas, LV_OPA_COVER, 0);
 
     // Create label for image info (below canvas)
     image_label = lv_label_create(main_screen);
@@ -242,6 +398,10 @@ bool GUI::display_image(const cv::Mat& image, bool is_rgb, bool auto_resize) {
     // Store current image
     current_display_image = image.clone();
 
+    // Store original dimensions for label display
+    int original_width = image.cols;
+    int original_height = image.rows;
+
     // Resize image to fit canvas
     cv::Mat display_image = image.clone();
     int canvas_width = screen_width - 20;   // 300px
@@ -261,90 +421,118 @@ bool GUI::display_image(const cv::Mat& image, bool is_rgb, bool auto_resize) {
         cv::resize(display_image, display_image, cv::Size(new_width, new_height), 0, 0, cv::INTER_LINEAR);
     }
 
-    // Ensure image is in BGR format for LVGL XRGB8888 display
-    // is_rgb parameter indicates if input is RGB (true) or already BGR (false)
-
+    // Convert image to BGR if needed
     if (display_image.channels() == 1) {
         // Grayscale - convert to BGR
         cv::cvtColor(display_image, display_image, cv::COLOR_GRAY2BGR);
     } else if (display_image.channels() == 3) {
         if (is_rgb) {
-            // RGB from image_loader, convert to BGR for LVGL
+            // RGB from image_loader, convert to BGR
             cv::cvtColor(display_image, display_image, cv::COLOR_RGB2BGR);
         }
-        // else: already BGR (e.g., from draw_faces), no conversion needed
+        // else: already BGR, no conversion needed
     } else if (display_image.channels() == 4) {
         // Remove alpha and convert RGBA to BGR
         cv::cvtColor(display_image, display_image, cv::COLOR_RGBA2BGR);
     }
 
-    // Now add alpha channel to make 4-channel image for LVGL XRGB8888
-    // LVGL XRGB8888 in memory: byte0=B, byte1=G, byte2=R, byte3=X(unused alpha)
-    std::vector<cv::Mat> channels;
-    cv::split(display_image, channels);  // Split into B, G, R
-
-    // Create alpha channel (all 255 = fully opaque)
-    cv::Mat alpha(display_image.rows, display_image.cols, CV_8UC1, cv::Scalar(255));
-
-    // Merge back in correct order: B, G, R, A (this is what LVGL expects for XRGB8888)
-    channels.push_back(alpha);
-    cv::merge(channels, display_image);
-
     int width = display_image.cols;
     int height = display_image.rows;
-    int buffer_size = width * height * 4;  // 4 bytes per pixel for RGBA
 
-    // Draw image on canvas using LVGL's canvas buffer management
-    if (image_canvas) {
-        uint8_t* new_buffer = nullptr;
-
-        if (lv_is_initialized()) {
-            // Only allocate a new buffer if needed (larger than current buffer)
-            // This prevents memory pool exhaustion from repeated allocations
-            if (canvas_buffer == nullptr || buffer_size > canvas_buffer_size) {
-                // Need to allocate a new (larger) buffer
-                new_buffer = (uint8_t*)lv_malloc(buffer_size);
-
-                if (new_buffer == nullptr) {
-                    std::cerr << "Failed to allocate canvas buffer (" << buffer_size << " bytes)" << std::endl;
-                    std::cerr << "  Image size: " << width << "x" << height << std::endl;
-                    std::cerr << "  Current buffer size: " << canvas_buffer_size << " bytes" << std::endl;
-                    std::cerr << "  This may indicate LVGL memory pool is exhausted (256KB limit)" << std::endl;
-                    return false;
-                }
-
-                // Update to new buffer
-                canvas_buffer = new_buffer;
-                canvas_buffer_size = buffer_size;
-            } else {
-                // Reuse existing buffer - it's large enough
-                new_buffer = canvas_buffer;
-            }
+    // Free the old canvas buffer if it exists, using the correct allocator
+    if (canvas_buffer != nullptr) {
+        if (canvas_buffer_from_lvgl) {
+            lv_mem_free(canvas_buffer);
         } else {
-            std::cerr << "LVGL not initialized, cannot allocate buffer" << std::endl;
-            return false;
+            free(canvas_buffer);
         }
+        canvas_buffer = nullptr;
+        canvas_buffer_size = 0;
+    }
 
-        // Copy image data to buffer
-        std::memcpy(canvas_buffer, display_image.data, buffer_size);
+    // Convert BGR image to LVGL RGBA8888 format buffer (consistent with initial canvas)
+    int buffer_size_rgba = width * height * 4;  // RGBA = 4 bytes per pixel
 
-        // Set the canvas buffer with the image data
-        // LV_COLOR_FORMAT_XRGB8888 = 4 bytes per pixel (XRGB with 32-bit color depth)
-        // X channel is ignored alpha, RGB contains the actual color data
-        lv_canvas_set_buffer(image_canvas, canvas_buffer, width, height, LV_COLOR_FORMAT_XRGB8888);
+    // Allocate using standard malloc (not LVGL's limited pool)
+    // to avoid exhausting LVGL's 256KB memory limit
+    uint8_t* rgba_buffer = (uint8_t*)malloc(buffer_size_rgba);
 
-        // Resize canvas to match image dimensions
-        lv_obj_set_size(image_canvas, width, height);
+    if (rgba_buffer == nullptr) {
+        std::cerr << "Failed to allocate RGBA buffer for canvas (" << buffer_size_rgba << " bytes)" << std::endl;
+        return false;
+    }
+
+    // Convert each pixel from BGR to LVGL's ARGB8888 format
+    // LVGL 32-bit color format is: [Blue][Green][Red][Alpha] in memory
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            // OpenCV stores data as BGR
+            cv::Vec3b pixel = display_image.at<cv::Vec3b>(y, x);
+            uint8_t blue = pixel[0];
+            uint8_t green = pixel[1];
+            uint8_t red = pixel[2];
+
+            int idx = (y * width + x) * 4;
+            rgba_buffer[idx + 0] = blue;    // B
+            rgba_buffer[idx + 1] = green;   // G
+            rgba_buffer[idx + 2] = red;     // R
+            rgba_buffer[idx + 3] = 0xFF;    // A (fully opaque)
+        }
+    }
+
+    // Set the canvas buffer with RGBA8888 data
+    if (image_canvas) {
+        // Store the new buffer for later cleanup
+        canvas_buffer = rgba_buffer;
+        canvas_buffer_size = buffer_size_rgba;
+        canvas_buffer_from_lvgl = false;  // Allocated with malloc
+
+        std::cout << "Setting canvas buffer: " << width << "x" << height << " RGBA8888" << std::endl;
+        lv_canvas_set_buffer(image_canvas, rgba_buffer, width, height, LV_IMG_CF_TRUE_COLOR_ALPHA);
+
+        // Resize canvas to match image dimensions (or max size)
+        int max_width = screen_width - 20;
+        int max_height = 180;
+        int display_width = (width > max_width) ? max_width : width;
+        int display_height = (height > max_height) ? max_height : height;
+
+        std::cout << "Resizing canvas to: " << display_width << "x" << display_height << std::endl;
+        lv_obj_set_size(image_canvas, display_width, display_height);
         lv_obj_align(image_canvas, LV_ALIGN_TOP_MID, 0, 40);
 
-        // Update image info label
-        std::string img_info = "Image: " + std::to_string(width) + "x" + std::to_string(height);
+        // Ensure canvas is fully opaque and visible
+        lv_obj_set_style_opa(image_canvas, LV_OPA_COVER, 0);
+        
+        // Make sure canvas is visible and in front
+        lv_obj_clear_flag(image_canvas, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(image_canvas);
+
+        // Invalidate the canvas to force LVGL to re-render it
+        lv_obj_invalidate(image_canvas);
+
+        // Also invalidate the main screen to ensure proper redraw
+        if (main_screen) {
+            lv_obj_invalidate(main_screen);
+        }
+
+        // Force an immediate render by calling timer handler
+        lv_timer_handler();
+        std::cout << "Canvas updated and invalidated" << std::endl;
+
+        // Update image info label with original image size
+        std::string img_info = "Image: " + std::to_string(original_width) + "x" + std::to_string(original_height);
+        if (width != original_width || height != original_height) {
+            img_info += " (display: " + std::to_string(width) + "x" + std::to_string(height) + ")";
+        }
         if (image_label) {
             lv_label_set_text(image_label, img_info.c_str());
         }
 
         // Update status
-        update_status("Image displayed: " + std::to_string(width) + "x" + std::to_string(height));
+        update_status("Image displayed: " + std::to_string(original_width) + "x" + std::to_string(original_height));
+    } else {
+        free(rgba_buffer);
+        return false;
     }
 
     return true;
@@ -450,21 +638,57 @@ void GUI::set_recognize_person_callback(std::function<void()> callback) {
 }
 
 void GUI::run() {
-    while (is_running) {
-        // Handle LVGL tasks - returns time until next task
-        uint32_t time_till_next = lv_timer_handler();
+    // Track timing for LVGL tick updates (Chunjiin8.4 pattern)
+    uint32_t last_time = SDL_GetTicks();
+    SDL_Event event;
 
-        // Check if LVGL has been deinitialized (window closed)
-        // When window close button is clicked, LVGL automatically calls lv_deinit()
-        if (!lv_is_initialized()) {
-            std::cout << "Window closed, exiting main loop..." << std::endl;
-            is_running = false;
-            break;
+    while (is_running) {
+        // Handle SDL events
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    std::cout << "Window close button clicked" << std::endl;
+                    is_running = false;
+                    break;
+                case SDL_KEYDOWN:
+                    if (event.key.keysym.sym == SDLK_ESCAPE) {
+                        is_running = false;
+                    }
+                    break;
+            }
         }
 
-        // Sleep until next task is due (max 5ms delay)
-        usleep((time_till_next < 5 ? time_till_next : 5) * 1000);
+        if (!is_running) break;
+
+        // Update LVGL timing - Based on Chunjiin8.4
+        uint32_t current_time = SDL_GetTicks();
+        uint32_t elapsed = current_time - last_time;
+        if (elapsed > 0) {
+            lv_tick_inc(elapsed);
+            last_time = current_time;
+        }
+
+        // Handle LVGL tasks
+        lv_timer_handler();
+
+        // Small delay to reduce CPU usage (Chunjiin8.4 pattern)
+        SDL_Delay(5);
     }
+
+    // Cleanup SDL resources
+    if (sdl_texture != nullptr) {
+        SDL_DestroyTexture(sdl_texture);
+        sdl_texture = nullptr;
+    }
+    if (sdl_renderer != nullptr) {
+        SDL_DestroyRenderer(sdl_renderer);
+        sdl_renderer = nullptr;
+    }
+    if (sdl_window != nullptr) {
+        SDL_DestroyWindow(sdl_window);
+        sdl_window = nullptr;
+    }
+    SDL_Quit();
 }
 
 void GUI::stop() {

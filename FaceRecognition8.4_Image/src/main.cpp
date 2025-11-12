@@ -47,11 +47,22 @@ void signal_handler(int signal) {
     }
 }
 
-int main(int /* argc */, char* /* argv */[]) {
+int main(int argc, char* argv[]) {
     std::cout << "================================" << std::endl;
     std::cout << "Face Recognition Application" << std::endl;
     std::cout << "================================" << std::endl;
     std::cout << std::endl;
+
+    // Check for command-line arguments
+    bool auto_load_test_image = false;
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "--auto-load" || arg == "-a") {
+            auto_load_test_image = true;
+            std::cout << "Auto-load mode: Test image will be loaded automatically" << std::endl;
+            std::cout << std::endl;
+        }
+    }
 
     // Register signal handlers
     signal(SIGINT, signal_handler);
@@ -103,6 +114,27 @@ int main(int /* argc */, char* /* argv */[]) {
         ImageData current_image;
         std::vector<Face> detected_faces;
         RecognitionResult last_recognition;
+
+        // Auto-load test image if requested
+        if (auto_load_test_image) {
+            std::cout << "Auto-loading Test01.jpeg..." << std::endl;
+            if (image_loader->load_image("Test01.jpeg", current_image)) {
+                // Display the loaded image on the GUI canvas
+                std::cout << "  ✓ Test image loaded successfully" << std::endl;
+                std::cout << "  Size: " << current_image.mat.cols << "x" << current_image.mat.rows << std::endl;
+
+                // Display the image on the canvas (is_rgb=true because image_loader returns RGB)
+                if (g_gui->display_image(current_image.mat, true, true)) {
+                    std::cout << "  ✓ Image displayed on canvas" << std::endl;
+                    g_gui->update_status("Test image loaded: Test01.jpeg");
+                } else {
+                    std::cerr << "  ✗ Failed to display image on canvas" << std::endl;
+                }
+            } else {
+                std::cerr << "  ✗ Failed to load Test01.jpeg" << std::endl;
+            }
+            std::cout << std::endl;
+        }
 
         // Set up GUI callbacks
         g_gui->set_load_image_callback([&]() {

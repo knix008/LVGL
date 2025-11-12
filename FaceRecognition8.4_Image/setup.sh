@@ -122,8 +122,8 @@ echo ""
 if [ -d "lvgl" ]; then
     print_info "LVGL directory already exists, skipping clone"
 else
-    print_info "Cloning LVGL v9.2..."
-    git clone --depth 1 --branch release/v9.2 https://github.com/lvgl/lvgl.git
+    print_info "Cloning LVGL v8.4..."
+    git clone --depth 1 --branch release/v8.4 https://github.com/lvgl/lvgl.git
     print_success "LVGL cloned"
 fi
 
@@ -188,22 +188,57 @@ else
     print_info "Compiling LVGL sources..."
     cd lvgl
 
+    # Count total source files
+    TOTAL_FILES=$(find src -name "*.c" | wc -l)
+    COMPILED_COUNT=0
+
+    print_info "Found $TOTAL_FILES source files to compile"
+    echo ""
+
     # Compile all LVGL source files to object files
     find src -name "*.c" | while read src_file; do
+        COMPILED_COUNT=$((COMPILED_COUNT + 1))
         obj_file="build/$(echo $src_file | sed 's/\.c$/\.o/' | sed 's/\//_/g')"
+
+        # Show progress
+        printf "\r${YELLOW}→${NC} Compiling: [$COMPILED_COUNT/$TOTAL_FILES] $src_file"
+
         gcc -c "$src_file" -I. -I.. -O2 -DLV_CONF_INCLUDE_SIMPLE \
             $(pkg-config --cflags freetype2) \
             -o "$obj_file" 2>/dev/null
+
+        if [ $? -ne 0 ]; then
+            echo ""
+            print_error "Failed to compile $src_file"
+            cd ..
+            exit 1
+        fi
     done
 
+    echo ""
+    echo ""
+
     # Create static library from all object files
-    print_info "Creating static library..."
-    ar rcs lib/liblvgl.a build/*.o
+    OBJECT_COUNT=$(ls -1 build/*.o 2>/dev/null | wc -l)
+    print_info "Creating static library from $OBJECT_COUNT object files..."
+    ar rcs lib/liblvgl.a build/*.o 2>/dev/null
+
+    if [ $? -eq 0 ]; then
+        print_success "LVGL library created successfully"
+    else
+        print_error "Failed to create LVGL static library"
+        cd ..
+        exit 1
+    fi
+
+    # Show library size
+    LIBRARY_SIZE=$(du -h lib/liblvgl.a | cut -f1)
+    print_info "Library size: $LIBRARY_SIZE"
 
     cd ..
 
     if [ -f "lvgl/lib/liblvgl.a" ]; then
-        print_success "LVGL library built successfully"
+        print_success "LVGL compilation completed successfully"
     else
         print_error "LVGL compilation failed"
         exit 1
