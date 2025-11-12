@@ -79,6 +79,18 @@ else
     MISSING_PACKAGES+=("libjpeg-dev")
 fi
 
+# Check for OpenCV
+if pkg-config --exists opencv4; then
+    OPENCV_VERSION=$(pkg-config --modversion opencv4)
+    print_success "OpenCV found (version $OPENCV_VERSION)"
+elif pkg-config --exists opencv; then
+    OPENCV_VERSION=$(pkg-config --modversion opencv)
+    print_success "OpenCV found (version $OPENCV_VERSION)"
+else
+    print_error "OpenCV development libraries not found"
+    MISSING_PACKAGES+=("libopencv-dev")
+fi
+
 # Check for FFmpeg libraries
 if pkg-config --exists libavformat libavcodec libavdevice libswscale libavutil; then
     print_success "FFmpeg development libraries found"
