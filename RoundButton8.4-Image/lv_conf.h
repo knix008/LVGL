@@ -609,7 +609,7 @@
 #define LV_FONT_MONTSERRAT_42 0
 #define LV_FONT_MONTSERRAT_44 0
 #define LV_FONT_MONTSERRAT_46 0
-#define LV_FONT_MONTSERRAT_48 1
+#define LV_FONT_MONTSERRAT_48 0
 
 /* Demonstrate special features */
 #define LV_FONT_MONTSERRAT_28_COMPRESSED    0  /**< bpp = 3 */
@@ -850,9 +850,9 @@
 #define LV_FS_DEFAULT_DRIVER_LETTER '\0'
 
 /** API for fopen, fread, etc. */
-#define LV_USE_FS_STDIO 1
+#define LV_USE_FS_STDIO 0
 #if LV_USE_FS_STDIO
-    #define LV_FS_STDIO_LETTER 'A'     /**< Set an upper-case driver-identifier letter for this driver (e.g. 'A'). */
+    #define LV_FS_STDIO_LETTER '\0'     /**< Set an upper-case driver-identifier letter for this driver (e.g. 'A'). */
     #define LV_FS_STDIO_PATH ""         /**< Set the working directory. File/directory paths will be appended to it. */
     #define LV_FS_STDIO_CACHE_SIZE 0    /**< >0 to cache this number of bytes in lv_fs_read() */
 #endif
@@ -917,6 +917,9 @@
 /** LODEPNG decoder library */
 #define LV_USE_LODEPNG 1
 
+/** PNG decoder with lv_png_init() support */
+#define LV_USE_PNG 1
+
 /** PNG decoder(libpng) library */
 #define LV_USE_LIBPNG 0
 
@@ -926,6 +929,9 @@
 /** JPG + split JPG decoder library.
  *  Split JPG is a custom format optimized for embedded systems. */
 #define LV_USE_TJPGD 1
+
+/** SJPG decoder with lv_split_jpeg_init() support */
+#define LV_USE_SJPG 1
 
 /** libjpeg-turbo decoder library.
  *  - Supports complete JPEG specifications and high-performance JPEG decoding. */
