@@ -202,6 +202,7 @@ else
 
         # Show progress
         printf "\r${YELLOW}→${NC} Compiling: [$COMPILED_COUNT/$TOTAL_FILES] $src_file"
+				echo ""
 
         gcc -c "$src_file" -I. -I.. -O2 -DLV_CONF_INCLUDE_SIMPLE \
             $(pkg-config --cflags freetype2) \
@@ -253,7 +254,7 @@ echo " Setup Complete!"
 echo "========================================="
 echo ""
 echo "To run the application:"
-echo "  ./face_recognition"
+echo "  make && ./face_recognition"
 echo ""
 echo "Make sure your webcam is connected to /dev/video0"
 echo "Photos will be saved as JPEG files in the current directory"
