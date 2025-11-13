@@ -52,9 +52,6 @@ static lv_style_t style_circle_btn_green;
 static lv_style_t style_circle_btn_orange;
 static lv_style_t style_circle_btn_red;
 
-/* Pressed state styles for buttons */
-static lv_style_t style_btn_pressed;
-
 /* Global SDL objects */
 static SDL_Window *sdl_window = NULL;
 static SDL_Renderer *sdl_renderer = NULL;
@@ -362,10 +359,8 @@ static void init_button_styles(void)
     lv_style_set_shadow_ofs_y(&style_circle_btn_red, 5);
     lv_style_set_text_color(&style_circle_btn_red, lv_color_white());
 
-    /* Pressed state style - darker background and reduced shadow */
-    lv_style_init(&style_btn_pressed);
-    lv_style_set_shadow_width(&style_btn_pressed, 5);  /* Reduce shadow */
-    lv_style_set_shadow_ofs_y(&style_btn_pressed, 2);  /* Move shadow up */
+    /* Pressed state style - keep shadow but don't add any color properties */
+    /* We'll override individual properties per button to prevent cascading darkening */
 }
 
 /**
@@ -413,7 +408,10 @@ static void create_round_buttons(void)
     lv_obj_set_size(btn1, 120, 120);
     lv_obj_add_flag(btn1, LV_OBJ_FLAG_ADV_HITTEST);  /* Enable advanced hit testing */
     lv_obj_add_style(btn1, &style_circle_btn_blue, 0);
-    lv_obj_add_style(btn1, &style_btn_pressed, LV_STATE_PRESSED);
+    /* Override pressed state colors to keep them identical to released state */
+    lv_obj_set_style_bg_color(btn1, lv_color_make(33, 150, 243), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_grad_color(btn1, lv_color_make(33, 150, 243), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(btn1, LV_OPA_COVER, LV_STATE_PRESSED);  /* Ensure full opacity */
     lv_obj_add_event_cb(btn1, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
     lv_obj_add_event_cb(btn1, button_event_handler, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(btn1, button_visual_effect_handler, LV_EVENT_PRESSED, NULL);
@@ -434,7 +432,10 @@ static void create_round_buttons(void)
     lv_obj_set_size(btn2, 120, 120);
     lv_obj_add_flag(btn2, LV_OBJ_FLAG_ADV_HITTEST);  /* Enable advanced hit testing */
     lv_obj_add_style(btn2, &style_circle_btn_green, 0);
-    lv_obj_add_style(btn2, &style_btn_pressed, LV_STATE_PRESSED);
+    /* Override pressed state colors to keep them identical to released state */
+    lv_obj_set_style_bg_color(btn2, lv_color_make(76, 175, 80), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_grad_color(btn2, lv_color_make(76, 175, 80), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(btn2, LV_OPA_COVER, LV_STATE_PRESSED);  /* Ensure full opacity */
     lv_obj_add_event_cb(btn2, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
     lv_obj_add_event_cb(btn2, button_event_handler, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(btn2, button_visual_effect_handler, LV_EVENT_PRESSED, NULL);
@@ -455,7 +456,10 @@ static void create_round_buttons(void)
     lv_obj_set_size(btn3, 120, 120);
     lv_obj_add_flag(btn3, LV_OBJ_FLAG_ADV_HITTEST);  /* Enable advanced hit testing */
     lv_obj_add_style(btn3, &style_circle_btn_orange, 0);
-    lv_obj_add_style(btn3, &style_btn_pressed, LV_STATE_PRESSED);
+    /* Override pressed state colors to keep them identical to released state */
+    lv_obj_set_style_bg_color(btn3, lv_color_make(255, 152, 0), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_grad_color(btn3, lv_color_make(255, 152, 0), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(btn3, LV_OPA_COVER, LV_STATE_PRESSED);  /* Ensure full opacity */
     lv_obj_add_event_cb(btn3, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
     lv_obj_add_event_cb(btn3, button_event_handler, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(btn3, button_visual_effect_handler, LV_EVENT_PRESSED, NULL);
@@ -476,7 +480,10 @@ static void create_round_buttons(void)
     lv_obj_set_size(btn4, 120, 120);
     lv_obj_add_flag(btn4, LV_OBJ_FLAG_ADV_HITTEST);  /* Enable advanced hit testing */
     lv_obj_add_style(btn4, &style_circle_btn_red, 0);
-    lv_obj_add_style(btn4, &style_btn_pressed, LV_STATE_PRESSED);
+    /* Override pressed state colors to keep them identical to released state */
+    lv_obj_set_style_bg_color(btn4, lv_color_make(244, 67, 54), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_grad_color(btn4, lv_color_make(244, 67, 54), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(btn4, LV_OPA_COVER, LV_STATE_PRESSED);  /* Ensure full opacity */
     lv_obj_add_event_cb(btn4, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
     lv_obj_add_event_cb(btn4, button_event_handler, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(btn4, button_visual_effect_handler, LV_EVENT_PRESSED, NULL);
