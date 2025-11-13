@@ -17,7 +17,8 @@ GUI::GUI(int width, int height)
     : screen_width(width), screen_height(height), is_running(true),
       main_screen(nullptr), image_label(nullptr), image_canvas(nullptr),
       status_label(nullptr), info_label(nullptr), canvas_buffer(nullptr),
-      canvas_buffer_size(0), canvas_buffer_from_lvgl(false) {
+      canvas_buffer_size(0), canvas_buffer_from_lvgl(false),
+      korean_font_20(nullptr), korean_font_16(nullptr), korean_font_14(nullptr) {
 }
 
 GUI::~GUI() {
@@ -55,6 +56,12 @@ bool GUI::initialize() {
     if (!init_input_device()) {
         std::cerr << "Failed to initialize input devices" << std::endl;
         return false;
+    }
+
+    // Initialize Korean fonts for proper text rendering
+    std::cout << "Initializing Korean fonts..." << std::endl;
+    if (!init_korean_fonts()) {
+        std::cerr << "Failed to initialize Korean fonts (will use fallback fonts)" << std::endl;
     }
 
     // Create main screen and UI elements
@@ -236,6 +243,76 @@ bool GUI::init_input_device() {
     return true;
 }
 
+lv_font_t* GUI::load_korean_font(const char* font_path, uint16_t size) {
+    if (font_path == nullptr) {
+        std::cerr << "Font path is NULL" << std::endl;
+        return nullptr;
+    }
+
+    // Check if font file exists
+    if (access(font_path, F_OK) != 0) {
+        std::cerr << "Font file not found: " << font_path << std::endl;
+        return nullptr;
+    }
+
+    // Use LVGL 8.4 FreeType API
+    lv_ft_info_t info;
+    memset(&info, 0, sizeof(lv_ft_info_t));
+    info.name = font_path;
+    info.weight = size;
+    info.style = FT_FONT_STYLE_NORMAL;
+
+    if (!lv_ft_font_init(&info)) {
+        std::cerr << "Failed to load font from: " << font_path << " (size: " << size << ")" << std::endl;
+        return nullptr;
+    }
+
+    std::cout << "✓ Loaded font: " << font_path << " (size: " << size << ")" << std::endl;
+    return info.font;
+}
+
+bool GUI::init_korean_fonts() {
+    std::cout << "Initializing Korean fonts..." << std::endl;
+
+    // Initialize FreeType library - LVGL 8.4 API
+    if (!lv_freetype_init(0, 0, 0)) {
+        std::cerr << "FreeType initialization failed" << std::endl;
+        return false;
+    }
+
+    // Font files - try regular font first, fallback to coding variant
+    const char* font_regular = "assets/NanumGothic-Regular.ttf";
+    const char* font_coding = "assets/NanumGothicCoding.ttf";
+
+    // Determine which font file to use
+    const char* font_file = nullptr;
+
+    if (access(font_regular, F_OK) == 0) {
+        font_file = font_regular;
+        std::cout << "Using NanumGothic-Regular.ttf" << std::endl;
+    } else if (access(font_coding, F_OK) == 0) {
+        font_file = font_coding;
+        std::cout << "Using NanumGothicCoding.ttf" << std::endl;
+    } else {
+        std::cerr << "No Korean font file found in assets/ directory!" << std::endl;
+        return false;
+    }
+
+    // Load fonts in different sizes
+    korean_font_20 = load_korean_font(font_file, 20);
+    korean_font_16 = load_korean_font(font_file, 16);
+    korean_font_14 = load_korean_font(font_file, 14);
+
+    // Verify all fonts loaded successfully
+    if (!korean_font_20 || !korean_font_16 || !korean_font_14) {
+        std::cerr << "Failed to load one or more Korean fonts!" << std::endl;
+        return false;
+    }
+
+    std::cout << "✓ All Korean fonts loaded successfully" << std::endl;
+    return true;
+}
+
 bool GUI::create_main_screen() {
     // Get or create default screen (LVGL 8.4 compatible)
     main_screen = lv_scr_act();
@@ -249,10 +326,14 @@ bool GUI::create_main_screen() {
 
     // Create title label
     lv_obj_t* title = lv_label_create(main_screen);
-    lv_label_set_text(title, "Face Recognition Application");
+    lv_label_set_text(title, "얼굴 인식 응용프로그램");  // Face Recognition Application in Korean
     lv_obj_set_width(title, screen_width);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 10, 10);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
+    if (korean_font_20) {
+        lv_obj_set_style_text_font(title, korean_font_20, 0);
+    } else {
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
+    }
 
     // Create image display area with canvas (smaller to fit in memory)
     // Layout: Title(10) -> Canvas(40-220) -> Info(230) -> Status(260) -> Buttons(310-410)
@@ -288,21 +369,30 @@ bool GUI::create_main_screen() {
 
     // Create label for image info (below canvas)
     image_label = lv_label_create(main_screen);
-    lv_label_set_text(image_label, "No image loaded");
+    lv_label_set_text(image_label, "이미지 없음");  // No image loaded in Korean
     lv_obj_set_width(image_label, screen_width - 20);
     lv_obj_align(image_label, LV_ALIGN_TOP_MID, 0, 230);  // Below canvas (40+180+10)
+    if (korean_font_16) {
+        lv_obj_set_style_text_font(image_label, korean_font_16, 0);
+    }
 
     // Create status label (below image info)
     status_label = lv_label_create(main_screen);
-    lv_label_set_text(status_label, "Ready");
+    lv_label_set_text(status_label, "준비됨");  // Ready in Korean
     lv_obj_set_width(status_label, screen_width - 20);
     lv_obj_align(status_label, LV_ALIGN_TOP_MID, 0, 260);  // Below image label
+    if (korean_font_16) {
+        lv_obj_set_style_text_font(status_label, korean_font_16, 0);
+    }
 
     // Create info label (below status)
     info_label = lv_label_create(main_screen);
-    lv_label_set_text(info_label, "No faces detected");
+    lv_label_set_text(info_label, "얼굴 감지 없음");  // No faces detected in Korean
     lv_obj_set_width(info_label, screen_width - 20);
     lv_obj_align(info_label, LV_ALIGN_TOP_MID, 0, 290);  // Below status label
+    if (korean_font_16) {
+        lv_obj_set_style_text_font(info_label, korean_font_16, 0);
+    }
 
     // Create buttons
     if (!create_buttons()) {
@@ -332,7 +422,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(load_btn, button_width, button_height);
     lv_obj_set_pos(load_btn, start_x, start_y);
     lv_obj_t* load_label = lv_label_create(load_btn);
-    lv_label_set_text(load_label, "Load");
+    lv_label_set_text(load_label, "로드");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(load_label, korean_font_14, 0);
+    }
     lv_obj_center(load_label);
     lv_obj_add_event_cb(load_btn, load_image_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -341,7 +434,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(detect_btn, button_width, button_height);
     lv_obj_set_pos(detect_btn, start_x + button_width + padding, start_y);
     lv_obj_t* detect_label = lv_label_create(detect_btn);
-    lv_label_set_text(detect_label, "Detect");
+    lv_label_set_text(detect_label, "감지");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(detect_label, korean_font_14, 0);
+    }
     lv_obj_center(detect_label);
     lv_obj_add_event_cb(detect_btn, detect_faces_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -350,7 +446,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(camera_btn, button_width, button_height);
     lv_obj_set_pos(camera_btn, start_x + 2 * (button_width + padding), start_y);
     lv_obj_t* camera_label = lv_label_create(camera_btn);
-    lv_label_set_text(camera_label, "Camera");
+    lv_label_set_text(camera_label, "카메라");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(camera_label, korean_font_14, 0);
+    }
     lv_obj_center(camera_label);
     lv_obj_add_event_cb(camera_btn, camera_toggle_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -359,7 +458,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(register_btn, button_width, button_height);
     lv_obj_set_pos(register_btn, start_x, start_y + button_height + padding);
     lv_obj_t* register_label = lv_label_create(register_btn);
-    lv_label_set_text(register_label, "Register");
+    lv_label_set_text(register_label, "등록");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(register_label, korean_font_14, 0);
+    }
     lv_obj_center(register_label);
     lv_obj_add_event_cb(register_btn, register_person_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -368,7 +470,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(recognize_btn, button_width, button_height);
     lv_obj_set_pos(recognize_btn, start_x + button_width + padding, start_y + button_height + padding);
     lv_obj_t* recognize_label = lv_label_create(recognize_btn);
-    lv_label_set_text(recognize_label, "Recognize");
+    lv_label_set_text(recognize_label, "인식");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(recognize_label, korean_font_14, 0);
+    }
     lv_obj_center(recognize_label);
     lv_obj_add_event_cb(recognize_btn, recognize_person_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -377,7 +482,10 @@ bool GUI::create_buttons() {
     lv_obj_set_size(capture_btn, button_width, button_height);
     lv_obj_set_pos(capture_btn, start_x + 2 * (button_width + padding), start_y + button_height + padding);
     lv_obj_t* capture_label = lv_label_create(capture_btn);
-    lv_label_set_text(capture_label, "Capture");
+    lv_label_set_text(capture_label, "캡처");
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(capture_label, korean_font_14, 0);
+    }
     lv_obj_center(capture_label);
     lv_obj_add_event_cb(capture_btn, capture_frame_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -587,7 +695,15 @@ bool GUI::display_detection_result(const cv::Mat& image, const std::vector<Face>
         return false;
     }
 
-    std::string info = "Detected " + std::to_string(faces.size()) + " faces";
+    // Create Korean message for detected faces
+    std::string info;
+    if (faces.size() == 0) {
+        info = "얼굴 감지 없음";  // No faces detected
+    } else if (faces.size() == 1) {
+        info = "1개의 얼굴 감지됨";  // 1 face detected
+    } else {
+        info = std::to_string(faces.size()) + "개의 얼굴 감지됨";  // N faces detected
+    }
     lv_label_set_text(info_label, info.c_str());
 
     // Image from draw_faces is already in BGR format and pre-resized, so is_rgb=false, auto_resize=false
@@ -595,13 +711,13 @@ bool GUI::display_detection_result(const cv::Mat& image, const std::vector<Face>
 }
 
 void GUI::show_recognition_result(const RecognitionResult& result) {
-    std::string message = "Person: " + result.person_name + "\n" +
-                         "Confidence: " + std::to_string(static_cast<int>(result.confidence * 100)) + "%";
+    std::string message = "이름: " + result.person_name + "\n" +
+                         "신뢰도: " + std::to_string(static_cast<int>(result.confidence * 100)) + "%";
 
     if (result.is_registered) {
-        show_success_message("Recognition Result", message);
+        show_success_message("인식 결과", message);
     } else {
-        show_error_message("Recognition Result", "Person not recognized");
+        show_error_message("인식 결과", "사람을 인식할 수 없습니다");
     }
 }
 
@@ -620,7 +736,11 @@ void GUI::show_error_message(const std::string& title, const std::string& messag
     // Add title label
     lv_obj_t* title_label = lv_label_create(dialog);
     lv_label_set_text(title_label, title.c_str());
-    lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
+    if (korean_font_16) {
+        lv_obj_set_style_text_font(title_label, korean_font_16, 0);
+    } else {
+        lv_obj_set_style_text_font(title_label, &lv_font_montserrat_14, 0);
+    }
     lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 10);
 
     // Add message label
@@ -629,6 +749,9 @@ void GUI::show_error_message(const std::string& title, const std::string& messag
     lv_obj_set_width(msg_label, 260);
     lv_obj_align(msg_label, LV_ALIGN_TOP_MID, 0, 40);
     lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(msg_label, korean_font_14, 0);
+    }
 
     // Add OK button
     lv_obj_t* ok_btn = lv_btn_create(dialog);
@@ -636,7 +759,10 @@ void GUI::show_error_message(const std::string& title, const std::string& messag
     lv_obj_align(ok_btn, LV_ALIGN_BOTTOM_MID, 0, -10);
 
     lv_obj_t* btn_label = lv_label_create(ok_btn);
-    lv_label_set_text(btn_label, "OK");
+    lv_label_set_text(btn_label, "확인");  // Confirm/OK in Korean
+    if (korean_font_14) {
+        lv_obj_set_style_text_font(btn_label, korean_font_14, 0);
+    }
     lv_obj_center(btn_label);
 
     // Add event handler to close dialog when button is clicked

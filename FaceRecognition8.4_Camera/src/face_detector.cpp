@@ -1,6 +1,8 @@
 #include "face_detector.h"
 #include <iostream>
 #include <opencv2/objdetect.hpp>
+#include <freetype2/ft2build.h>
+#include FT_FREETYPE_H
 
 FaceDetector::FaceDetector()
     : min_face_width(30), min_face_height(30) {
@@ -150,6 +152,91 @@ cv::Mat FaceDetector::extract_face(const cv::Mat& image, const cv::Rect& face_bb
     return image(safe_bbox).clone();
 }
 
+void FaceDetector::draw_korean_text(cv::Mat& image, const std::string& text, cv::Point position,
+                                    const std::string& font_path, int font_size, cv::Scalar color) {
+    FT_Library ft_library;
+    FT_Face ft_face;
+
+    // Initialize FreeType
+    if (FT_Init_FreeType(&ft_library)) {
+        std::cerr << "Failed to initialize FreeType library" << std::endl;
+        return;
+    }
+
+    // Load font
+    if (FT_New_Face(ft_library, font_path.c_str(), 0, &ft_face)) {
+        std::cerr << "Failed to load font: " << font_path << std::endl;
+        FT_Done_FreeType(ft_library);
+        return;
+    }
+
+    // Set font size
+    FT_Set_Pixel_Sizes(ft_face, 0, font_size);
+
+    int x = position.x;
+    int y = position.y;
+
+    // Process each character in the text
+    for (const unsigned char* p = (const unsigned char*)text.c_str(); *p; ) {
+        // Handle UTF-8 multi-byte characters
+        uint32_t ch = 0;
+        if ((*p & 0x80) == 0) {
+            ch = *p++;
+        } else if ((*p & 0xE0) == 0xC0) {
+            ch = (p[0] & 0x1F) << 6 | (p[1] & 0x3F);
+            p += 2;
+        } else if ((*p & 0xF0) == 0xE0) {
+            ch = (p[0] & 0x0F) << 12 | (p[1] & 0x3F) << 6 | (p[2] & 0x3F);
+            p += 3;
+        } else if ((*p & 0xF8) == 0xF0) {
+            ch = (p[0] & 0x07) << 18 | (p[1] & 0x3F) << 12 | (p[2] & 0x3F) << 6 | (p[3] & 0x3F);
+            p += 4;
+        } else {
+            p++;
+            continue;
+        }
+
+        // Load glyph
+        if (FT_Load_Char(ft_face, ch, FT_LOAD_RENDER)) {
+            continue;
+        }
+
+        FT_GlyphSlot slot = ft_face->glyph;
+        FT_Bitmap bitmap = slot->bitmap;
+
+        // Draw glyph bitmap on image
+        int bitmap_top = slot->bitmap_top;
+        int bitmap_left = slot->bitmap_left;
+
+        for (int row = 0; row < static_cast<int>(bitmap.rows); row++) {
+            for (int col = 0; col < static_cast<int>(bitmap.width); col++) {
+                int img_y = y - bitmap_top + row;
+                int img_x = x + bitmap_left + col;
+
+                if (img_x >= 0 && img_x < image.cols && img_y >= 0 && img_y < image.rows) {
+                    unsigned char alpha = bitmap.buffer[row * bitmap.pitch + col];
+                    if (alpha > 0) {
+                        cv::Vec3b pixel = image.at<cv::Vec3b>(img_y, img_x);
+                        // Blend with font color
+                        float blend_factor = alpha / 255.0f;
+                        pixel[0] = cv::saturate_cast<uchar>(pixel[0] * (1 - blend_factor) + color[0] * blend_factor);
+                        pixel[1] = cv::saturate_cast<uchar>(pixel[1] * (1 - blend_factor) + color[1] * blend_factor);
+                        pixel[2] = cv::saturate_cast<uchar>(pixel[2] * (1 - blend_factor) + color[2] * blend_factor);
+                        image.at<cv::Vec3b>(img_y, img_x) = pixel;
+                    }
+                }
+            }
+        }
+
+        // Move to next character position
+        x += slot->advance.x >> 6;
+    }
+
+    // Cleanup
+    FT_Done_Face(ft_face);
+    FT_Done_FreeType(ft_library);
+}
+
 cv::Mat FaceDetector::draw_faces(const cv::Mat& image, const std::vector<Face>& faces) {
     cv::Mat result = image.clone();
 
@@ -158,30 +245,62 @@ cv::Mat FaceDetector::draw_faces(const cv::Mat& image, const std::vector<Face>& 
         cv::cvtColor(result, result, cv::COLOR_RGB2BGR);
     }
 
-    // Draw rectangles and confidence scores
+    // Draw corner marks and confidence scores
     for (const auto& face : faces) {
-        // Draw bounding box
-        cv::rectangle(result, face.bbox, cv::Scalar(0, 255, 0), 2);
+        // Expand bounding box by 30% to add space around the detected object
+        int expanded_width = static_cast<int>(face.bbox.width * 1.3);
+        int expanded_height = static_cast<int>(face.bbox.height * 1.3);
+        int expand_x = (expanded_width - face.bbox.width) / 2;
+        int expand_y = (expanded_height - face.bbox.height) / 2;
 
-        // Draw confidence text
-        std::string label = "Face (" + std::to_string(static_cast<int>(face.confidence * 100)) + "%)";
-        int baseline = 0;
-        cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+        // Calculate expanded corner coordinates
+        int x1 = std::max(0, face.bbox.x - expand_x);
+        int y1 = std::max(0, face.bbox.y - expand_y);
+        int x2 = face.bbox.x + face.bbox.width + expand_x;
+        int y2 = face.bbox.y + face.bbox.height + expand_y;
 
-        cv::rectangle(result,
-                     cv::Point(face.bbox.x, face.bbox.y - text_size.height - 5),
-                     cv::Point(face.bbox.x + text_size.width, face.bbox.y),
-                     cv::Scalar(0, 255, 0),
-                     cv::FILLED);
+        // Draw corner marks instead of full rectangle
+        int corner_length = 20;  // Length of corner marks
+        int line_thickness = 2;
+        cv::Scalar corner_color(0, 255, 0);  // Green color
 
-        cv::putText(result, label,
-                   cv::Point(face.bbox.x, face.bbox.y - 5),
-                   cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
+        // Top-left corner
+        cv::line(result, cv::Point(x1, y1), cv::Point(x1 + corner_length, y1), corner_color, line_thickness);
+        cv::line(result, cv::Point(x1, y1), cv::Point(x1, y1 + corner_length), corner_color, line_thickness);
 
-        // Draw person ID if recognized
+        // Top-right corner
+        cv::line(result, cv::Point(x2, y1), cv::Point(x2 - corner_length, y1), corner_color, line_thickness);
+        cv::line(result, cv::Point(x2, y1), cv::Point(x2, y1 + corner_length), corner_color, line_thickness);
+
+        // Bottom-left corner
+        cv::line(result, cv::Point(x1, y2), cv::Point(x1 + corner_length, y2), corner_color, line_thickness);
+        cv::line(result, cv::Point(x1, y2), cv::Point(x1, y2 - corner_length), corner_color, line_thickness);
+
+        // Bottom-right corner
+        cv::line(result, cv::Point(x2, y2), cv::Point(x2 - corner_length, y2), corner_color, line_thickness);
+        cv::line(result, cv::Point(x2, y2), cv::Point(x2, y2 - corner_length), corner_color, line_thickness);
+
+        // Draw Korean "얼굴: " (Face:) label with confidence percentage above the bounding box
+        std::string conf_percentage = std::to_string(static_cast<int>(face.confidence * 100)) + "%";
+        std::string label_with_confidence = "얼굴: " + conf_percentage;
+
+        // Position label above the expanded bounding box, aligned with left edge (x1)
+        int label_y = y1 - 8;  // 8 pixels above the top of the expanded bounding box
+
+        // Draw Korean "얼굴: " and confidence text using FreeType
+        try {
+            draw_korean_text(result, label_with_confidence, cv::Point(x1 + 5, label_y),
+                           "assets/NanumGothicCoding.ttf", 12, cv::Scalar(0, 255, 0));
+        } catch (...) {
+            // Fallback if Korean text drawing fails
+            std::cerr << "Warning: Failed to draw Korean text on face" << std::endl;
+        }
+
+        // Draw person ID/name if recognized
         if (!face.person_id.empty()) {
-            cv::putText(result, "ID: " + face.person_id,
-                       cv::Point(face.bbox.x, face.bbox.y + face.bbox.height + 20),
+            std::string id_label = face.person_id;
+            cv::putText(result, id_label,
+                       cv::Point(face.bbox.x + 5, face.bbox.y + face.bbox.height + 20),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
     }

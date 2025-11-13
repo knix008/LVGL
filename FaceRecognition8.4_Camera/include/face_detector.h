@@ -24,6 +24,10 @@ public:
     // Draw detected faces on image (for visualization)
     static cv::Mat draw_faces(const cv::Mat& image, const std::vector<Face>& faces);
 
+    // Draw Korean text on image using FreeType
+    static void draw_korean_text(cv::Mat& image, const std::string& text, cv::Point position,
+                                 const std::string& font_path, int font_size, cv::Scalar color);
+
     // Set minimum face size for detection
     void set_min_face_size(int width, int height);
 

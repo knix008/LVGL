@@ -83,6 +83,11 @@ private:
     int canvas_buffer_size;     // Size of currently allocated buffer
     bool canvas_buffer_from_lvgl; // True if allocated with lv_mem_alloc, false if malloc
 
+    // Korean fonts for UI
+    lv_font_t* korean_font_20;  // Large font for title
+    lv_font_t* korean_font_16;  // Regular font for labels
+    lv_font_t* korean_font_14;  // Smaller font for buttons
+
     // Callback functions
     std::function<void()> on_load_image;
     std::function<void()> on_detect_faces;
@@ -102,6 +107,8 @@ private:
     // Helper functions
     bool init_display_driver();
     bool init_input_device();
+    bool init_korean_fonts();
+    lv_font_t* load_korean_font(const char* font_path, uint16_t size);
     bool create_buttons();
     lv_img_dsc_t* cv_mat_to_lvgl_image(const cv::Mat& image);
     cv::Mat lvgl_image_to_cv_mat(const lv_img_dsc_t* img_dsc);
