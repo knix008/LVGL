@@ -3,9 +3,12 @@
 #include <memory>
 #include <signal.h>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <vector>
 #include <map>
+#include <chrono>
+#include <opencv2/imgcodecs.hpp>
 
 #include "image_loader.h"
 #include "face_detector.h"
@@ -629,6 +632,31 @@ int main(int argc, char* argv[]) {
                 g_gui->display_image(current_image.mat);
                 g_gui->update_status("Frame captured from camera");
                 std::cout << "  Frame captured: " << current_image.mat.cols << "x" << current_image.mat.rows << std::endl;
+
+                // Save captured frame to project root directory
+                auto now = std::chrono::system_clock::now();
+                auto time = std::chrono::system_clock::to_time_t(now);
+                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+                char filename[256];
+                struct tm* tm_info = std::localtime(&time);
+                std::strftime(filename, sizeof(filename), "capture_%Y%m%d_%H%M%S", tm_info);
+
+                std::string output_filename = std::string(filename) + "_" +
+                                            std::to_string(ms.count()) + ".jpg";
+                std::string output_path = "./" + output_filename;
+
+                // Convert RGB to BGR for saving (OpenCV expects BGR)
+                cv::Mat bgr_frame;
+                cv::cvtColor(current_image.mat, bgr_frame, cv::COLOR_RGB2BGR);
+
+                if (cv::imwrite(output_path, bgr_frame)) {
+                    std::cout << "  Frame saved to: " << output_path << std::endl;
+                    g_gui->show_success_message("Success", "Frame saved: " + output_filename);
+                } else {
+                    std::cerr << "  Failed to save frame to: " << output_path << std::endl;
+                    g_gui->show_error_message("Error", "Failed to save captured frame");
+                }
             } else {
                 g_gui->show_error_message("Error", "Failed to process camera frame");
             }

@@ -1,6 +1,8 @@
 #include "camera_capture.h"
 #include <iostream>
 #include <filesystem>
+#include <chrono>
+#include <thread>
 
 CameraCapture::CameraCapture()
     : is_capturing_flag(false), should_stop(false) {
@@ -198,17 +200,31 @@ void CameraCapture::release() {
 
 void CameraCapture::capture_loop() {
     cv::Mat frame;
+    int consecutive_errors = 0;
+    const int MAX_CONSECUTIVE_ERRORS = 10;
 
     while (!should_stop) {
         if (camera.read(frame)) {
+            // Successfully read frame, reset error counter
+            consecutive_errors = 0;
             {
                 std::lock_guard<std::mutex> lock(frame_mutex);
                 current_frame = frame.clone();
                 latest_frame = frame.clone();
             }
         } else {
-            std::cerr << "Error: Failed to read frame from camera" << std::endl;
-            should_stop = true;
+            // Failed to read frame
+            consecutive_errors++;
+            std::cerr << "Error: Failed to read frame from camera (attempt " << consecutive_errors << ")" << std::endl;
+
+            // If too many consecutive errors, stop the capture loop
+            if (consecutive_errors >= MAX_CONSECUTIVE_ERRORS) {
+                std::cerr << "Error: Too many consecutive read failures, stopping capture" << std::endl;
+                should_stop = true;
+            }
+
+            // Small delay before retrying
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 }
