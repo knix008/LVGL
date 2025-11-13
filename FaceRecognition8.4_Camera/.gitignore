@@ -33,6 +33,7 @@ Makefile.in
 # Dataset and database
 dataset/A
 dataset/B
+dataset/C
 *.db
 *.csv
 
