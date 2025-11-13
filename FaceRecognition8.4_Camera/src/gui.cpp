@@ -316,7 +316,7 @@ bool GUI::create_main_screen() {
 bool GUI::create_buttons() {
     // 3x2 grid layout centered horizontally
     // Buttons positioned at bottom of screen (avoiding label overlap)
-    int button_width = 70;
+    int button_width = 85;
     int button_height = 40;
     int padding = 8;
 
