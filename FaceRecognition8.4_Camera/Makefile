@@ -9,7 +9,7 @@ CXX = g++
 CC = gcc
 CXXFLAGS = -Wall -Wextra -O2 -std=c++17 -I./include -I./lvgl/src -I.
 CFLAGS = -Wall -Wextra -O2 -I./include -I./lvgl/src -I.
-LDFLAGS = -lpthread -lm -ljpeg
+LDFLAGS = -lpthread -lm -ljpeg -lsqlite3
 
 # SDL2 configuration
 SDL_CFLAGS = $(shell pkg-config --cflags sdl2)

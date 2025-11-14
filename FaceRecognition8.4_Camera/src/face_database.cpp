@@ -9,10 +9,14 @@
 namespace fs = std::filesystem;
 
 FaceDatabase::FaceDatabase(const std::string& db_path)
-    : db_path(db_path) {
+    : db_path(db_path), db(nullptr) {
 }
 
 FaceDatabase::~FaceDatabase() {
+    if (db) {
+        sqlite3_close(db);
+        db = nullptr;
+    }
 }
 
 bool FaceDatabase::initialize() {
@@ -27,10 +31,25 @@ bool FaceDatabase::initialize() {
         }
     }
 
+    // Open SQLite database
+    std::string db_file = db_path + "/faces.db";
+    int rc = sqlite3_open(db_file.c_str(), &db);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    // Create database schema
+    if (!create_database_schema()) {
+        return false;
+    }
+
     // Load existing database
     load();
 
     std::cout << "Face database initialized at: " << db_path << std::endl;
+    std::cout << "SQLite database opened: " << db_file << std::endl;
     return true;
 }
 
@@ -44,26 +63,52 @@ bool FaceDatabase::register_person(const std::string& person_id,
     }
 
     try {
-        // Create person directory
+        // Create person directory for image storage
         std::string person_dir = get_person_dir(person_id);
         if (!fs::exists(person_dir)) {
             fs::create_directories(person_dir);
         }
 
-        // Save face image
+        // Save face image as PNG
         time_t now = time(nullptr);
         std::string image_filename = person_dir + "/face_" + std::to_string(now) + ".png";
         cv::Mat bgr_image;
         cv::cvtColor(face_image, bgr_image, cv::COLOR_RGB2BGR);
         cv::imwrite(image_filename, bgr_image);
 
-        // Save embedding
+        // Check if person already exists in database
+        bool person_exists = is_person_registered(person_id);
+
+        if (!person_exists) {
+            // Insert new person into persons table
+            std::string sql = "INSERT INTO persons (person_id, person_name) VALUES (?, ?);";
+            sqlite3_stmt* stmt;
+            int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+            if (rc != SQLITE_OK) {
+                std::cerr << "SQL error preparing insert: " << sqlite3_errmsg(db) << std::endl;
+                return false;
+            }
+
+            sqlite3_bind_text(stmt, 1, person_id.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 2, person_name.c_str(), -1, SQLITE_STATIC);
+
+            rc = sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
+
+            if (rc != SQLITE_DONE) {
+                std::cerr << "Error inserting person: " << sqlite3_errmsg(db) << std::endl;
+                return false;
+            }
+        }
+
+        // Save embedding to database
         if (!save_embedding(person_id, embedding)) {
             std::cerr << "Failed to save embedding for person: " << person_id << std::endl;
             return false;
         }
 
-        // Update person name
+        // Update in-memory person names
         person_names[person_id] = person_name;
 
         std::cout << "Person registered successfully: " << person_id
@@ -156,34 +201,21 @@ bool FaceDatabase::load() {
         person_names.clear();
         embeddings.clear();
 
-        // Load person list from CSV
-        std::string person_list_file = db_path + "/person_list.csv";
-        if (!fs::exists(person_list_file)) {
-            std::cout << "No existing person list found" << std::endl;
-            return true;  // Not an error if file doesn't exist
-        }
+        // Query all persons from database
+        std::string sql = "SELECT person_id, person_name FROM persons;";
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
 
-        std::ifstream file(person_list_file);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open person list file: " << person_list_file << std::endl;
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing select: " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
-        std::string line;
-        bool first_line = true;
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* person_id = (const char*)sqlite3_column_text(stmt, 0);
+            const char* person_name = (const char*)sqlite3_column_text(stmt, 1);
 
-        while (std::getline(file, line)) {
-            if (first_line) {
-                first_line = false;
-                continue;  // Skip header
-            }
-
-            if (line.empty()) continue;
-
-            size_t comma_pos = line.find(',');
-            if (comma_pos != std::string::npos) {
-                std::string person_id = line.substr(0, comma_pos);
-                std::string person_name = line.substr(comma_pos + 1);
+            if (person_id && person_name) {
                 person_names[person_id] = person_name;
 
                 // Load embeddings for this person
@@ -191,7 +223,8 @@ bool FaceDatabase::load() {
             }
         }
 
-        file.close();
+        sqlite3_finalize(stmt);
+
         std::cout << "Database loaded successfully. Found " << person_names.size()
                   << " registered persons" << std::endl;
         return true;
@@ -208,25 +241,35 @@ std::string FaceDatabase::get_person_dir(const std::string& person_id) const {
 bool FaceDatabase::save_embedding(const std::string& person_id,
                                  const std::vector<float>& embedding) {
     try {
-        std::string embedding_dir = get_person_dir(person_id);
-        std::string embedding_file = embedding_dir + "/embeddings.txt";
+        // Convert embedding vector to space-separated string
+        std::string embedding_str;
+        for (size_t i = 0; i < embedding.size(); ++i) {
+            embedding_str += std::to_string(embedding[i]);
+            if (i < embedding.size() - 1) {
+                embedding_str += " ";
+            }
+        }
 
-        std::ofstream file(embedding_file, std::ios::app);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open embedding file: " << embedding_file << std::endl;
+        // Insert embedding into database
+        std::string sql = "INSERT INTO embeddings (person_id, embedding_vector) VALUES (?, ?);";
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing embedding insert: " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
-        // Save embedding as space-separated values
-        for (size_t i = 0; i < embedding.size(); ++i) {
-            file << embedding[i];
-            if (i < embedding.size() - 1) {
-                file << " ";
-            }
-        }
-        file << "\n";
+        sqlite3_bind_text(stmt, 1, person_id.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, embedding_str.c_str(), -1, SQLITE_TRANSIENT);
 
-        file.close();
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Error inserting embedding: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
 
         // Update in-memory embeddings
         embeddings[person_id].push_back(embedding);
@@ -240,39 +283,101 @@ bool FaceDatabase::save_embedding(const std::string& person_id,
 
 bool FaceDatabase::load_embeddings_for_person(const std::string& person_id) {
     try {
-        std::string embedding_file = get_person_dir(person_id) + "/embeddings.txt";
+        // Query embeddings from database
+        std::string sql = "SELECT embedding_vector FROM embeddings WHERE person_id = ?;";
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
 
-        if (!fs::exists(embedding_file)) {
-            return true;  // No embeddings file yet
-        }
-
-        std::ifstream file(embedding_file);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open embedding file: " << embedding_file << std::endl;
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing select: " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty()) continue;
+        sqlite3_bind_text(stmt, 1, person_id.c_str(), -1, SQLITE_STATIC);
 
-            std::vector<float> embedding;
-            std::istringstream iss(line);
-            float value;
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char* embedding_str = sqlite3_column_text(stmt, 0);
+            if (embedding_str) {
+                std::vector<float> embedding;
+                std::istringstream iss((const char*)embedding_str);
+                float value;
 
-            while (iss >> value) {
-                embedding.push_back(value);
-            }
+                while (iss >> value) {
+                    embedding.push_back(value);
+                }
 
-            if (!embedding.empty()) {
-                embeddings[person_id].push_back(embedding);
+                if (!embedding.empty()) {
+                    embeddings[person_id].push_back(embedding);
+                }
             }
         }
 
-        file.close();
+        sqlite3_finalize(stmt);
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error loading embeddings: " << e.what() << std::endl;
         return false;
     }
+}
+
+bool FaceDatabase::create_database_schema() {
+    // Create persons table
+    std::string persons_sql = R"(
+        CREATE TABLE IF NOT EXISTS persons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_id TEXT UNIQUE NOT NULL,
+            person_name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    )";
+
+    // Create embeddings table
+    std::string embeddings_sql = R"(
+        CREATE TABLE IF NOT EXISTS embeddings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_id TEXT NOT NULL,
+            embedding_vector TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (person_id) REFERENCES persons(person_id)
+        );
+    )";
+
+    // Create faces table for metadata
+    std::string faces_sql = R"(
+        CREATE TABLE IF NOT EXISTS faces (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_id TEXT NOT NULL,
+            image_path TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (person_id) REFERENCES persons(person_id)
+        );
+    )";
+
+    if (!execute_sql(persons_sql)) {
+        return false;
+    }
+
+    if (!execute_sql(embeddings_sql)) {
+        return false;
+    }
+
+    if (!execute_sql(faces_sql)) {
+        return false;
+    }
+
+    std::cout << "Database schema created successfully" << std::endl;
+    return true;
+}
+
+bool FaceDatabase::execute_sql(const std::string& sql) {
+    char* err_msg = nullptr;
+    int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &err_msg);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << err_msg << std::endl;
+        sqlite3_free(err_msg);
+        return false;
+    }
+
+    return true;
 }

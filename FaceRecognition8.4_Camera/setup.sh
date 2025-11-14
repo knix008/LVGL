@@ -79,6 +79,15 @@ else
     MISSING_PACKAGES+=("libjpeg-dev")
 fi
 
+# Check for SQLite3
+if pkg-config --exists sqlite3; then
+    SQLITE_VERSION=$(pkg-config --modversion sqlite3)
+    print_success "SQLite3 found (version $SQLITE_VERSION)"
+else
+    print_error "SQLite3 development library not found"
+    MISSING_PACKAGES+=("libsqlite3-dev")
+fi
+
 # Check for OpenCV
 if pkg-config --exists opencv4; then
     OPENCV_VERSION=$(pkg-config --modversion opencv4)

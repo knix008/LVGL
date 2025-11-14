@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sqlite3.h>
 #include <opencv2/opencv.hpp>
 #include "common.h"
 
@@ -45,6 +46,7 @@ public:
 
 private:
     std::string db_path;
+    sqlite3* db;  // SQLite database handle
     std::map<std::string, std::string> person_names;  // person_id -> person_name
     std::map<std::string, std::vector<std::vector<float>>> embeddings;  // person_id -> embeddings
 
@@ -52,6 +54,8 @@ private:
     std::string get_person_dir(const std::string& person_id) const;
     bool save_embedding(const std::string& person_id, const std::vector<float>& embedding);
     bool load_embeddings_for_person(const std::string& person_id);
+    bool create_database_schema();
+    bool execute_sql(const std::string& sql);
 };
 
 #endif // FACE_DATABASE_H

@@ -4,12 +4,14 @@ A modern C++ face recognition application that uses OpenCV for image processing 
 
 ## Features
 
-- **Image Input**: Load JPG, PNG, GIF, BMP, and TIFF images
+- **Image Input**: Load JPG, PNG, GIF, BMP, and TIFF images from file or capture from webcam
+- **Webcam Capture**: Real-time video input with configurable camera device selection
 - **Face Detection**: Detect faces in images using OpenCV's Haar Cascade classifier
 - **Face Recognition**: Recognize and identify faces using LBPH (Local Binary Patterns Histograms)
-- **Face Registration**: Register new persons with their facial images
+- **Face Registration**: Register new persons with their facial images and embeddings
 - **LVGL GUI**: User-friendly graphical interface using LVGL v9.2
-- **Face Database**: Persistent storage of registered persons and their embeddings
+- **Face Database**: SQLite3-based persistent storage of registered persons and their embeddings
+- **Korean Language Support**: Full Korean localization for UI, labels, and messages
 
 ## Project Structure
 
@@ -49,6 +51,7 @@ FaceRecognition8.4_Image/
 - SDL2 development libraries
 - FreeType2 development libraries
 - libjpeg development libraries
+- SQLite3 development libraries
 - pthreads (standard library)
 
 ### Installation
@@ -138,10 +141,21 @@ PersonName.sequence.jpg
 
 ## Module Documentation
 
+### CameraCapture (camera_capture.h/cpp)
+
+Handles real-time webcam input:
+- Detects and initializes available camera devices (/dev/video*)
+- Configurable camera device selection via config file or command-line
+- Background capture thread for continuous frame acquisition
+- Thread-safe frame buffer access via mutex protection
+- Support for custom resolution and frame rate settings
+- Automatic error recovery with configurable retry limits
+
 ### ImageLoader (image_loader.h/cpp)
 
 Handles image input and processing:
 - Loads images in JPG, PNG, GIF, BMP, TIFF formats
+- Supports both file-based and webcam capture input
 - Converts color spaces (BGR to RGB)
 - Resizes images while maintaining aspect ratio
 - Validates image formats
@@ -165,12 +179,14 @@ Face recognition using LBPH algorithm:
 
 ### FaceDatabase (face_database.h/cpp)
 
-Manages persistent face data:
-- Registers new persons with faces and embeddings
-- Stores face images and embeddings
-- Maintains person registry (ID, name)
-- Loads/saves database to disk
-- Retrieves registered persons
+Manages persistent face data using SQLite3:
+- Registers new persons with faces and embeddings in SQLite3 database
+- Stores face images as PNG files in filesystem
+- Stores face embeddings and metadata in SQLite3 tables
+- Maintains person registry with automatic timestamps
+- Loads/saves database from SQLite3 file (`dataset/faces.db`)
+- Retrieves registered persons and their embeddings via SQL queries
+- Supports foreign key relationships between persons and embeddings
 
 ### GUI (gui.h/cpp)
 
@@ -185,27 +201,84 @@ LVGL-based graphical interface:
 
 ### Database Structure
 
+The application uses SQLite3 for structured data storage with the following schema:
+
 ```
 dataset/
-├── person_list.csv           # Registry of all persons
+├── faces.db                  # SQLite3 database file
 └── person_id_1/
-    ├── face_*.png            # Face images
-    └── embeddings.txt        # Face embeddings (space-separated)
+    ├── face_*.png            # Face images (stored in filesystem)
 ```
 
-### Person List Format (CSV)
+### Database Schema
 
+#### Persons Table
+```sql
+CREATE TABLE persons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id TEXT UNIQUE NOT NULL,
+    person_name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
-person_id,person_name
-person_1,John Doe
-person_2,Jane Smith
+
+#### Embeddings Table
+```sql
+CREATE TABLE embeddings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id TEXT NOT NULL,
+    embedding_vector TEXT NOT NULL,  -- Space-separated float values
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (person_id) REFERENCES persons(person_id)
+);
 ```
 
-### Embeddings Format
+#### Faces Table
+```sql
+CREATE TABLE faces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id TEXT NOT NULL,
+    image_path TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (person_id) REFERENCES persons(person_id)
+);
+```
 
-Each line contains space-separated float values representing a face embedding vector.
+### Storage Format Details
+
+- **Person Data**: Stored in SQLite3 `persons` table with unique person IDs
+- **Face Embeddings**: Stored in `embeddings` table as space-separated float vectors
+- **Face Images**: PNG images saved to filesystem directories (`dataset/person_id/`)
+- **Metadata**: Automatic timestamps for tracking registration dates
 
 ## Configuration
+
+### Camera Configuration (camera_config.txt)
+
+Create a `camera_config.txt` file in the project root to configure camera settings:
+
+```ini
+# CAMERA DEVICE CONFIGURATION
+camera_index = -1              # -1 for auto-detection, or specific device (0, 1, 2, etc.)
+camera_min_index = 0           # Minimum camera device to scan
+camera_max_index = 15          # Maximum camera device to scan
+
+# CAMERA RESOLUTION
+camera_width = 640
+camera_height = 480
+
+# CAMERA FRAME RATE (FPS)
+camera_fps = 30
+
+# ENABLE/DISABLE AUTO-LOAD
+auto_load = 0                  # 1 to auto-load test image, 0 for manual
+```
+
+**Command-line overrides:**
+```bash
+./face_recognition -c 2                    # Use camera 2
+./face_recognition --camera-range 0 10    # Scan cameras 0-10
+```
 
 ### LVGL Configuration (lv_conf.h)
 
@@ -400,7 +473,9 @@ This project uses open-source libraries:
 
 ## Future Enhancements
 
-- [ ] Support for camera input (real-time face recognition)
+- [x] Support for camera input (real-time face recognition) - ✅ Completed
+- [x] SQLite3 database backend - ✅ Completed
+- [x] Korean language support - ✅ Completed
 - [ ] Advanced recognition algorithms (FaceNet, VGGFace2)
 - [ ] Batch processing of multiple images
 - [ ] Face alignment and preprocessing
