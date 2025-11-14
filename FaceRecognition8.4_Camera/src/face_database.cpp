@@ -173,22 +173,9 @@ bool FaceDatabase::delete_person(const std::string& person_id) {
 
 bool FaceDatabase::save() {
     try {
-        // Save person names to CSV
-        std::string person_list_file = db_path + "/person_list.csv";
-        std::ofstream file(person_list_file);
-
-        if (!file.is_open()) {
-            std::cerr << "Failed to open person list file: " << person_list_file << std::endl;
-            return false;
-        }
-
-        file << "person_id,person_name\n";
-        for (const auto& pair : person_names) {
-            file << pair.first << "," << pair.second << "\n";
-        }
-
-        file.close();
-        std::cout << "Database saved successfully" << std::endl;
+        // All data is already saved to SQLite3 database during registration
+        // No additional action needed as SQLite3 persists automatically
+        std::cout << "Database saved successfully (SQLite3)" << std::endl;
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error saving database: " << e.what() << std::endl;
