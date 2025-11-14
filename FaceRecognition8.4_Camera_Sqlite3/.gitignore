@@ -29,14 +29,14 @@ tags
 CMakeFiles/
 cmake_install.cmake
 Makefile.in
-*.jpg
 
 # Dataset and database
 dataset/A
 dataset/B
 dataset/C
-*.db
-*.csv
+dataset/*.db
+dataset/*.csv
+dataset/C*.jpg
 
 # Runtime files
 *.log
