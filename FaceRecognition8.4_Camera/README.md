@@ -16,26 +16,33 @@ A modern C++ face recognition application that uses OpenCV for image processing 
 ## Project Structure
 
 ```
-FaceRecognition8.4_Image/
+FaceRecognition8.4_Camera/
 ├── assets/                    # Font files (Korean support)
-├── dataset/                      # Runtime data directory
-│   └── face_database/         # Registered faces and embeddings
-├── include/                   # Header files
+├── dataset/                   # Runtime data directory
+│   ├── faces.db              # SQLite3 database file
+│   ├── A/                    # Person A directory
+│   │   └── face_*.png        # Face images for person A
+│   └── B/                    # Person B directory
+│       └── face_*.png        # Face images for person B
+├── include/                  # Header files
 │   ├── common.h              # Common data structures
+│   ├── camera_capture.h      # Webcam capture functionality
 │   ├── image_loader.h        # Image loading functionality
 │   ├── face_detector.h       # Face detection
 │   ├── face_recognizer.h     # Face recognition
-│   ├── face_database.h       # Face database management
+│   ├── face_database.h       # SQLite3 database management
 │   └── gui.h                 # LVGL GUI
-├── src/                       # Implementation files
+├── src/                      # Implementation files
 │   ├── main.cpp              # Application entry point
+│   ├── camera_capture.cpp    # Webcam capture implementation
 │   ├── image_loader.cpp      # Image loading implementation
 │   ├── face_detector.cpp     # Face detection implementation
 │   ├── face_recognizer.cpp   # Face recognition implementation
-│   ├── face_database.cpp     # Database implementation
+│   ├── face_database.cpp     # SQLite3 database implementation
 │   └── gui.cpp               # LVGL GUI implementation
-├── lvgl/                     # LVGL library (v9.2)
+├── lvgl/                     # LVGL library (v8.4)
 ├── lv_conf.h                 # LVGL configuration
+├── camera_config.txt         # Camera device configuration (auto-created)
 ├── Makefile                  # Build configuration
 ├── setup.sh                  # Automated setup script
 └── README.md                 # This file
@@ -336,6 +343,48 @@ Replace Haar Cascade with:
 
 ## Recent Fixes and Improvements
 
+### Version 8.4+ - SQLite3 Database and Camera Integration
+
+#### SQLite3 Database Backend
+- **Previous**: File-based storage using CSV (person_list.csv) and text files (embeddings.txt)
+- **Upgrade**: Migrated to SQLite3 for structured, relational data storage
+- **Benefits**:
+  - Better data integrity with ACID compliance
+  - Faster queries using indexed primary keys
+  - Foreign key relationships enforced
+  - Automatic timestamp tracking for audit trail
+  - Scalable to large number of registered persons
+  - SQL queries for flexible data retrieval
+- **Schema**:
+  - `persons` table: person_id, person_name, created_at
+  - `embeddings` table: person_id (FK), embedding_vector, created_at
+  - `faces` table: person_id (FK), image_path, created_at
+- **Database file**: `dataset/faces.db` (created automatically on first run)
+- **Face images**: Still stored in filesystem (`dataset/person_id/face_*.png`) for efficiency
+
+#### Webcam Integration
+- **Feature**: Real-time video capture from USB/integrated cameras
+- **Configuration**:
+  - Auto-detection of available camera devices (/dev/video*)
+  - Configurable device selection via `camera_config.txt`
+  - Command-line override support (-c, --camera-range)
+  - Adjustable resolution and frame rate
+- **Threading**: Background capture thread with mutex-protected frame buffer
+- **Error Recovery**: Automatic retry with configurable limits
+- **Integration**: Camera button in GUI for live capture and registration
+
+#### Korean Language Support
+- **UI Elements**: All buttons and labels in Korean
+  - 로드 (Load), 감지 (Detect), 카메라 (Camera), 등록 (Register), 인식 (Recognize), 캡처 (Capture)
+- **Messages**: All status messages, dialogs, and error messages in Korean
+- **Face Labels**: Detected faces labeled as "얼굴: X%" with confidence percentage
+- **Implementation**: FreeType2 font rendering for Korean glyph support
+
+#### Setup Script Enhancement
+- **SQLite3 Check**: Automated detection and installation of libsqlite3-dev
+- **Version Detection**: Displays SQLite3 version if already installed
+- **Auto-Install**: Prompts user to install missing dependencies
+
 ### Version 8.4 - Memory Management and Stability Fixes
 
 #### Canvas Buffer Memory Management
@@ -434,6 +483,40 @@ Replace Haar Cascade with:
 1. **No faces detected**: Ensure faces are clearly visible and well-lit
 2. **Recognition fails**: Register more face samples for better training
 3. **LVGL display issues**: Check SDL2 configuration and display driver
+
+### Database Issues
+
+1. **SQLite3 library not found during build**
+   - **Error**: `undefined reference to sqlite3_open`
+   - **Solution**: Install SQLite3 development libraries: `apt-get install libsqlite3-dev`
+   - **Setup.sh**: Running `./setup.sh` will automatically check and install if missing
+
+2. **Database file not created**
+   - **Cause**: Dataset directory doesn't exist or no write permissions
+   - **Solution**: Ensure dataset directory exists with write permissions: `mkdir -p dataset && chmod 755 dataset`
+   - **Auto-Fix**: Application creates directory on first run
+
+3. **Old person_list.csv file conflicts**
+   - **Info**: Old CSV file is no longer used (data now in SQLite3)
+   - **Action**: Safe to delete: `rm dataset/person_list.csv`
+   - **Data Migration**: Re-register persons if switching from old system
+
+### Camera Issues
+
+1. **Camera not detected at startup**
+   - **Cause**: No camera device available at /dev/video0
+   - **Solution**: Plug in USB camera or check device permissions: `ls -la /dev/video*`
+   - **Config**: Edit `camera_config.txt` to specify camera index
+
+2. **Camera initialization fails**
+   - **Cause**: Camera already in use by another application
+   - **Solution**: Close other applications using the camera (e.g., video chat apps)
+   - **Check**: Use `fuser /dev/video0` to find which process uses the device
+
+3. **Camera frame capture frozen**
+   - **Cause**: Timeout waiting for frame (default 10 retries with 100ms delays)
+   - **Solution**: Check camera connection, try restarting application
+   - **Config**: Adjust retry limits in camera_capture.cpp if needed
 
 ### Memory-Related Issues
 
