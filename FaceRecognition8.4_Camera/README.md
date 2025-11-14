@@ -253,10 +253,11 @@ CREATE TABLE faces (
 
 ### Storage Format Details
 
-- **Person Data**: Stored in SQLite3 `persons` table with unique person IDs
-- **Face Embeddings**: Stored in `embeddings` table as space-separated float vectors
+- **Person Data**: Stored exclusively in SQLite3 `persons` table with unique person IDs
+- **Face Embeddings**: Stored exclusively in SQLite3 `embeddings` table as space-separated float vectors
 - **Face Images**: PNG images saved to filesystem directories (`dataset/person_id/`)
 - **Metadata**: Automatic timestamps for tracking registration dates
+- **No CSV files**: All data persists through SQLite3 database only (person_list.csv no longer generated)
 
 ## Configuration
 
@@ -347,7 +348,7 @@ Replace Haar Cascade with:
 
 #### SQLite3 Database Backend
 - **Previous**: File-based storage using CSV (person_list.csv) and text files (embeddings.txt)
-- **Upgrade**: Migrated to SQLite3 for structured, relational data storage
+- **Current**: Pure SQLite3 for structured, relational data storage (CSV no longer generated)
 - **Benefits**:
   - Better data integrity with ACID compliance
   - Faster queries using indexed primary keys
@@ -355,12 +356,14 @@ Replace Haar Cascade with:
   - Automatic timestamp tracking for audit trail
   - Scalable to large number of registered persons
   - SQL queries for flexible data retrieval
+  - Single database file instead of multiple CSV/text files
 - **Schema**:
   - `persons` table: person_id, person_name, created_at
   - `embeddings` table: person_id (FK), embedding_vector, created_at
   - `faces` table: person_id (FK), image_path, created_at
 - **Database file**: `dataset/faces.db` (created automatically on first run)
-- **Face images**: Still stored in filesystem (`dataset/person_id/face_*.png`) for efficiency
+- **Face images**: Stored in filesystem (`dataset/person_id/face_*.png`)
+- **Data persistence**: All person and embedding data automatically saved to SQLite3 during registration
 
 #### Webcam Integration
 - **Feature**: Real-time video capture from USB/integrated cameras
@@ -496,10 +499,15 @@ Replace Haar Cascade with:
    - **Solution**: Ensure dataset directory exists with write permissions: `mkdir -p dataset && chmod 755 dataset`
    - **Auto-Fix**: Application creates directory on first run
 
-3. **Old person_list.csv file conflicts**
-   - **Info**: Old CSV file is no longer used (data now in SQLite3)
-   - **Action**: Safe to delete: `rm dataset/person_list.csv`
-   - **Data Migration**: Re-register persons if switching from old system
+3. **Database file size growing large**
+   - **Info**: SQLite3 database (faces.db) may grow with many embeddings
+   - **Solution**: Regular maintenance not required for typical use
+   - **Note**: Database automatically manages space and compacts on close
+
+4. **Corrupted database file**
+   - **Cause**: Application crash or improper shutdown during writes
+   - **Solution**: Delete dataset/faces.db and re-register persons (database auto-recreates on startup)
+   - **Prevention**: Always close application properly
 
 ### Camera Issues
 
