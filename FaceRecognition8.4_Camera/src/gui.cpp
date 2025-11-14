@@ -681,7 +681,7 @@ bool GUI::display_image(const cv::Mat& image, bool is_rgb, bool auto_resize) {
         }
 
         // Update status
-        update_status("Image displayed: " + std::to_string(original_width) + "x" + std::to_string(original_height));
+        update_status("이미지 표시됨: " + std::to_string(original_width) + "x" + std::to_string(original_height));
     } else {
         free(rgba_buffer);
         return false;

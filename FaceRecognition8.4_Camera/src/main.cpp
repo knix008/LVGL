@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
                 // Display the image on the canvas (is_rgb=true because image_loader returns RGB)
                 if (g_gui->display_image(current_image.mat, true, true)) {
                     std::cout << "  ✓ Image displayed on canvas" << std::endl;
-                    g_gui->update_status("Test image loaded: Test01.jpeg");
+                    g_gui->update_status("테스트 이미지 로드됨: Test01.jpeg");
                 } else {
                     std::cerr << "  ✗ Failed to display image on canvas" << std::endl;
                 }
@@ -265,8 +265,8 @@ int main(int argc, char* argv[]) {
             auto image_files = find_image_files(".");
 
             if (image_files.empty()) {
-                g_gui->show_error_message("Error", "No image files found in current directory");
-                g_gui->update_status("Ready - No test images");
+                g_gui->show_error_message("오류", "현재 디렉토리에서 이미지 파일을 찾을 수 없습니다");
+                g_gui->update_status("준비됨 - 테스트 이미지 없음");
                 return;
             }
 
@@ -283,23 +283,23 @@ int main(int argc, char* argv[]) {
 
             if (image_loader->load_image(selected_image, current_image)) {
                 g_gui->display_image(current_image.mat);
-                g_gui->update_status("Image loaded: " + selected_image);
+                g_gui->update_status("이미지 로드됨: " + selected_image);
             } else {
-                g_gui->show_error_message("Error", "Failed to load image: " + selected_image);
+                g_gui->show_error_message("오류", "이미지 로드 실패: " + selected_image);
             }
         });
 
         g_gui->set_detect_faces_callback([&]() {
             std::cout << "Detect Faces button clicked" << std::endl;
             if (current_image.mat.empty()) {
-                g_gui->show_error_message("Error", "No image loaded");
+                g_gui->show_error_message("오류", "로드된 이미지가 없습니다");
                 return;
             }
 
             detected_faces = face_detector->detect_faces(current_image.mat);
 
             if (detected_faces.empty()) {
-                g_gui->show_error_message("Detection", "No faces detected");
+                g_gui->show_error_message("감지", "얼굴이 감지되지 않았습니다");
             } else {
                 std::cout << "Detected " << detected_faces.size() << " face(s)" << std::endl;
 
@@ -346,8 +346,8 @@ int main(int argc, char* argv[]) {
                 auto dataset_images = find_image_files("./dataset");
 
                 if (dataset_images.empty()) {
-                    g_gui->show_error_message("Error", "No images found in ./dataset/ directory");
-                    g_gui->update_status("Ready - No dataset images");
+                    g_gui->show_error_message("오류", "./dataset/ 디렉토리에서 이미지를 찾을 수 없습니다");
+                    g_gui->update_status("준비됨 - 데이터셋 이미지 없음");
                     return;
                 }
 
@@ -422,14 +422,14 @@ int main(int argc, char* argv[]) {
 
                 face_database->save();
 
-                std::string result_msg = "Registered: " + std::to_string(registered_count) +
-                                        "\nFailed: " + std::to_string(failed_count);
-                g_gui->show_success_message("Registration Complete", result_msg);
-                g_gui->update_status("Registered " + std::to_string(registered_count) + " persons");
+                std::string result_msg = "등록됨: " + std::to_string(registered_count) +
+                                        "\n실패: " + std::to_string(failed_count);
+                g_gui->show_success_message("등록 완료", result_msg);
+                g_gui->update_status(std::to_string(registered_count) + "명 등록됨");
             } catch (const std::exception& e) {
                 std::cerr << "Registration error: " << e.what() << std::endl;
-                g_gui->show_error_message("Error", "Registration failed: " + std::string(e.what()));
-                g_gui->update_status("Registration failed");
+                g_gui->show_error_message("오류", "등록 실패: " + std::string(e.what()));
+                g_gui->update_status("등록 실패");
             }
         });
 
@@ -437,33 +437,33 @@ int main(int argc, char* argv[]) {
             std::cout << "Recognize button clicked" << std::endl;
 
             if (current_image.mat.empty()) {
-                g_gui->show_error_message("Error", "Please load an image first");
+                g_gui->show_error_message("오류", "먼저 이미지를 로드하세요");
                 return;
             }
 
             // Detect face
             auto faces = face_detector->detect_faces(current_image.mat);
             if (faces.empty()) {
-                g_gui->show_error_message("Error", "No face detected");
+                g_gui->show_error_message("오류", "얼굴이 감지되지 않았습니다");
                 return;
             }
 
             if (faces.size() > 1) {
-                g_gui->show_error_message("Error", "Multiple faces detected. Please use image with one face");
+                g_gui->show_error_message("오류", "여러 개의 얼굴이 감지되었습니다. 얼굴이 하나인 이미지를 사용하세요");
                 return;
             }
 
             // Extract face
             cv::Mat face_image = FaceDetector::extract_face(current_image.mat, faces[0].bbox);
             if (face_image.empty()) {
-                g_gui->show_error_message("Error", "Failed to extract face");
+                g_gui->show_error_message("오류", "얼굴 추출 실패");
                 return;
             }
 
             // Get all registered persons
             auto all_persons = face_database->get_all_persons();
             if (all_persons.empty()) {
-                g_gui->show_error_message("Error", "No registered persons in database");
+                g_gui->show_error_message("오류", "데이터베이스에 등록된 사람이 없습니다");
                 return;
             }
 
@@ -520,7 +520,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (training_faces.empty()) {
-                g_gui->show_error_message("Error", "No face images found in database for training");
+                g_gui->show_error_message("오류", "훈련을 위한 얼굴 이미지가 데이터베이스에 없습니다");
                 return;
             }
 
@@ -528,7 +528,7 @@ int main(int argc, char* argv[]) {
 
             // Train the recognizer with loaded face images
             if (!face_recognizer->train_faces(training_faces, labels)) {
-                g_gui->show_error_message("Error", "Failed to train recognizer");
+                g_gui->show_error_message("오류", "인식기 훈련 실패");
                 return;
             }
 
@@ -549,15 +549,15 @@ int main(int argc, char* argv[]) {
                             last_recognition.person_name = person_name;
                         }
                     }
-                    g_gui->show_success_message("Recognition Result",
-                        last_recognition.person_name + "\n(Confidence: " +
+                    g_gui->show_success_message("인식 결과",
+                        last_recognition.person_name + "\n(신뢰도: " +
                         std::to_string(static_cast<int>(last_recognition.confidence * 100)) + "%)");
                 } catch (const std::exception& e) {
                     std::cerr << "Error parsing recognition result: " << e.what() << std::endl;
-                    g_gui->show_error_message("Error", "Failed to process recognition result");
+                    g_gui->show_error_message("오류", "인식 결과 처리 실패");
                 }
             } else {
-                g_gui->show_error_message("Recognition Result", "Unknown person");
+                g_gui->show_error_message("인식 결과", "알려지지 않은 사람");
             }
         });
 
@@ -581,34 +581,34 @@ int main(int argc, char* argv[]) {
                     }
 
                     if (!init_success) {
-                        std::string error_msg = "Failed to initialize camera";
+                        std::string error_msg = "카메라 초기화 실패";
                         if (preferred_camera_index >= 0) {
                             error_msg += " at /dev/video" + std::to_string(preferred_camera_index);
                         } else {
-                            error_msg += "\nNo camera found in range " +
+                            error_msg += "\n범위 " +
                                        std::to_string(camera_min_index) + "-" +
-                                       std::to_string(camera_max_index);
+                                       std::to_string(camera_max_index) + "에서 카메라를 찾을 수 없습니다";
                         }
-                        g_gui->show_error_message("Error", error_msg);
-                        g_gui->update_status("Camera initialization failed");
+                        g_gui->show_error_message("오류", error_msg);
+                        g_gui->update_status("카메라 초기화 실패");
                         return;
                     }
                 }
 
                 if (!camera->start_capture()) {
-                    g_gui->show_error_message("Error", "Failed to start camera capture");
-                    g_gui->update_status("Camera capture failed");
+                    g_gui->show_error_message("오류", "카메라 캡처 시작 실패");
+                    g_gui->update_status("카메라 캡처 실패");
                     return;
                 }
 
                 camera_active = true;
-                g_gui->update_status("Camera active");
+                g_gui->update_status("카메라 활성화됨");
                 std::cout << "  Camera started successfully" << std::endl;
             } else {
                 // Stop camera
                 camera->stop_capture();
                 camera_active = false;
-                g_gui->update_status("Camera stopped");
+                g_gui->update_status("카메라 중지됨");
                 std::cout << "  Camera stopped" << std::endl;
             }
         });
@@ -617,20 +617,20 @@ int main(int argc, char* argv[]) {
             std::cout << "Capture Frame button clicked" << std::endl;
 
             if (!camera_active) {
-                g_gui->show_error_message("Error", "Camera is not active. Click 'Camera' button to start.");
+                g_gui->show_error_message("오류", "카메라가 활성화되지 않았습니다. '카메라' 버튼을 클릭하여 시작하세요.");
                 return;
             }
 
             cv::Mat frame;
             if (!camera->get_latest_frame(frame)) {
-                g_gui->show_error_message("Error", "Failed to capture frame from camera");
+                g_gui->show_error_message("오류", "카메라에서 프레임 캡처 실패");
                 return;
             }
 
             // Load frame into current_image using the frame loader
             if (image_loader->load_from_frame(frame, current_image)) {
                 g_gui->display_image(current_image.mat);
-                g_gui->update_status("Frame captured from camera");
+                g_gui->update_status("카메라에서 프레임 캡처됨");
                 std::cout << "  Frame captured: " << current_image.mat.cols << "x" << current_image.mat.rows << std::endl;
 
                 // Save captured frame to project root directory
@@ -652,13 +652,13 @@ int main(int argc, char* argv[]) {
 
                 if (cv::imwrite(output_path, bgr_frame)) {
                     std::cout << "  Frame saved to: " << output_path << std::endl;
-                    g_gui->show_success_message("Success", "Frame saved: " + output_filename);
+                    g_gui->show_success_message("성공", "프레임 저장됨: " + output_filename);
                 } else {
                     std::cerr << "  Failed to save frame to: " << output_path << std::endl;
-                    g_gui->show_error_message("Error", "Failed to save captured frame");
+                    g_gui->show_error_message("오류", "캡처한 프레임 저장 실패");
                 }
             } else {
-                g_gui->show_error_message("Error", "Failed to process camera frame");
+                g_gui->show_error_message("오류", "카메라 프레임 처리 실패");
             }
         });
 
