@@ -33,6 +33,12 @@ Client/certs/
 *.json
 !package.json
 
+# Generated scripts
+start-step-ca.sh
+
+# Systemd service files
+/tmp/step-ca.service
+
 # Logs
 *.log
 

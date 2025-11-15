@@ -59,40 +59,119 @@ sudo yum install gcc gcc-c++ openssl-devel wget git
 
 ## Quick Start
 
-### 1. Install step-ca
+### Option 1: Automated Setup (Recommended)
 
 ```bash
-# Build and install step-ca and step CLI
+# 1. Build step-ca and step CLI
 make install
+
+# 2. Run the setup script (interactive)
+./setup-step-ca.sh
 ```
 
-This will:
-- Check/install Go if needed
-- Clone and build step-ca
-- Clone and build step CLI
-- Install binaries to `./bin/`
+The setup script will:
+- Initialize your Certificate Authority
+- Create a startup script
+- Optionally create a systemd service
+- Display next steps
 
-### 2. Initialize step-ca
+### Option 2: Quick Start for Testing
 
 ```bash
-# Initialize the Certificate Authority
-./bin/step ca init
+# 1. Build step-ca
+make install
+
+# 2. Quick initialization and start (uses default password: changeme)
+./quick-start.sh
+```
+
+⚠️ **Warning**: The quick-start script uses a default password and is for development/testing only!
+
+### Option 3: Manual Setup
+
+```bash
+# 1. Build and install step-ca and step CLI
+make install
+
+# 2. Initialize the Certificate Authority
+./step ca init
 
 # Follow the prompts:
 # - Choose a name for your CA (e.g., "My Local CA")
 # - Set DNS names (e.g., localhost)
 # - Set your email address
 # - Choose a password for your CA
-```
 
-### 3. Start step-ca
-
-In a dedicated terminal:
-```bash
-./bin/step-ca ~/.step/config/ca.json
+# 3. Start step-ca
+./step-ca ~/.step/config/ca.json
 ```
 
 Leave this running - it's your Certificate Authority server.
+
+## Helper Scripts
+
+Three helper scripts are provided for managing step-ca:
+
+### setup-step-ca.sh
+Interactive setup script for production use:
+```bash
+./setup-step-ca.sh
+```
+- Initializes CA with your settings
+- Creates startup script
+- Optionally creates systemd service
+- Secure password handling
+
+### quick-start.sh
+Quick setup for development/testing:
+```bash
+./quick-start.sh
+```
+- One-command initialization and start
+- Uses default password (changeme)
+- Perfect for quick testing
+- Not for production use
+
+### step-ca-helper.sh
+Common operations helper:
+```bash
+# Check if step-ca is running
+./step-ca-helper.sh status
+
+# Get CA fingerprint
+./step-ca-helper.sh fingerprint
+
+# Request a new certificate
+./step-ca-helper.sh cert myserver.local
+
+# Inspect a certificate
+./step-ca-helper.sh inspect server.crt
+
+# Renew a certificate
+./step-ca-helper.sh renew server.crt server.key
+
+# List provisioners
+./step-ca-helper.sh list
+
+# Show all commands
+./step-ca-helper.sh help
+```
+
+## Starting step-ca
+
+After setup, you can start step-ca using:
+
+```bash
+# Using the generated startup script
+./start-step-ca.sh
+
+# Or manually
+./step-ca ~/.step/config/ca.json
+
+# If you created a systemd service
+sudo systemctl start step-ca
+sudo systemctl status step-ca
+```
 
 ### 4. Build and Run the HTTPS Server
 

@@ -9,6 +9,9 @@ BUILD_DIR = build
 STEP_CA_REPO = https://github.com/smallstep/certificates.git
 STEP_CLI_REPO = https://github.com/smallstep/cli.git
 
+# Export GO111MODULE
+export GO111MODULE = on
+
 .PHONY: all install clean check-go install-go build-step-ca build-step-cli help
 
 # Default target
