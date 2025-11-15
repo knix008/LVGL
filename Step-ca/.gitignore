@@ -1,0 +1,69 @@
+# Build directories
+build/
+bin/
+
+# Compiled binaries
+*.o
+*.so
+*.a
+*.exe
+server
+client
+step-ca
+step
+
+# Mongoose library files (downloaded)
+Server/mongoose.c
+Server/mongoose.h
+Client/mongoose.c
+Client/mongoose.h
+
+# Certificates and keys (NEVER commit private keys!)
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+certs/
+Server/certs/
+Client/certs/
+
+# step-ca configuration and data
+.step/
+*.json
+!package.json
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+*.sublime-*
+
+# Go related (for step-ca building)
+vendor/
+go.mod
+go.sum
+
+# Downloaded archives
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Core dumps
+core
+core.*
+
+# Backup files
+*.bak
+*.backup
