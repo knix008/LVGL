@@ -16,7 +16,7 @@ static const char *s_root_ca = "certs/root_ca.crt";
 static const char *s_method = "GET";
 static const char *s_post_data = NULL;
 static int s_response_received = 0;
-static int s_timeout = 10000;  // 10 seconds
+static uint64_t s_timeout = 10000;  // 10 seconds
 
 // HTTP event handler
 static void fn(struct mg_connection *c, int ev, void *ev_data) {
@@ -32,28 +32,28 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
                      "Content-Length: %d\r\n"
                      "\r\n"
                      "%s",
-                     s_method, mg_url_uri(s_url), (int) host.len, host.ptr,
+                     s_method, mg_url_uri(s_url), (int) host.len, host.buf,
                      (int) strlen(s_post_data), s_post_data);
         } else {
             mg_printf(c,
                      "%s %s HTTP/1.1\r\n"
                      "Host: %.*s\r\n"
                      "\r\n",
-                     s_method, mg_url_uri(s_url), (int) host.len, host.ptr);
+                     s_method, mg_url_uri(s_url), (int) host.len, host.buf);
         }
     } else if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         
         printf("\n=== Response ===\n");
-        printf("Status: %.*s\n", (int) hm->uri.len, hm->uri.ptr);
+        printf("Status: %.*s\n", (int) hm->uri.len, hm->uri.buf);
         printf("Headers:\n");
         for (int i = 0; i < MG_MAX_HTTP_HEADERS; i++) {
             if (hm->headers[i].name.len == 0) break;
             printf("  %.*s: %.*s\n",
-                   (int) hm->headers[i].name.len, hm->headers[i].name.ptr,
-                   (int) hm->headers[i].value.len, hm->headers[i].value.ptr);
+                   (int) hm->headers[i].name.len, hm->headers[i].name.buf,
+                   (int) hm->headers[i].value.len, hm->headers[i].value.buf);
         }
-        printf("\nBody:\n%.*s\n", (int) hm->body.len, hm->body.ptr);
+        printf("\nBody:\n%.*s\n", (int) hm->body.len, hm->body.buf);
         printf("================\n");
         
         s_response_received = 1;
@@ -78,7 +78,7 @@ void print_usage(const char *prog) {
     fprintf(stderr, "  -c <cert>     Client certificate file (default: %s)\n", s_tls_cert);
     fprintf(stderr, "  -k <key>      Client key file (default: %s)\n", s_tls_key);
     fprintf(stderr, "  -r <ca>       Root CA certificate (default: %s)\n", s_root_ca);
-    fprintf(stderr, "  -t <timeout>  Request timeout in ms (default: %d)\n", s_timeout);
+    fprintf(stderr, "  -t <timeout>  Request timeout in ms (default: %lu)\n", (unsigned long)s_timeout);
     fprintf(stderr, "  -v <level>    Debug level 0-4 (default: %d)\n", s_debug_level);
     fprintf(stderr, "  -h            Show this help\n");
     fprintf(stderr, "\nExamples:\n");
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
         
         // Check timeout
         if (mg_millis() - start_time > s_timeout) {
-            fprintf(stderr, "Request timeout after %d ms\n", s_timeout);
+            fprintf(stderr, "Request timeout after %lu ms\n", (unsigned long)s_timeout);
             s_response_received = -1;
             break;
         }

@@ -73,3 +73,22 @@ core.*
 # Backup files
 *.bak
 *.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+*.egg
+
+# GUI Applications
+ClientGUI/src/__pycache__/
+ServerGUI/src/__pycache__/
+Manager/src/__pycache__/
+
+# User configuration files
+.https_client_history
+.https_server_config

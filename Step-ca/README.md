@@ -6,34 +6,68 @@ A complete implementation of secure HTTPS server and client using Mongoose libra
 
 ```
 Step-ca/
-├── Makefile              # Build and install step-ca
+├── Makefile              # Build and install step-ca (improved, no bootstrap needed!)
 ├── .gitignore            # Git ignore rules
 ├── README.md             # This file
+├── CHANGELOG.md          # Version history and changes
 ├── bin/                  # Installed step-ca binaries
 │   ├── step-ca
 │   └── step
-├── Server/               # HTTPS Server implementation
+├── build/                # Build directory (auto-created)
+│   ├── certificates/     # Step-ca source
+│   └── cli/              # Step CLI source
+├── Manager/              # Step-CA Manager GUI (GTK)
+│   ├── Makefile
+│   ├── README.md
+│   ├── src/
+│   │   ├── main.py
+│   │   ├── core/         # Step-CA integration
+│   │   └── gui/          # GTK interface
+│   └── requirements.txt
+├── Server/               # HTTPS Server (C implementation)
 │   ├── server.c
 │   ├── Makefile
 │   ├── README.md
 │   ├── build/
 │   └── certs/
-└── Client/               # HTTPS Client implementation
-    ├── client.c
+├── ServerGUI/            # HTTPS Server Control Panel (GTK) (NEW!)
+│   ├── Makefile
+│   ├── README.md
+│   ├── src/
+│   │   ├── main.py
+│   │   ├── core/         # Server management
+│   │   └── gui/          # GTK interface
+│   └── requirements.txt
+├── Client/               # HTTPS Client (C implementation)
+│   ├── client.c
+│   ├── Makefile
+│   ├── README.md
+│   ├── build/
+│   └── certs/
+└── ClientGUI/            # HTTPS Client GUI (GTK) (NEW!)
     ├── Makefile
     ├── README.md
-    ├── build/
-    └── certs/
+    ├── src/
+    │   ├── main.py
+    │   ├── core/         # Client wrapper
+    │   └── gui/          # GTK interface
+    └── requirements.txt
 ```
 
 ## Features
 
 - **Step-CA**: Private Certificate Authority for issuing certificates
-- **HTTPS Server**: Secure web server with TLS support
-- **HTTPS Client**: Client with certificate-based authentication
+- **GUI Applications**: Three GTK-based graphical interfaces:
+  - **Step-CA Manager**: Manage certificates and provisioners
+  - **Server Control Panel**: Monitor and control HTTPS server (NEW!)
+  - **Client GUI**: Visual HTTPS request builder (NEW!)
+- **HTTPS Server**: Secure web server with TLS support (C implementation)
+- **HTTPS Client**: Client with certificate-based authentication (C implementation)
 - **Mutual TLS (mTLS)**: Both server and client authenticate each other
 - **Mongoose**: Lightweight embedded web server/client library
 - **C/C++**: Native implementation for performance
+- **Python/GTK**: Modern GUI applications for ease of use
+- **Improved Build System**: Direct Go builds without bootstrap dependencies
 
 ## Prerequisites
 
@@ -59,11 +93,43 @@ sudo yum install gcc gcc-c++ openssl-devel wget git
 
 ## Quick Start
 
-### Option 1: Automated Setup (Recommended)
+### Option 1: Complete GUI Setup (Easiest!)
+
+```bash
+# 1. Build step-ca and step CLI (improved build - no GoReleaser needed!)
+make all
+
+# 2. Launch the Step-CA Manager
+cd Manager
+make install-deps  # First time only
+make run
+```
+
+The Manager GUI provides:
+- Visual CA status monitoring
+- Certificate management (request, renew, revoke)
+- Provisioner management
+- Easy configuration
+
+**Additional GUI Applications:**
+
+```bash
+# Server Control Panel - Monitor and control the HTTPS server
+cd ServerGUI
+make install-deps  # First time only
+make run
+
+# Client GUI - Visual HTTPS request builder
+cd ClientGUI
+make install-deps  # First time only
+make run
+```
+
+### Option 2: Automated Setup (Command Line)
 
 ```bash
 # 1. Build step-ca and step CLI
-make install
+make all
 
 # 2. Run the setup script (interactive)
 ./setup-step-ca.sh
@@ -75,11 +141,11 @@ The setup script will:
 - Optionally create a systemd service
 - Display next steps
 
-### Option 2: Quick Start for Testing
+### Option 3: Quick Start for Testing
 
 ```bash
 # 1. Build step-ca
-make install
+make all
 
 # 2. Quick initialization and start (uses default password: changeme)
 ./quick-start.sh
@@ -87,11 +153,11 @@ make install
 
 ⚠️ **Warning**: The quick-start script uses a default password and is for development/testing only!
 
-### Option 3: Manual Setup
+### Option 4: Manual Setup
 
 ```bash
 # 1. Build and install step-ca and step CLI
-make install
+make all
 
 # 2. Initialize the Certificate Authority
 ./step ca init
@@ -323,25 +389,104 @@ You should see successful HTTPS requests with mutual TLS authentication!
 
 ## Makefile Targets
 
-### Root Directory
-- `make all` - Build step-ca and step CLI
+### Root Directory (Improved!)
+- `make all` - Build step-ca and step CLI (no bootstrap needed!)
+- `make build-step-ca` - Build only step-ca
+- `make build-step-cli` - Build only step CLI
 - `make install` - Install binaries to ./bin/
-- `make clean` - Remove build artifacts
+- `make clean` - Remove build directory and binaries
+- `make clean-build` - Remove build directory only
+- `make rebuild` - Clean and rebuild everything
+- `make test-step-ca` - Test step-ca binary
+- `make test-step-cli` - Test step CLI binary
 - `make help` - Show help information
 
-### Server Directory
+**Note**: The build system has been improved to build directly with `go build` - no GoReleaser Pro license needed!
+
+### Manager Directory
+- `make run` - Run the Step-CA Manager GUI
+- `make check-deps` - Check all dependencies
+- `make install-deps` - Install Python dependencies
+- `make install` - Install desktop launcher
+- `make clean` - Clean generated files
+- `make help` - Show help information
+
+### ServerGUI Directory (NEW!)
+- `make run` - Run the Server Control Panel GUI
+- `make dev` - Run in development mode with debug output
+- `make check-deps` - Check all dependencies
+- `make install-deps` - Install Python dependencies
+- `make build-server` - Build the C server executable
+- `make clean` - Clean generated files
+- `make help` - Show help information
+
+### ClientGUI Directory (NEW!)
+- `make run` - Run the Client GUI
+- `make dev` - Run in development mode with debug output
+- `make check-deps` - Check all dependencies
+- `make install-deps` - Install Python dependencies
+- `make build-client` - Build the C client executable
+- `make clean` - Clean generated files
+- `make help` - Show help information
+
+### Server Directory (C implementation)
 - `make all` - Build server
 - `make run` - Run server
 - `make setup-certs` - Show certificate setup instructions
 - `make run-cert-setup` - Generate certificates
 - `make clean` - Remove build artifacts
 
-### Client Directory
+### Client Directory (C implementation)
 - `make all` - Build client
 - `make test` - Run automated tests
 - `make setup-certs` - Show certificate setup instructions
 - `make run-cert-setup` - Generate certificates
 - `make clean` - Remove build artifacts
+
+## GUI Application Workflows
+
+### Complete GUI Setup
+
+For the best experience, use all three GUI applications together:
+
+**1. Terminal 1 - Start Step-CA Manager:**
+```bash
+cd Manager
+make run
+# Initialize and start step-ca through the GUI
+```
+
+**2. Terminal 2 - Start Server Control Panel:**
+```bash
+cd ServerGUI
+make run
+# Click "Start Server" to launch the HTTPS server
+```
+
+**3. Terminal 3 - Start Client GUI:**
+```bash
+cd ClientGUI
+make run
+# Make HTTPS requests to the server through the GUI
+```
+
+### Example Workflow
+
+1. **Setup CA**: Use the Manager to initialize step-ca
+2. **Generate Certificates**: Use Manager or command line to create server/client certificates
+3. **Start Server**: Use ServerGUI to start and monitor the HTTPS server
+4. **Make Requests**: Use ClientGUI to send HTTPS requests to the server
+5. **Monitor**: Watch logs in ServerGUI to see incoming requests
+
+### GUI vs Command Line
+
+| Task | GUI Application | Command Line |
+|------|----------------|--------------|
+| Manage step-ca | Manager | `./bin/step ca ...` |
+| Control server | ServerGUI | `cd Server && make run` |
+| Make requests | ClientGUI | `cd Client && ./build/client ...` |
+| View certificates | Manager | `./bin/step certificate inspect ...` |
+| Monitor server | ServerGUI (live logs) | Manual log checking |
 
 ## Security Considerations
 
@@ -391,9 +536,23 @@ You should see successful HTTPS requests with mutual TLS authentication!
 **Error: Go not found**
 - Run `make install-go` or install Go manually
 
+**Error: goreleaser.tar.gz not in gzip format**
+- This error has been fixed! The new Makefile builds directly with `go build`
+- Simply run `make all` or `make rebuild`
+
 **Error: Compilation failed**
 - Ensure build-essential is installed
 - Check that OpenSSL dev libraries are installed
+
+### Manager Issues
+
+**Error: ModuleNotFoundError: No module named 'core'**
+- This has been fixed! The core module is now included
+- If you still see this, try: `cd Manager && make check-deps`
+
+**Error: GTK not found**
+- Install: `sudo apt-get install python3-gi python3-gi-cairo gir1.2-gtk-3.0`
+- Run: `cd Manager && make check-deps` to verify
 
 ## Advanced Configuration
 
