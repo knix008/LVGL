@@ -1,0 +1,9 @@
+# Step-CA Manager Requirements
+
+# GTK Python bindings (usually installed via system package manager)
+# PyGObject>=3.42.0
+
+# Additional utilities
+python-dateutil>=2.8.2
+cryptography>=41.0.0
+requests>=2.31.0

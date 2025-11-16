@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Certificates and keys
+certs/*.crt
+certs/*.key
+certs/*.pem
+!certs/.gitkeep
+
+# Desktop file
+step-ca-manager.desktop
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
