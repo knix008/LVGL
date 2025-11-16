@@ -1,13 +1,40 @@
 # Makefile for step-ca installation
 
 # Variables
-STEP_CA_VERSION ?= 0.25.2
-STEP_CLI_VERSION ?= 0.25.2
-GO_VERSION ?= 1.21
+STEP_CA_VERSION ?= 0.28.4
+STEP_CLI_VERSION ?= 0.28.4
+GO_VERSION ?= 1.24,10
 INSTALL_DIR ?= $(CURDIR)/bin
 BUILD_DIR = build
 STEP_CA_REPO = https://github.com/smallstep/certificates.git
 STEP_CLI_REPO = https://github.com/smallstep/cli.git
+
+# Detect architecture
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+    ARCH = amd64
+    GO_ARCH = amd64
+else ifeq ($(UNAME_M),aarch64)
+    ARCH = arm64
+    GO_ARCH = arm64
+else ifeq ($(UNAME_M),arm64)
+    ARCH = arm64
+    GO_ARCH = arm64
+else
+    $(error Unsupported architecture: $(UNAME_M))
+endif
+
+# Detect OS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    OS = linux
+else ifeq ($(UNAME_S),Darwin)
+    OS = darwin
+else
+    $(error Unsupported operating system: $(UNAME_S))
+endif
+
+GO_PACKAGE = go$(GO_VERSION).$(OS)-$(GO_ARCH).tar.gz
 
 # Export GO111MODULE
 export GO111MODULE = on
@@ -20,6 +47,8 @@ all: check-go build-step-ca build-step-cli
 # Help target
 help:
 	@echo "Step-ca Installation Makefile"
+	@echo ""
+	@echo "Detected platform: $(OS)-$(GO_ARCH)"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  all              - Build both step-ca and step CLI (default)"
@@ -47,15 +76,15 @@ check-go:
 
 # Install Go (requires sudo)
 install-go:
-	@echo "Installing Go $(GO_VERSION)..."
+	@echo "Installing Go $(GO_VERSION) for $(OS)-$(GO_ARCH)..."
 	@if command -v go > /dev/null 2>&1; then \
 		echo "Go is already installed: $$(go version)"; \
 	else \
 		echo "This requires sudo access..."; \
-		wget https://go.dev/dl/go$(GO_VERSION).linux-amd64.tar.gz; \
+		wget https://go.dev/dl/$(GO_PACKAGE); \
 		sudo rm -rf /usr/local/go; \
-		sudo tar -C /usr/local -xzf go$(GO_VERSION).linux-amd64.tar.gz; \
-		rm go$(GO_VERSION).linux-amd64.tar.gz; \
+		sudo tar -C /usr/local -xzf $(GO_PACKAGE); \
+		rm $(GO_PACKAGE); \
 		echo "Add the following to your ~/.bashrc or ~/.profile:"; \
 		echo 'export PATH=$$PATH:/usr/local/go/bin'; \
 	fi
