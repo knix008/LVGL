@@ -96,7 +96,7 @@ class DashboardTab(Gtk.Box):
         label.set_halign(Gtk.Align.END)
         grid.attach(label, 0, 0, 1, 1)
 
-        self.ca_url_label = Gtk.Label(label=self.stepca.ca_url)
+        self.ca_url_label = Gtk.Label(label=self.stepca.ca_url or "Not configured")
         self.ca_url_label.set_halign(Gtk.Align.START)
         self.ca_url_label.set_selectable(True)
         grid.attach(self.ca_url_label, 1, 0, 1, 1)
@@ -167,7 +167,7 @@ class DashboardTab(Gtk.Box):
             self.fingerprint_label.set_markup("<span color='gray'>Not available</span>")
 
         # Update CA URL
-        self.ca_url_label.set_text(self.stepca.ca_url)
+        self.ca_url_label.set_text(self.stepca.ca_url or "Not configured")
 
         # Update CA config
         config = self.stepca.get_ca_config()

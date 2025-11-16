@@ -8,7 +8,10 @@ MAIN := $(SRC_DIR)/main.py
 DESKTOP_FILE := step-ca-manager.desktop
 INSTALL_DIR := $(HOME)/.local/share/applications
 
-.PHONY: all run dev install-deps install uninstall clean help
+# Add parent directory to PATH for step binaries
+export PATH := $(CURDIR)/..:$(PATH)
+
+.PHONY: all run dev install-deps check-deps install uninstall clean help lint format
 
 # Default target
 all: help
@@ -20,10 +23,13 @@ help:
 	@echo "Available targets:"
 	@echo "  run           - Run the application"
 	@echo "  dev           - Run in development mode with debug output"
+	@echo "  check-deps    - Check if all dependencies are installed"
 	@echo "  install-deps  - Install Python dependencies"
 	@echo "  install       - Install desktop launcher"
 	@echo "  uninstall     - Remove desktop launcher"
 	@echo "  clean         - Clean generated files"
+	@echo "  lint          - Run code linter (requires pylint)"
+	@echo "  format        - Format code (requires black)"
 	@echo "  help          - Show this help message"
 	@echo ""
 	@echo "System Requirements:"
@@ -32,12 +38,19 @@ help:
 	@echo "  - Step-CA and Step CLI"
 	@echo ""
 	@echo "First time setup:"
-	@echo "  1. make install-deps"
-	@echo "  2. make run"
+	@echo "  1. sudo apt-get install python3-gi python3-gi-cairo gir1.2-gtk-3.0"
+	@echo "  2. make install-deps"
+	@echo "  3. make check-deps"
+	@echo "  4. make run"
 
 # Run the application
-run:
+run: check-deps
 	@echo "Starting Step-CA Manager..."
+	@if [ ! -d "$(SRC_DIR)/core" ]; then \
+		echo "Error: core module not found!"; \
+		echo "The core module seems to be missing. This is a required component."; \
+		exit 1; \
+	fi
 	@$(PYTHON) $(MAIN)
 
 # Run in development mode
@@ -56,18 +69,32 @@ install-deps:
 # Check dependencies
 check-deps:
 	@echo "Checking dependencies..."
+	@echo ""
+	@echo "Python Dependencies:"
 	@$(PYTHON) -c "import gi; gi.require_version('Gtk', '3.0'); from gi.repository import Gtk" 2>/dev/null && \
-		echo "✓ GTK bindings OK" || \
-		echo "✗ GTK bindings not found. Install: sudo apt-get install python3-gi python3-gi-cairo gir1.2-gtk-3.0"
-	@$(PYTHON) -c "import cryptography" 2>/dev/null && \
-		echo "✓ cryptography OK" || \
-		echo "✗ cryptography not found. Run: make install-deps"
+		echo "  ✓ GTK bindings OK" || \
+		(echo "  ✗ GTK bindings not found" && \
+		 echo "    Install: sudo apt-get install python3-gi python3-gi-cairo gir1.2-gtk-3.0" && \
+		 exit 1)
+	@$(PYTHON) -c "from dateutil import parser" 2>/dev/null && \
+		echo "  ✓ python-dateutil OK" || \
+		echo "  ✗ python-dateutil not found. Run: make install-deps"
+	@echo ""
+	@echo "Step Tools:"
 	@command -v step >/dev/null 2>&1 && \
-		echo "✓ step CLI found" || \
-		echo "✗ step CLI not found"
+		(echo "  ✓ step CLI found: $$(step version | head -1)" || echo "  ✓ step CLI found") || \
+		echo "  ✗ step CLI not found (build with 'make build-step-cli' in parent directory)"
 	@command -v step-ca >/dev/null 2>&1 && \
-		echo "✓ step-ca found" || \
-		echo "✗ step-ca not found"
+		(echo "  ✓ step-ca found: $$(step-ca version | head -1)" || echo "  ✓ step-ca found") || \
+		echo "  ✗ step-ca not found (build with 'make build-step-ca' in parent directory)"
+	@echo ""
+	@echo "Core Module:"
+	@if [ -d "$(SRC_DIR)/core" ]; then \
+		echo "  ✓ core module found"; \
+	else \
+		echo "  ✗ core module not found"; \
+		exit 1; \
+	fi
 
 # Install desktop launcher
 install:

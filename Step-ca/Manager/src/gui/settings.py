@@ -56,7 +56,7 @@ class SettingsTab(Gtk.Box):
         grid.attach(label, 0, 0, 1, 1)
 
         self.step_path_entry = Gtk.Entry()
-        self.step_path_entry.set_text(self.stepca.step_path)
+        self.step_path_entry.set_text(self.stepca.step_path or "")
         self.step_path_entry.set_hexpand(True)
         grid.attach(self.step_path_entry, 1, 0, 1, 1)
 
@@ -70,7 +70,7 @@ class SettingsTab(Gtk.Box):
         grid.attach(label, 0, 1, 1, 1)
 
         self.step_ca_path_entry = Gtk.Entry()
-        self.step_ca_path_entry.set_text(self.stepca.step_ca_path)
+        self.step_ca_path_entry.set_text(self.stepca.step_ca_path or "")
         self.step_ca_path_entry.set_hexpand(True)
         grid.attach(self.step_ca_path_entry, 1, 1, 1, 1)
 
@@ -99,7 +99,8 @@ class SettingsTab(Gtk.Box):
         grid.attach(label, 0, 0, 1, 1)
 
         self.ca_url_entry = Gtk.Entry()
-        self.ca_url_entry.set_text(self.stepca.ca_url)
+        self.ca_url_entry.set_text(self.stepca.ca_url or "")
+        self.ca_url_entry.set_placeholder_text("e.g., https://localhost:9000")
         self.ca_url_entry.set_hexpand(True)
         grid.attach(self.ca_url_entry, 1, 0, 1, 1)
 
