@@ -170,11 +170,6 @@ gboolean GTKApp::refresh_frame() {
                     unknown_count = faces.size();
                 }
 
-                // Draw faces on frame
-                if (!faces.empty()) {
-                    draw_faces_on_frame(frame, faces);
-                }
-
                 // Update UI with recognized person and confidence
                 if (recognized_count > 0) {
                     gchar person_text[100];
@@ -197,8 +192,13 @@ gboolean GTKApp::refresh_frame() {
                     gtk_label_set_text(GTK_LABEL(face_count_label), "Confidence: 0%");
                 }
 
-                // Save current frame for capture
+                // Save clean frame for capture (BEFORE drawing on it)
                 last_frame = frame.clone();
+
+                // Draw faces on frame for display only
+                if (!faces.empty()) {
+                    draw_faces_on_frame(frame, faces);
+                }
 
                 // Convert to pixbuf and display
                 GdkPixbuf* pixbuf = mat_to_pixbuf(frame);
@@ -451,6 +451,7 @@ void GTKApp::load_face_recognizer() {
             return;
         }
 
+<<<<<<< HEAD
         // Load embeddings from database
         std::map<int, std::vector<std::vector<float>>> all_embeddings;
         if (!face_database.get_all_embeddings(all_embeddings)) {
@@ -486,6 +487,27 @@ void GTKApp::load_face_recognizer() {
         std::cout << "Face recognizer loaded successfully from embeddings in database" << std::endl;
         std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
         std::cout << "Total faces in database: " << face_database.get_total_faces() << std::endl;
+=======
+        // Set database reference in recognizer
+        face_recognizer.set_database(&face_database);
+
+        // Try to train from database embeddings
+        if (face_database.get_total_faces() > 0) {
+            std::cout << "Loading face embeddings from database..." << std::endl;
+            if (face_recognizer.train_from_database()) {
+                face_recognition_enabled = true;
+                std::cout << "Face recognizer loaded successfully" << std::endl;
+                std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
+                std::cout << "Total faces in database: " << face_database.get_total_faces() << std::endl;
+            } else {
+                std::cerr << "Failed to train from database" << std::endl;
+                face_recognition_enabled = false;
+            }
+        } else {
+            std::cout << "No face data in database yet. Add photos to start recognizing faces." << std::endl;
+            face_recognition_enabled = false;
+        }
+>>>>>>> 2a77b446 (Add changes.)
 
     } catch (const std::exception& e) {
         std::cerr << "Exception in load_face_recognizer: " << e.what() << std::endl;
@@ -506,6 +528,7 @@ void GTKApp::train_model() {
 
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
+<<<<<<< HEAD
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Generating embeddings from dataset... please wait");
 
     std::cout << "Starting embedding generation from dataset..." << std::endl;
@@ -542,8 +565,23 @@ void GTKApp::train_model() {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Embeddings saved to database.");
         face_recognition_enabled = true;
         std::cout << "Training successful! Embeddings generated and stored." << std::endl;
+=======
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Retraining model from database... please wait");
+
+    std::cout << "Retraining model from database..." << std::endl;
+
+    // Train using embeddings from database
+    bool success = face_recognizer.train_from_database();
+
+    if (success) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete!");
+        face_recognition_enabled = true;
+        std::cout << "Training successful!" << std::endl;
+        std::cout << "Total people: " << face_database.get_num_people() << std::endl;
+        std::cout << "Total face embeddings: " << face_database.get_total_faces() << std::endl;
+>>>>>>> 2a77b446 (Add changes.)
     } else {
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check dataset folder or add photos first");
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check console or add more photos");
         std::cerr << "Training failed" << std::endl;
     }
 
@@ -649,30 +687,49 @@ void GTKApp::capture_photo() {
             // Save the frame
             if (cv::imwrite(filename, last_frame)) {
                 // Register person in database if not already registered
-                if (!face_database.person_exists(person_name)) {
+                PersonRecord person;
+                bool person_exists = face_database.get_person_by_name(person_name, person);
+                
+                if (!person_exists) {
                     if (face_database.add_person(person_name)) {
                         std::cout << "Person registered in database: " << person_name << std::endl;
+                        // Get the newly created person
+                        face_database.get_person_by_name(person_name, person);
                     } else {
                         std::cerr << "Failed to register person in database" << std::endl;
+                        gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to register person");
+                        gtk_widget_destroy(dialog);
+                        return;
                     }
                 }
 
-                // Add face image to database
-                PersonRecord person;
-                if (face_database.get_person_by_name(person_name, person)) {
-                    if (face_database.add_face_image(person.id, filename)) {
-                        std::cout << "Face image registered in database: " << filename << std::endl;
+                // Add face image to database (for record keeping)
+                face_database.add_face_image(person.id, filename);
+                
+                // Detect face in the saved frame
+                std::vector<Face> detected_faces = face_detector.detect_faces(last_frame);
+                
+                if (detected_faces.empty()) {
+                    gtk_label_set_text(GTK_LABEL(status_label), "Status: No face detected in photo. Try again.");
+                    std::cerr << "No face detected in captured photo" << std::endl;
+                } else {
+                    // Use the first detected face
+                    cv::Mat face_roi = last_frame(detected_faces[0].bbox);
+                    
+                    // Add training data and automatically retrain
+                    if (face_recognizer.add_training_data(face_roi, person.id)) {
+                        face_recognition_enabled = true;
+                        gchar status_text[200];
+                        g_snprintf(status_text, sizeof(status_text),
+                                  "Status: Photo added & model updated - %s (Total: %d faces)", 
+                                  person_name.c_str(), face_database.get_total_faces());
+                        gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                        std::cout << "Photo saved and model updated: " << filename << std::endl;
                     } else {
-                        std::cerr << "Failed to register face image in database" << std::endl;
+                        gtk_label_set_text(GTK_LABEL(status_label), "Status: Photo saved but training failed");
+                        std::cerr << "Failed to add training data" << std::endl;
                     }
                 }
-
-                gchar status_text[200];
-                g_snprintf(status_text, sizeof(status_text),
-                          "Status: Photo saved - %s/%s (Person: %s)", person_name.c_str(),
-                          std::to_string(sequence).c_str(), person_name.c_str());
-                gtk_label_set_text(GTK_LABEL(status_label), status_text);
-                std::cout << "Photo saved: " << filename << std::endl;
             } else {
                 gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to save photo");
                 std::cerr << "Failed to save photo" << std::endl;

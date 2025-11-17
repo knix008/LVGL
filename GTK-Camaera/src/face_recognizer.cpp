@@ -11,10 +11,71 @@ FaceRecognizer::FaceRecognizer() {
     recognizer = cv::face::LBPHFaceRecognizer::create();
 }
 
+<<<<<<< HEAD
 std::vector<float> FaceRecognizer::generate_embedding(const cv::Mat& face_image) {
     if (face_image.empty()) {
         std::cerr << "Error: Empty face image for embedding" << std::endl;
         return std::vector<float>();
+=======
+void FaceRecognizer::set_database(FaceDatabase* database) {
+    db = database;
+}
+
+std::vector<unsigned char> FaceRecognizer::serialize_mat(const cv::Mat& mat) {
+    std::vector<unsigned char> data;
+    
+    // Store matrix metadata: rows, cols, type
+    int rows = mat.rows;
+    int cols = mat.cols;
+    int type = mat.type();
+    
+    data.resize(sizeof(int) * 3 + mat.total() * mat.elemSize());
+    
+    unsigned char* ptr = data.data();
+    std::memcpy(ptr, &rows, sizeof(int));
+    ptr += sizeof(int);
+    std::memcpy(ptr, &cols, sizeof(int));
+    ptr += sizeof(int);
+    std::memcpy(ptr, &type, sizeof(int));
+    ptr += sizeof(int);
+    std::memcpy(ptr, mat.data, mat.total() * mat.elemSize());
+    
+    return data;
+}
+
+cv::Mat FaceRecognizer::deserialize_mat(const std::vector<unsigned char>& data, int rows, int cols, int type) {
+    cv::Mat mat(rows, cols, type);
+    
+    const unsigned char* ptr = data.data() + sizeof(int) * 3;
+    std::memcpy(mat.data, ptr, mat.total() * mat.elemSize());
+    
+    return mat;
+}
+
+void FaceRecognizer::load_labels_from_database() {
+    if (!db) return;
+    
+    label_to_name.clear();
+    std::vector<PersonRecord> people;
+    
+    if (db->get_all_people(people)) {
+        for (const auto& person : people) {
+            label_to_name[person.id] = person.name;
+        }
+        std::cout << "Loaded " << people.size() << " people from database" << std::endl;
+    }
+}
+
+bool FaceRecognizer::train(const std::vector<cv::Mat>& images, const std::vector<int>& labels) {
+    if (images.empty() || labels.empty()) {
+        std::cerr << "Error: Empty training data" << std::endl;
+        return false;
+    }
+
+    if (images.size() != labels.size()) {
+        std::cerr << "Error: Images and labels size mismatch" << std::endl;
+        return false;
+>>>>>>> 2a77b446 (Add changes.)
     }
 
     try {
@@ -66,6 +127,7 @@ std::vector<float> FaceRecognizer::generate_embedding(const cv::Mat& face_image)
     }
 }
 
+<<<<<<< HEAD
 float FaceRecognizer::calculate_similarity(const std::vector<float>& emb1, const std::vector<float>& emb2) {
     if (emb1.empty() || emb2.empty() || emb1.size() != emb2.size()) {
         return 0.0f;
@@ -80,6 +142,63 @@ float FaceRecognizer::calculate_similarity(const std::vector<float>& emb1, const
         dot_product += emb1[i] * emb2[i];
         norm1 += emb1[i] * emb1[i];
         norm2 += emb2[i] * emb2[i];
+=======
+bool FaceRecognizer::add_training_data(const cv::Mat& image, int person_id) {
+    if (image.empty()) {
+        std::cerr << "Error: Empty image" << std::endl;
+        return false;
+    }
+
+    if (!db) {
+        std::cerr << "Error: Database not set" << std::endl;
+        return false;
+    }
+
+    try {
+        // Preprocess the face image
+        cv::Mat preprocessed;
+        
+        // Ensure grayscale
+        if (image.channels() == 3) {
+            cv::cvtColor(image, preprocessed, cv::COLOR_BGR2GRAY);
+        } else {
+            preprocessed = image.clone();
+        }
+        
+        // Resize to standard size
+        cv::resize(preprocessed, preprocessed, cv::Size(200, 200));
+        
+        // Equalize histogram
+        cv::equalizeHist(preprocessed, preprocessed);
+        
+        // Serialize the preprocessed image
+        std::vector<unsigned char> embedding = serialize_mat(preprocessed);
+        
+        // Get person info to use image path
+        PersonRecord person;
+        if (!db->get_person(person_id, person)) {
+            std::cerr << "Error: Person not found with id " << person_id << std::endl;
+            return false;
+        }
+        
+        // Store embedding in database with a generated path
+        std::string image_path = "embedding_" + std::to_string(person_id) + "_" + 
+                                std::to_string(std::time(nullptr)) + ".dat";
+        
+        if (!db->add_face_embedding(person_id, image_path, embedding)) {
+            std::cerr << "Error: Failed to store embedding in database" << std::endl;
+            return false;
+        }
+        
+        std::cout << "Face embedding stored for person " << person.name << std::endl;
+        
+        // Retrain the model with all data
+        return retrain_model();
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in add_training_data: " << e.what() << std::endl;
+        return false;
+>>>>>>> 2a77b446 (Add changes.)
     }
 
     norm1 = std::sqrt(norm1);
@@ -92,13 +211,14 @@ float FaceRecognizer::calculate_similarity(const std::vector<float>& emb1, const
     return dot_product / (norm1 * norm2);
 }
 
-bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
-    if (!fs::exists(dataset_path)) {
-        std::cerr << "Error: Dataset path does not exist: " << dataset_path << std::endl;
+bool FaceRecognizer::train_from_database() {
+    if (!db) {
+        std::cerr << "Error: Database not set" << std::endl;
         return false;
     }
 
     try {
+<<<<<<< HEAD
         person_embeddings.clear();
         label_to_name.clear();
         next_label = 0;
@@ -163,16 +283,82 @@ bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
         std::cout << "Training complete with " << total_embeddings << " embeddings from "
                   << person_embeddings.size() << " people" << std::endl;
         return true;
+=======
+        std::vector<FaceEmbedding> embeddings;
+        if (!db->get_all_face_embeddings(embeddings)) {
+            std::cerr << "Error: Failed to load embeddings from database" << std::endl;
+            return false;
+        }
+
+        if (embeddings.empty()) {
+            std::cerr << "Error: No embeddings found in database" << std::endl;
+            return false;
+        }
+
+        std::vector<cv::Mat> training_images;
+        std::vector<int> training_labels;
+
+        // Deserialize embeddings
+        for (const auto& emb : embeddings) {
+            if (emb.embedding_data.size() < sizeof(int) * 3) {
+                std::cerr << "Warning: Invalid embedding data, skipping..." << std::endl;
+                continue;
+            }
+
+            // Extract metadata
+            const unsigned char* ptr = emb.embedding_data.data();
+            int rows, cols, type;
+            std::memcpy(&rows, ptr, sizeof(int));
+            ptr += sizeof(int);
+            std::memcpy(&cols, ptr, sizeof(int));
+            ptr += sizeof(int);
+            std::memcpy(&type, ptr, sizeof(int));
+
+            cv::Mat face_img = deserialize_mat(emb.embedding_data, rows, cols, type);
+            
+            if (!face_img.empty()) {
+                training_images.push_back(face_img);
+                training_labels.push_back(emb.person_id);
+            }
+        }
+
+        if (training_images.empty()) {
+            std::cerr << "Error: No valid training images" << std::endl;
+            return false;
+        }
+
+        std::cout << "Training with " << training_images.size() << " embeddings from database..." << std::endl;
+
+        // Load labels from database
+        load_labels_from_database();
+
+        // Train the model
+        return train(training_images, training_labels);
+
+>>>>>>> 2a77b446 (Add changes.)
     } catch (const std::exception& e) {
-        std::cerr << "Exception in train_from_images: " << e.what() << std::endl;
+        std::cerr << "Exception in train_from_database: " << e.what() << std::endl;
         return false;
     }
 }
 
+<<<<<<< HEAD
 bool FaceRecognizer::add_person_embedding(int person_id, const std::vector<float>& embedding) {
     if (embedding.empty()) {
         std::cerr << "Error: Empty embedding" << std::endl;
         return false;
+=======
+bool FaceRecognizer::retrain_model() {
+    std::cout << "Retraining model with latest data..." << std::endl;
+    return train_from_database();
+}
+
+int FaceRecognizer::recognize(const cv::Mat& face_image, double& confidence) {
+    if (face_image.empty()) {
+        std::cerr << "Error: Empty face image" << std::endl;
+        confidence = -1;
+        return -1;
+>>>>>>> 2a77b446 (Add changes.)
     }
 
     try {
@@ -244,11 +430,14 @@ std::string FaceRecognizer::recognize_with_name(const cv::Mat& face_image, doubl
     return "Unknown";
 }
 
+<<<<<<< HEAD
 bool FaceRecognizer::load_embeddings_from_db() {
     // This will be implemented in gtk_app.cpp when FaceDatabase is available
     return true;
 }
 
+=======
+>>>>>>> 2a77b446 (Add changes.)
 int FaceRecognizer::register_person(const std::string& name) {
     label_to_name[next_label] = name;
     person_embeddings[next_label] = std::vector<std::vector<float>>();
