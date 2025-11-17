@@ -340,34 +340,33 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                 new_height
             );
 
-            // Draw corner boxes only (four separate corner rectangles)
+            // Draw corner boxes only (four filled corner rectangles)
             int corner_length = static_cast<int>(new_width * 0.15); // 15% of width for corner length
             cv::Scalar color = cv::Scalar(0, 255, 0); // Green color
-            int thickness = 3;
 
-            // Top-left corner rectangle
+            // Top-left corner rectangle (filled)
             cv::rectangle(frame,
                          cv::Point(expanded_bbox.x, expanded_bbox.y),
                          cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + corner_length),
-                         color, thickness);
+                         color, -1);  // -1 for filled rectangle
 
-            // Top-right corner rectangle
+            // Top-right corner rectangle (filled)
             cv::rectangle(frame,
                          cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y),
                          cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + corner_length),
-                         color, thickness);
+                         color, -1);  // -1 for filled rectangle
 
-            // Bottom-left corner rectangle
+            // Bottom-left corner rectangle (filled)
             cv::rectangle(frame,
                          cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height - corner_length),
                          cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + expanded_bbox.height),
-                         color, thickness);
+                         color, -1);  // -1 for filled rectangle
 
-            // Bottom-right corner rectangle
+            // Bottom-right corner rectangle (filled)
             cv::rectangle(frame,
                          cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y + expanded_bbox.height - corner_length),
                          cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
-                         color, thickness);
+                         color, -1);  // -1 for filled rectangle
 
             // Draw face label with name and confidence
             std::string label = face.name;
