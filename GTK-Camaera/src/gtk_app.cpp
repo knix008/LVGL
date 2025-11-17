@@ -49,7 +49,7 @@ bool GTKApp::init() {
         gtk_box_pack_start(GTK_BOX(hbox), toggle_button, FALSE, FALSE, 0);
 
         // Create train button
-        train_button = gtk_button_new_with_label("Train Model");
+        train_button = gtk_button_new_with_label("Registering");
         gtk_widget_set_size_request(train_button, 150, 40);
         g_signal_connect(train_button, "clicked", G_CALLBACK(on_train_button_clicked), this);
         gtk_box_pack_start(GTK_BOX(hbox), train_button, FALSE, FALSE, 0);

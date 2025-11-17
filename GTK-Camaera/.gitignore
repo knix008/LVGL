@@ -1,0 +1,39 @@
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+*.out
+
+# Executable
+gtk_webcam
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+*.db
+face_database.db
+
+# Model files
+*.yml
+face_recognizer_model.yml
+
+# Temporary files
+*.tmp
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
