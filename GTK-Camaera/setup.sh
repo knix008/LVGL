@@ -27,6 +27,7 @@ case "$OS" in
             libgtk-3-dev \
             libgdk-pixbuf2.0-dev \
             libopencv-dev \
+            libsqlite3-dev \
             pkg-config
         ;;
     fedora|rhel|centos)
@@ -37,6 +38,7 @@ case "$OS" in
             gtk3-devel \
             gdk-pixbuf2-devel \
             opencv-devel \
+            sqlite-devel \
             pkg-config
         ;;
     arch)
@@ -47,6 +49,7 @@ case "$OS" in
             gtk3 \
             gdk-pixbuf2 \
             opencv \
+            sqlite \
             pkg-config
         ;;
     *)
@@ -57,6 +60,7 @@ case "$OS" in
         echo "  - gtk3 development files"
         echo "  - gdk-pixbuf2 development files"
         echo "  - opencv development files"
+        echo "  - sqlite3 development files"
         echo "  - pkg-config"
         exit 1
         ;;
