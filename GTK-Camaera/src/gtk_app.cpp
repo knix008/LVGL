@@ -5,10 +5,10 @@
 
 GTKApp::GTKApp()
     : window(nullptr), image_widget(nullptr), toggle_button(nullptr),
-      train_button(nullptr), status_label(nullptr), fps_label(nullptr),
-      face_info_label(nullptr), face_count_label(nullptr), refresh_timer(0),
-      camera_running(false), face_recognition_enabled(false),
-      training_in_progress(false), frame_count(0), last_time(0) {}
+      train_button(nullptr), capture_button(nullptr), status_label(nullptr),
+      fps_label(nullptr), face_info_label(nullptr), face_count_label(nullptr),
+      refresh_timer(0), camera_running(false), face_recognition_enabled(false),
+      training_in_progress(false), frame_count(0), last_time(0), capture_count(0) {}
 
 GTKApp::~GTKApp() {
     cleanup();
@@ -53,6 +53,12 @@ bool GTKApp::init() {
         gtk_widget_set_size_request(train_button, 150, 40);
         g_signal_connect(train_button, "clicked", G_CALLBACK(on_train_button_clicked), this);
         gtk_box_pack_start(GTK_BOX(hbox), train_button, FALSE, FALSE, 0);
+
+        // Create capture button
+        capture_button = gtk_button_new_with_label("Capture Photo");
+        gtk_widget_set_size_request(capture_button, 150, 40);
+        g_signal_connect(capture_button, "clicked", G_CALLBACK(on_capture_button_clicked), this);
+        gtk_box_pack_start(GTK_BOX(hbox), capture_button, FALSE, FALSE, 0);
 
         // Create status label
         status_label = gtk_label_new("Status: Camera Idle");
@@ -190,6 +196,9 @@ gboolean GTKApp::refresh_frame() {
                     gtk_label_set_text(GTK_LABEL(face_info_label), "Person: None detected");
                     gtk_label_set_text(GTK_LABEL(face_count_label), "Confidence: 0%");
                 }
+
+                // Save current frame for capture
+                last_frame = frame.clone();
 
                 // Convert to pixbuf and display
                 GdkPixbuf* pixbuf = mat_to_pixbuf(frame);
@@ -507,4 +516,107 @@ void GTKApp::train_model() {
 
     training_in_progress = false;
     gtk_widget_set_sensitive(train_button, TRUE);
+}
+
+void GTKApp::on_capture_button_clicked(GtkWidget* /*widget*/, gpointer user_data) {
+    GTKApp* self = static_cast<GTKApp*>(user_data);
+    self->capture_photo();
+}
+
+void GTKApp::capture_photo() {
+    if (!camera_running) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Start camera before capturing");
+        return;
+    }
+
+    if (last_frame.empty()) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: No frame available to capture");
+        return;
+    }
+
+    // Create dataset directory if it doesn't exist
+    if (!std::filesystem::exists("dataset")) {
+        std::filesystem::create_directory("dataset");
+    }
+
+    // Ask user for person initial and ID via dialog
+    GtkWidget* dialog = gtk_dialog_new_with_buttons(
+        "Capture Photo",
+        GTK_WINDOW(window),
+        GTK_DIALOG_MODAL,
+        "Cancel", GTK_RESPONSE_CANCEL,
+        "OK", GTK_RESPONSE_OK,
+        nullptr);
+
+    GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    GtkWidget* label1 = gtk_label_new("Person Initial (A, B, C, etc.):");
+    gtk_box_pack_start(GTK_BOX(content_area), label1, FALSE, FALSE, 5);
+    GtkWidget* entry_initial = gtk_entry_new();
+    gtk_entry_set_max_length(GTK_ENTRY(entry_initial), 1);
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_initial), "A");
+    gtk_box_pack_start(GTK_BOX(content_area), entry_initial, FALSE, FALSE, 5);
+    gtk_widget_set_size_request(entry_initial, 100, 35);
+
+    GtkWidget* label2 = gtk_label_new("Person ID (number):");
+    gtk_box_pack_start(GTK_BOX(content_area), label2, FALSE, FALSE, 5);
+    GtkWidget* entry_id = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_id), "1");
+    gtk_box_pack_start(GTK_BOX(content_area), entry_id, FALSE, FALSE, 5);
+    gtk_widget_set_size_request(entry_id, 100, 35);
+
+    gtk_widget_show_all(dialog);
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        const char* initial = gtk_entry_get_text(GTK_ENTRY(entry_initial));
+        const char* id_str = gtk_entry_get_text(GTK_ENTRY(entry_id));
+
+        if (initial && strlen(initial) > 0 && id_str && strlen(id_str) > 0) {
+            // Generate filename format: A.1.1.jpg, A.1.2.jpg, B.2.1.jpg, etc.
+            std::string initial_str(initial);
+            std::string id_num(id_str);
+
+            // Convert initial to uppercase
+            initial_str[0] = std::toupper(initial_str[0]);
+
+            // Count existing files for this person to determine sequence number
+            std::string person_dir = "dataset";
+            int sequence = 1;
+
+            // Count files matching pattern: initial.id.*.jpg
+            try {
+                for (const auto& entry : std::filesystem::directory_iterator(person_dir)) {
+                    if (entry.is_regular_file()) {
+                        std::string filename = entry.path().filename().string();
+                        // Check if filename matches pattern initial.id.*
+                        if (filename.find(initial_str + "." + id_num + ".") == 0) {
+                            sequence++;
+                        }
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error counting files: " << e.what() << std::endl;
+            }
+
+            // Generate filename: A.1.1.jpg, A.1.2.jpg, etc.
+            std::string filename = person_dir + "/" + initial_str + "." + id_num + "." + std::to_string(sequence) + ".jpg";
+
+            // Save the frame
+            if (cv::imwrite(filename, last_frame)) {
+                gchar status_text[200];
+                g_snprintf(status_text, sizeof(status_text),
+                          "Status: Photo saved - %s", std::filesystem::path(filename).filename().c_str());
+                gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                std::cout << "Photo saved: " << filename << std::endl;
+            } else {
+                gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to save photo");
+                std::cerr << "Failed to save photo" << std::endl;
+            }
+        } else {
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Invalid input - please enter initial and ID");
+        }
+    }
+
+    gtk_widget_destroy(dialog);
 }
