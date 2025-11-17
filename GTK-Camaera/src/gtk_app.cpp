@@ -124,7 +124,7 @@ gboolean GTKApp::on_refresh_timer(gpointer user_data) {
 }
 
 gboolean GTKApp::refresh_frame() {
-    if (!camera_running) {
+    if (!camera_running || capture_in_progress) {
         return TRUE; // Continue timer
     }
 
@@ -153,7 +153,7 @@ gboolean GTKApp::refresh_frame() {
 
                         if (label != -1) {
                             face.name = face_recognizer.get_label_name(label);
-                            face.confidence = 100.0 - confidence;  // Convert to percentage
+                            face.confidence = confidence * 100.0;  // Convert similarity to percentage
                             face.id = label;
                             recognized_count++;
 
@@ -451,43 +451,6 @@ void GTKApp::load_face_recognizer() {
             return;
         }
 
-<<<<<<< HEAD
-        // Load embeddings from database
-        std::map<int, std::vector<std::vector<float>>> all_embeddings;
-        if (!face_database.get_all_embeddings(all_embeddings)) {
-            std::cout << "No embeddings found in database, face recognition disabled until model is trained" << std::endl;
-            face_recognition_enabled = false;
-            return;
-        }
-
-        if (all_embeddings.empty()) {
-            std::cout << "No embeddings found in database, face recognition disabled until model is trained" << std::endl;
-            face_recognition_enabled = false;
-            return;
-        }
-
-        // Load embeddings into recognizer
-        std::vector<PersonRecord> all_people;
-        if (!face_database.get_all_people(all_people)) {
-            std::cerr << "Failed to get people from database" << std::endl;
-            face_recognition_enabled = false;
-            return;
-        }
-
-        for (const auto& person : all_people) {
-            face_recognizer.set_label_name(person.id, person.name);
-            if (all_embeddings.count(person.id)) {
-                for (const auto& embedding : all_embeddings[person.id]) {
-                    face_recognizer.add_person_embedding(person.id, embedding);
-                }
-            }
-        }
-
-        face_recognition_enabled = true;
-        std::cout << "Face recognizer loaded successfully from embeddings in database" << std::endl;
-        std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
-        std::cout << "Total faces in database: " << face_database.get_total_faces() << std::endl;
-=======
         // Set database reference in recognizer
         face_recognizer.set_database(&face_database);
 
@@ -507,7 +470,6 @@ void GTKApp::load_face_recognizer() {
             std::cout << "No face data in database yet. Add photos to start recognizing faces." << std::endl;
             face_recognition_enabled = false;
         }
->>>>>>> 2a77b446 (Add changes.)
 
     } catch (const std::exception& e) {
         std::cerr << "Exception in load_face_recognizer: " << e.what() << std::endl;
@@ -528,44 +490,6 @@ void GTKApp::train_model() {
 
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
-<<<<<<< HEAD
-    gtk_label_set_text(GTK_LABEL(status_label), "Status: Generating embeddings from dataset... please wait");
-
-    std::cout << "Starting embedding generation from dataset..." << std::endl;
-
-    // Train using the dataset folder to generate embeddings
-    // This reads from dataset/A1/, dataset/B2/, etc.
-    bool success = face_recognizer.train_from_images("dataset");
-
-    if (success) {
-        // Get all generated embeddings and save to database
-        std::cout << "Saving embeddings to database..." << std::endl;
-
-        for (int person_id = 0; person_id < face_recognizer.get_num_people(); ++person_id) {
-            std::string person_name = face_recognizer.get_label_name(person_id);
-
-            // Get person from database
-            PersonRecord person;
-            if (!face_database.get_person_by_name(person_name, person)) {
-                // If not in database, add person
-                if (!face_database.add_person(person_name)) {
-                    std::cerr << "Failed to add person to database: " << person_name << std::endl;
-                    continue;
-                }
-                // Retrieve the newly added person
-                if (!face_database.get_person_by_name(person_name, person)) {
-                    std::cerr << "Failed to retrieve person from database: " << person_name << std::endl;
-                    continue;
-                }
-            }
-
-            std::cout << "Saving embeddings for person: " << person_name << " (id: " << person.id << ")" << std::endl;
-        }
-
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Embeddings saved to database.");
-        face_recognition_enabled = true;
-        std::cout << "Training successful! Embeddings generated and stored." << std::endl;
-=======
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Retraining model from database... please wait");
 
     std::cout << "Retraining model from database..." << std::endl;
@@ -579,7 +503,6 @@ void GTKApp::train_model() {
         std::cout << "Training successful!" << std::endl;
         std::cout << "Total people: " << face_database.get_num_people() << std::endl;
         std::cout << "Total face embeddings: " << face_database.get_total_faces() << std::endl;
->>>>>>> 2a77b446 (Add changes.)
     } else {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check console or add more photos");
         std::cerr << "Training failed" << std::endl;
@@ -637,6 +560,10 @@ void GTKApp::capture_photo() {
     gtk_widget_set_size_request(entry_id, 100, 35);
 
     gtk_widget_show_all(dialog);
+    
+    // Pause live stream and face recognition AFTER showing dialog
+    capture_in_progress = true;
+    
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_OK) {
@@ -740,4 +667,17 @@ void GTKApp::capture_photo() {
     }
 
     gtk_widget_destroy(dialog);
+    
+    // Resume live stream and face recognition
+    capture_in_progress = false;
+    
+    // Force a few frame refreshes to ensure the display updates
+    for (int i = 0; i < 3; i++) {
+        while (gtk_events_pending()) {
+            gtk_main_iteration();
+        }
+        g_usleep(10000); // 10ms delay
+    }
+    
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Live stream resumed");
 }

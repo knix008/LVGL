@@ -55,20 +55,12 @@ public:
     bool get_all_face_images(std::vector<std::pair<int, std::string>>& images);
     bool delete_face_image(const std::string& image_path);
 
-<<<<<<< HEAD
-    // Embedding management
-    bool add_embedding(int person_id, const std::vector<float>& embedding);
-    bool get_embeddings(int person_id, std::vector<std::vector<float>>& embeddings);
-    bool get_all_embeddings(std::map<int, std::vector<std::vector<float>>>& all_embeddings);
-    bool delete_embeddings(int person_id);
-=======
     // Face embedding management
     bool add_face_embedding(int person_id, const std::string& image_path, const std::vector<unsigned char>& embedding);
     bool get_face_embeddings(int person_id, std::vector<FaceEmbedding>& embeddings);
     bool get_all_face_embeddings(std::vector<FaceEmbedding>& embeddings);
     bool delete_face_embedding(int id);
     bool update_face_count(int person_id);
->>>>>>> 2a77b446 (Add changes.)
 
     // Query
     bool person_exists(const std::string& name);

@@ -32,6 +32,7 @@ private:
     bool camera_running;
     bool face_recognition_enabled;
     bool training_in_progress;
+    bool capture_in_progress;
     int frame_count;
     gint64 last_time;
     cv::Mat last_frame;
