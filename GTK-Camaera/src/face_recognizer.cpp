@@ -76,47 +76,73 @@ bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
     try {
         std::vector<cv::Mat> training_images;
         std::vector<int> training_labels;
-        int label = 0;
+        std::map<std::string, int> person_to_label;
+        int next_new_label = 0;
 
-        // Iterate through person directories
-        for (const auto& person_dir : fs::directory_iterator(dataset_path)) {
-            if (!fs::is_directory(person_dir)) continue;
+        // Load images directly from dataset folder
+        // Filename format: A.1.1.jpg, A.1.2.jpg, B.2.1.jpg, etc.
+        // Person name extracted from: Initial.ID (e.g., "A1", "B2")
+        for (const auto& img_file : fs::directory_iterator(dataset_path)) {
+            if (!fs::is_regular_file(img_file)) continue;
 
-            std::string person_name = person_dir.path().filename().string();
-            label_to_name[label] = person_name;
+            std::string filename = img_file.path().filename().string();
+            std::string ext = img_file.path().extension().string();
 
-            // Load images from this person's directory
-            for (const auto& img_file : fs::directory_iterator(person_dir.path())) {
-                if (!fs::is_regular_file(img_file)) continue;
-
-                std::string ext = img_file.path().extension().string();
-                if (ext != ".jpg" && ext != ".png" && ext != ".bmp") continue;
-
-                cv::Mat img = cv::imread(img_file.path().string(), cv::IMREAD_GRAYSCALE);
-                if (img.empty()) {
-                    std::cerr << "Warning: Failed to load image: " << img_file.path() << std::endl;
-                    continue;
-                }
-
-                // Resize to standard size
-                cv::Mat resized;
-                cv::resize(img, resized, cv::Size(200, 200));
-
-                training_images.push_back(resized);
-                training_labels.push_back(label);
+            // Check file extension
+            if (ext != ".jpg" && ext != ".JPG" && ext != ".jpeg" && ext != ".JPEG" &&
+                ext != ".png" && ext != ".PNG" && ext != ".bmp" && ext != ".BMP") {
+                continue;
             }
 
-            if (!training_labels.empty()) {
-                label++;
+            // Extract person name from filename: "A.1.1.jpg" -> person_name = "A1"
+            // Format: Initial.ID.Sequence.jpg
+            size_t first_dot = filename.find('.');
+            size_t second_dot = filename.find('.', first_dot + 1);
+
+            if (first_dot == std::string::npos || second_dot == std::string::npos) {
+                std::cerr << "Warning: Invalid filename format: " << filename << std::endl;
+                continue;
             }
+
+            // Extract Initial and ID parts
+            std::string initial = filename.substr(0, first_dot);
+            std::string id = filename.substr(first_dot + 1, second_dot - first_dot - 1);
+            std::string person_name = initial + id;  // e.g., "A1", "B2"
+
+            // Assign label to person if not already assigned
+            if (person_to_label.find(person_name) == person_to_label.end()) {
+                person_to_label[person_name] = next_new_label;
+                label_to_name[next_new_label] = person_name;
+                std::cout << "Registering person: " << person_name << " (label: " << next_new_label << ")" << std::endl;
+                next_new_label++;
+            }
+
+            // Load the image
+            cv::Mat img = cv::imread(img_file.path().string(), cv::IMREAD_GRAYSCALE);
+            if (img.empty()) {
+                std::cerr << "Warning: Failed to load image: " << img_file.path() << std::endl;
+                continue;
+            }
+
+            // Resize to standard size
+            cv::Mat resized;
+            cv::resize(img, resized, cv::Size(200, 200));
+
+            int label = person_to_label[person_name];
+            training_images.push_back(resized);
+            training_labels.push_back(label);
+
+            std::cout << "Loaded training image: " << filename << " -> Person: " << person_name << " (label: " << label << ")" << std::endl;
         }
 
         if (training_images.empty()) {
-            std::cerr << "Error: No training images found" << std::endl;
+            std::cerr << "Error: No training images found in: " << dataset_path << std::endl;
             return false;
         }
 
-        next_label = label;
+        std::cout << "Training with " << training_images.size() << " images from " << person_to_label.size() << " people" << std::endl;
+
+        next_label = next_new_label;
         return train(training_images, training_labels);
     } catch (const std::exception& e) {
         std::cerr << "Exception in train_from_images: " << e.what() << std::endl;
