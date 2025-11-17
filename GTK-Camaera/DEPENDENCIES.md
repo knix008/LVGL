@@ -6,15 +6,34 @@ This document provides complete information about all dependencies required to b
 
 ## System Requirements
 
+### Supported Platforms
+
+#### Linux
+- **Architectures**: x86_64 (Intel/AMD), ARM64 (Raspberry Pi 4+, etc.)
+- **Distributions**: Ubuntu, Debian, Fedora, RHEL, CentOS, Arch Linux
+- **Minimum RAM**: 2GB
+- **Recommended RAM**: 4GB+
+- **Disk Space**: 500MB minimum, 1GB+ recommended
+- **Compiler**: g++ with C++17 support
+
+#### macOS
+- **Architectures**: x86_64 (Intel), ARM64 (Apple Silicon M1/M2/M3+)
+- **Versions**: 10.15 (Catalina) or later
+- **Minimum RAM**: 2GB
+- **Recommended RAM**: 4GB+
+- **Disk Space**: 500MB minimum, 1GB+ recommended
+- **Package Manager**: Homebrew required
+- **Notes**: Universal Binary support available
+
 ### Minimum Requirements
-- **OS**: Linux (Ubuntu, Debian, Fedora, RHEL, Arch, or compatible)
-- **Architecture**: x86_64
+- **OS**: Linux or macOS
+- **Architecture**: x86_64 or ARM64
 - **RAM**: 2GB
 - **Disk Space**: 500MB free
 - **Compiler**: g++ with C++17 support
 
 ### Recommended
-- **OS**: Ubuntu 20.04 LTS or later
+- **OS**: Ubuntu 20.04 LTS+, macOS 11+, or recent distribution
 - **RAM**: 4GB+
 - **Disk Space**: 1GB+
 - **Processor**: Multi-core modern CPU
@@ -104,28 +123,132 @@ sudo pacman -S \
     pkg-config
 ```
 
-### macOS (for reference)
+### macOS (Intel x86_64 & Apple Silicon ARM64)
 
-Note: Not officially supported, but can be adapted using Homebrew:
+Fully supported with native architecture optimization.
 
+#### Prerequisites
+1. Install Xcode Command Line Tools:
 ```bash
-brew install gtk+3 opencv sqlite pkg-config
+xcode-select --install
+```
+
+2. Install Homebrew (if not already installed):
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### Installation for Intel Macs (x86_64)
+```bash
+brew install gtk+3 opencv sqlite pkg-config cmake
+
+# Set up environment variables (add to ~/.zshrc or ~/.bash_profile)
+export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PATH="/usr/local/bin:$PATH"
+```
+
+#### Installation for Apple Silicon Macs (ARM64)
+```bash
+# Homebrew for Apple Silicon installs to /opt/homebrew
+brew install gtk+3 opencv sqlite pkg-config cmake
+
+# Set up environment variables (add to ~/.zshrc or ~/.bash_profile)
+export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PATH="/opt/homebrew/bin:$PATH"
+```
+
+#### Verify Installation
+```bash
+# Check GTK3
+pkg-config --modversion gtk+-3.0
+
+# Check OpenCV
+pkg-config --modversion opencv4
+
+# Check architecture
+uname -m
+# Output: x86_64 (Intel) or arm64 (Apple Silicon)
+```
+
+### Ubuntu/Debian in VirtualBox on macOS
+
+This is the recommended setup for testing on Mac hosts while keeping Linux as primary development environment.
+
+#### VirtualBox Setup Prerequisites
+1. **VirtualBox Installation**:
+   - Download from: https://www.virtualbox.org/wiki/Downloads
+   - Install Oracle VM VirtualBox on macOS
+
+2. **Ubuntu VM Creation**:
+   - Download Ubuntu ISO (20.04 LTS or later): https://ubuntu.com/download/desktop
+   - Create new VM with:
+     - **Memory**: 4GB minimum (8GB+ recommended)
+     - **Storage**: 30GB minimum (50GB+ recommended)
+     - **Architecture**: Select matching host architecture
+
+3. **VirtualBox Guest Additions** (optional but recommended):
+   ```bash
+   sudo apt-get install virtualbox-guest-additions-iso
+   ```
+
+#### Installation in VirtualBox Ubuntu VM
+```bash
+# Inside the Ubuntu VM, run the standard setup
+chmod +x setup.sh
+./setup.sh
+
+# The script will detect it's running in VirtualBox and optimize for VM
+```
+
+#### Camera Access in VirtualBox
+To pass USB camera through to the VM:
+1. Install VirtualBox Extension Pack
+2. In VirtualBox Settings → USB:
+   - Add filter for your webcam device
+3. Ubuntu will detect camera automatically
+
+#### Build and Run
+```bash
+make clean && make
+./gtk_webcam
 ```
 
 ## Automated Installation
 
-You can use the provided setup script:
+You can use the provided setup script for automatic detection and installation:
 
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-The script will:
-1. Detect your Linux distribution
-2. Install all required packages
-3. Add your user to the video group for camera access
-4. Display setup completion instructions
+### What the Setup Script Does
+
+The automated setup script will:
+1. **Detect OS**: Ubuntu, Debian, Fedora, RHEL, CentOS, Arch Linux, or macOS
+2. **Detect Architecture**: x86_64 or ARM64
+3. **Install Dependencies**:
+   - For Linux: Uses appropriate package manager (apt, dnf, pacman)
+   - For macOS: Installs/updates Homebrew and installs packages via brew
+4. **Configure Environment**:
+   - Linux: Adds user to video group for camera access
+   - macOS: Sets up environment variables for Homebrew paths
+5. **Display Instructions**: Guides you through building and running the application
+
+### Supported Architectures and Platforms
+
+| Platform | OS | Architecture | Status | Notes |
+|---|---|---|---|---|
+| **Native Linux** | Ubuntu/Debian | x86_64 | ✅ Fully Supported | Intel/AMD processors |
+| **Native Linux** | Ubuntu/Debian | ARM64 | ✅ Fully Supported | Raspberry Pi 4+, ARM servers |
+| **Native Linux** | Fedora/RHEL | x86_64 | ✅ Fully Supported | Intel/AMD processors |
+| **Native Linux** | Fedora/RHEL | ARM64 | ✅ Fully Supported | ARM servers |
+| **Native Linux** | Arch Linux | x86_64 | ✅ Fully Supported | Intel/AMD processors |
+| **Native Linux** | Arch Linux | ARM64 | ✅ Fully Supported | ARM boards |
+| **VirtualBox on macOS** | Ubuntu/Debian | x86_64 | ✅ Fully Supported | Intel Mac host running Ubuntu VM |
+| **VirtualBox on macOS** | Ubuntu/Debian | ARM64 | ✅ Fully Supported | Apple Silicon Mac host running Ubuntu ARM64 VM |
+| **Native macOS** | macOS | x86_64 | ✅ Fully Supported | Intel Macs (Homebrew: /usr/local) |
+| **Native macOS** | macOS | ARM64 | ✅ Fully Supported | Apple Silicon M1/M2/M3+ (Homebrew: /opt/homebrew) |
 
 ## Dependency Verification
 
