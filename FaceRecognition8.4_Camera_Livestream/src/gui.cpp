@@ -385,7 +385,7 @@ bool GUI::create_main_screen() {
 
     // Create info label (below status)
     info_label = lv_label_create(main_screen);
-    lv_label_set_text(info_label, "얼굴 감지 없음");  // No faces detected in Korean
+    lv_label_set_text(info_label, "");  // Empty initially
     lv_obj_align(info_label, LV_ALIGN_TOP_MID, 0, 290);  // Below status label
     if (korean_font_16) {
         lv_obj_set_style_text_font(info_label, korean_font_16, 0);
@@ -681,7 +681,7 @@ bool GUI::display_detection_result(const cv::Mat& image, const std::vector<Face>
     // Create Korean message for detected faces
     std::string info;
     if (faces.size() == 0) {
-        info = "얼굴 감지 없음";  // No faces detected
+        info = "";  // Empty when no faces detected
     } else if (faces.size() == 1) {
         info = "1개의 얼굴 감지됨";  // 1 face detected
     } else {

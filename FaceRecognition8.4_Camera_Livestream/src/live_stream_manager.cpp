@@ -253,8 +253,31 @@ std::vector<Face> LiveStreamManager::detect_and_recognize_faces(const cv::Mat& f
 
 void LiveStreamManager::draw_face_annotations(cv::Mat& frame, const std::vector<Face>& faces) {
     for (const auto& face : faces) {
-        // Draw bounding box
-        cv::rectangle(frame, face.bbox, cv::Scalar(0, 255, 0), 2);
+        // Draw corner boxes instead of full rectangle
+        int x1 = face.bbox.x;
+        int y1 = face.bbox.y;
+        int x2 = face.bbox.x + face.bbox.width;
+        int y2 = face.bbox.y + face.bbox.height;
+
+        int corner_length = 20;  // Length of corner marks
+        int line_thickness = 2;
+        cv::Scalar corner_color(0, 255, 0);  // Green color
+
+        // Top-left corner
+        cv::line(frame, cv::Point(x1, y1), cv::Point(x1 + corner_length, y1), corner_color, line_thickness);
+        cv::line(frame, cv::Point(x1, y1), cv::Point(x1, y1 + corner_length), corner_color, line_thickness);
+
+        // Top-right corner
+        cv::line(frame, cv::Point(x2, y1), cv::Point(x2 - corner_length, y1), corner_color, line_thickness);
+        cv::line(frame, cv::Point(x2, y1), cv::Point(x2, y1 + corner_length), corner_color, line_thickness);
+
+        // Bottom-left corner
+        cv::line(frame, cv::Point(x1, y2), cv::Point(x1 + corner_length, y2), corner_color, line_thickness);
+        cv::line(frame, cv::Point(x1, y2), cv::Point(x1, y2 - corner_length), corner_color, line_thickness);
+
+        // Bottom-right corner
+        cv::line(frame, cv::Point(x2, y2), cv::Point(x2 - corner_length, y2), corner_color, line_thickness);
+        cv::line(frame, cv::Point(x2, y2), cv::Point(x2, y2 - corner_length), corner_color, line_thickness);
 
         // Prepare label with person name and confidence
         std::string label = face.person_id;
@@ -264,8 +287,8 @@ void LiveStreamManager::draw_face_annotations(cv::Mat& frame, const std::vector<
 
         // Draw label background
         int font_face = cv::FONT_HERSHEY_SIMPLEX;
-        double font_scale = 0.6;
-        int thickness = 1;
+        double font_scale = 1.0;
+        int thickness = 2;
         int baseline = 0;
         cv::Size text_size = cv::getTextSize(label, font_face, font_scale, thickness, &baseline);
 
