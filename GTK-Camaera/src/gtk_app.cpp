@@ -4,9 +4,10 @@
 
 GTKApp::GTKApp()
     : window(nullptr), image_widget(nullptr), toggle_button(nullptr),
-      status_label(nullptr), fps_label(nullptr), face_info_label(nullptr),
-      face_count_label(nullptr), refresh_timer(0),
-      camera_running(false), face_recognition_enabled(false), frame_count(0), last_time(0) {}
+      train_button(nullptr), status_label(nullptr), fps_label(nullptr),
+      face_info_label(nullptr), face_count_label(nullptr), refresh_timer(0),
+      camera_running(false), face_recognition_enabled(false),
+      training_in_progress(false), frame_count(0), last_time(0) {}
 
 GTKApp::~GTKApp() {
     cleanup();
@@ -45,6 +46,12 @@ bool GTKApp::init() {
         gtk_widget_set_size_request(toggle_button, 150, 40);
         g_signal_connect(toggle_button, "clicked", G_CALLBACK(on_toggle_button_clicked), this);
         gtk_box_pack_start(GTK_BOX(hbox), toggle_button, FALSE, FALSE, 0);
+
+        // Create train button
+        train_button = gtk_button_new_with_label("Train Model");
+        gtk_widget_set_size_request(train_button, 150, 40);
+        g_signal_connect(train_button, "clicked", G_CALLBACK(on_train_button_clicked), this);
+        gtk_box_pack_start(GTK_BOX(hbox), train_button, FALSE, FALSE, 0);
 
         // Create status label
         status_label = gtk_label_new("Status: Camera Idle");
@@ -442,4 +449,65 @@ void GTKApp::load_face_recognizer() {
         std::cerr << "Exception in load_face_recognizer: " << e.what() << std::endl;
         face_recognition_enabled = false;
     }
+}
+
+void GTKApp::on_train_button_clicked(GtkWidget* /*widget*/, gpointer user_data) {
+    GTKApp* self = static_cast<GTKApp*>(user_data);
+    self->train_model();
+}
+
+void GTKApp::train_model() {
+    if (training_in_progress) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training already in progress");
+        return;
+    }
+
+    // Create file chooser dialog
+    GtkWidget* dialog = gtk_file_chooser_dialog_new(
+        "Select Training Dataset Folder",
+        GTK_WINDOW(window),
+        GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+        "Cancel", GTK_RESPONSE_CANCEL,
+        "Select", GTK_RESPONSE_ACCEPT,
+        nullptr);
+
+    gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(dialog), TRUE);
+
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_ACCEPT) {
+        char* folder_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        if (folder_path != nullptr) {
+            training_in_progress = true;
+            gtk_widget_set_sensitive(train_button, FALSE);
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model... please wait");
+
+            std::cout << "Starting training from: " << folder_path << std::endl;
+
+            // Train the model
+            bool success = face_recognizer.train_from_images(folder_path);
+
+            if (success) {
+                // Save the trained model
+                if (face_recognizer.save_model("face_recognizer_model.yml")) {
+                    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
+                    face_recognition_enabled = true;
+                    std::cout << "Training successful!" << std::endl;
+                } else {
+                    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
+                    std::cerr << "Failed to save model" << std::endl;
+                }
+            } else {
+                gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check dataset format");
+                std::cerr << "Training failed" << std::endl;
+            }
+
+            g_free(folder_path);
+            training_in_progress = false;
+            gtk_widget_set_sensitive(train_button, TRUE);
+        }
+    }
+
+    gtk_widget_destroy(dialog);
 }

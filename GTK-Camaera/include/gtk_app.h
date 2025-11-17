@@ -15,6 +15,7 @@ private:
     GtkWidget* window;
     GtkWidget* image_widget;
     GtkWidget* toggle_button;
+    GtkWidget* train_button;
     GtkWidget* status_label;
     GtkWidget* fps_label;
     GtkWidget* face_info_label;
@@ -29,17 +30,20 @@ private:
     guint refresh_timer;
     bool camera_running;
     bool face_recognition_enabled;
+    bool training_in_progress;
     int frame_count;
     gint64 last_time;
 
     // Static callback wrappers
     static gboolean on_refresh_timer(gpointer user_data);
     static void on_toggle_button_clicked(GtkWidget* widget, gpointer user_data);
+    static void on_train_button_clicked(GtkWidget* widget, gpointer user_data);
     static void on_window_destroy(GtkWidget* widget, gpointer user_data);
 
     // Instance methods
     gboolean refresh_frame();
     void toggle_camera();
+    void train_model();
     void update_ui();
     GdkPixbuf* mat_to_pixbuf(const cv::Mat& mat);
     void draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces);
