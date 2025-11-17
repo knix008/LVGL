@@ -617,24 +617,35 @@ void GTKApp::capture_photo() {
         const char* id_str = gtk_entry_get_text(GTK_ENTRY(entry_id));
 
         if (initial && strlen(initial) > 0 && id_str && strlen(id_str) > 0) {
-            // Generate filename format: A.1.1.jpg, A.1.2.jpg, B.2.1.jpg, etc.
+            // Create person subdirectory structure
             std::string initial_str(initial);
             std::string id_num(id_str);
 
             // Convert initial to uppercase
             initial_str[0] = std::toupper(initial_str[0]);
 
-            // Count existing files for this person to determine sequence number
-            std::string person_dir = "dataset";
-            int sequence = 1;
+            // Create person-specific subdirectory: dataset/A1/, dataset/B2/, etc.
+            std::string person_name = initial_str + id_num;  // e.g., "A1", "B2"
+            std::string person_dir = "dataset/" + person_name;
 
-            // Count files matching pattern: initial.id.*.jpg
+            try {
+                if (!std::filesystem::exists(person_dir)) {
+                    std::filesystem::create_directories(person_dir);
+                    std::cout << "Created person directory: " << person_dir << std::endl;
+                }
+            } catch (const std::exception& e) {
+                gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to create person directory");
+                std::cerr << "Error creating directory: " << e.what() << std::endl;
+                return;
+            }
+
+            // Count existing files for this person to determine sequence number
+            int sequence = 1;
             try {
                 for (const auto& entry : std::filesystem::directory_iterator(person_dir)) {
                     if (entry.is_regular_file()) {
-                        std::string filename = entry.path().filename().string();
-                        // Check if filename matches pattern initial.id.*
-                        if (filename.find(initial_str + "." + id_num + ".") == 0) {
+                        std::string ext = entry.path().extension().string();
+                        if (ext == ".jpg" || ext == ".png" || ext == ".bmp") {
                             sequence++;
                         }
                     }
@@ -643,14 +654,12 @@ void GTKApp::capture_photo() {
                 std::cerr << "Error counting files: " << e.what() << std::endl;
             }
 
-            // Generate filename: A.1.1.jpg, A.1.2.jpg, etc.
-            std::string filename = person_dir + "/" + initial_str + "." + id_num + "." + std::to_string(sequence) + ".jpg";
+            // Generate filename: A1/1.jpg, A1/2.jpg, etc.
+            std::string filename = person_dir + "/" + std::to_string(sequence) + ".jpg";
 
             // Save the frame
             if (cv::imwrite(filename, last_frame)) {
                 // Register person in database if not already registered
-                std::string person_name = initial_str + id_num;  // e.g., "A1", "B2"
-
                 if (!face_database.person_exists(person_name)) {
                     if (face_database.add_person(person_name)) {
                         std::cout << "Person registered in database: " << person_name << std::endl;
@@ -671,8 +680,8 @@ void GTKApp::capture_photo() {
 
                 gchar status_text[200];
                 g_snprintf(status_text, sizeof(status_text),
-                          "Status: Photo saved - %s (DB: %s)", std::filesystem::path(filename).filename().c_str(),
-                          person_name.c_str());
+                          "Status: Photo saved - %s/%s (Person: %s)", person_name.c_str(),
+                          std::to_string(sequence).c_str(), person_name.c_str());
                 gtk_label_set_text(GTK_LABEL(status_label), status_text);
                 std::cout << "Photo saved: " << filename << std::endl;
             } else {
