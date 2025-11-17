@@ -604,9 +604,31 @@ void GTKApp::capture_photo() {
 
             // Save the frame
             if (cv::imwrite(filename, last_frame)) {
+                // Register person in database if not already registered
+                std::string person_name = initial_str + id_num;  // e.g., "A1", "B2"
+
+                if (!face_database.person_exists(person_name)) {
+                    if (face_database.add_person(person_name)) {
+                        std::cout << "Person registered in database: " << person_name << std::endl;
+                    } else {
+                        std::cerr << "Failed to register person in database" << std::endl;
+                    }
+                }
+
+                // Add face image to database
+                PersonRecord person;
+                if (face_database.get_person_by_name(person_name, person)) {
+                    if (face_database.add_face_image(person.id, filename)) {
+                        std::cout << "Face image registered in database: " << filename << std::endl;
+                    } else {
+                        std::cerr << "Failed to register face image in database" << std::endl;
+                    }
+                }
+
                 gchar status_text[200];
                 g_snprintf(status_text, sizeof(status_text),
-                          "Status: Photo saved - %s", std::filesystem::path(filename).filename().c_str());
+                          "Status: Photo saved - %s (DB: %s)", std::filesystem::path(filename).filename().c_str(),
+                          person_name.c_str());
                 gtk_label_set_text(GTK_LABEL(status_label), status_text);
                 std::cout << "Photo saved: " << filename << std::endl;
             } else {
