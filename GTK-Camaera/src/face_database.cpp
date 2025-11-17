@@ -81,6 +81,22 @@ bool FaceDatabase::initialize() {
             return false;
         }
 
+        // Create embeddings table
+        const char* sql_embeddings = R"(
+            CREATE TABLE IF NOT EXISTS embeddings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                person_id INTEGER NOT NULL,
+                embedding BLOB NOT NULL,
+                created_at TEXT,
+                FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE
+            )
+        )";
+
+        if (!execute_sql(sql_embeddings)) {
+            std::cerr << "Failed to create embeddings table" << std::endl;
+            return false;
+        }
+
         std::cout << "Database initialized successfully" << std::endl;
         return true;
     } catch (const std::exception& e) {
@@ -438,4 +454,138 @@ int FaceDatabase::get_num_people() const {
 
     sqlite3_finalize(stmt);
     return count;
+}
+
+bool FaceDatabase::add_embedding(int person_id, const std::vector<float>& embedding) {
+    if (!is_open || !db || embedding.empty()) return false;
+
+    try {
+        std::string timestamp = get_timestamp();
+        const char* sql = "INSERT INTO embeddings (person_id, embedding, created_at) VALUES (?, ?, ?)";
+        sqlite3_stmt* stmt;
+
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing embedding insert: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        // Bind person_id
+        sqlite3_bind_int(stmt, 1, person_id);
+
+        // Bind embedding as BLOB
+        sqlite3_bind_blob(stmt, 2, embedding.data(), embedding.size() * sizeof(float), SQLITE_STATIC);
+
+        // Bind timestamp
+        sqlite3_bind_text(stmt, 3, timestamp.c_str(), -1, SQLITE_STATIC);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Error inserting embedding: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in add_embedding: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FaceDatabase::get_embeddings(int person_id, std::vector<std::vector<float>>& embeddings) {
+    if (!is_open || !db) return false;
+
+    try {
+        std::string sql = "SELECT embedding FROM embeddings WHERE person_id = ? ORDER BY created_at";
+        sqlite3_stmt* stmt;
+
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing embedding query: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, person_id);
+
+        embeddings.clear();
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const void* blob = sqlite3_column_blob(stmt, 0);
+            int blob_size = sqlite3_column_bytes(stmt, 0);
+
+            if (blob && blob_size > 0) {
+                int num_floats = blob_size / sizeof(float);
+                const float* float_data = static_cast<const float*>(blob);
+                std::vector<float> embedding(float_data, float_data + num_floats);
+                embeddings.push_back(embedding);
+            }
+        }
+
+        sqlite3_finalize(stmt);
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in get_embeddings: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FaceDatabase::get_all_embeddings(std::map<int, std::vector<std::vector<float>>>& all_embeddings) {
+    if (!is_open || !db) return false;
+
+    try {
+        std::string sql = "SELECT person_id, embedding FROM embeddings ORDER BY person_id, created_at";
+        sqlite3_stmt* stmt;
+
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing all embeddings query: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        all_embeddings.clear();
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int person_id = sqlite3_column_int(stmt, 0);
+            const void* blob = sqlite3_column_blob(stmt, 1);
+            int blob_size = sqlite3_column_bytes(stmt, 1);
+
+            if (blob && blob_size > 0) {
+                int num_floats = blob_size / sizeof(float);
+                const float* float_data = static_cast<const float*>(blob);
+                std::vector<float> embedding(float_data, float_data + num_floats);
+                all_embeddings[person_id].push_back(embedding);
+            }
+        }
+
+        sqlite3_finalize(stmt);
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in get_all_embeddings: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FaceDatabase::delete_embeddings(int person_id) {
+    if (!is_open || !db) return false;
+
+    try {
+        std::string sql = "DELETE FROM embeddings WHERE person_id = ?";
+        sqlite3_stmt* stmt;
+
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error preparing embedding delete: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, person_id);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        return (rc == SQLITE_DONE);
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in delete_embeddings: " << e.what() << std::endl;
+        return false;
+    }
 }

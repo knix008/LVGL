@@ -1,7 +1,9 @@
 #include "face_recognizer.h"
+#include "face_database.h"
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <cmath>
 
 namespace fs = std::filesystem;
 
@@ -9,62 +11,85 @@ FaceRecognizer::FaceRecognizer() {
     recognizer = cv::face::LBPHFaceRecognizer::create();
 }
 
-bool FaceRecognizer::train(const std::vector<cv::Mat>& images, const std::vector<int>& labels) {
-    if (images.empty() || labels.empty()) {
-        std::cerr << "Error: Empty training data" << std::endl;
-        return false;
-    }
-
-    if (images.size() != labels.size()) {
-        std::cerr << "Error: Images and labels size mismatch" << std::endl;
-        return false;
+std::vector<float> FaceRecognizer::generate_embedding(const cv::Mat& face_image) {
+    if (face_image.empty()) {
+        std::cerr << "Error: Empty face image for embedding" << std::endl;
+        return std::vector<float>();
     }
 
     try {
-        // Verify all images have the same size
-        cv::Size img_size = images[0].size();
-        for (const auto& img : images) {
-            if (img.size() != img_size) {
-                std::cerr << "Error: All images must have the same size" << std::endl;
-                return false;
+        // Resize face to standard size
+        cv::Mat resized;
+        cv::resize(face_image, resized, cv::Size(200, 200));
+
+        // Convert to grayscale if necessary
+        cv::Mat gray;
+        if (resized.channels() == 3) {
+            cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
+        } else if (resized.channels() == 4) {
+            cv::cvtColor(resized, gray, cv::COLOR_BGRA2GRAY);
+        } else {
+            gray = resized.clone();
+        }
+
+        // Generate LBPH embedding using 8x8 grid with 256 bins
+        std::vector<float> embedding;
+        int grid_x = 8;
+        int grid_y = 8;
+        int hist_size = 256;
+        float range[] = {0, 256};
+        const float* ranges[] = {range};
+
+        for (int i = 0; i < grid_y; ++i) {
+            for (int j = 0; j < grid_x; ++j) {
+                int x1 = j * gray.cols / grid_x;
+                int y1 = i * gray.rows / grid_y;
+                int x2 = (j + 1) * gray.cols / grid_x;
+                int y2 = (i + 1) * gray.rows / grid_y;
+
+                cv::Mat roi = gray(cv::Rect(x1, y1, x2 - x1, y2 - y1));
+
+                cv::Mat hist;
+                cv::calcHist(&roi, 1, 0, cv::Mat(), hist, 1, &hist_size, ranges, true, false);
+                hist = hist.reshape(1, 1);
+
+                for (int k = 0; k < hist.cols; ++k) {
+                    embedding.push_back(hist.at<float>(0, k));
+                }
             }
         }
 
-        recognizer->train(images, labels);
-        is_trained = true;
-
-        std::cout << "Face recognizer trained successfully with " << images.size() << " images" << std::endl;
-        return true;
+        return embedding;
     } catch (const std::exception& e) {
-        std::cerr << "Exception in train: " << e.what() << std::endl;
-        is_trained = false;
-        return false;
+        std::cerr << "Exception in generate_embedding: " << e.what() << std::endl;
+        return std::vector<float>();
     }
 }
 
-bool FaceRecognizer::add_training_data(const cv::Mat& image, const std::string& name) {
-    if (image.empty()) {
-        std::cerr << "Error: Empty image" << std::endl;
-        return false;
+float FaceRecognizer::calculate_similarity(const std::vector<float>& emb1, const std::vector<float>& emb2) {
+    if (emb1.empty() || emb2.empty() || emb1.size() != emb2.size()) {
+        return 0.0f;
     }
 
-    try {
-        // Check if person already exists
-        int label = get_label_from_name(name);
-        if (label == -1) {
-            // Create new label for new person
-            label = register_person(name);
-        }
+    // Calculate cosine similarity
+    float dot_product = 0.0f;
+    float norm1 = 0.0f;
+    float norm2 = 0.0f;
 
-        // Store image for later training
-        // Note: In a real application, you would accumulate images
-        // and train the model when enough data is collected
-
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception in add_training_data: " << e.what() << std::endl;
-        return false;
+    for (size_t i = 0; i < emb1.size(); ++i) {
+        dot_product += emb1[i] * emb2[i];
+        norm1 += emb1[i] * emb1[i];
+        norm2 += emb2[i] * emb2[i];
     }
+
+    norm1 = std::sqrt(norm1);
+    norm2 = std::sqrt(norm2);
+
+    if (norm1 == 0.0f || norm2 == 0.0f) {
+        return 0.0f;
+    }
+
+    return dot_product / (norm1 * norm2);
 }
 
 bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
@@ -74,24 +99,22 @@ bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
     }
 
     try {
-        std::vector<cv::Mat> training_images;
-        std::vector<int> training_labels;
-        std::map<std::string, int> person_to_label;
-        int next_new_label = 0;
+        person_embeddings.clear();
+        label_to_name.clear();
+        next_label = 0;
+        int total_embeddings = 0;
 
-        // Iterate through person subdirectories: dataset/A1/, dataset/B2/, etc.
+        // Iterate through person subdirectories
         for (const auto& person_dir : fs::directory_iterator(dataset_path)) {
             if (!fs::is_directory(person_dir)) continue;
 
-            // Get person name from directory name (e.g., "A1", "B2")
             std::string person_name = person_dir.path().filename().string();
+            person_embeddings[next_label] = std::vector<std::vector<float>>();
+            label_to_name[next_label] = person_name;
 
-            // Assign label to person
-            person_to_label[person_name] = next_new_label;
-            label_to_name[next_new_label] = person_name;
-            std::cout << "Registering person: " << person_name << " (label: " << next_new_label << ")" << std::endl;
+            std::cout << "Processing person: " << person_name << " (id: " << next_label << ")" << std::endl;
 
-            // Load images from this person's subdirectory
+            // Load images from person's subdirectory and generate embeddings
             int images_count = 0;
             for (const auto& img_file : fs::directory_iterator(person_dir.path())) {
                 if (!fs::is_regular_file(img_file)) continue;
@@ -99,153 +122,143 @@ bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
                 std::string filename = img_file.path().filename().string();
                 std::string ext = img_file.path().extension().string();
 
-                // Check file extension
                 if (ext != ".jpg" && ext != ".JPG" && ext != ".jpeg" && ext != ".JPEG" &&
                     ext != ".png" && ext != ".PNG" && ext != ".bmp" && ext != ".BMP") {
                     continue;
                 }
 
-                // Load the image
+                // Load image
                 cv::Mat img = cv::imread(img_file.path().string(), cv::IMREAD_GRAYSCALE);
                 if (img.empty()) {
                     std::cerr << "Warning: Failed to load image: " << img_file.path() << std::endl;
                     continue;
                 }
 
-                // Resize to standard size
-                cv::Mat resized;
-                cv::resize(img, resized, cv::Size(200, 200));
-
-                int label = next_new_label;
-                training_images.push_back(resized);
-                training_labels.push_back(label);
-
-                std::cout << "  Loaded: " << filename << " (label: " << label << ")" << std::endl;
-                images_count++;
+                // Generate embedding
+                std::vector<float> embedding = generate_embedding(img);
+                if (!embedding.empty()) {
+                    person_embeddings[next_label].push_back(embedding);
+                    total_embeddings++;
+                    std::cout << "  Loaded: " << filename << " (embedding size: " << embedding.size() << ")" << std::endl;
+                    images_count++;
+                }
             }
 
             if (images_count > 0) {
-                std::cout << "Person " << person_name << ": " << images_count << " images loaded" << std::endl;
-                next_new_label++;
+                std::cout << "Person " << person_name << ": " << images_count << " embeddings generated" << std::endl;
+                next_label++;
             } else {
                 std::cerr << "Warning: No images found for person " << person_name << std::endl;
-                // Remove the label for this person if no images were found
-                person_to_label.erase(person_name);
-                label_to_name.erase(next_new_label);
+                person_embeddings.erase(next_label);
+                label_to_name.erase(next_label);
             }
         }
 
-        if (training_images.empty()) {
-            std::cerr << "Error: No training images found in: " << dataset_path << std::endl;
+        if (person_embeddings.empty()) {
+            std::cerr << "Error: No training embeddings generated from: " << dataset_path << std::endl;
             return false;
         }
 
-        std::cout << "Training with " << training_images.size() << " images from " << person_to_label.size() << " people" << std::endl;
-
-        next_label = next_new_label;
-        return train(training_images, training_labels);
+        is_trained = true;
+        std::cout << "Training complete with " << total_embeddings << " embeddings from "
+                  << person_embeddings.size() << " people" << std::endl;
+        return true;
     } catch (const std::exception& e) {
         std::cerr << "Exception in train_from_images: " << e.what() << std::endl;
         return false;
     }
 }
 
-int FaceRecognizer::recognize(const cv::Mat& face_image, double& confidence) {
-    if (face_image.empty()) {
-        std::cerr << "Error: Empty face image" << std::endl;
-        confidence = -1;
-        return -1;
+bool FaceRecognizer::add_person_embedding(int person_id, const std::vector<float>& embedding) {
+    if (embedding.empty()) {
+        std::cerr << "Error: Empty embedding" << std::endl;
+        return false;
     }
 
-    if (!is_trained) {
-        std::cerr << "Error: Model not trained" << std::endl;
-        confidence = -1;
+    try {
+        person_embeddings[person_id].push_back(embedding);
+        is_trained = true;
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in add_person_embedding: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<float> FaceRecognizer::get_face_embedding(const cv::Mat& face_image) {
+    return generate_embedding(face_image);
+}
+
+int FaceRecognizer::recognize(const cv::Mat& face_image, double& confidence) {
+    if (!is_trained || person_embeddings.empty()) {
+        std::cerr << "Error: No embeddings available for recognition" << std::endl;
+        confidence = 0.0;
         return -1;
     }
 
     try {
-        cv::Mat preprocessed = face_image.clone();
-
-        // Ensure grayscale
-        if (preprocessed.channels() == 3) {
-            cv::cvtColor(preprocessed, preprocessed, cv::COLOR_BGR2GRAY);
+        // Generate embedding for input face
+        std::vector<float> face_embedding = generate_embedding(face_image);
+        if (face_embedding.empty()) {
+            std::cerr << "Error: Failed to generate embedding for input face" << std::endl;
+            confidence = 0.0;
+            return -1;
         }
 
-        // Resize to standard size
-        cv::resize(preprocessed, preprocessed, cv::Size(200, 200));
+        float best_similarity = -1.0f;
+        int best_person_id = -1;
 
-        // Equalize histogram
-        cv::equalizeHist(preprocessed, preprocessed);
+        // Compare with all stored embeddings
+        for (const auto& [person_id, embeddings] : person_embeddings) {
+            for (const auto& stored_embedding : embeddings) {
+                float similarity = calculate_similarity(face_embedding, stored_embedding);
+                if (similarity > best_similarity) {
+                    best_similarity = similarity;
+                    best_person_id = person_id;
+                }
+            }
+        }
 
-        int label = -1;
-        double conf = 0.0;
+        confidence = best_similarity;
 
-        recognizer->predict(preprocessed, label, conf);
-        confidence = conf;
-
-        return label;
+        if (best_similarity >= confidence_threshold) {
+            std::cout << "Recognized person: " << label_to_name[best_person_id]
+                      << " (similarity: " << best_similarity << ")" << std::endl;
+            return best_person_id;
+        } else {
+            std::cout << "Unknown person (best similarity: " << best_similarity << ")" << std::endl;
+            return -1;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Exception in recognize: " << e.what() << std::endl;
-        confidence = -1;
+        confidence = 0.0;
         return -1;
     }
 }
 
 std::string FaceRecognizer::recognize_with_name(const cv::Mat& face_image, double& confidence) {
-    int label = recognize(face_image, confidence);
-
-    if (label == -1 || confidence > confidence_threshold) {
-        return "Unknown";
+    int person_id = recognize(face_image, confidence);
+    if (person_id >= 0 && label_to_name.count(person_id)) {
+        return label_to_name[person_id];
     }
-
-    return get_label_name(label);
+    return "Unknown";
 }
 
-bool FaceRecognizer::save_model(const std::string& path) {
-    try {
-        std::string save_path = path.empty() ? model_path : path;
-
-        if (!is_trained) {
-            std::cerr << "Error: Model not trained, cannot save" << std::endl;
-            return false;
-        }
-
-        recognizer->save(save_path);
-        std::cout << "Model saved to: " << save_path << std::endl;
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception in save_model: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool FaceRecognizer::load_model(const std::string& path) {
-    try {
-        std::string load_path = path.empty() ? model_path : path;
-
-        if (!fs::exists(load_path)) {
-            std::cerr << "Error: Model file not found: " << load_path << std::endl;
-            return false;
-        }
-
-        recognizer->read(load_path);
-        is_trained = true;
-        std::cout << "Model loaded from: " << load_path << std::endl;
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception in load_model: " << e.what() << std::endl;
-        is_trained = false;
-        return false;
-    }
+bool FaceRecognizer::load_embeddings_from_db() {
+    // This will be implemented in gtk_app.cpp when FaceDatabase is available
+    return true;
 }
 
 int FaceRecognizer::register_person(const std::string& name) {
-    int label = next_label++;
-    label_to_name[label] = name;
-    return label;
+    label_to_name[next_label] = name;
+    person_embeddings[next_label] = std::vector<std::vector<float>>();
+    return next_label++;
 }
 
 bool FaceRecognizer::set_label_name(int label, const std::string& name) {
+    if (label_to_name.count(label) == 0) {
+        return false;
+    }
     label_to_name[label] = name;
     return true;
 }
@@ -259,31 +272,32 @@ std::string FaceRecognizer::get_label_name(int label) const {
 }
 
 int FaceRecognizer::get_label_from_name(const std::string& name) const {
-    for (const auto& [label, person_name] : label_to_name) {
-        if (person_name == name) {
+    for (const auto& [label, label_name] : label_to_name) {
+        if (label_name == name) {
             return label;
         }
     }
     return -1;
 }
 
-void FaceRecognizer::set_confidence_threshold(double threshold) {
+void FaceRecognizer::set_confidence_threshold(float threshold) {
     confidence_threshold = threshold;
 }
 
-double FaceRecognizer::get_confidence_threshold() const {
+float FaceRecognizer::get_confidence_threshold() const {
     return confidence_threshold;
 }
 
 bool FaceRecognizer::is_model_trained() const {
-    return is_trained;
+    return is_trained && !person_embeddings.empty();
 }
 
 int FaceRecognizer::get_num_people() const {
-    return label_to_name.size();
+    return person_embeddings.size();
 }
 
 void FaceRecognizer::clear_training_data() {
+    person_embeddings.clear();
     label_to_name.clear();
     next_label = 0;
     is_trained = false;

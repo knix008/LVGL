@@ -11,27 +11,31 @@ class FaceRecognizer {
 private:
     cv::Ptr<cv::face::LBPHFaceRecognizer> recognizer;
     std::map<int, std::string> label_to_name;
+    std::map<int, std::vector<std::vector<float>>> person_embeddings;  // person_id -> embeddings
     int next_label = 0;
     bool is_trained = false;
-    double confidence_threshold = 50.0;  // Lower is more confident
-    std::string model_path = "face_recognizer_model.yml";
+    float confidence_threshold = 0.6f;  // Similarity threshold for recognition
+    int embedding_size = 2048;  // LBPH embedding size (8x8 grid * 256 bins)
+
+    // Embedding generation
+    std::vector<float> generate_embedding(const cv::Mat& face_image);
+    static float calculate_similarity(const std::vector<float>& emb1, const std::vector<float>& emb2);
 
 public:
     FaceRecognizer();
     ~FaceRecognizer() = default;
 
-    // Training
-    bool train(const std::vector<cv::Mat>& images, const std::vector<int>& labels);
-    bool add_training_data(const cv::Mat& image, const std::string& name);
+    // Training - now generates embeddings instead of training LBPH
     bool train_from_images(const std::string& dataset_path);
+    bool add_person_embedding(int person_id, const std::vector<float>& embedding);
 
-    // Recognition
+    // Recognition - uses embedding similarity
     int recognize(const cv::Mat& face_image, double& confidence);
     std::string recognize_with_name(const cv::Mat& face_image, double& confidence);
 
-    // Model management
-    bool save_model(const std::string& path = "");
-    bool load_model(const std::string& path = "");
+    // Embedding management
+    std::vector<float> get_face_embedding(const cv::Mat& face_image);
+    bool load_embeddings_from_db();
 
     // Label management
     int register_person(const std::string& name);
@@ -40,8 +44,8 @@ public:
     int get_label_from_name(const std::string& name) const;
 
     // Configuration
-    void set_confidence_threshold(double threshold);
-    double get_confidence_threshold() const;
+    void set_confidence_threshold(float threshold);
+    float get_confidence_threshold() const;
     bool is_model_trained() const;
     int get_num_people() const;
 

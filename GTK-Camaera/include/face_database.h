@@ -47,6 +47,12 @@ public:
     bool get_all_face_images(std::vector<std::pair<int, std::string>>& images);
     bool delete_face_image(const std::string& image_path);
 
+    // Embedding management
+    bool add_embedding(int person_id, const std::vector<float>& embedding);
+    bool get_embeddings(int person_id, std::vector<std::vector<float>>& embeddings);
+    bool get_all_embeddings(std::map<int, std::vector<std::vector<float>>>& all_embeddings);
+    bool delete_embeddings(int person_id);
+
     // Query
     bool person_exists(const std::string& name);
     bool is_open_connection() const;

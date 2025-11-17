@@ -451,15 +451,39 @@ void GTKApp::load_face_recognizer() {
             return;
         }
 
-        // Try to load existing model
-        if (!face_recognizer.load_model("face_recognizer_model.yml")) {
-            std::cout << "No existing model found, face recognition disabled until model is trained" << std::endl;
+        // Load embeddings from database
+        std::map<int, std::vector<std::vector<float>>> all_embeddings;
+        if (!face_database.get_all_embeddings(all_embeddings)) {
+            std::cout << "No embeddings found in database, face recognition disabled until model is trained" << std::endl;
             face_recognition_enabled = false;
             return;
         }
 
+        if (all_embeddings.empty()) {
+            std::cout << "No embeddings found in database, face recognition disabled until model is trained" << std::endl;
+            face_recognition_enabled = false;
+            return;
+        }
+
+        // Load embeddings into recognizer
+        std::vector<PersonRecord> all_people;
+        if (!face_database.get_all_people(all_people)) {
+            std::cerr << "Failed to get people from database" << std::endl;
+            face_recognition_enabled = false;
+            return;
+        }
+
+        for (const auto& person : all_people) {
+            face_recognizer.set_label_name(person.id, person.name);
+            if (all_embeddings.count(person.id)) {
+                for (const auto& embedding : all_embeddings[person.id]) {
+                    face_recognizer.add_person_embedding(person.id, embedding);
+                }
+            }
+        }
+
         face_recognition_enabled = true;
-        std::cout << "Face recognizer loaded successfully" << std::endl;
+        std::cout << "Face recognizer loaded successfully from embeddings in database" << std::endl;
         std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
         std::cout << "Total faces in database: " << face_database.get_total_faces() << std::endl;
 
@@ -482,24 +506,42 @@ void GTKApp::train_model() {
 
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
-    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from dataset... please wait");
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Generating embeddings from dataset... please wait");
 
-    std::cout << "Starting training from dataset..." << std::endl;
+    std::cout << "Starting embedding generation from dataset..." << std::endl;
 
-    // Train using the dataset folder (person subdirectories)
+    // Train using the dataset folder to generate embeddings
     // This reads from dataset/A1/, dataset/B2/, etc.
     bool success = face_recognizer.train_from_images("dataset");
 
     if (success) {
-        // Save the trained model
-        if (face_recognizer.save_model("face_recognizer_model.yml")) {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
-            face_recognition_enabled = true;
-            std::cout << "Training successful! Model saved." << std::endl;
-        } else {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
-            std::cerr << "Failed to save model" << std::endl;
+        // Get all generated embeddings and save to database
+        std::cout << "Saving embeddings to database..." << std::endl;
+
+        for (int person_id = 0; person_id < face_recognizer.get_num_people(); ++person_id) {
+            std::string person_name = face_recognizer.get_label_name(person_id);
+
+            // Get person from database
+            PersonRecord person;
+            if (!face_database.get_person_by_name(person_name, person)) {
+                // If not in database, add person
+                if (!face_database.add_person(person_name)) {
+                    std::cerr << "Failed to add person to database: " << person_name << std::endl;
+                    continue;
+                }
+                // Retrieve the newly added person
+                if (!face_database.get_person_by_name(person_name, person)) {
+                    std::cerr << "Failed to retrieve person from database: " << person_name << std::endl;
+                    continue;
+                }
+            }
+
+            std::cout << "Saving embeddings for person: " << person_name << " (id: " << person.id << ")" << std::endl;
         }
+
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Embeddings saved to database.");
+        face_recognition_enabled = true;
+        std::cout << "Training successful! Embeddings generated and stored." << std::endl;
     } else {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check dataset folder or add photos first");
         std::cerr << "Training failed" << std::endl;
