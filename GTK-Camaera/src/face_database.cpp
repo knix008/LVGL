@@ -136,15 +136,28 @@ bool FaceDatabase::execute_query(const std::string& sql, std::vector<std::map<st
 }
 
 bool FaceDatabase::add_person(const std::string& name) {
-    if (!is_open) return false;
+    if (!is_open || !db) return false;
 
     try {
         std::string timestamp = get_timestamp();
-        std::string sql = "INSERT INTO people (name, created_at, updated_at) VALUES ('" +
-                         name + "', '" + timestamp + "', '" + timestamp + "')";
+        const char* sql = "INSERT INTO people (name, created_at, updated_at) VALUES (?, ?, ?)";
+        sqlite3_stmt* stmt;
 
-        if (!execute_sql(sql)) {
-            std::cerr << "Failed to add person: " << name << std::endl;
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to prepare SQL statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, timestamp.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, timestamp.c_str(), -1, SQLITE_STATIC);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Failed to add person: " << name << " - " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
@@ -182,23 +195,33 @@ bool FaceDatabase::get_person(int id, PersonRecord& person) {
 }
 
 bool FaceDatabase::get_person_by_name(const std::string& name, PersonRecord& person) {
-    if (!is_open) return false;
+    if (!is_open || !db) return false;
 
     try {
-        std::string sql = "SELECT * FROM people WHERE name = '" + name + "'";
-        std::vector<std::map<std::string, std::string>> results;
+        const char* sql = "SELECT id, name, face_count, created_at, updated_at FROM people WHERE name = ?";
+        sqlite3_stmt* stmt;
 
-        if (!execute_query(sql, results) || results.empty()) {
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to prepare SQL statement: " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
-        const auto& row = results[0];
-        person.id = std::stoi(row.at("id"));
-        person.name = row.at("name");
-        person.face_count = std::stoi(row.at("face_count"));
-        person.created_at = row.at("created_at");
-        person.updated_at = row.at("updated_at");
+        sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_step(stmt);
 
+        if (rc != SQLITE_ROW) {
+            sqlite3_finalize(stmt);
+            return false;
+        }
+
+        person.id = sqlite3_column_int(stmt, 0);
+        person.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        person.face_count = sqlite3_column_int(stmt, 2);
+        person.created_at = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        person.updated_at = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+
+        sqlite3_finalize(stmt);
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Exception in get_person_by_name: " << e.what() << std::endl;
@@ -236,18 +259,32 @@ bool FaceDatabase::get_all_people(std::vector<PersonRecord>& people) {
 }
 
 bool FaceDatabase::add_face_image(int person_id, const std::string& image_path) {
-    if (!is_open) return false;
+    if (!is_open || !db) return false;
 
     try {
         std::string timestamp = get_timestamp();
-        std::string sql = "INSERT INTO face_images (person_id, image_path, created_at) VALUES (" +
-                         std::to_string(person_id) + ", '" + image_path + "', '" + timestamp + "')";
+        const char* sql = "INSERT INTO face_images (person_id, image_path, created_at) VALUES (?, ?, ?)";
+        sqlite3_stmt* stmt;
 
-        if (!execute_sql(sql)) {
-            std::cerr << "Failed to add face image" << std::endl;
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to prepare SQL statement: " << sqlite3_errmsg(db) << std::endl;
             return false;
         }
 
+        sqlite3_bind_int(stmt, 1, person_id);
+        sqlite3_bind_text(stmt, 2, image_path.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, timestamp.c_str(), -1, SQLITE_STATIC);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Failed to add face image: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        std::cout << "Face image added: " << image_path << std::endl;
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Exception in add_face_image: " << e.what() << std::endl;
