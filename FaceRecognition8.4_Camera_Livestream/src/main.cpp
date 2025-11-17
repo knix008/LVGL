@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <mutex>
 #include <chrono>
 #include <opencv2/imgcodecs.hpp>
 
@@ -91,6 +93,145 @@ std::vector<std::string> find_image_files(const std::string& directory = ".") {
         std::cerr << "Error reading directory: " << e.what() << std::endl;
     }
     return images;
+}
+
+static std::string extract_person_id_from_filename(const std::string& filename) {
+    size_t dot_pos = filename.find('.');
+    if (dot_pos == std::string::npos) {
+        return filename;
+    }
+    return filename.substr(0, dot_pos);
+}
+
+static bool process_dataset_image(const std::string& image_path,
+                                  const std::string& person_id,
+                                  ImageLoader& image_loader,
+                                  FaceDetector& face_detector,
+                                  std::vector<cv::Mat>& training_faces,
+                                  std::vector<int>& labels,
+                                  std::unordered_map<std::string, int>& person_to_label,
+                                  std::unordered_map<int, std::string>& label_to_person,
+                                  int& processed_count,
+                                  int& skipped_count) {
+    if (person_id.empty()) {
+        skipped_count++;
+        return false;
+    }
+
+    ImageData img;
+    if (!image_loader.load_image(image_path, img)) {
+        skipped_count++;
+        return false;
+    }
+
+    auto faces = face_detector.detect_faces(img.mat);
+    if (faces.size() != 1) {
+        skipped_count++;
+        return false;
+    }
+
+    cv::Mat face_roi = FaceDetector::extract_face(img.mat, faces[0].bbox);
+    if (face_roi.empty()) {
+        skipped_count++;
+        return false;
+    }
+
+    cv::Mat resized;
+    cv::resize(face_roi, resized, cv::Size(200, 200));
+
+    cv::Mat gray_face;
+    if (resized.channels() == 3) {
+        cv::cvtColor(resized, gray_face, cv::COLOR_RGB2GRAY);
+    } else if (resized.channels() == 4) {
+        cv::cvtColor(resized, gray_face, cv::COLOR_RGBA2GRAY);
+    } else {
+        gray_face = resized.clone();
+    }
+
+    int label = 0;
+    auto it = person_to_label.find(person_id);
+    if (it == person_to_label.end()) {
+        label = static_cast<int>(person_to_label.size());
+        person_to_label[person_id] = label;
+        label_to_person[label] = person_id;
+    } else {
+        label = it->second;
+    }
+
+    training_faces.push_back(gray_face);
+    labels.push_back(label);
+    processed_count++;
+    return true;
+}
+
+static bool train_recognizer_from_dataset(const std::string& dataset_dir,
+                                          ImageLoader& image_loader,
+                                          FaceDetector& face_detector,
+                                          FaceRecognizer& face_recognizer,
+                                          std::string& status_message) {
+    namespace fs = std::filesystem;
+
+    fs::path dataset_path(dataset_dir);
+    if (!fs::exists(dataset_path)) {
+        status_message = dataset_dir + " 디렉토리가 존재하지 않습니다";
+        return false;
+    }
+
+    std::vector<cv::Mat> training_faces;
+    std::vector<int> labels;
+    std::unordered_map<std::string, int> person_to_label;
+    std::unordered_map<int, std::string> label_to_person;
+    int processed_count = 0;
+    int skipped_count = 0;
+
+    try {
+        for (const auto& entry : fs::directory_iterator(dataset_path)) {
+            if (entry.is_directory()) {
+                std::string person_id = entry.path().filename().string();
+                for (const auto& file_entry : fs::directory_iterator(entry.path())) {
+                    if (!file_entry.is_regular_file()) {
+                        continue;
+                    }
+                    if (!image_loader.is_supported_format(file_entry.path().string())) {
+                        continue;
+                    }
+                    process_dataset_image(file_entry.path().string(), person_id, image_loader,
+                                          face_detector, training_faces, labels,
+                                          person_to_label, label_to_person,
+                                          processed_count, skipped_count);
+                }
+            } else if (entry.is_regular_file()) {
+                if (!image_loader.is_supported_format(entry.path().string())) {
+                    continue;
+                }
+                std::string person_id = extract_person_id_from_filename(entry.path().filename().string());
+                process_dataset_image(entry.path().string(), person_id, image_loader,
+                                      face_detector, training_faces, labels,
+                                      person_to_label, label_to_person,
+                                      processed_count, skipped_count);
+            }
+        }
+    } catch (const std::exception& e) {
+        status_message = std::string("데이터셋 처리 중 오류: ") + e.what();
+        return false;
+    }
+
+    if (training_faces.empty()) {
+        status_message = "데이터셋에서 사용 가능한 얼굴 이미지를 찾지 못했습니다";
+        return false;
+    }
+
+    if (!face_recognizer.train_faces(training_faces, labels)) {
+        status_message = "얼굴 인식기 훈련에 실패했습니다";
+        return false;
+    }
+
+    face_recognizer.set_label_mapping(label_to_person);
+
+    status_message = "인원: " + std::to_string(person_to_label.size()) + "명, "
+                   + "이미지: " + std::to_string(processed_count) + "개 "
+                   + "(건너뜀: " + std::to_string(skipped_count) + ")";
+    return true;
 }
 
 // Global pointers for signal handling
@@ -630,8 +771,6 @@ int main(int argc, char* argv[]) {
 
             // Load frame into current_image using the frame loader
             if (image_loader->load_from_frame(frame, current_image)) {
-                g_gui->display_image(current_image.mat);
-                g_gui->update_status("카메라에서 프레임 캡처됨");
                 std::cout << "  Frame captured: " << current_image.mat.cols << "x" << current_image.mat.rows << std::endl;
 
                 // Save captured frame to project root directory
@@ -678,10 +817,37 @@ int main(int argc, char* argv[]) {
         live_stream->set_recognition_confidence(0.6f);
 
         bool is_streaming = false;
+        std::mutex recognition_queue_mutex;
+        std::vector<RecognitionResult> pending_recognitions;
+        long long last_displayed_frame_ts = 0;
+        auto last_frame_refresh = std::chrono::steady_clock::now();
+
+        live_stream->set_recognition_callback([&](const RecognitionResult& result) {
+            std::lock_guard<std::mutex> lock(recognition_queue_mutex);
+            pending_recognitions.push_back(result);
+        });
 
         // Set live stream start callback
         g_gui->set_live_stream_start_callback([&]() {
             std::cout << "Live Stream Start button clicked" << std::endl;
+
+            std::string training_status;
+            if (!train_recognizer_from_dataset("./dataset", *image_loader, *face_detector,
+                                               *face_recognizer, training_status)) {
+                std::cerr << "  Failed to train recognizer: " << training_status << std::endl;
+                g_gui->show_error_message("훈련 실패", training_status);
+                return;
+            }
+
+            g_gui->update_status("훈련 완료 - " + training_status);
+            std::cout << "  Recognizer trained successfully. " << training_status << std::endl;
+
+            {
+                std::lock_guard<std::mutex> lock(recognition_queue_mutex);
+                pending_recognitions.clear();
+            }
+            last_displayed_frame_ts = 0;
+            last_frame_refresh = std::chrono::steady_clock::now();  // Reset timer for live stream
 
             if (!camera->is_initialized()) {
                 if (preferred_camera_index >= 0) {
@@ -715,12 +881,39 @@ int main(int argc, char* argv[]) {
 
             live_stream->stop_stream();
             is_streaming = false;
+            {
+                std::lock_guard<std::mutex> lock(recognition_queue_mutex);
+                pending_recognitions.clear();
+            }
+            last_displayed_frame_ts = 0;
+            last_frame_refresh = std::chrono::steady_clock::now();
             g_gui->update_status("라이브 스트림 중지됨");
             std::cout << "  Live stream stopped" << std::endl;
         });
 
         std::cout << "Live Stream Manager initialized successfully" << std::endl;
         std::cout << std::endl;
+
+        g_gui->set_idle_tick_callback([&]() {
+            auto now = std::chrono::steady_clock::now();
+            if (is_streaming &&
+                std::chrono::duration_cast<std::chrono::milliseconds>(now - last_frame_refresh).count() >= 66) {
+                AnnotatedFrame annotated;
+                if (live_stream->get_latest_frame(annotated) &&
+                    !annotated.frame.empty() &&
+                    annotated.timestamp_ms != last_displayed_frame_ts) {
+                    g_gui->display_image(annotated.frame, false, true);
+                    last_displayed_frame_ts = annotated.timestamp_ms;
+                }
+                last_frame_refresh = now;
+            }
+
+            // Clear the pending recognition queue without showing popup messages
+            {
+                std::lock_guard<std::mutex> lock(recognition_queue_mutex);
+                pending_recognitions.clear();
+            }
+        });
 
         std::cout << "Starting main event loop..." << std::endl;
         std::cout << std::endl;

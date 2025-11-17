@@ -151,7 +151,13 @@ RecognitionResult FaceRecognizer::recognize_face(const cv::Mat& face_image) {
         double confidence = 0.0;
         recognizer->predict(gray_face, label, confidence);
 
-        result.person_id = "Person_" + std::to_string(label);
+        auto mapping_it = label_to_person_id.find(label);
+        if (mapping_it != label_to_person_id.end()) {
+            result.person_id = mapping_it->second;
+        } else {
+            result.person_id = "Person_" + std::to_string(label);
+        }
+        result.person_name = result.person_id;
         result.confidence = static_cast<float>(confidence);
 
         // LBPH confidence is distance, lower is better
@@ -228,4 +234,8 @@ bool FaceRecognizer::save_model(const std::string& model_path) {
         std::cerr << "Error saving model: " << e.what() << std::endl;
         return false;
     }
+}
+
+void FaceRecognizer::set_label_mapping(const std::unordered_map<int, std::string>& mapping) {
+    label_to_person_id = mapping;
 }

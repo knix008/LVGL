@@ -370,7 +370,6 @@ bool GUI::create_main_screen() {
     // Create label for image info (below canvas)
     image_label = lv_label_create(main_screen);
     lv_label_set_text(image_label, "이미지 없음");  // No image loaded in Korean
-    lv_obj_set_width(image_label, screen_width - 20);
     lv_obj_align(image_label, LV_ALIGN_TOP_MID, 0, 230);  // Below canvas (40+180+10)
     if (korean_font_16) {
         lv_obj_set_style_text_font(image_label, korean_font_16, 0);
@@ -379,7 +378,6 @@ bool GUI::create_main_screen() {
     // Create status label (below image info)
     status_label = lv_label_create(main_screen);
     lv_label_set_text(status_label, "준비됨");  // Ready in Korean
-    lv_obj_set_width(status_label, screen_width - 20);
     lv_obj_align(status_label, LV_ALIGN_TOP_MID, 0, 260);  // Below image label
     if (korean_font_16) {
         lv_obj_set_style_text_font(status_label, korean_font_16, 0);
@@ -388,7 +386,6 @@ bool GUI::create_main_screen() {
     // Create info label (below status)
     info_label = lv_label_create(main_screen);
     lv_label_set_text(info_label, "얼굴 감지 없음");  // No faces detected in Korean
-    lv_obj_set_width(info_label, screen_width - 20);
     lv_obj_align(info_label, LV_ALIGN_TOP_MID, 0, 290);  // Below status label
     if (korean_font_16) {
         lv_obj_set_style_text_font(info_label, korean_font_16, 0);
@@ -404,114 +401,54 @@ bool GUI::create_main_screen() {
 }
 
 bool GUI::create_buttons() {
-    // 3x3 grid layout centered horizontally
-    // Buttons positioned to fit within window
-    int button_width = 85;
+    // 3 buttons: Training, Camera On, Camera Off
+    // Centered horizontally at the bottom
+    int button_width = 90;
     int button_height = 40;
-    int padding = 8;
+    int padding = 5;  // Reduced gap between buttons
 
     // Calculate total width needed for 3 buttons
     int total_width = 3 * button_width + 2 * padding;
 
     // Center the buttons horizontally
     int start_x = (screen_width - total_width) / 2;
-    int start_y = screen_height - 160;  // Position higher to fit all 3 rows (160 = 3*40 + 3*8 + 16)
+    int start_y = screen_height - 55;  // Position at bottom
 
-    // Load Image button (row 1, col 1)
-    lv_obj_t* load_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(load_btn, button_width, button_height);
-    lv_obj_set_pos(load_btn, start_x, start_y);
-    lv_obj_t* load_label = lv_label_create(load_btn);
-    lv_label_set_text(load_label, "로드");
+    // Training button
+    lv_obj_t* train_btn = lv_btn_create(main_screen);
+    lv_obj_set_size(train_btn, button_width, button_height);
+    lv_obj_set_pos(train_btn, start_x, start_y);
+    lv_obj_t* train_label = lv_label_create(train_btn);
+    lv_label_set_text(train_label, "훈련");
     if (korean_font_14) {
-        lv_obj_set_style_text_font(load_label, korean_font_14, 0);
+        lv_obj_set_style_text_font(train_label, korean_font_14, 0);
     }
-    lv_obj_center(load_label);
-    lv_obj_add_event_cb(load_btn, load_image_btn_event_cb, LV_EVENT_CLICKED, this);
+    lv_obj_center(train_label);
+    lv_obj_add_event_cb(train_btn, register_person_btn_event_cb, LV_EVENT_CLICKED, this);
 
-    // Detect Face button (row 1, col 2)
-    lv_obj_t* detect_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(detect_btn, button_width, button_height);
-    lv_obj_set_pos(detect_btn, start_x + button_width + padding, start_y);
-    lv_obj_t* detect_label = lv_label_create(detect_btn);
-    lv_label_set_text(detect_label, "감지");
+    // Camera On button
+    lv_obj_t* camera_on_btn = lv_btn_create(main_screen);
+    lv_obj_set_size(camera_on_btn, button_width, button_height);
+    lv_obj_set_pos(camera_on_btn, start_x + button_width + padding, start_y);
+    lv_obj_t* camera_on_label = lv_label_create(camera_on_btn);
+    lv_label_set_text(camera_on_label, "카메라 ON");
     if (korean_font_14) {
-        lv_obj_set_style_text_font(detect_label, korean_font_14, 0);
+        lv_obj_set_style_text_font(camera_on_label, korean_font_14, 0);
     }
-    lv_obj_center(detect_label);
-    lv_obj_add_event_cb(detect_btn, detect_faces_btn_event_cb, LV_EVENT_CLICKED, this);
+    lv_obj_center(camera_on_label);
+    lv_obj_add_event_cb(camera_on_btn, live_stream_start_btn_event_cb, LV_EVENT_CLICKED, this);
 
-    // Camera button (row 1, col 3)
-    lv_obj_t* camera_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(camera_btn, button_width, button_height);
-    lv_obj_set_pos(camera_btn, start_x + 2 * (button_width + padding), start_y);
-    lv_obj_t* camera_label = lv_label_create(camera_btn);
-    lv_label_set_text(camera_label, "카메라");
+    // Camera Off button
+    lv_obj_t* camera_off_btn = lv_btn_create(main_screen);
+    lv_obj_set_size(camera_off_btn, button_width, button_height);
+    lv_obj_set_pos(camera_off_btn, start_x + 2 * (button_width + padding), start_y);
+    lv_obj_t* camera_off_label = lv_label_create(camera_off_btn);
+    lv_label_set_text(camera_off_label, "카메라 OFF");
     if (korean_font_14) {
-        lv_obj_set_style_text_font(camera_label, korean_font_14, 0);
+        lv_obj_set_style_text_font(camera_off_label, korean_font_14, 0);
     }
-    lv_obj_center(camera_label);
-    lv_obj_add_event_cb(camera_btn, camera_toggle_btn_event_cb, LV_EVENT_CLICKED, this);
-
-    // Register button (row 2, col 1)
-    lv_obj_t* register_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(register_btn, button_width, button_height);
-    lv_obj_set_pos(register_btn, start_x, start_y + button_height + padding);
-    lv_obj_t* register_label = lv_label_create(register_btn);
-    lv_label_set_text(register_label, "등록");
-    if (korean_font_14) {
-        lv_obj_set_style_text_font(register_label, korean_font_14, 0);
-    }
-    lv_obj_center(register_label);
-    lv_obj_add_event_cb(register_btn, register_person_btn_event_cb, LV_EVENT_CLICKED, this);
-
-    // Recognize button (row 2, col 2)
-    lv_obj_t* recognize_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(recognize_btn, button_width, button_height);
-    lv_obj_set_pos(recognize_btn, start_x + button_width + padding, start_y + button_height + padding);
-    lv_obj_t* recognize_label = lv_label_create(recognize_btn);
-    lv_label_set_text(recognize_label, "인식");
-    if (korean_font_14) {
-        lv_obj_set_style_text_font(recognize_label, korean_font_14, 0);
-    }
-    lv_obj_center(recognize_label);
-    lv_obj_add_event_cb(recognize_btn, recognize_person_btn_event_cb, LV_EVENT_CLICKED, this);
-
-    // Capture Frame button (row 2, col 3)
-    lv_obj_t* capture_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(capture_btn, button_width, button_height);
-    lv_obj_set_pos(capture_btn, start_x + 2 * (button_width + padding), start_y + button_height + padding);
-    lv_obj_t* capture_label = lv_label_create(capture_btn);
-    lv_label_set_text(capture_label, "캡처");
-    if (korean_font_14) {
-        lv_obj_set_style_text_font(capture_label, korean_font_14, 0);
-    }
-    lv_obj_center(capture_label);
-    lv_obj_add_event_cb(capture_btn, capture_frame_btn_event_cb, LV_EVENT_CLICKED, this);
-
-    // Live Stream Start button (row 3, col 1)
-    lv_obj_t* stream_start_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(stream_start_btn, button_width, button_height);
-    lv_obj_set_pos(stream_start_btn, start_x, start_y + 2 * (button_height + padding));
-    lv_obj_t* stream_start_label = lv_label_create(stream_start_btn);
-    lv_label_set_text(stream_start_label, "스트림");
-    if (korean_font_14) {
-        lv_obj_set_style_text_font(stream_start_label, korean_font_14, 0);
-    }
-    lv_obj_center(stream_start_label);
-    lv_obj_add_event_cb(stream_start_btn, live_stream_start_btn_event_cb, LV_EVENT_CLICKED, this);
-
-    // Live Stream Stop button (row 3, col 2)
-    lv_obj_t* stream_stop_btn = lv_btn_create(main_screen);
-    lv_obj_set_size(stream_stop_btn, button_width, button_height);
-    lv_obj_set_pos(stream_stop_btn, start_x + button_width + padding, start_y + 2 * (button_height + padding));
-    lv_obj_t* stream_stop_label = lv_label_create(stream_stop_btn);
-    lv_label_set_text(stream_stop_label, "중지");
-    if (korean_font_14) {
-        lv_obj_set_style_text_font(stream_stop_label, korean_font_14, 0);
-    }
-    lv_obj_center(stream_stop_label);
-    lv_obj_add_event_cb(stream_stop_btn, live_stream_stop_btn_event_cb, LV_EVENT_CLICKED, this);
+    lv_obj_center(camera_off_label);
+    lv_obj_add_event_cb(camera_off_btn, live_stream_stop_btn_event_cb, LV_EVENT_CLICKED, this);
 
     return true;
 }
@@ -861,6 +798,10 @@ void GUI::set_live_stream_stop_callback(std::function<void()> callback) {
     on_live_stream_stop = callback;
 }
 
+void GUI::set_idle_tick_callback(std::function<void()> callback) {
+    on_idle_tick = callback;
+}
+
 void GUI::run() {
     // Track timing for LVGL tick updates (Chunjiin8.4 pattern)
     uint32_t last_time = SDL_GetTicks();
@@ -894,6 +835,11 @@ void GUI::run() {
 
         // Handle LVGL tasks
         lv_timer_handler();
+
+        // Allow application to perform periodic work (e.g., update live stream frame)
+        if (on_idle_tick) {
+            on_idle_tick();
+        }
 
         // Small delay to reduce CPU usage (Chunjiin8.4 pattern)
         SDL_Delay(5);

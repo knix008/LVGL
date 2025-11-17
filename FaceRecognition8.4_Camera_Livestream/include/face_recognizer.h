@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include <opencv2/opencv.hpp>
 #include <opencv2/face.hpp>
 #include "common.h"
@@ -38,10 +39,14 @@ public:
     // Save trained model
     bool save_model(const std::string& model_path);
 
+    // Provide mapping between numeric labels and person IDs/names
+    void set_label_mapping(const std::unordered_map<int, std::string>& mapping);
+
 private:
     cv::Ptr<cv::face::FaceRecognizer> recognizer;
     float confidence_threshold;
     bool is_trained;
+    std::unordered_map<int, std::string> label_to_person_id;
 };
 
 #endif // FACE_RECOGNIZER_H

@@ -11,7 +11,9 @@ a.out
 *.exe
 
 # Dependencies
-lvgl/
+lvgl
+lvgl/lib/*
+lvgl/build/*
 
 # IDE and editor files
 .vscode/

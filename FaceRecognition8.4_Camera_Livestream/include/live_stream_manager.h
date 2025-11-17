@@ -7,6 +7,8 @@
 #include <atomic>
 #include <vector>
 #include <memory>
+#include <functional>
+#include <unordered_set>
 #include "common.h"
 
 // Forward declarations
@@ -62,6 +64,9 @@ public:
     // Get camera resolution
     void get_resolution(int& width, int& height) const;
 
+    // Notify application when a new person is recognized during live stream
+    void set_recognition_callback(std::function<void(const RecognitionResult&)> callback);
+
 private:
     // References to core components
     CameraCapture* camera;
@@ -94,6 +99,10 @@ private:
     int min_face_height;
     float detection_confidence_threshold;
     float recognition_confidence_threshold;
+
+    std::function<void(const RecognitionResult&)> recognition_callback;
+    std::unordered_set<std::string> recognized_persons_in_session;
+    std::mutex recognized_persons_mutex;
 
     // Main processing loop
     void process_stream();

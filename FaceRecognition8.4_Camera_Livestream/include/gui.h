@@ -57,6 +57,7 @@ public:
     void set_capture_frame_callback(std::function<void()> callback);
     void set_live_stream_start_callback(std::function<void()> callback);
     void set_live_stream_stop_callback(std::function<void()> callback);
+    void set_idle_tick_callback(std::function<void()> callback);
 
     // Main event loop
     void run();
@@ -99,6 +100,7 @@ private:
     std::function<void()> on_capture_frame;
     std::function<void()> on_live_stream_start;
     std::function<void()> on_live_stream_stop;
+    std::function<void()> on_idle_tick;
 
     // Button event handlers
     static void load_image_btn_event_cb(lv_event_t* e);

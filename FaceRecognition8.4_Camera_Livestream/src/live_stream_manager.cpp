@@ -43,6 +43,10 @@ bool LiveStreamManager::start_stream() {
     should_stop = false;
     frame_count = 0;
     last_fps_update = std::chrono::high_resolution_clock::now();
+    {
+        std::lock_guard<std::mutex> lock(recognized_persons_mutex);
+        recognized_persons_in_session.clear();
+    }
 
     try {
         processing_thread = std::thread(&LiveStreamManager::process_stream, this);
@@ -107,6 +111,10 @@ void LiveStreamManager::get_resolution(int& width, int& height) const {
     if (camera) {
         camera->get_resolution(width, height);
     }
+}
+
+void LiveStreamManager::set_recognition_callback(std::function<void(const RecognitionResult&)> callback) {
+    recognition_callback = std::move(callback);
 }
 
 void LiveStreamManager::process_stream() {
@@ -212,7 +220,29 @@ std::vector<Face> LiveStreamManager::detect_and_recognize_faces(const cv::Mat& f
         // Update face with recognition result if confidence is high enough
         if (result.confidence >= recognition_confidence_threshold) {
             face.person_id = result.person_id;
+            face.confidence = result.confidence;
             face.embedding = recognizer->get_face_embedding(face_roi);
+
+            bool should_notify = false;
+            if (!face.person_id.empty() && recognition_callback) {
+                std::lock_guard<std::mutex> lock(recognized_persons_mutex);
+                auto inserted = recognized_persons_in_session.insert(face.person_id);
+                should_notify = inserted.second;
+            }
+
+            if (should_notify && recognition_callback) {
+                RecognitionResult callback_result = result;
+                if (database) {
+                    std::string person_name;
+                    if (database->get_person_info(face.person_id, person_name)) {
+                        callback_result.person_name = person_name;
+                    }
+                }
+                if (callback_result.person_name.empty()) {
+                    callback_result.person_name = face.person_id;
+                }
+                recognition_callback(callback_result);
+            }
         } else {
             face.person_id = "Unknown";
         }
