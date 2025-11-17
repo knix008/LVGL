@@ -2,7 +2,38 @@
 
 This guide explains how to train and use a face recognition model with the GTK Webcam Viewer.
 
-## Quick Start
+## GUI Training (Easy Method)
+
+The application now includes a **"Train Model"** button in the main window for easy training:
+
+### Step 1: Prepare Dataset
+
+Create a directory structure with person names as folders:
+
+```bash
+mkdir -p dataset/Alice
+mkdir -p dataset/Bob
+mkdir -p dataset/Charlie
+```
+
+Add face images in each folder (JPG, PNG, or BMP format).
+
+### Step 2: Click Train Button
+
+1. Launch the application: `./gtk_webcam`
+2. Click the **"Train Model"** button
+3. Select the dataset folder in the file chooser dialog
+4. Wait for training to complete (status updates in the application)
+5. Model saves automatically to `face_recognizer_model.yml`
+
+### Step 3: Start Recognition
+
+1. Click **"Start Camera"** button
+2. Detected faces show names and confidence levels in real-time
+
+## Command-Line Training (Advanced Method)
+
+For scripted or automated training workflows, use these methods.
 
 ### Step 1: Create Training Dataset
 
@@ -15,7 +46,7 @@ mkdir -p dataset/Bob
 mkdir -p dataset/Charlie
 ```
 
-### Step 2: Add Face Images
+### Step 2: Add Face Images (Command-Line)
 
 Place face images in each person's folder:
 
@@ -41,7 +72,7 @@ dataset/
     └── face5.jpg
 ```
 
-### Step 3: Write Training Script
+### Step 3: Write Training Script (Command-Line)
 
 Create a file `train_model.cpp`:
 
@@ -102,7 +133,7 @@ int main() {
 }
 ```
 
-### Step 4: Compile and Run
+### Step 4: Compile and Run (Command-Line)
 
 ```bash
 # Compile with necessary libraries
