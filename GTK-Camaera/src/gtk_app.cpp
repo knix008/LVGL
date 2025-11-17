@@ -1,6 +1,7 @@
 #include "gtk_app.h"
 #include <iostream>
 #include <chrono>
+#include <filesystem>
 
 GTKApp::GTKApp()
     : window(nullptr), image_widget(nullptr), toggle_button(nullptr),
@@ -470,52 +471,40 @@ void GTKApp::train_model() {
         return;
     }
 
-    // Create file chooser dialog
-    GtkWidget* dialog = gtk_file_chooser_dialog_new(
-        "Select Training Dataset Folder",
-        GTK_WINDOW(window),
-        GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-        "Cancel", GTK_RESPONSE_CANCEL,
-        "Select", GTK_RESPONSE_ACCEPT,
-        nullptr);
+    // Use "dataset" folder from current directory
+    std::string dataset_path = "dataset";
 
-    gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(dialog), TRUE);
-
-    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-
-    if (result == GTK_RESPONSE_ACCEPT) {
-        char* folder_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-
-        if (folder_path != nullptr) {
-            training_in_progress = true;
-            gtk_widget_set_sensitive(train_button, FALSE);
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model... please wait");
-
-            std::cout << "Starting training from: " << folder_path << std::endl;
-
-            // Train the model
-            bool success = face_recognizer.train_from_images(folder_path);
-
-            if (success) {
-                // Save the trained model
-                if (face_recognizer.save_model("face_recognizer_model.yml")) {
-                    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
-                    face_recognition_enabled = true;
-                    std::cout << "Training successful!" << std::endl;
-                } else {
-                    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
-                    std::cerr << "Failed to save model" << std::endl;
-                }
-            } else {
-                gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check dataset format");
-                std::cerr << "Training failed" << std::endl;
-            }
-
-            g_free(folder_path);
-            training_in_progress = false;
-            gtk_widget_set_sensitive(train_button, TRUE);
-        }
+    // Check if dataset folder exists
+    if (!std::filesystem::exists(dataset_path)) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - 'dataset' folder not found!");
+        std::cerr << "Error: 'dataset' folder not found in current directory" << std::endl;
+        return;
     }
 
-    gtk_widget_destroy(dialog);
+    training_in_progress = true;
+    gtk_widget_set_sensitive(train_button, FALSE);
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from 'dataset' folder... please wait");
+
+    std::cout << "Starting training from: " << dataset_path << std::endl;
+
+    // Train the model
+    bool success = face_recognizer.train_from_images(dataset_path);
+
+    if (success) {
+        // Save the trained model
+        if (face_recognizer.save_model("face_recognizer_model.yml")) {
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
+            face_recognition_enabled = true;
+            std::cout << "Training successful!" << std::endl;
+        } else {
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
+            std::cerr << "Failed to save model" << std::endl;
+        }
+    } else {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check 'dataset' folder format");
+        std::cerr << "Training failed" << std::endl;
+    }
+
+    training_in_progress = false;
+    gtk_widget_set_sensitive(train_button, TRUE);
 }
