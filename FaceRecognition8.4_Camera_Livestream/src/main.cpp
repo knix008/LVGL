@@ -221,6 +221,18 @@ static bool train_recognizer_from_dataset(const std::string& dataset_dir,
         return false;
     }
 
+    std::cout << "Training recognizer with " << training_faces.size() << " faces and "
+              << labels.size() << " labels" << std::endl;
+    std::cout << "Label mapping has " << label_to_person.size() << " entries" << std::endl;
+
+    // Validate that training_faces and labels have the same size
+    if (training_faces.size() != labels.size()) {
+        status_message = "얼굴 이미지와 라벨 수가 일치하지 않습니다";
+        std::cerr << "Error: training_faces.size()=" << training_faces.size()
+                  << " but labels.size()=" << labels.size() << std::endl;
+        return false;
+    }
+
     if (!face_recognizer.train_faces(training_faces, labels)) {
         status_message = "얼굴 인식기 훈련에 실패했습니다";
         return false;
@@ -231,6 +243,7 @@ static bool train_recognizer_from_dataset(const std::string& dataset_dir,
     status_message = "인원: " + std::to_string(person_to_label.size()) + "명, "
                    + "이미지: " + std::to_string(processed_count) + "개 "
                    + "(건너뜀: " + std::to_string(skipped_count) + ")";
+    std::cout << "Training complete: " << status_message << std::endl;
     return true;
 }
 
@@ -621,8 +634,12 @@ int main(int argc, char* argv[]) {
                 const auto& person_id = all_persons[i];
                 std::string person_dir = "./dataset/" + person_id;
 
+                std::cout << "Processing person " << (i+1) << "/" << all_persons.size()
+                          << ": " << person_id << " (label: " << label_id << ")" << std::endl;
+
                 // Try to load face images from the person directory
                 try {
+                    int face_count = 0;
                     for (const auto& entry : std::filesystem::directory_iterator(person_dir)) {
                         if (entry.is_regular_file()) {
                             std::string filename = entry.path().filename().string();
@@ -645,13 +662,16 @@ int main(int argc, char* argv[]) {
 
                                     training_faces.push_back(gray_face);
                                     labels.push_back(label_id);
+                                    face_count++;
 
-                                    std::cout << "  Loaded face image: " << filename
-                                              << " (label: " << label_id << ")" << std::endl;
+                                    std::cout << "    Loaded face image " << face_count
+                                              << ": " << filename << " (label: " << label_id
+                                              << ", total: " << training_faces.size() << ")" << std::endl;
                                 }
                             }
                         }
                     }
+                    std::cout << "  Loaded " << face_count << " face images for " << person_id << std::endl;
                 } catch (const std::exception& e) {
                     std::cerr << "Error loading faces for person " << person_id << ": " << e.what() << std::endl;
                 }
@@ -660,6 +680,10 @@ int main(int argc, char* argv[]) {
                 label_to_person_id[label_id] = person_id;
                 label_id++;
             }
+
+            std::cout << "Finished loading faces. Total persons: " << all_persons.size()
+                      << ", Total faces: " << training_faces.size()
+                      << ", Labels: " << labels.size() << std::endl;
 
             if (training_faces.empty()) {
                 g_gui->show_error_message("오류", "훈련을 위한 얼굴 이미지가 데이터베이스에 없습니다");
@@ -683,6 +707,12 @@ int main(int argc, char* argv[]) {
                 // Get the person name from the label
                 // person_id format is "Person_X" where X is the label index
                 try {
+                    // Validate person_id format before parsing
+                    if (last_recognition.person_id.length() <= 7 ||
+                        last_recognition.person_id.substr(0, 7) != "Person_") {
+                        throw std::runtime_error("Invalid person_id format: " + last_recognition.person_id);
+                    }
+
                     int predicted_label = std::stoi(last_recognition.person_id.substr(7));  // Extract number from "Person_X" (7 chars = length of "Person_")
                     std::string person_name;
                     if (label_to_person_id.find(predicted_label) != label_to_person_id.end()) {
@@ -696,6 +726,7 @@ int main(int argc, char* argv[]) {
                         std::to_string(static_cast<int>(last_recognition.confidence * 100)) + "%)");
                 } catch (const std::exception& e) {
                     std::cerr << "Error parsing recognition result: " << e.what() << std::endl;
+                    std::cerr << "  person_id was: " << last_recognition.person_id << std::endl;
                     g_gui->show_error_message("오류", "인식 결과 처리 실패");
                 }
             } else {
@@ -831,16 +862,36 @@ int main(int argc, char* argv[]) {
         g_gui->set_live_stream_start_callback([&]() {
             std::cout << "Live Stream Start button clicked" << std::endl;
 
-            std::string training_status;
-            if (!train_recognizer_from_dataset("./dataset", *image_loader, *face_detector,
-                                               *face_recognizer, training_status)) {
-                std::cerr << "  Failed to train recognizer: " << training_status << std::endl;
-                g_gui->show_error_message("훈련 실패", training_status);
+            try {
+                std::string training_status;
+                std::cout << "  Calling train_recognizer_from_dataset..." << std::endl;
+
+                if (!train_recognizer_from_dataset("./dataset", *image_loader, *face_detector,
+                                                   *face_recognizer, training_status)) {
+                    std::cerr << "  Failed to train recognizer: " << training_status << std::endl;
+                    g_gui->show_error_message("훈련 실패", training_status);
+                    return;
+                }
+
+                g_gui->update_status("훈련 완료 - " + training_status);
+                std::cout << "  Recognizer trained successfully. " << training_status << std::endl;
+            } catch (const std::out_of_range& e) {
+                std::cerr << "  OUT_OF_RANGE exception during training: " << e.what() << std::endl;
+                g_gui->show_error_message("오류", "Vector index out of range: " + std::string(e.what()));
+                return;
+            } catch (const cv::Exception& e) {
+                std::cerr << "  OpenCV exception during training: " << e.what() << std::endl;
+                g_gui->show_error_message("OpenCV 오류", e.msg);
+                return;
+            } catch (const std::exception& e) {
+                std::cerr << "  Exception during training: " << e.what() << std::endl;
+                g_gui->show_error_message("오류", std::string(e.what()));
+                return;
+            } catch (...) {
+                std::cerr << "  Unknown exception during training!" << std::endl;
+                g_gui->show_error_message("오류", "Unknown error during training");
                 return;
             }
-
-            g_gui->update_status("훈련 완료 - " + training_status);
-            std::cout << "  Recognizer trained successfully. " << training_status << std::endl;
 
             {
                 std::lock_guard<std::mutex> lock(recognition_queue_mutex);
@@ -878,7 +929,15 @@ int main(int argc, char* argv[]) {
         // Set live stream stop callback
         g_gui->set_live_stream_stop_callback([&]() {
             std::cout << "Live Stream Stop button clicked" << std::endl;
+            std::cout << "  Current is_streaming state: " << (is_streaming ? "true" : "false") << std::endl;
 
+            if (!is_streaming) {
+                std::cout << "  WARNING: Stop called but stream is not running" << std::endl;
+                g_gui->update_status("스트림이 실행 중이 아닙니다");
+                return;
+            }
+
+            std::cout << "  Calling live_stream->stop_stream()..." << std::endl;
             live_stream->stop_stream();
             is_streaming = false;
             {
@@ -888,7 +947,7 @@ int main(int argc, char* argv[]) {
             last_displayed_frame_ts = 0;
             last_frame_refresh = std::chrono::steady_clock::now();
             g_gui->update_status("라이브 스트림 중지됨");
-            std::cout << "  Live stream stopped" << std::endl;
+            std::cout << "  Live stream stopped successfully" << std::endl;
         });
 
         std::cout << "Live Stream Manager initialized successfully" << std::endl;

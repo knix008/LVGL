@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <set>
 
 FaceRecognizer::FaceRecognizer()
     : confidence_threshold(0.6f), is_trained(false) {
@@ -36,14 +37,52 @@ bool FaceRecognizer::train_faces(const std::vector<cv::Mat>& faces,
         return false;
     }
 
+    // Validate all face images and labels
+    std::set<int> unique_labels;
+    for (size_t i = 0; i < faces.size(); ++i) {
+        if (faces[i].empty()) {
+            std::cerr << "Face image " << i << " is empty!" << std::endl;
+            return false;
+        }
+        if (faces[i].channels() != 1) {
+            std::cerr << "Face image " << i << " is not grayscale (has "
+                      << faces[i].channels() << " channels)" << std::endl;
+            return false;
+        }
+        if (labels[i] < 0) {
+            std::cerr << "Face image " << i << " has invalid label: " << labels[i] << std::endl;
+            return false;
+        }
+        unique_labels.insert(labels[i]);
+        std::cout << "Face " << i << ": " << faces[i].cols << "x" << faces[i].rows
+                  << " channels=" << faces[i].channels()
+                  << " label=" << labels[i] << std::endl;
+    }
+
+    std::cout << "Training with " << unique_labels.size() << " unique labels: ";
+    for (int lbl : unique_labels) {
+        std::cout << lbl << " ";
+    }
+    std::cout << std::endl;
+
     try {
+        std::cout << "Calling OpenCV LBPH recognizer train() with "
+                  << faces.size() << " faces..." << std::endl;
         // Train the recognizer
         recognizer->train(faces, labels);
         is_trained = true;
-        std::cout << "Recognizer trained with " << faces.size() << " faces" << std::endl;
+        std::cout << "Recognizer trained successfully with " << faces.size() << " faces" << std::endl;
         return true;
+    } catch (const cv::Exception& e) {
+        std::cerr << "OpenCV error during training: " << e.what() << std::endl;
+        std::cerr << "  Error code: " << e.code << std::endl;
+        std::cerr << "  Error msg: " << e.msg << std::endl;
+        return false;
     } catch (const std::exception& e) {
         std::cerr << "Error during training: " << e.what() << std::endl;
+        return false;
+    } catch (...) {
+        std::cerr << "Unknown error during training" << std::endl;
         return false;
     }
 }

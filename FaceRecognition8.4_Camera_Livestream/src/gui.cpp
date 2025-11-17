@@ -510,10 +510,18 @@ void GUI::live_stream_start_btn_event_cb(lv_event_t* e) {
 }
 
 void GUI::live_stream_stop_btn_event_cb(lv_event_t* e) {
+    std::cout << "Live stream stop button event callback triggered" << std::endl;
     GUI* gui = static_cast<GUI*>(lv_event_get_user_data(e));
-    if (gui && gui->on_live_stream_stop) {
-        gui->on_live_stream_stop();
+    if (!gui) {
+        std::cerr << "ERROR: GUI pointer is null in stop button callback!" << std::endl;
+        return;
     }
+    if (!gui->on_live_stream_stop) {
+        std::cerr << "ERROR: on_live_stream_stop callback is not set!" << std::endl;
+        return;
+    }
+    std::cout << "Calling on_live_stream_stop callback..." << std::endl;
+    gui->on_live_stream_stop();
 }
 
 bool GUI::display_image(const cv::Mat& image, bool is_rgb, bool auto_resize) {
