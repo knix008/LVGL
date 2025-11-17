@@ -316,8 +316,67 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
     try {
         for (const auto& face : faces) {
-            // Draw bounding box
-            cv::rectangle(frame, face.bbox, cv::Scalar(0, 255, 0), 2);
+            // Increase face area by 30% to hide the face itself
+            int width = face.bbox.width;
+            int height = face.bbox.height;
+            int new_width = static_cast<int>(width * 1.3);
+            int new_height = static_cast<int>(height * 1.3);
+
+            // Calculate centered expansion
+            int x_offset = (new_width - width) / 2;
+            int y_offset = (new_height - height) / 2;
+
+            cv::Rect expanded_bbox(
+                face.bbox.x - x_offset,
+                face.bbox.y - y_offset,
+                new_width,
+                new_height
+            );
+
+            // Draw corner boxes (not full rectangle)
+            int corner_length = static_cast<int>(new_width * 0.15); // 15% of width for corner length
+            cv::Scalar color = cv::Scalar(0, 255, 0); // Green color
+            int thickness = 3;
+
+            // Top-left corner
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y),
+                    color, thickness);
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + corner_length),
+                    color, thickness);
+
+            // Top-right corner
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y),
+                    color, thickness);
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + corner_length),
+                    color, thickness);
+
+            // Bottom-left corner
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + expanded_bbox.height),
+                    color, thickness);
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height - corner_length),
+                    color, thickness);
+
+            // Bottom-right corner
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y + expanded_bbox.height),
+                    color, thickness);
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
+                    color, thickness);
 
             // Draw face label with name and confidence
             std::string label = face.name;
@@ -328,15 +387,15 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             int baseline = 0;
             cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
 
-            // Draw background for text
+            // Draw background for text (above the face area)
             cv::rectangle(frame,
-                         cv::Point(face.bbox.x, face.bbox.y - text_size.height - 5),
-                         cv::Point(face.bbox.x + text_size.width, face.bbox.y),
+                         cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
+                         cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
                          cv::Scalar(0, 255, 0), -1);
 
             // Draw text
             cv::putText(frame, label,
-                       cv::Point(face.bbox.x, face.bbox.y - 5),
+                       cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
         }
     } catch (const std::exception& e) {
