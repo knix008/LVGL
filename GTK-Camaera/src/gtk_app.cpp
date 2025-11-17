@@ -482,100 +482,27 @@ void GTKApp::train_model() {
 
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
-    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from database... please wait");
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from dataset... please wait");
 
-    std::cout << "Starting training from database..." << std::endl;
+    std::cout << "Starting training from dataset..." << std::endl;
 
-    try {
-        // Get all people from database
-        std::vector<PersonRecord> all_people;
-        if (!face_database.get_all_people(all_people)) {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - failed to retrieve people from database");
-            std::cerr << "Failed to get people from database" << std::endl;
-            training_in_progress = false;
-            gtk_widget_set_sensitive(train_button, TRUE);
-            return;
-        }
+    // Train using the dataset folder (person subdirectories)
+    // This reads from dataset/A1/, dataset/B2/, etc.
+    bool success = face_recognizer.train_from_images("dataset");
 
-        if (all_people.empty()) {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - no people registered in database!");
-            std::cerr << "No people found in database" << std::endl;
-            training_in_progress = false;
-            gtk_widget_set_sensitive(train_button, TRUE);
-            return;
-        }
-
-        // Load images and prepare training data
-        std::vector<cv::Mat> training_images;
-        std::vector<int> training_labels;
-        int label = 0;
-
-        std::cout << "Found " << all_people.size() << " people in database" << std::endl;
-
-        for (const auto& person : all_people) {
-            // Get all face images for this person
-            std::vector<std::string> image_paths;
-            if (!face_database.get_face_images(person.id, image_paths)) {
-                std::cerr << "Failed to get face images for person: " << person.name << std::endl;
-                continue;
-            }
-
-            if (image_paths.empty()) {
-                std::cerr << "Warning: No images found for person: " << person.name << std::endl;
-                continue;
-            }
-
-            std::cout << "Loading " << image_paths.size() << " images for person: " << person.name << std::endl;
-
-            // Load each image for this person
-            for (const auto& image_path : image_paths) {
-                cv::Mat img = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-                if (img.empty()) {
-                    std::cerr << "Warning: Failed to load image: " << image_path << std::endl;
-                    continue;
-                }
-
-                // Resize to standard size
-                cv::Mat resized;
-                cv::resize(img, resized, cv::Size(200, 200));
-
-                training_images.push_back(resized);
-                training_labels.push_back(label);
-
-                std::cout << "  Loaded: " << image_path << " (label: " << label << ")" << std::endl;
-            }
-
-            label++;
-        }
-
-        if (training_images.empty()) {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - no valid training images in database");
-            std::cerr << "No valid training images loaded from database" << std::endl;
-            training_in_progress = false;
-            gtk_widget_set_sensitive(train_button, TRUE);
-            return;
-        }
-
-        std::cout << "Training with " << training_images.size() << " images from " << all_people.size() << " people" << std::endl;
-
-        // Train the recognizer
-        if (face_recognizer.train(training_images, training_labels)) {
-            // Save the trained model
-            if (face_recognizer.save_model("face_recognizer_model.yml")) {
-                gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
-                face_recognition_enabled = true;
-                std::cout << "Training successful! Model saved." << std::endl;
-            } else {
-                gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
-                std::cerr << "Failed to save model" << std::endl;
-            }
+    if (success) {
+        // Save the trained model
+        if (face_recognizer.save_model("face_recognizer_model.yml")) {
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Model saved.");
+            face_recognition_enabled = true;
+            std::cout << "Training successful! Model saved." << std::endl;
         } else {
-            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed");
-            std::cerr << "Training failed" << std::endl;
+            gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - could not save model");
+            std::cerr << "Failed to save model" << std::endl;
         }
-    } catch (const std::exception& e) {
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training error");
-        std::cerr << "Exception during training: " << e.what() << std::endl;
+    } else {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check dataset folder or add photos first");
+        std::cerr << "Training failed" << std::endl;
     }
 
     training_in_progress = false;
