@@ -340,33 +340,58 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                 new_height
             );
 
-            // Draw corner boxes only (four filled corner rectangles)
+            // Draw corner lines only (horizontal and vertical lines at each corner)
             int corner_length = static_cast<int>(new_width * 0.15); // 15% of width for corner length
+            int line_thickness = 2;
             cv::Scalar color = cv::Scalar(0, 255, 0); // Green color
 
-            // Top-left corner rectangle (filled)
-            cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x, expanded_bbox.y),
-                         cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + corner_length),
-                         color, -1);  // -1 for filled rectangle
+            // Top-left corner
+            // Horizontal line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y),
+                    color, line_thickness);
+            // Vertical line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + corner_length),
+                    color, line_thickness);
 
-            // Top-right corner rectangle (filled)
-            cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y),
-                         cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + corner_length),
-                         color, -1);  // -1 for filled rectangle
+            // Top-right corner
+            // Horizontal line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y),
+                    color, line_thickness);
+            // Vertical line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + corner_length),
+                    color, line_thickness);
 
-            // Bottom-left corner rectangle (filled)
-            cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height - corner_length),
-                         cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + expanded_bbox.height),
-                         color, -1);  // -1 for filled rectangle
+            // Bottom-left corner
+            // Horizontal line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + corner_length, expanded_bbox.y + expanded_bbox.height),
+                    color, line_thickness);
+            // Vertical line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x, expanded_bbox.y + expanded_bbox.height - corner_length),
+                    color, line_thickness);
 
-            // Bottom-right corner rectangle (filled)
-            cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y + expanded_bbox.height - corner_length),
-                         cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
-                         color, -1);  // -1 for filled rectangle
+            // Bottom-right corner
+            // Horizontal line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width - corner_length, expanded_bbox.y + expanded_bbox.height),
+                    color, line_thickness);
+            // Vertical line
+            cv::line(frame,
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height),
+                    cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
+                    color, line_thickness);
 
             // Draw face label with name and confidence
             std::string label = face.name;
