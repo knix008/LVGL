@@ -253,11 +253,17 @@ std::vector<Face> LiveStreamManager::detect_and_recognize_faces(const cv::Mat& f
 
 void LiveStreamManager::draw_face_annotations(cv::Mat& frame, const std::vector<Face>& faces) {
     for (const auto& face : faces) {
-        // Draw corner boxes instead of full rectangle
-        int x1 = face.bbox.x;
-        int y1 = face.bbox.y;
-        int x2 = face.bbox.x + face.bbox.width;
-        int y2 = face.bbox.y + face.bbox.height;
+        // Expand bounding box by 20%
+        int expanded_width = static_cast<int>(face.bbox.width * 1.2);
+        int expanded_height = static_cast<int>(face.bbox.height * 1.2);
+        int expand_x = (expanded_width - face.bbox.width) / 2;
+        int expand_y = (expanded_height - face.bbox.height) / 2;
+
+        // Calculate expanded corner coordinates with boundary checks
+        int x1 = std::max(0, face.bbox.x - expand_x);
+        int y1 = std::max(0, face.bbox.y - expand_y);
+        int x2 = std::min(frame.cols - 1, face.bbox.x + face.bbox.width + expand_x);
+        int y2 = std::min(frame.rows - 1, face.bbox.y + face.bbox.height + expand_y);
 
         int corner_length = 20;  // Length of corner marks
         int line_thickness = 2;
@@ -292,7 +298,7 @@ void LiveStreamManager::draw_face_annotations(cv::Mat& frame, const std::vector<
         int baseline = 0;
         cv::Size text_size = cv::getTextSize(label, font_face, font_scale, thickness, &baseline);
 
-        cv::Point text_origin(face.bbox.x, face.bbox.y - 5);
+        cv::Point text_origin(x1, y1 - 5);
         cv::rectangle(frame,
                       cv::Point(text_origin.x, text_origin.y - text_size.height - 5),
                       cv::Point(text_origin.x + text_size.width, text_origin.y + baseline),
