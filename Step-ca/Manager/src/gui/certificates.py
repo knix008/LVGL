@@ -5,8 +5,9 @@ Certificates Tab - Certificate Management
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango, GLib
 import os
+import threading
 from pathlib import Path
 
 
@@ -197,16 +198,39 @@ class CertificatesTab(Gtk.Box):
             self.show_error("Please enter a common name")
             return
 
+        # Get provisioner password
+        password = self.show_password_dialog("Enter Provisioner Password",
+                                            "Enter the provisioner password to request a certificate:")
+        if password is None:  # User cancelled
+            return
+
+        # Disable button and show progress
+        button.set_sensitive(False)
+        button.set_label("Requesting...")
+
         # Generate paths
         cert_path = self.cert_dir / f"{cn}.crt"
         key_path = self.cert_dir / f"{cn}.key"
 
-        # Request certificate
-        success, message = self.stepca.request_certificate(
-            cn,
-            str(cert_path),
-            str(key_path)
-        )
+        # Run in background thread
+        def request_cert_thread():
+            success, message = self.stepca.request_certificate(
+                cn,
+                str(cert_path),
+                str(key_path),
+                provisioner_password=password
+            )
+
+            # Schedule UI update on main thread
+            GLib.idle_add(self._on_request_certificate_done, button, cn, success, message)
+
+        thread = threading.Thread(target=request_cert_thread, daemon=True)
+        thread.start()
+
+    def _on_request_certificate_done(self, button, cn, success, message):
+        """Called when certificate request completes"""
+        button.set_sensitive(True)
+        button.set_label("Request Certificate")
 
         if success:
             self.show_info(f"Certificate requested successfully for {cn}")
@@ -214,6 +238,8 @@ class CertificatesTab(Gtk.Box):
             self.refresh()
         else:
             self.show_error(f"Failed to request certificate:\n{message}")
+
+        return False  # Don't call again
 
     def on_cert_selected(self, selection):
         """Handle certificate selection"""
@@ -269,13 +295,30 @@ class CertificatesTab(Gtk.Box):
         dialog.destroy()
 
         if response == Gtk.ResponseType.YES:
-            success, message = self.stepca.renew_certificate(cert_path, key_path)
+            # Get provisioner password
+            password = self.show_password_dialog("Enter Provisioner Password",
+                                                "Enter the provisioner password to renew the certificate:")
+            if password is None:  # User cancelled
+                return
 
-            if success:
-                self.show_info(f"Certificate renewed successfully")
-                self.refresh()
-            else:
-                self.show_error(f"Failed to renew certificate:\n{message}")
+            # Run in background thread
+            def renew_cert_thread():
+                success, message = self.stepca.renew_certificate(cert_path, key_path,
+                                                                provisioner_password=password)
+                GLib.idle_add(self._on_renew_certificate_done, name, success, message)
+
+            thread = threading.Thread(target=renew_cert_thread, daemon=True)
+            thread.start()
+
+    def _on_renew_certificate_done(self, name, success, message):
+        """Called when certificate renewal completes"""
+        if success:
+            self.show_info(f"Certificate renewed successfully")
+            self.refresh()
+        else:
+            self.show_error(f"Failed to renew certificate:\n{message}")
+
+        return False
 
     def on_revoke_certificate(self, button):
         """Handle revoke certificate button"""
@@ -300,13 +343,62 @@ class CertificatesTab(Gtk.Box):
         dialog.destroy()
 
         if response == Gtk.ResponseType.YES:
-            success, message = self.stepca.revoke_certificate(cert_path)
+            # Run in background thread
+            def revoke_cert_thread():
+                success, message = self.stepca.revoke_certificate(cert_path)
+                GLib.idle_add(self._on_revoke_certificate_done, name, success, message)
 
-            if success:
-                self.show_info(f"Certificate revoked successfully")
-                self.refresh()
-            else:
-                self.show_error(f"Failed to revoke certificate:\n{message}")
+            thread = threading.Thread(target=revoke_cert_thread, daemon=True)
+            thread.start()
+
+    def _on_revoke_certificate_done(self, name, success, message):
+        """Called when certificate revocation completes"""
+        if success:
+            self.show_info(f"Certificate revoked successfully")
+            self.refresh()
+        else:
+            self.show_error(f"Failed to revoke certificate:\n{message}")
+
+        return False
+
+    def show_password_dialog(self, title, message):
+        """Show password input dialog
+
+        Returns:
+            The password string or None if cancelled
+        """
+        dialog = Gtk.Dialog(
+            title=title,
+            transient_for=self.get_toplevel(),
+            flags=0
+        )
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                          Gtk.STOCK_OK, Gtk.ResponseType.OK)
+
+        box = dialog.get_content_area()
+        box.set_margin_top(10)
+        box.set_margin_bottom(10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+
+        # Add label
+        label = Gtk.Label(label=message)
+        label.set_halign(Gtk.Align.START)
+        box.pack_start(label, False, False, 0)
+
+        # Add password entry
+        password_entry = Gtk.Entry()
+        password_entry.set_visibility(False)
+        password_entry.set_placeholder_text("Enter password")
+        box.pack_start(password_entry, False, False, 10)
+
+        box.show_all()
+
+        response = dialog.run()
+        password = password_entry.get_text() if response == Gtk.ResponseType.OK else None
+        dialog.destroy()
+
+        return password
 
     def show_error(self, message):
         """Show error dialog"""
