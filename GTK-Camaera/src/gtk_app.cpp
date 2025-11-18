@@ -163,10 +163,20 @@ gboolean GTKApp::refresh_frame() {
                                 best_person_name = face.name;
                             }
                         } else {
+                            // Set name to "Unknown" for unrecognized faces
+                            face.name = "Unknown";
+                            face.confidence = confidence * 100.0;  // Store confidence even for unknown
+                            face.id = -1;
                             unknown_count++;
                         }
                     }
                 } else if (!faces.empty()) {
+                    // Set all faces to "Unknown" if model not trained
+                    for (auto& face : faces) {
+                        face.name = "Unknown";
+                        face.confidence = 0.0;
+                        face.id = -1;
+                    }
                     unknown_count = faces.size();
                 }
 
@@ -405,28 +415,35 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                     cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
                     color, line_thickness);
 
-            // Only draw label if confidence is above 50%
-            if (face.confidence > 50.0) {
-                // Draw face label with name and confidence
-                std::string label = face.name;
-                if (face.confidence > 0) {
-                    label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
-                }
-
-                int baseline = 0;
-                cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
-
-                // Draw background for text (above the face area)
-                cv::rectangle(frame,
-                             cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
-                             cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
-                             cv::Scalar(0, 255, 0), -1);
-
-                // Draw text
-                cv::putText(frame, label,
-                           cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
-                           cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
+            // Draw label with name and confidence
+            std::string label = face.name;
+            if (face.confidence > 0 && face.name != "Unknown") {
+                label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
             }
+
+            int baseline = 0;
+            cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+
+            // Use different background color based on confidence and recognition status
+            cv::Scalar bg_color;
+            if (face.name == "Unknown") {
+                bg_color = cv::Scalar(0, 255, 255);  // Yellow background for unknown faces
+            } else if (face.confidence > 50.0) {
+                bg_color = cv::Scalar(0, 255, 0);   // Green background for recognized faces
+            } else {
+                bg_color = cv::Scalar(0, 255, 255);  // Yellow background for low confidence
+            }
+
+            // Draw background for text (above the face area)
+            cv::rectangle(frame,
+                         cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
+                         cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
+                         bg_color, -1);
+
+            // Draw text
+            cv::putText(frame, label,
+                       cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
         }
     } catch (const std::exception& e) {
         std::cerr << "Exception in draw_faces_on_frame: " << e.what() << std::endl;
