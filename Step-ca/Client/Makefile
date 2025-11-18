@@ -1,9 +1,9 @@
-# Makefile for HTTPS Client using Mongoose
+# Makefile for HTTPS Client using OpenSSL
 
 # Compiler settings
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -Wextra -O2 -DMG_ENABLE_OPENSSL=1
+CFLAGS = -Wall -Wextra -O2
 LDFLAGS = -lssl -lcrypto
 
 # Directories
@@ -11,20 +11,15 @@ SRC_DIR = .
 BUILD_DIR = build
 CERTS_DIR = certs
 
-# Mongoose settings
-MONGOOSE_VERSION = 7.13
-MONGOOSE_URL = https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.c
-MONGOOSE_H_URL = https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.h
-
 # Source files
-SOURCES = client.c mongoose.c
-OBJECTS = $(BUILD_DIR)/client.o $(BUILD_DIR)/mongoose.o
+SOURCES = client.c
+OBJECTS = $(BUILD_DIR)/client.o
 TARGET = $(BUILD_DIR)/client
 
-.PHONY: all clean test setup-certs mongoose help
+.PHONY: all clean test setup-certs help
 
 # Default target
-all: mongoose $(TARGET)
+all: $(TARGET)
 
 # Help
 help:
@@ -43,30 +38,12 @@ help:
 	@echo "  2. make setup-certs  # Setup certificates with step-ca"
 	@echo "  3. make test         # Test the client"
 
-# Download Mongoose
-mongoose: mongoose.c mongoose.h
-
-mongoose.c:
-	@echo "Downloading mongoose.c..."
-	@wget -q $(MONGOOSE_URL) -O mongoose.c || curl -s $(MONGOOSE_URL) -o mongoose.c
-	@echo "Downloaded mongoose.c"
-
-mongoose.h:
-	@echo "Downloading mongoose.h..."
-	@wget -q $(MONGOOSE_H_URL) -O mongoose.h || curl -s $(MONGOOSE_H_URL) -o mongoose.h
-	@echo "Downloaded mongoose.h"
-
 # Build directory
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-# Compile mongoose
-$(BUILD_DIR)/mongoose.o: mongoose.c mongoose.h | $(BUILD_DIR)
-	@echo "Compiling mongoose.c..."
-	@$(CC) $(CFLAGS) -c mongoose.c -o $(BUILD_DIR)/mongoose.o
-
 # Compile client
-$(BUILD_DIR)/client.o: client.c mongoose.h | $(BUILD_DIR)
+$(BUILD_DIR)/client.o: client.c | $(BUILD_DIR)
 	@echo "Compiling client.c..."
 	@$(CC) $(CFLAGS) -c client.c -o $(BUILD_DIR)/client.o
 
@@ -99,10 +76,30 @@ setup-certs:
 # Automated certificate setup (requires step-ca to be running)
 run-cert-setup:
 	@mkdir -p $(CERTS_DIR)
-	@echo "Fetching root certificate..."
-	@../bin/step ca root $(CERTS_DIR)/root_ca.crt
-	@echo "Requesting client certificate..."
-	@../bin/step ca certificate client $(CERTS_DIR)/client.crt $(CERTS_DIR)/client.key
+	@echo "Setting up certificates..."
+	@echo ""
+	@echo "Step 1: Copying root certificate from ~/.step/certs/"
+	@if [ -f "$(HOME)/.step/certs/root_ca.crt" ]; then \
+		cp $(HOME)/.step/certs/root_ca.crt $(CERTS_DIR)/root_ca.crt; \
+		echo "✓ Root certificate copied successfully"; \
+	else \
+		echo "Error: Root certificate not found at $(HOME)/.step/certs/root_ca.crt"; \
+		echo "Please ensure step-ca is initialized first."; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "Step 2: Requesting client certificate..."
+	@if [ -f "$(HOME)/.step/secrets/password" ]; then \
+		echo "Using provisioner password from ~/.step/secrets/password"; \
+		../bin/step ca certificate --ca-url https://localhost:9000 --force \
+			--provisioner-password-file=$(HOME)/.step/secrets/password \
+			client $(CERTS_DIR)/client.crt $(CERTS_DIR)/client.key; \
+	else \
+		echo "Error: Provisioner password file not found at $(HOME)/.step/secrets/password"; \
+		echo "Please ensure step-ca is initialized first."; \
+		exit 1; \
+	fi
+	@echo ""
 	@echo "Certificates generated successfully!"
 	@ls -la $(CERTS_DIR)/
 
@@ -117,11 +114,11 @@ test: $(TARGET)
 	@echo "=== Test 1: GET / ==="
 	@$(TARGET) -u https://localhost:8443/
 	@echo ""
-	@echo "=== Test 2: GET /api/status ==="
-	@$(TARGET) -u https://localhost:8443/api/status
+	@echo "=== Test 2: GET /api/v1/getserverinfo ==="
+	@$(TARGET) -u https://localhost:8443/api/v1/getserverinfo
 	@echo ""
-	@echo "=== Test 3: GET /api/info ==="
-	@$(TARGET) -u https://localhost:8443/api/info
+	@echo "=== Test 3: GET /api/status ==="
+	@$(TARGET) -u https://localhost:8443/api/status
 	@echo ""
 	@echo "All tests completed!"
 
@@ -146,7 +143,6 @@ test-post: $(TARGET)
 clean:
 	@echo "Cleaning..."
 	@rm -rf $(BUILD_DIR)
-	@rm -f mongoose.c mongoose.h
 	@echo "Clean complete."
 
 # Clean everything including certificates

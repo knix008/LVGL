@@ -1,6 +1,8 @@
 # Build directories
 build/
 bin/
+Server/build/
+Client/build/
 
 # Compiled binaries
 *.o

@@ -59,15 +59,18 @@ Step-ca/
 - **Step-CA**: Private Certificate Authority for issuing certificates
 - **GUI Applications**: Three GTK-based graphical interfaces:
   - **Step-CA Manager**: Manage certificates and provisioners
-  - **Server Control Panel**: Monitor and control HTTPS server (NEW!)
-  - **Client GUI**: Visual HTTPS request builder (NEW!)
-- **HTTPS Server**: Secure web server with TLS support (C implementation)
-- **HTTPS Client**: Client with certificate-based authentication (C implementation)
+  - **Server Control Panel**: Monitor and control HTTPS server
+  - **Client GUI**: Visual HTTPS request builder with settings persistence
+- **HTTPS Server**: Secure web server with Mongoose for web interface (TLS 1.3 support)
+- **HTTPS Client**: Simplified client using OpenSSL directly for API calls (TLS 1.3 support)
 - **Mutual TLS (mTLS)**: Both server and client authenticate each other
-- **Mongoose**: Lightweight embedded web server/client library
+- **TLS 1.3**: Modern cryptographic protocol with forward secrecy
+- **Mongoose**: Lightweight embedded web server/client library with OpenSSL support
+- **Automatic Certificate Generation**: One-command certificate setup via `make run-cert-setup`
 - **C/C++**: Native implementation for performance
 - **Python/GTK**: Modern GUI applications for ease of use
 - **Improved Build System**: Direct Go builds without bootstrap dependencies
+- **Settings Persistence**: ClientGUI remembers user configuration across restarts
 
 ## Prerequisites
 
@@ -430,17 +433,17 @@ You should see successful HTTPS requests with mutual TLS authentication!
 - `make help` - Show help information
 
 ### Server Directory (C implementation)
-- `make all` - Build server
+- `make all` - Build server with TLS 1.3 support
 - `make run` - Run server
 - `make setup-certs` - Show certificate setup instructions
-- `make run-cert-setup` - Generate certificates
+- `make run-cert-setup` - Generate certificates (automated)
 - `make clean` - Remove build artifacts
 
 ### Client Directory (C implementation)
-- `make all` - Build client
+- `make all` - Build client with TLS 1.3 support
 - `make test` - Run automated tests
 - `make setup-certs` - Show certificate setup instructions
-- `make run-cert-setup` - Generate certificates
+- `make run-cert-setup` - Generate certificates (automated)
 - `make clean` - Remove build artifacts
 
 ## GUI Application Workflows
@@ -487,6 +490,106 @@ make run
 | Make requests | ClientGUI | `cd Client && ./build/client ...` |
 | View certificates | Manager | `./bin/step certificate inspect ...` |
 | Monitor server | ServerGUI (live logs) | Manual log checking |
+
+## Recent Improvements (Latest Release)
+
+### OpenSSL-Based Client Implementation
+- **Simplified HTTPS Client**: Uses OpenSSL directly for API calls (not Mongoose)
+- **Lightweight**: No Mongoose library dependency for client, smaller binary
+- **Native OpenSSL**: Direct TLS 1.3 support with proper certificate handling
+- **Mutual TLS**: Full mTLS support with client certificate authentication
+- **Clean Architecture**: Separate client and server implementations for their use cases
+
+### TLS 1.3 Support
+- Both Client and Server now use TLS 1.3 as the minimum version
+- Modern OpenSSL integration with Mongoose library (server) and OpenSSL (client)
+- Forward secrecy and improved security
+- Server build flag: `-DMG_TLS=MG_TLS_OPENSSL -DMG_TLS_VERSION_MIN=TLS1_3_VERSION`
+- Client uses OpenSSL's `TLS_client_method()` with `TLS1_3_VERSION`
+
+### Automated Certificate Generation
+- **One-command setup**: `make run-cert-setup` in Client and Server directories
+- Automatically copies root CA from `~/.step/certs/`
+- Uses provisioner password from `~/.step/secrets/password` (no manual input needed)
+- Proper error handling and validation
+
+### ClientGUI Enhancements
+- **Settings Persistence**: Saves configuration to `~/.step-ca-client-gui/config.json`
+- **Custom Paths**: Remember custom client paths across application restarts
+- **Request History**: Tracks sent requests with timestamps
+- **Status Display**: Shows certificate availability and connection status
+
+### Bug Fixes
+- Fixed ClientGUI client wrapper to use correct command flags (`-c`, `-k`, `-r`)
+- Corrected root CA certificate paths in both ServerGUI and ClientGUI
+- Fixed CA certificate detection in ServerGUI status display
+- Improved command-line argument handling in C client and server
+
+## Certificate Workflow
+
+### Step 1: Generate Certificates
+
+```bash
+# Ensure step-ca is running (from Manager GUI or command line)
+cd Manager && make run
+
+# In another terminal - generate client certificates
+cd Client
+make run-cert-setup
+
+# In another terminal - generate server certificates
+cd Server
+make run-cert-setup
+```
+
+The `make run-cert-setup` command will:
+1. Copy root CA certificate from `~/.step/certs/`
+2. Request a new certificate from step-ca (using stored password)
+3. Save certificates to local `certs/` directory
+4. Display generated files
+
+### Step 2: Start the Server
+
+```bash
+cd Server
+make all      # Build with TLS 1.3
+make run      # Start server
+```
+
+### Step 3: Make Requests from Client
+
+**Using Command-Line Client:**
+```bash
+cd Client
+make all      # Build with TLS 1.3
+
+# Make GET request
+./build/client -u https://localhost:8443/ -v 1
+
+# Make request to specific endpoint
+./build/client -u https://localhost:8443/api/v1/getserverinfo -v 1
+
+# Make POST request
+./build/client -u https://localhost:8443/api/data -m POST -d '{"key":"value"}' -v 1
+
+# Options:
+#   -u <url>      Full URL (https://host:port/path)
+#   -h <host>     Server hostname
+#   -p <port>     Server port
+#   -P <path>     Request path
+#   -m <method>   HTTP method (GET, POST, PUT, DELETE)
+#   -d <data>     Request body (JSON format)
+#   -c <cert>     Client certificate file
+#   -k <key>      Client private key file
+#   -r <ca>       Root CA certificate file
+#   -v <level>    Verbosity level (0-3)
+```
+
+Or use ClientGUI for visual request building:
+```bash
+cd ClientGUI
+make run
+```
 
 ## Security Considerations
 

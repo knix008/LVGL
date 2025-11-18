@@ -10,7 +10,9 @@ import threading
 import json
 
 from core.client import HTTPSClient
-from core.utils import get_default_paths, validate_url, validate_json, save_request_history, load_request_history
+from core.utils import (get_default_paths, validate_url, validate_json,
+                        save_request_history, load_request_history,
+                        save_client_config, load_client_config)
 
 
 class MainWindow(Gtk.Window):
@@ -21,8 +23,8 @@ class MainWindow(Gtk.Window):
         self.set_default_size(900, 700)
         self.set_border_width(10)
 
-        # Initialize client
-        paths = get_default_paths()
+        # Initialize client - use saved config or defaults
+        paths = load_client_config() or get_default_paths()
         self.client = HTTPSClient(
             client_path=paths["client_path"],
             cert_path=paths["cert_path"],
@@ -348,11 +350,24 @@ class MainWindow(Gtk.Window):
         """Handle settings button click"""
         dialog = SettingsDialog(self, self.client)
         response = dialog.run()
-        dialog.destroy()
 
         if response == Gtk.ResponseType.OK:
+            # Get settings from dialog
+            settings = dialog.get_settings()
+
+            # Update client object
+            self.client.client_path = settings["client_path"]
+            self.client.cert_path = settings["cert_path"]
+            self.client.key_path = settings["key_path"]
+            self.client.ca_path = settings["ca_path"]
+
+            # Save settings to file
+            save_client_config(settings)
+
             # Update status
             self.update_status()
+
+        dialog.destroy()
 
     def update_status(self):
         """Update status indicator"""

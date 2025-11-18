@@ -3,7 +3,7 @@
 # Compiler settings
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -Wextra -O2 -DMG_ENABLE_OPENSSL=1
+CFLAGS = -Wall -Wextra -O2 -DMG_TLS=MG_TLS_OPENSSL -DMG_TLS_VERSION_MIN=TLS1_3_VERSION
 LDFLAGS = -lssl -lcrypto
 
 # Directories

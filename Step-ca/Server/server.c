@@ -49,6 +49,15 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
                          "\"ca\":\"step-ca\","
                          "\"tls\":\"enabled\","
                          "\"version\":\"1.0\"}");
+        } else if (mg_match(hm->uri, mg_str("/api/v1/getserverinfo"), NULL)) {
+            // Get server info endpoint - JSON response
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+                         "{\"server_name\":\"Mongoose HTTPS Server\","
+                         "\"version\":\"1.0\","
+                         "\"ca\":\"step-ca\","
+                         "\"tls_version\":\"TLS 1.3\","
+                         "\"mTLS\":true,"
+                         "\"status\":\"running\"}");
         } else {
             // 404 for unknown routes
             mg_http_reply(c, 404, "Content-Type: application/json\r\n",
