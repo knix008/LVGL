@@ -3,7 +3,7 @@
 # Variables
 STEP_CA_VERSION ?= 0.28.4
 STEP_CLI_VERSION ?= 0.28.4
-GO_VERSION ?= 1.24,10
+GO_VERSION ?= 1.24.10
 INSTALL_DIR ?= $(CURDIR)/bin
 BUILD_DIR = build
 STEP_CA_REPO = https://github.com/smallstep/certificates.git
