@@ -51,8 +51,13 @@ The application will launch with a clean interface ready to make requests.
 
 ### Example Requests
 
-**GET Request**:
-- URL: `https://localhost:8443/api/status`
+**GET Request (Server Info)**:
+- URL: `https://localhost:8443/api/v1/getserverinfo`
+- Method: GET
+- Click "Send Request"
+
+**GET Request (Root)**:
+- URL: `https://localhost:8443/`
 - Method: GET
 - Click "Send Request"
 
