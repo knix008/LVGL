@@ -26,9 +26,6 @@ Client/mongoose.h
 *.pem
 *.p12
 *.pfx
-certs/
-Server/certs/
-Client/certs/
 
 # step-ca configuration and data
 .step/

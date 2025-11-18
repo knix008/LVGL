@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TLS context structure
+struct tls_context {
+    struct mg_str cert;
+    struct mg_str key;
+    struct mg_str ca;
+};
+
 static int s_debug_level = MG_LL_INFO;
 static const char *s_listening_address = "https://0.0.0.0:8443";
 static const char *s_tls_cert = "certs/server.crt";
@@ -22,7 +29,22 @@ static void signal_handler(int signo) {
 
 // HTTP event handler
 static void fn(struct mg_connection *c, int ev, void *ev_data) {
-    if (ev == MG_EV_HTTP_MSG) {
+    struct tls_context *tls_ctx = (struct tls_context *) c->fn_data;
+
+    if (ev == MG_EV_ACCEPT) {
+        // New connection accepted - setup TLS if needed
+        if (tls_ctx) {
+            struct mg_tls_opts opts = {0};
+            opts.cert = tls_ctx->cert;
+            opts.key = tls_ctx->key;
+            // For server, we don't need to load client CA unless we want to verify client certs
+            // opts.ca = tls_ctx->ca;  // Skip client certificate verification
+            mg_tls_init(c, &opts);
+        }
+    } else if (ev == MG_EV_TLS_HS) {
+        // TLS handshake completed
+        // No action needed here
+    } else if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         
         // Handle different routes
@@ -69,8 +91,9 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
 int main(int argc, char *argv[]) {
     struct mg_mgr mgr;
     struct mg_connection *c;
-    struct mg_tls_opts opts = {0};
-    
+    struct mg_str cert_data, key_data, ca_data;
+    struct tls_context *tls_ctx;
+
     // Handle command line arguments
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-a") == 0 && i + 1 < argc) {
@@ -93,35 +116,59 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     // Setup signal handlers
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
-    
+
     // Initialize Mongoose event manager
     mg_mgr_init(&mgr);
     mg_log_set(s_debug_level);
-    
-    // Setup TLS options
-    opts.cert = mg_str(s_tls_cert);
-    opts.key = mg_str(s_tls_key);
-    opts.ca = mg_str(s_root_ca);
-    
-    // Create HTTPS listener
+
+    // Load certificate files into memory
     printf("Starting HTTPS server on %s\n", s_listening_address);
     printf("Using certificate: %s\n", s_tls_cert);
     printf("Using key: %s\n", s_tls_key);
     printf("Using CA: %s\n", s_root_ca);
-    
-    c = mg_http_listen(&mgr, s_listening_address, fn, NULL);
-    if (c == NULL) {
-        fprintf(stderr, "Failed to create listener\n");
+
+    cert_data = mg_file_read(&mg_fs_posix, s_tls_cert);
+    if (cert_data.len == 0) {
+        fprintf(stderr, "Failed to read certificate file: %s\n", s_tls_cert);
         return 1;
     }
-    
-    // Set TLS options
-    mg_tls_init(c, &opts);
-    
+
+    key_data = mg_file_read(&mg_fs_posix, s_tls_key);
+    if (key_data.len == 0) {
+        fprintf(stderr, "Failed to read key file: %s\n", s_tls_key);
+        free(cert_data.buf);
+        return 1;
+    }
+
+    ca_data = mg_file_read(&mg_fs_posix, s_root_ca);
+    if (ca_data.len == 0) {
+        fprintf(stderr, "Failed to read CA file: %s\n", s_root_ca);
+        free(cert_data.buf);
+        free(key_data.buf);
+        return 1;
+    }
+
+    // Create TLS context to pass to event handler
+    tls_ctx = (struct tls_context *) malloc(sizeof(struct tls_context));
+    tls_ctx->cert = cert_data;
+    tls_ctx->key = key_data;
+    tls_ctx->ca = ca_data;
+
+    // Create HTTPS listener with TLS context
+    c = mg_http_listen(&mgr, s_listening_address, fn, tls_ctx);
+    if (c == NULL) {
+        fprintf(stderr, "Failed to create listener\n");
+        free(cert_data.buf);
+        free(key_data.buf);
+        free(ca_data.buf);
+        free(tls_ctx);
+        return 1;
+    }
+
     printf("Server started successfully. Press Ctrl+C to stop.\n");
     
     // Event loop
