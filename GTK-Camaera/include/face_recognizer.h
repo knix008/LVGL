@@ -31,6 +31,7 @@ public:
     // Training
     bool train(const std::vector<cv::Mat>& images, const std::vector<int>& labels);
     bool add_training_data(const cv::Mat& image, int person_id);  // Add single image incrementally
+    bool train_from_images(const std::string& dataset_path);  // Train from filesystem subdirectories
     bool train_from_database();  // Train from all embeddings in database
     bool retrain_model();  // Retrain with all data from database
 

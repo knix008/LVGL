@@ -17,7 +17,7 @@ class FaceDetector {
 private:
     cv::CascadeClassifier face_cascade;
     double scale_factor = 1.1;
-    int min_neighbors = 4;
+    int min_neighbors = 8;  // Increased from 4 to reduce false positives
     cv::Size min_face_size{30, 30};
     cv::Size max_face_size{};
 

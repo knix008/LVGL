@@ -26,10 +26,6 @@ Makefile.cmake
 *.db
 face_database.db
 
-# Model files
-*.yml
-face_recognizer_model.yml
-
 # Temporary files
 *.tmp
 *.log

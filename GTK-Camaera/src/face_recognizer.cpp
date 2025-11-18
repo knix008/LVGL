@@ -142,6 +142,83 @@ bool FaceRecognizer::add_training_data(const cv::Mat& image, int person_id) {
     }
 }
 
+bool FaceRecognizer::train_from_images(const std::string& dataset_path) {
+    if (!fs::exists(dataset_path)) {
+        std::cerr << "Error: Dataset path does not exist: " << dataset_path << std::endl;
+        return false;
+    }
+
+    try {
+        std::vector<cv::Mat> training_images;
+        std::vector<int> training_labels;
+        label_to_name.clear();
+        int next_id = 0;
+
+        // Iterate through person subdirectories (e.g., dataset/A1/, dataset/B2/)
+        for (const auto& person_dir : fs::directory_iterator(dataset_path)) {
+            if (!fs::is_directory(person_dir)) continue;
+
+            std::string person_name = person_dir.path().filename().string();
+            label_to_name[next_id] = person_name;
+
+            std::cout << "Loading images for person: " << person_name << std::endl;
+
+            int image_count = 0;
+            // Load all images from person's subdirectory
+            for (const auto& img_file : fs::directory_iterator(person_dir.path())) {
+                if (!fs::is_regular_file(img_file)) continue;
+
+                std::string ext = img_file.path().extension().string();
+                if (ext != ".jpg" && ext != ".JPG" && ext != ".jpeg" && ext != ".JPEG" &&
+                    ext != ".png" && ext != ".PNG" && ext != ".bmp" && ext != ".BMP") {
+                    continue;
+                }
+
+                // Load image in grayscale
+                cv::Mat img = cv::imread(img_file.path().string(), cv::IMREAD_GRAYSCALE);
+                if (img.empty()) {
+                    std::cerr << "Warning: Failed to load image: " << img_file.path() << std::endl;
+                    continue;
+                }
+
+                // Resize to standard size
+                cv::Mat resized;
+                cv::resize(img, resized, cv::Size(200, 200));
+
+                // Equalize histogram for better recognition
+                cv::equalizeHist(resized, resized);
+
+                training_images.push_back(resized);
+                training_labels.push_back(next_id);
+                image_count++;
+            }
+
+            if (image_count > 0) {
+                std::cout << "  Loaded " << image_count << " images for " << person_name << std::endl;
+                next_id++;
+            } else {
+                std::cerr << "Warning: No images found for person " << person_name << std::endl;
+                label_to_name.erase(next_id);
+            }
+        }
+
+        if (training_images.empty()) {
+            std::cerr << "Error: No training images found in dataset" << std::endl;
+            return false;
+        }
+
+        std::cout << "Training with " << training_images.size() << " images from "
+                  << label_to_name.size() << " people" << std::endl;
+
+        // Train the LBPH recognizer
+        return train(training_images, training_labels);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in train_from_images: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool FaceRecognizer::train_from_database() {
     if (!db) {
         std::cerr << "Error: Database not set" << std::endl;

@@ -353,7 +353,9 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             // Draw corner lines only (horizontal and vertical lines at each corner)
             int corner_length = static_cast<int>(new_width * 0.15); // 15% of width for corner length
             int line_thickness = 2;
-            cv::Scalar color = cv::Scalar(0, 255, 0); // Green color
+
+            // Use different colors based on confidence: Green for high confidence, Yellow for low
+            cv::Scalar color = (face.confidence > 50.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
 
             // Top-left corner
             // Horizontal line
@@ -403,25 +405,28 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                     cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
                     color, line_thickness);
 
-            // Draw face label with name and confidence
-            std::string label = face.name;
-            if (face.confidence > 0) {
-                label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+            // Only draw label if confidence is above 50%
+            if (face.confidence > 50.0) {
+                // Draw face label with name and confidence
+                std::string label = face.name;
+                if (face.confidence > 0) {
+                    label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+                }
+
+                int baseline = 0;
+                cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+
+                // Draw background for text (above the face area)
+                cv::rectangle(frame,
+                             cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
+                             cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
+                             cv::Scalar(0, 255, 0), -1);
+
+                // Draw text
+                cv::putText(frame, label,
+                           cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
+                           cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
             }
-
-            int baseline = 0;
-            cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
-
-            // Draw background for text (above the face area)
-            cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
-                         cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
-                         cv::Scalar(0, 255, 0), -1);
-
-            // Draw text
-            cv::putText(frame, label,
-                       cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
-                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
         }
     } catch (const std::exception& e) {
         std::cerr << "Exception in draw_faces_on_frame: " << e.what() << std::endl;
@@ -490,22 +495,29 @@ void GTKApp::train_model() {
 
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
-    gtk_label_set_text(GTK_LABEL(status_label), "Status: Retraining model from database... please wait");
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from dataset... please wait");
 
-    std::cout << "Retraining model from database..." << std::endl;
+    std::cout << "Starting training from dataset..." << std::endl;
 
-    // Train using embeddings from database
-    bool success = face_recognizer.train_from_database();
+    // Check if dataset directory exists and has subdirectories
+    if (!std::filesystem::exists("dataset")) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Dataset directory not found");
+        training_in_progress = false;
+        gtk_widget_set_sensitive(train_button, TRUE);
+        return;
+    }
+
+    // Train using the dataset folder (filesystem-based training)
+    bool success = face_recognizer.train_from_images("dataset");
 
     if (success) {
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete!");
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Ready to recognize faces.");
         face_recognition_enabled = true;
         std::cout << "Training successful!" << std::endl;
-        std::cout << "Total people: " << face_database.get_num_people() << std::endl;
-        std::cout << "Total face embeddings: " << face_database.get_total_faces() << std::endl;
     } else {
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - check console or add more photos");
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - add photos and try again");
         std::cerr << "Training failed" << std::endl;
+        face_recognition_enabled = false;
     }
 
     training_in_progress = false;
