@@ -71,6 +71,9 @@ The server will start on https://localhost:8443
 # Test with the CA certificate
 curl --cacert certs/root_ca.crt https://localhost:8443
 
+# Test server info endpoint (returns TLS version and mTLS status)
+curl --cacert certs/root_ca.crt https://localhost:8443/api/v1/getserverinfo
+
 # Test status endpoint
 curl --cacert certs/root_ca.crt https://localhost:8443/api/status
 
@@ -86,6 +89,7 @@ curl --cacert certs/root_ca.crt https://localhost:8443/api/info
 ## Available Endpoints
 
 - `/` - Home page with server information
+- `/api/v1/getserverinfo` - JSON server information (includes TLS version and mTLS status)
 - `/api/status` - JSON status response
 - `/api/info` - JSON server information
 
