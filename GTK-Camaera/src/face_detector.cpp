@@ -41,6 +41,9 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
     }
 
     try {
+        // Increment total frames processed for metrics
+        total_frames_processed++;
+
         // Convert to grayscale for detection
         cv::Mat gray;
         if (frame.channels() == 3) {
@@ -64,6 +67,11 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
             min_face_size,
             max_face_size
         );
+
+        // Track frames with detections
+        if (!face_rects.empty()) {
+            frames_with_detections++;
+        }
 
         // Convert to Face objects
         for (size_t i = 0; i < face_rects.size(); ++i) {
@@ -122,4 +130,24 @@ void FaceDetector::set_max_face_size(int width, int height) {
 
 bool FaceDetector::is_loaded() const {
     return !face_cascade.empty();
+}
+
+void FaceDetector::reset_metrics() {
+    total_frames_processed = 0;
+    frames_with_detections = 0;
+    total_false_positives = 0;
+}
+
+double FaceDetector::get_detection_rate() const {
+    if (total_frames_processed == 0) {
+        return 0.0;
+    }
+    return (static_cast<double>(frames_with_detections) / total_frames_processed) * 100.0;
+}
+
+double FaceDetector::get_false_positive_rate() const {
+    if (total_frames_processed == 0) {
+        return 0.0;
+    }
+    return (static_cast<double>(total_false_positives) / total_frames_processed) * 100.0;
 }

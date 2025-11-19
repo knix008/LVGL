@@ -21,6 +21,11 @@ private:
     cv::Size min_face_size{30, 30};
     cv::Size max_face_size{};
 
+    // Metrics tracking
+    int total_frames_processed = 0;
+    int frames_with_detections = 0;
+    int total_false_positives = 0;  // Need manual annotation to track accurately
+
 public:
     FaceDetector();
     ~FaceDetector() = default;
@@ -37,6 +42,15 @@ public:
     void set_max_face_size(int width, int height);
 
     bool is_loaded() const;
+
+    // Metrics methods
+    void reset_metrics();
+    int get_total_frames() const { return total_frames_processed; }
+    int get_frames_with_detections() const { return frames_with_detections; }
+    double get_detection_rate() const;
+    int get_total_false_positives() const { return total_false_positives; }
+    void set_total_false_positives(int count) { total_false_positives = count; }
+    double get_false_positive_rate() const;
 };
 
 #endif // FACE_DETECTOR_H

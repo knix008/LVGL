@@ -7,6 +7,7 @@ GTKApp::GTKApp()
     : window(nullptr), image_widget(nullptr), toggle_button(nullptr),
       train_button(nullptr), capture_button(nullptr), status_label(nullptr),
       fps_label(nullptr), face_info_label(nullptr), face_count_label(nullptr),
+      error_rate_label(nullptr),
       refresh_timer(0), camera_running(false), face_recognition_enabled(false),
       training_in_progress(false), frame_count(0), last_time(0), capture_count(0) {}
 
@@ -75,6 +76,10 @@ bool GTKApp::init() {
         // Create face count label (confidence level)
         face_count_label = gtk_label_new("Confidence: 0%");
         gtk_box_pack_end(GTK_BOX(hbox), face_count_label, FALSE, FALSE, 0);
+
+        // Create error rate label (detection metrics)
+        error_rate_label = gtk_label_new("Detection Rate: 0% | Error: 0%");
+        gtk_box_pack_end(GTK_BOX(hbox), error_rate_label, FALSE, FALSE, 0);
 
         // Open camera
         if (!camera.open(0)) {
@@ -145,6 +150,9 @@ gboolean GTKApp::refresh_frame() {
                 int unknown_count = 0;
 
                 // Recognize faces if model is trained
+                Face best_face;  // Store best face for display
+                bool has_best_face = false;
+
                 if (face_recognition_enabled && !faces.empty()) {
                     for (auto& face : faces) {
                         cv::Mat face_roi = frame(face.bbox);
@@ -161,6 +169,8 @@ gboolean GTKApp::refresh_frame() {
                             if (face.confidence > best_confidence) {
                                 best_confidence = face.confidence;
                                 best_person_name = face.name;
+                                best_face = face;  // Store best face
+                                has_best_face = true;
                             }
                         } else {
                             // Set name to "Unknown" for unrecognized faces
@@ -168,16 +178,36 @@ gboolean GTKApp::refresh_frame() {
                             face.confidence = confidence * 100.0;  // Store confidence even for unknown
                             face.id = -1;
                             unknown_count++;
+
+                            // Track best unknown face as fallback
+                            if (!has_best_face && face.confidence > best_confidence) {
+                                best_confidence = face.confidence;
+                                best_person_name = face.name;
+                                best_face = face;
+                            }
                         }
                     }
                 } else if (!faces.empty()) {
                     // Set all faces to "Unknown" if model not trained
+                    // Find face with highest detection (closest to center or largest)
+                    int best_idx = 0;
+                    int max_size = 0;
+                    for (size_t i = 0; i < faces.size(); ++i) {
+                        int face_size = faces[i].bbox.width * faces[i].bbox.height;
+                        if (face_size > max_size) {
+                            max_size = face_size;
+                            best_idx = i;
+                        }
+                    }
+
                     for (auto& face : faces) {
                         face.name = "Unknown";
                         face.confidence = 0.0;
                         face.id = -1;
                     }
                     unknown_count = faces.size();
+                    best_face = faces[best_idx];
+                    has_best_face = true;
                 }
 
                 // Update UI with recognized person and confidence
@@ -205,9 +235,11 @@ gboolean GTKApp::refresh_frame() {
                 // Save clean frame for capture (BEFORE drawing on it)
                 last_frame = frame.clone();
 
-                // Draw faces on frame for display only
-                if (!faces.empty()) {
-                    draw_faces_on_frame(frame, faces);
+                // Draw only the best face on frame for display
+                if (has_best_face) {
+                    std::vector<Face> best_faces;
+                    best_faces.push_back(best_face);
+                    draw_faces_on_frame(frame, best_faces);
                 }
 
                 // Convert to pixbuf and display
@@ -230,6 +262,15 @@ gboolean GTKApp::refresh_frame() {
                     gchar fps_text[50];
                     g_snprintf(fps_text, sizeof(fps_text), "FPS: %.1f", fps);
                     gtk_label_set_text(GTK_LABEL(fps_label), fps_text);
+
+                    // Update detection error rate metrics
+                    double detection_rate = face_detector.get_detection_rate();
+                    double false_positive_rate = face_detector.get_false_positive_rate();
+                    gchar error_rate_text[100];
+                    g_snprintf(error_rate_text, sizeof(error_rate_text),
+                              "Detection: %.1f%% | Error: %.1f%%",
+                              detection_rate, false_positive_rate);
+                    gtk_label_set_text(GTK_LABEL(error_rate_label), error_rate_text);
 
                     frame_count = 0;
                     last_time = current_time;
@@ -365,7 +406,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             int line_thickness = 2;
 
             // Use different colors based on confidence: Green for high confidence, Yellow for low
-            cv::Scalar color = (face.confidence > 50.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
+            cv::Scalar color = (face.confidence > 70.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
 
             // Top-left corner
             // Horizontal line
@@ -428,7 +469,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             cv::Scalar bg_color;
             if (face.name == "Unknown") {
                 bg_color = cv::Scalar(0, 255, 255);  // Yellow background for unknown faces
-            } else if (face.confidence > 50.0) {
+            } else if (face.confidence > 70.0) {
                 bg_color = cv::Scalar(0, 255, 0);   // Green background for recognized faces
             } else {
                 bg_color = cv::Scalar(0, 255, 255);  // Yellow background for low confidence

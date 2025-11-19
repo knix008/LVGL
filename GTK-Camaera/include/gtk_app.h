@@ -21,6 +21,7 @@ private:
     GtkWidget* fps_label;
     GtkWidget* face_info_label;
     GtkWidget* face_count_label;
+    GtkWidget* error_rate_label;
 
     // Camera and Face Recognition
     Camera camera;

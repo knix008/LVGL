@@ -7,12 +7,13 @@ A real-time face detection and recognition application with SQLite3 database int
 - **Live Webcam Streaming**: Display real-time video from your webcam
 - **Real-time Face Detection**: Haar Cascade-based face detection with minimal false positives
 - **Face Recognition**: LBPH (Local Binary Patterns Histograms) face recognizer trained from images
-- **Confidence Filtering**: Visual distinction between high-confidence (≥50%) and low-confidence (<50%) detections
-  - **Green boxes**: Recognized faces with ≥50% confidence (shows person name and percentage)
-  - **Yellow boxes**: Detected faces with <50% confidence (no label shown)
+- **Single Face Display Mode**: Shows only the face with highest detection rate/confidence in live stream
+- **Confidence Filtering**: Visual distinction between high-confidence (≥70%) and low-confidence (<70%) detections
+  - **Green boxes**: Recognized faces with ≥70% confidence (shows person name and percentage)
+  - **Yellow boxes**: Detected faces with <70% confidence (shows "Unknown" label)
 - **Person Registration**: Register people in SQLite3 database for face recognition
 - **Training Management**: Train face recognizer from captured images in dataset directory
-- **FPS Display**: Monitor frame rate in real-time
+- **Real-time Metrics**: Display FPS, detection rate, and error rate
 - **Status Information**: View current camera and recognition status
 - **Multithreaded Capture**: Smooth video playback without UI blocking
 - **Fixed Window Size**: Non-resizable 800x600 window with camera display area (640x480)
@@ -147,18 +148,29 @@ make run
 #### Step 4: Recognize Faces
 1. With the model trained, point the webcam at faces
 2. The application detects and recognizes faces in real-time
-3. **Display indicators**:
-   - **Green bounding boxes** with name and percentage: High-confidence matches (≥50%)
-   - **Yellow bounding boxes** without labels: Low-confidence detections (<50%)
-4. Monitor FPS in the top-right corner
+3. **Single face display mode**: Only the face with the **highest detection rate/confidence** is shown on screen
+   - If multiple faces are detected, only the best match is displayed
+   - Best face is determined by highest recognition confidence (when model is trained)
+   - Best face is determined by largest face size (when model is not trained)
+4. **Display indicators**:
+   - **Green bounding box** with name and percentage: High-confidence match (≥70%)
+   - **Yellow bounding box** with "Unknown": Low-confidence detection (<70%)
+5. Monitor FPS and error rates in real-time
 
-#### Step 5: View Camera Status
+#### Step 5: Monitor Performance Metrics
+The application displays real-time metrics in the status bar:
+- **FPS**: Frames per second (camera capture and processing speed)
+- **Detection Rate**: Percentage of frames where faces were detected
+- **Error Rate**: Percentage of false positive detections (requires manual annotation)
+- **Confidence Level**: Confidence percentage of the recognized face
+
+#### Step 6: View Camera Status
 - **Status field** displays:
   - Camera status (started/stopped)
   - Number of people registered in database
   - Number of trained people in recognizer
   - Face recognition enabled/disabled status
-  - Any error messages
+  - Any error messages or processing notifications
 
 ## Architecture
 
@@ -236,7 +248,7 @@ The application separates training data source from metadata storage:
   - `recognize()`: Returns person_id and confidence (0-1 scale)
   - `recognize_with_name()`: Returns person name
   - Confidence calculation: `similarity = 1.0 / (1.0 + distance/100.0)`
-  - Display threshold: ≥50% confidence shows name label
+  - Display threshold: ≥70% confidence shows name label with green box
 
 #### FaceDatabase Class
 - SQLite3 database management with prepared statements (SQL injection prevention)
@@ -356,6 +368,71 @@ The application separates training data source from metadata storage:
   2. Ensure write permissions in application directory
   3. Verify SQLite3 is properly installed
 
+### Face Detection Error Rate Monitoring
+
+The application displays real-time detection metrics to help evaluate performance:
+
+#### Understanding Error Rate Metrics
+
+**Detection Rate** = (Frames with detected faces / Total frames processed) × 100%
+- Shows what percentage of frames contain at least one face detection
+- Higher rate indicates more frequent face presence in the camera view
+- Range: 0% to 100%
+
+**Error Rate (False Positive Rate)** = (False positive detections / Total frames) × 100%
+- Percentage of frames where the detector found faces that aren't actually faces
+- Requires manual annotation to accurately track false positives
+- By default, shows 0% (can be manually tracked by user)
+- Range: 0% to 100%
+
+#### How to Measure False Positives
+
+False positives are non-face objects detected as faces. To track these:
+
+1. **Manual Method**: Observe the live stream and note when yellow boxes appear on non-face objects
+2. **Log Analysis**: Record instances and calculate: (False Positives / Total Detections) × 100%
+3. **Parameter Adjustment**:
+   - Current `min_neighbors = 8` is conservative to reduce false positives
+   - Reduce to 5 for more sensitive detection (may increase false positives)
+   - Increase to 10+ for very strict detection (fewer faces detected)
+
+#### Example Interpretation
+
+- **Detection Rate: 85% | Error Rate: 2%**
+  - In 100 seconds, faces were detected in 85 frames
+  - Approximately 2 false positive detections occurred per 100 frames processed
+  - Configuration is working well
+
+- **Detection Rate: 10% | Error Rate: 15%**
+  - Low detection rate: No faces in frame or min_neighbors too high
+  - High error rate: Detector finding non-faces; reduce sensitivity or improve lighting
+
+#### Factors Affecting Detection Rate
+
+1. **Lighting**: Poor lighting reduces detection rate
+2. **Face Orientation**: Side profiles reduce detection (optimized for frontal faces)
+3. **Face Size**: Very small/large faces may not be detected (min/max_face_size)
+4. **Face Angle**: Head rotations >45° reduce detection
+5. **Occlusions**: Glasses, masks, or hair covering face reduces detection
+6. **min_neighbors Parameter**: Higher values = fewer detections but fewer false positives
+
+#### Improving Detection Accuracy
+
+1. **Reduce False Positives**:
+   - Increase `min_neighbors` from 8 to 10-12
+   - Improve camera lighting
+   - Adjust camera angle to frontal views
+
+2. **Increase Detection Rate**:
+   - Reduce `min_neighbors` from 8 to 5-6
+   - Improve lighting conditions
+   - Ensure faces are clearly visible and oriented toward camera
+
+3. **Balance Trade-off**:
+   - Default `min_neighbors = 8` provides good balance
+   - Experiment with values 5-12 to find optimal setting for your environment
+   - Test with your specific lighting and face angles
+
 ## Configuration
 
 ### Modify Camera Parameters
@@ -394,7 +471,7 @@ cv::Size max_face_size{};         // Maximum face size (empty = unlimited)
 Edit `include/face_recognizer.h` to adjust recognition thresholds:
 
 ```cpp
-double confidence_threshold = 0.6;  // 0.6 = 60% similarity required to display name
+double confidence_threshold = 0.7;  // 0.7 = 70% similarity required to display name
                                     // Lower = more permissive, may misidentify
                                     // Higher = more strict, may show "Unknown"
 ```
@@ -412,12 +489,12 @@ Edit `src/gtk_app.cpp` in the `draw_faces_on_frame()` method:
 
 ```cpp
 // Confidence threshold for showing name labels (percentage)
-if (face.confidence > 50.0) {
+if (face.confidence > 70.0) {
     // Draw green box with name
     // Shows: "PersonName (confidence%)"
 } else {
-    // Draw yellow box without name
-    // Low confidence detection only
+    // Draw yellow box
+    // Shows "Unknown" for low confidence detection
 }
 ```
 
