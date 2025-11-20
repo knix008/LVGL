@@ -4,6 +4,9 @@ build/
 *.a
 *.so
 *.out
+onnxruntime-*/
+faiss/
+models/
 
 # Executable
 gtk_webcam

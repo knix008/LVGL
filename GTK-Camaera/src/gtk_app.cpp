@@ -493,7 +493,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
 
 void GTKApp::load_face_recognizer() {
     try {
-        std::cout << "Loading face recognizer..." << std::endl;
+        std::cout << "Loading face recognizer (Deep Learning - FaceNet + FAISS)..." << std::endl;
 
         // Initialize database
         if (!face_database.open()) {
@@ -516,6 +516,25 @@ void GTKApp::load_face_recognizer() {
 
         // Set database reference in recognizer
         face_recognizer.set_database(&face_database);
+
+        // Load FaceNet ONNX model
+        std::string model_path = "models/facenet.onnx";
+        if (!std::filesystem::exists(model_path)) {
+            std::cerr << "Warning: FaceNet model not found at " << model_path << std::endl;
+            std::cerr << "Please download the model and place it at: " << model_path << std::endl;
+            std::cerr << "Visit: https://github.com/onnx/models/tree/main/vision/body_analysis/face_recognition_mobilefacenet" << std::endl;
+            face_recognition_enabled = false;
+            return;
+        }
+
+        std::cout << "Loading FaceNet model from: " << model_path << std::endl;
+        if (!face_recognizer.load_model(model_path)) {
+            std::cerr << "Failed to load FaceNet model" << std::endl;
+            face_recognition_enabled = false;
+            return;
+        }
+
+        std::cout << "FaceNet model loaded successfully" << std::endl;
 
         // Try to train from database embeddings
         if (face_database.get_total_faces() > 0) {

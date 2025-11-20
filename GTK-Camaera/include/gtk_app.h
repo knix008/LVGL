@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include "camera.h"
 #include "face_detector.h"
-#include "face_recognizer.h"
+#include "deep_face_recognizer.h"
 #include "face_database.h"
 
 class GTKApp {
@@ -26,7 +26,7 @@ private:
     // Camera and Face Recognition
     Camera camera;
     FaceDetector face_detector;
-    FaceRecognizer face_recognizer;
+    DeepFaceRecognizer face_recognizer;
     FaceDatabase face_database;
 
     guint refresh_timer;
