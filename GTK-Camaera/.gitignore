@@ -6,7 +6,8 @@ build/
 *.out
 onnxruntime-*/
 faiss/
-models/
+models/*.onnx
+models/*.bin
 
 # Executable
 gtk_webcam

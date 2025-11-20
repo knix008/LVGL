@@ -73,12 +73,16 @@ debug: clean $(TARGET)
 debug-run: debug
 	gdb ./$(TARGET)
 
-# Clean build artifacts
+# Clean build artifacts (keep external dependencies)
 clean:
 	@rm -rf $(OBJ_DIR) $(TARGET)
+	@echo "Cleaned build artifacts"
+
+# Full clean including external dependencies (be careful!)
+distclean: clean
 	@rm -rf onnxruntime-*/
 	@rm -rf faiss/
-	@echo "Cleaned build artifacts"
+	@echo "Cleaned all artifacts including external dependencies"
 
 # Help target
 help:
@@ -88,7 +92,8 @@ help:
 	@echo "make run      - Build and run the application"
 	@echo "make debug    - Build with debug symbols"
 	@echo "make debug-run - Build and run with GDB debugger"
-	@echo "make clean    - Remove build artifacts"
+	@echo "make clean    - Remove build artifacts (keeps ONNX Runtime & FAISS)"
+	@echo "make distclean - Remove all artifacts including ONNX Runtime & FAISS"
 	@echo "make help     - Show this help message"
 
-.PHONY: all run debug debug-run clean help
+.PHONY: all run debug debug-run clean distclean help

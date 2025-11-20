@@ -22,6 +22,14 @@ bool DeepFaceRecognizer::load_model(const std::string& onnx_model_path) {
         return false;
     }
 
+    // Get the actual embedding dimension from the loaded model
+    // For multi-dimensional outputs, use the flattened size
+    int embedding_dim = model_loader->get_flattened_output_size();
+    std::cout << "Model embedding dimension (flattened): " << embedding_dim << std::endl;
+
+    // Recreate FAISS index with the correct embedding dimension
+    faiss_index = std::make_unique<FAISSIndex>(embedding_dim);
+
     model_path = onnx_model_path;
     std::cout << "Deep learning model loaded successfully" << std::endl;
     return true;

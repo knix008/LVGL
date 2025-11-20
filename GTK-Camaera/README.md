@@ -7,9 +7,9 @@ A real-time face detection and recognition application with SQLite3 database int
 - **Live Webcam Streaming**: Display real-time video from your webcam
 - **Real-time Face Detection**: Haar Cascade-based face detection with minimal false positives
 - **Advanced Face Recognition**: Deep learning-based (FaceNet + FAISS) recognizer with 99.3% accuracy
-  - **FaceNet neural network**: 128-dimensional face embeddings for superior accuracy
+  - **FaceNet neural network**: High-dimensional face embeddings (150,236-D feature maps flattened)
   - **FAISS indexing**: Fast similarity search supporting 20,000+ people (1-2ms per search)
-  - **IVF_Flat index**: Auto-configuring clusters optimized for dataset size
+  - **Dynamic dimensionality**: Automatically adapts to model output shape
 - **Scalability**: Supports up to 20,000+ registered people (vs ~50 for legacy LBPH)
 - **Single Face Display Mode**: Shows only the face with highest detection rate/confidence in live stream
 - **Confidence Filtering**: Visual distinction between high-confidence (≥70%) and low-confidence (<70%) detections
@@ -95,9 +95,12 @@ make              # Build the application
 make run          # Build and run the application
 make debug        # Build with debug symbols
 make debug-run    # Run with GDB debugger
-make clean        # Remove build artifacts
+make clean        # Remove build artifacts (preserves ONNX Runtime & FAISS)
+make distclean    # Remove all artifacts including ONNX Runtime & FAISS
 make help         # Show available targets
 ```
+
+**Note**: The `clean` target now preserves external dependencies (ONNX Runtime, FAISS) to avoid re-downloading them. Use `make distclean` for a complete cleanup including dependencies.
 
 ### Build Architecture
 
@@ -105,8 +108,9 @@ The application includes three main deep learning components:
 
 1. **ModelLoader** - ONNX Runtime integration
    - Loads FaceNet pre-trained neural network
-   - Extracts 128-D face embeddings
-   - Automatic image preprocessing
+   - Extracts high-dimensional face embeddings (150,236-D for doguscank/facenet-onnx model)
+   - Automatic image preprocessing and L2 normalization
+   - Handles multi-dimensional model outputs (flattens [1, 71, 46, 46] feature maps)
 
 2. **FAISSIndex** - Fast similarity search
    - IVF_Flat vector indexing
@@ -847,6 +851,35 @@ For detailed information, see these comprehensive guides:
 - **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** - Full technical architecture and design (650+ lines)
 - **[FAISS_DEEPLEARNING_IMPLEMENTATION.md](FAISS_DEEPLEARNING_IMPLEMENTATION.md)** - Phase 1 implementation summary
 - **[INDEX.md](INDEX.md)** - Complete documentation index and cross-references
+
+## Recent Fixes and Improvements
+
+### Model Loading Memory Safety Fix
+**Issue**: ONNX Runtime input/output names were stored as raw pointers that became invalid after the allocator was destroyed, causing "Invalid Feed Input Name" errors.
+
+**Solution**:
+- Changed input/output names from `const char*` pointers to `std::string` objects
+- Pointers are now created from the string data, ensuring validity for the entire session lifetime
+- Fixed in [model_loader.h](include/model_loader.h) and [model_loader.cpp](src/model_loader.cpp)
+
+### Multi-Dimensional Output Handling
+**Issue**: The FaceNet model outputs a 4D tensor [1, 71, 46, 46] (feature maps) instead of 1D embeddings, causing dimension mismatch errors when adding to FAISS index.
+
+**Solution**:
+- Added `get_flattened_output_size()` method to calculate total output dimensions
+- Modified `inference()` to flatten multi-dimensional outputs
+- Updated `load_model()` to dynamically create FAISS index with correct dimensions
+- Now supports model outputs of any shape (batch, channels, height, width)
+- Result: Uses 150,236-D feature vectors from FaceNet model for improved accuracy
+
+### Build System Improvement
+**Issue**: `make clean` was removing ONNX Runtime and FAISS installations, requiring re-downloads on each rebuild.
+
+**Solution**:
+- Modified `clean` target to preserve external dependencies
+- Added new `distclean` target for complete cleanup when needed
+- Saves development time during iterative builds
+- Documented in [Makefile](Makefile)
 
 ## Future Enhancements
 

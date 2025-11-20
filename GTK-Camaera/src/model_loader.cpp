@@ -38,13 +38,13 @@ bool ModelLoader::load_model(const std::string& model_path) {
 
         // Get first input name and shape
         auto input_name_allocated = session->GetInputNameAllocated(0, allocator);
-        const char* input_name = input_name_allocated.get();
-        input_names.push_back(input_name);
+        input_names.push_back(std::string(input_name_allocated.get()));
+        input_names_cstr.push_back(input_names[0].c_str());
 
         std::vector<int64_t> input_dims = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
         input_shape = input_dims;
 
-        std::cout << "Model input name: " << input_name << std::endl;
+        std::cout << "Model input name: " << input_names[0] << std::endl;
         std::cout << "Input shape: [";
         for (size_t i = 0; i < input_dims.size(); ++i) {
             std::cout << input_dims[i];
@@ -61,13 +61,13 @@ bool ModelLoader::load_model(const std::string& model_path) {
         }
 
         auto output_name_allocated = session->GetOutputNameAllocated(0, allocator);
-        const char* output_name = output_name_allocated.get();
-        output_names.push_back(output_name);
+        output_names.push_back(std::string(output_name_allocated.get()));
+        output_names_cstr.push_back(output_names[0].c_str());
 
         std::vector<int64_t> output_dims = session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
         output_shape = output_dims;
 
-        std::cout << "Model output name: " << output_name << std::endl;
+        std::cout << "Model output name: " << output_names[0] << std::endl;
         std::cout << "Output shape: [";
         for (size_t i = 0; i < output_dims.size(); ++i) {
             std::cout << output_dims[i];
@@ -168,11 +168,11 @@ std::vector<float> ModelLoader::inference(const cv::Mat& face_image) {
         // Run inference
         auto output_tensors = session->Run(
             Ort::RunOptions{nullptr},
-            input_names.data(),
+            input_names_cstr.data(),
             &input_tensor,
-            input_names.size(),
-            output_names.data(),
-            output_names.size()
+            input_names_cstr.size(),
+            output_names_cstr.data(),
+            output_names_cstr.size()
         );
 
         // Extract output
@@ -180,6 +180,8 @@ std::vector<float> ModelLoader::inference(const cv::Mat& face_image) {
             float* output_data = output_tensors[0].GetTensorMutableData<float>();
             int64_t output_size = output_tensors[0].GetTensorTypeAndShapeInfo().GetElementCount();
 
+            // Model outputs [batch, channels, height, width] - flatten and use as embedding
+            // For FaceNet-like models, this gives us a high-dimensional feature vector
             output.assign(output_data, output_data + output_size);
 
             // Normalize embedding to unit length (L2 normalization)
@@ -208,6 +210,15 @@ std::vector<float> ModelLoader::inference(const cv::Mat& face_image) {
 int ModelLoader::get_embedding_dimension() const {
     if (output_shape.empty()) return 0;
     return static_cast<int>(output_shape.back());
+}
+
+int ModelLoader::get_flattened_output_size() const {
+    if (output_shape.empty()) return 0;
+    int64_t total_size = 1;
+    for (int64_t dim : output_shape) {
+        if (dim > 0) total_size *= dim;
+    }
+    return static_cast<int>(total_size);
 }
 
 int ModelLoader::get_input_width() const {

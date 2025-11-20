@@ -11,8 +11,10 @@ class ModelLoader {
 private:
     std::unique_ptr<Ort::Env> env;
     std::unique_ptr<Ort::Session> session;
-    std::vector<const char*> input_names;
-    std::vector<const char*> output_names;
+    std::vector<std::string> input_names;
+    std::vector<std::string> output_names;
+    std::vector<const char*> input_names_cstr;
+    std::vector<const char*> output_names_cstr;
     std::vector<int64_t> input_shape;
     std::vector<int64_t> output_shape;
     bool is_loaded = false;
@@ -38,6 +40,7 @@ public:
 
     // Get model input/output information
     int get_embedding_dimension() const;
+    int get_flattened_output_size() const;  // Total size of flattened output
     int get_input_width() const;
     int get_input_height() const;
     int get_input_channels() const;
