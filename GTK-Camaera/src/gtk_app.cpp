@@ -5,11 +5,14 @@
 
 GTKApp::GTKApp()
     : window(nullptr), image_widget(nullptr), toggle_button(nullptr),
-      train_button(nullptr), capture_button(nullptr), status_label(nullptr),
-      fps_label(nullptr), face_info_label(nullptr), face_count_label(nullptr),
-      error_rate_label(nullptr),
+      train_button(nullptr), capture_button(nullptr),
+      status_label(nullptr), fps_label(nullptr), face_info_label(nullptr),
+      face_count_label(nullptr), error_rate_label(nullptr),
       refresh_timer(0), camera_running(false), face_recognition_enabled(false),
-      training_in_progress(false), frame_count(0), last_time(0), capture_count(0) {}
+      training_in_progress(false), capture_in_progress(false), cleanup_done(false),
+      frame_count(0), last_time(0), capture_count(0), last_recognition_time(0),
+      last_recognized_name("Unknown"), last_recognized_confidence(0.0),
+      has_recognition_result(false), training_success(false) {}
 
 GTKApp::~GTKApp() {
     cleanup();
@@ -110,15 +113,41 @@ void GTKApp::run() {
 }
 
 void GTKApp::cleanup() {
-    if (refresh_timer != 0) {
-        g_source_remove(refresh_timer);
-        refresh_timer = 0;
+    // Prevent double-cleanup (can be called from both window destroy and destructor)
+    if (cleanup_done) {
+        return;
+    }
+    cleanup_done = true;
+
+    // Stop camera and frame processing
+    camera_running = false;  // Signal to stop processing frames
+
+    // Process pending events - this will let refresh_frame return FALSE and stop naturally
+    for (int i = 0; i < 5; i++) {
+        while (gtk_events_pending()) {
+            gtk_main_iteration();
+        }
+        g_usleep(20000); // 20ms between iterations
     }
 
-    camera.close();
+    // Now it's safe to close the camera
+    camera.close();  // This will join the camera thread
 
+    // Clear the timer ID (it should have stopped by now)
+    refresh_timer = 0;
+
+    // Wait for training thread to finish
+    if (training_thread.joinable()) {
+        training_in_progress = false;  // Signal thread to stop if possible
+        training_thread.join();
+    }
+
+    // Note: Don't explicitly close database - the FaceDatabase destructor will handle it
+    // Calling close() here and then having destructor call it again causes double-free
+
+    // Destroy window last (but only if not already destroyed by GTK)
+    // The window destroy signal already triggered this cleanup
     if (window != nullptr) {
-        gtk_widget_destroy(window);
         window = nullptr;
     }
 }
@@ -129,8 +158,13 @@ gboolean GTKApp::on_refresh_timer(gpointer user_data) {
 }
 
 gboolean GTKApp::refresh_frame() {
-    if (!camera_running || capture_in_progress) {
-        return TRUE; // Continue timer
+    // Stop timer immediately if cleanup has started
+    if (cleanup_done) {
+        return FALSE; // Stop timer
+    }
+
+    if (!camera_running || capture_in_progress || training_in_progress) {
+        return TRUE; // Continue timer but don't process frames
     }
 
     try {
@@ -153,11 +187,39 @@ gboolean GTKApp::refresh_frame() {
                 Face best_face;  // Store best face for display
                 bool has_best_face = false;
 
-                if (face_recognition_enabled && !faces.empty()) {
-                    for (auto& face : faces) {
+                // Live face recognition with slow update rate (1.5 seconds)
+                // This minimizes load on ONNX Runtime to prevent crashes
+                // Skip recognition if training is in progress to avoid mutex contention
+                gint64 recognition_time = g_get_monotonic_time();
+                bool should_run_recognition = (recognition_time - last_recognition_time) > 1500000; // 1.5 seconds
+
+                if (face_recognition_enabled && !faces.empty() && should_run_recognition && !training_in_progress) {
+                    last_recognition_time = recognition_time;
+                    for (size_t i = 0; i < faces.size(); i++) {
+                        auto& face = faces[i];
+
+                        // Validate bbox is within frame bounds
+                        if (face.bbox.x < 0 || face.bbox.y < 0 ||
+                            face.bbox.x + face.bbox.width > frame.cols ||
+                            face.bbox.y + face.bbox.height > frame.rows) {
+                            std::cerr << "[ERROR] Face bbox out of bounds! Skipping..." << std::endl;
+                            continue;
+                        }
+
                         cv::Mat face_roi = frame(face.bbox);
                         double confidence = 0.0;
-                        int label = face_recognizer.recognize(face_roi, confidence);
+
+                        int label = -1;
+                        try {
+                            // Lock mutex to protect ONNX Runtime (not thread-safe)
+                            std::lock_guard<std::mutex> lock(recognition_mutex);
+                            label = face_recognizer.recognize(face_roi, confidence);
+                        } catch (const std::exception& e) {
+                            std::cerr << "[ERROR] Face recognition failed: " << e.what() << std::endl;
+                            // Continue with unknown label
+                            label = -1;
+                            confidence = 0.0;
+                        }
 
                         if (label != -1) {
                             face.name = face_recognizer.get_label_name(label);
@@ -171,6 +233,11 @@ gboolean GTKApp::refresh_frame() {
                                 best_person_name = face.name;
                                 best_face = face;  // Store best face
                                 has_best_face = true;
+
+                                // Cache result for continuous display
+                                last_recognized_name = face.name;
+                                last_recognized_confidence = face.confidence;
+                                has_recognition_result = true;
                             }
                         } else {
                             // Set name to "Unknown" for unrecognized faces
@@ -178,6 +245,11 @@ gboolean GTKApp::refresh_frame() {
                             face.confidence = confidence * 100.0;  // Store confidence even for unknown
                             face.id = -1;
                             unknown_count++;
+
+                            // Always update cache with unknown result
+                            last_recognized_name = "Unknown";
+                            last_recognized_confidence = confidence * 100.0;
+                            has_recognition_result = true;
 
                             // Track best unknown face as fallback
                             if (!has_best_face && face.confidence > best_confidence) {
@@ -188,8 +260,8 @@ gboolean GTKApp::refresh_frame() {
                         }
                     }
                 } else if (!faces.empty()) {
-                    // Set all faces to "Unknown" if model not trained
-                    // Find face with highest detection (closest to center or largest)
+                    // Use cached recognition result if available, or show as unknown
+                    // Find the largest face
                     int best_idx = 0;
                     int max_size = 0;
                     for (size_t i = 0; i < faces.size(); ++i) {
@@ -200,12 +272,26 @@ gboolean GTKApp::refresh_frame() {
                         }
                     }
 
-                    for (auto& face : faces) {
-                        face.name = "Unknown";
-                        face.confidence = 0.0;
-                        face.id = -1;
+                    // Use cached result for display
+                    if (has_recognition_result && face_recognition_enabled) {
+                        faces[best_idx].name = last_recognized_name;
+                        faces[best_idx].confidence = last_recognized_confidence;
+                        faces[best_idx].id = (last_recognized_name != "Unknown") ? 1 : -1;
+
+                        if (last_recognized_name != "Unknown") {
+                            recognized_count = 1;
+                            best_confidence = last_recognized_confidence;
+                            best_person_name = last_recognized_name;
+                        } else {
+                            unknown_count = 1;
+                        }
+                    } else {
+                        faces[best_idx].name = "Unknown";
+                        faces[best_idx].confidence = 0.0;
+                        faces[best_idx].id = -1;
+                        unknown_count = 1;
                     }
-                    unknown_count = faces.size();
+
                     best_face = faces[best_idx];
                     has_best_face = true;
                 }
@@ -307,7 +393,6 @@ void GTKApp::toggle_camera() {
             camera_running = true;
             gtk_button_set_label(GTK_BUTTON(toggle_button), "Stop Camera");
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Running");
-            std::cout << "Camera started" << std::endl;
         } else {
             // Stop camera
             camera.stop();
@@ -318,10 +403,9 @@ void GTKApp::toggle_camera() {
             gtk_label_set_text(GTK_LABEL(fps_label), "FPS: 0");
             frame_count = 0;
             last_time = 0;
-            std::cout << "Camera stopped" << std::endl;
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception while toggling camera: " << e.what() << std::endl;
+        std::cerr << "[ERROR] Exception while toggling camera: " << e.what() << std::endl;
         camera_running = false;
         gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - Check console");
@@ -356,29 +440,29 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
         rgb_mat = rgb_mat.clone();
     }
 
-    // Create GdkPixbuf from the mat
-    GdkPixbuf* pixbuf = gdk_pixbuf_new_from_data(
-        rgb_mat.data,
+    // Create GdkPixbuf directly with copied data
+    GdkPixbuf* pixbuf = gdk_pixbuf_new(
         GDK_COLORSPACE_RGB,
         FALSE, // no alpha channel
         8,     // bits per sample
         rgb_mat.cols,
-        rgb_mat.rows,
-        rgb_mat.step,
-        nullptr, // destroy function
-        nullptr  // user data
+        rgb_mat.rows
     );
 
     if (pixbuf == nullptr) {
-        std::cerr << "Failed to create pixbuf from mat" << std::endl;
+        std::cerr << "Failed to create pixbuf" << std::endl;
         return nullptr;
     }
 
-    // We need to copy the data since the original mat will be deallocated
-    GdkPixbuf* pixbuf_copy = gdk_pixbuf_copy(pixbuf);
-    g_object_unref(pixbuf);
+    // Copy the data from cv::Mat to GdkPixbuf
+    guchar* pixels = gdk_pixbuf_get_pixels(pixbuf);
+    int rowstride = gdk_pixbuf_get_rowstride(pixbuf);
 
-    return pixbuf_copy;
+    for (int y = 0; y < rgb_mat.rows; y++) {
+        memcpy(pixels + y * rowstride, rgb_mat.ptr(y), rgb_mat.cols * 3);
+    }
+
+    return pixbuf;
 }
 
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
@@ -406,7 +490,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             int line_thickness = 2;
 
             // Use different colors based on confidence: Green for high confidence, Yellow for low
-            cv::Scalar color = (face.confidence > 70.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
+            cv::Scalar color = (face.confidence > 60.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
 
             // Top-left corner
             // Horizontal line
@@ -458,7 +542,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
 
             // Draw label with name and confidence
             std::string label = face.name;
-            if (face.confidence > 0 && face.name != "Unknown") {
+            if (face.confidence > 0) {
                 label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
             }
 
@@ -469,7 +553,7 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             cv::Scalar bg_color;
             if (face.name == "Unknown") {
                 bg_color = cv::Scalar(0, 255, 255);  // Yellow background for unknown faces
-            } else if (face.confidence > 70.0) {
+            } else if (face.confidence > 60.0) {
                 bg_color = cv::Scalar(0, 255, 0);   // Green background for recognized faces
             } else {
                 bg_color = cv::Scalar(0, 255, 255);  // Yellow background for low confidence
@@ -570,24 +654,63 @@ void GTKApp::train_model() {
         return;
     }
 
+    // Check if model is loaded before attempting training
+    if (!face_recognizer.is_model_loaded()) {
+        GtkWidget* error_dialog = gtk_message_dialog_new(
+            GTK_WINDOW(window),
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_ERROR,
+            GTK_BUTTONS_OK,
+            "FaceNet Model Not Loaded");
+        gtk_message_dialog_format_secondary_text(
+            GTK_MESSAGE_DIALOG(error_dialog),
+            "Cannot train the model because the FaceNet ONNX model is missing or failed to load.\n\n"
+            "Please download the FaceNet ONNX model to models/facenet.onnx\n"
+            "Run: ./setup.sh to download the model automatically.");
+        gtk_dialog_run(GTK_DIALOG(error_dialog));
+        gtk_widget_destroy(error_dialog);
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Model not loaded - cannot train");
+        return;
+    }
+
+    // Check if dataset directory exists and has subdirectories
+    if (!std::filesystem::exists("dataset")) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Dataset directory not found");
+        return;
+    }
+
     training_in_progress = true;
     gtk_widget_set_sensitive(train_button, FALSE);
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from dataset... please wait");
 
     std::cout << "Starting training from dataset..." << std::endl;
 
-    // Check if dataset directory exists and has subdirectories
-    if (!std::filesystem::exists("dataset")) {
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Dataset directory not found");
-        training_in_progress = false;
-        gtk_widget_set_sensitive(train_button, TRUE);
-        return;
+    // Join previous training thread if it exists
+    if (training_thread.joinable()) {
+        training_thread.join();
     }
 
-    // Train using the dataset folder (filesystem-based training)
-    bool success = face_recognizer.train_from_images("dataset");
+    // Start training in background thread
+    training_thread = std::thread(&GTKApp::train_model_async, this);
+}
 
-    if (success) {
+void GTKApp::train_model_async() {
+    // This runs in a background thread
+    bool success = face_recognizer.train_from_images("dataset");
+    training_success = success;
+
+    // Schedule UI update on main thread
+    g_idle_add(on_training_complete, this);
+}
+
+gboolean GTKApp::on_training_complete(gpointer user_data) {
+    GTKApp* self = static_cast<GTKApp*>(user_data);
+    self->on_training_finished();
+    return FALSE; // Remove from idle handlers
+}
+
+void GTKApp::on_training_finished() {
+    if (training_success) {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Ready to recognize faces.");
         face_recognition_enabled = true;
         std::cout << "Training successful!" << std::endl;
@@ -614,6 +737,25 @@ void GTKApp::capture_photo() {
 
     if (last_frame.empty()) {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: No frame available to capture");
+        return;
+    }
+
+    // Check if model is loaded (not just trained)
+    if (!face_recognizer.is_model_loaded()) {
+        GtkWidget* error_dialog = gtk_message_dialog_new(
+            GTK_WINDOW(window),
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_ERROR,
+            GTK_BUTTONS_OK,
+            "FaceNet Model Not Loaded");
+        gtk_message_dialog_format_secondary_text(
+            GTK_MESSAGE_DIALOG(error_dialog),
+            "Cannot capture photos because the FaceNet model is missing or failed to load.\n\n"
+            "Please download the FaceNet ONNX model to models/facenet.onnx\n"
+            "Run: ./setup.sh to download the model automatically.");
+        gtk_dialog_run(GTK_DIALOG(error_dialog));
+        gtk_widget_destroy(error_dialog);
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Model not loaded - cannot capture");
         return;
     }
 
@@ -770,3 +912,4 @@ void GTKApp::capture_photo() {
     
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Live stream resumed");
 }
+

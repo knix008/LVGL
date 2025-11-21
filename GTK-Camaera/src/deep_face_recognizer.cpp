@@ -464,6 +464,10 @@ int DeepFaceRecognizer::get_num_people() const {
     return person_id_to_name.size();
 }
 
+bool DeepFaceRecognizer::is_model_loaded() const {
+    return model_loader && model_loader->is_model_loaded();
+}
+
 bool DeepFaceRecognizer::save_index(const std::string& filepath) {
     if (!faiss_index) {
         std::cerr << "Error: FAISS index not initialized" << std::endl;

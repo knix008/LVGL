@@ -8,6 +8,10 @@ onnxruntime-*/
 faiss/
 models/*.onnx
 models/*.bin
+!dataset/A
+!dataset/B
+dataset
+
 
 # Executable
 gtk_webcam

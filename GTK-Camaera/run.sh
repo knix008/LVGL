@@ -30,13 +30,23 @@ echo -e "${GREEN}✓ Executable found: gtk_webcam${NC}"
 echo ""
 
 # Set up library paths
-export LD_LIBRARY_PATH="$SCRIPT_DIR/onnxruntime-linux-x64-1.16.3/lib:$LD_LIBRARY_PATH"
+# Detect system architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ]; then
+    ONNX_DIR="$SCRIPT_DIR/onnxruntime-linux-aarch64-1.16.3"
+else
+    ONNX_DIR="$SCRIPT_DIR/onnxruntime-linux-x64-1.16.3"
+fi
+
+export LD_LIBRARY_PATH="$ONNX_DIR/lib:$LD_LIBRARY_PATH"
 
 # Check if ONNX Runtime library exists
-if [ ! -f "$SCRIPT_DIR/onnxruntime-linux-x64-1.16.3/lib/libonnxruntime.so.1.16.3" ]; then
+if [ ! -f "$ONNX_DIR/lib/libonnxruntime.so.1.16.3" ]; then
     echo -e "${YELLOW}Warning: ONNX Runtime library not found${NC}"
-    echo "Expected: $SCRIPT_DIR/onnxruntime-linux-x64-1.16.3/lib/libonnxruntime.so.1.16.3"
+    echo "Expected: $ONNX_DIR/lib/libonnxruntime.so.1.16.3"
     echo ""
+else
+    echo -e "${GREEN}✓ ONNX Runtime library found ($ARCH)${NC}"
 fi
 
 # Check if FAISS library is available (optional)

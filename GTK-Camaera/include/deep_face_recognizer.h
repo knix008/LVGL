@@ -18,7 +18,7 @@ private:
     std::map<int, std::string> person_id_to_name;
     std::map<std::string, int> name_to_person_id;
 
-    double confidence_threshold = 0.7;  // 70% similarity threshold
+    double confidence_threshold = 0.6;  // 60% similarity threshold
     FaceDatabase* db = nullptr;
     bool is_trained = false;
     std::string model_path;
@@ -54,6 +54,7 @@ public:
     void set_confidence_threshold(double threshold);
     double get_confidence_threshold() const { return confidence_threshold; }
     bool is_model_trained() const { return is_trained; }
+    bool is_model_loaded() const;
     int get_num_people() const;
 
     // Embedding extraction
