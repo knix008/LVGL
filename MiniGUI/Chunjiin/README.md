@@ -354,12 +354,14 @@ Chunjiin/
     └── NanumGothic-ExtraBold.ttf
 ```
 
-### Legacy Files (Backward Compatibility)
+### Legacy Files (Archived)
 
-The following old files remain for reference but are now superseded by the modular structure:
-- `chunjiin.c` → merged into `input/input.c` + other modules
-- `chunjiin_hangul.c` → now `input/hangul.c`
-- Old `chunjiin.h` → now `input/chunjiin.h`
+The original files have been moved to `.legacy_backup/` for historical reference:
+- `chunjiin.c` → `.legacy_backup/chunjiin.c` (merged into `input/input.c` + other modules)
+- `chunjiin_hangul.c` → `.legacy_backup/chunjiin_hangul.c` (now `input/hangul.c`)
+- `chunjiin.h` → `.legacy_backup/chunjiin.h` (now `input/chunjiin.h`)
+
+These legacy files are **not** compiled or used by the current build system.
 
 ### Build Statistics
 
