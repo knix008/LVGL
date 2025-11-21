@@ -1,4 +1,4 @@
-#include "hangul.h"
+#include "chunjiin.h"
 #include "input.h"
 #include <string.h>
 #include <wchar.h>

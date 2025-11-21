@@ -34,9 +34,8 @@ The application is organized into three main modules with clear separation of co
 Chunjiin/
 ├── main.c              # Application entry point
 ├── input/              # Input processing modules
-│   ├── chunjiin.h     # Core data structures
+│   ├── chunjiin.h/c   # Korean composition engine & core structures
 │   ├── input.h/c      # Input dispatcher
-│   ├── hangul.h/c     # Korean composition engine
 │   ├── english.h/c    # English/special character input
 │   └── number.h/c     # Number input
 └── gui/                # GUI management module
@@ -69,7 +68,7 @@ Complete separation of input logic from GUI
   - Text buffer operations
   - Button label generation
 
-- **`hangul.c`** (650+ lines): Korean Composition Engine
+- **`chunjiin.c`** (650+ lines): Korean Composition Engine
   - Chunjiin state machine (초→중→종→겹)
   - Hangul syllable composition
   - Unicode conversion
@@ -207,8 +206,8 @@ make help
 The refactored architecture supports focused development on specific modules:
 
 **Working on Korean Input?**
-- Modify files in `input/hangul.c` and `input/hangul.h`
-- Only `input/hangul.o` needs recompilation
+- Modify files in `input/chunjiin.c` and `input/chunjiin.h`
+- Only `input/chunjiin.o` needs recompilation
 - No GUI changes required
 
 **Working on English/Numbers?**
@@ -338,9 +337,8 @@ Chunjiin/
 ├── main.c                         # Application entry point (48 lines)
 │
 ├── input/                         # Input processing modules (1100+ lines)
-│   ├── chunjiin.h                # Core data structures
+│   ├── chunjiin.h / chunjiin.c   # Korean composition engine & core structures (650+ lines)
 │   ├── input.h / input.c         # Input dispatcher (175 lines)
-│   ├── hangul.h / hangul.c       # Korean composition engine (650+ lines)
 │   ├── english.h / english.c     # English/special chars (140 lines)
 │   └── number.h / number.c       # Number input (17 lines)
 │
@@ -358,7 +356,7 @@ Chunjiin/
 
 The original files have been moved to `.legacy_backup/` for historical reference:
 - `chunjiin.c` → `.legacy_backup/chunjiin.c` (merged into `input/input.c` + other modules)
-- `chunjiin_hangul.c` → `.legacy_backup/chunjiin_hangul.c` (now `input/hangul.c`)
+- `chunjiin_hangul.c` → `.legacy_backup/chunjiin_hangul.c` (now `input/chunjiin.c`)
 - `chunjiin.h` → `.legacy_backup/chunjiin.h` (now `input/chunjiin.h`)
 
 These legacy files are **not** compiled or used by the current build system.
@@ -369,7 +367,7 @@ These legacy files are **not** compiled or used by the current build system.
 |-----------|-------|---------|
 | main.c | 48 | Application entry point |
 | input/input.c | 175 | Input dispatcher |
-| input/hangul.c | 650+ | Korean composition |
+| input/chunjiin.c | 650+ | Korean composition |
 | input/english.c | 140 | English/special chars |
 | input/number.c | 17 | Number input |
 | gui/gui.c | 430+ | GUI management |

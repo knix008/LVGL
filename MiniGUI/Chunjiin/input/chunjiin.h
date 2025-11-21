@@ -1,11 +1,12 @@
-#ifndef CHUNJIIN_INPUT_H
-#define CHUNJIIN_INPUT_H
+#ifndef CHUNJIIN_H
+#define CHUNJIIN_H
 
 #include <stdbool.h>
 #include <wchar.h>
 
 #define MAX_TEXT_LEN 1024
 
+// Input mode enumeration
 typedef enum {
     MODE_HANGUL = 0,
     MODE_UPPER_ENGLISH = 1,
@@ -14,30 +15,39 @@ typedef enum {
     MODE_SPECIAL = 4
 } InputMode;
 
+// Hangul-specific composition state
 typedef struct {
-    wchar_t chosung[16];      // 초성
-    wchar_t jungsung[16];     // 중성
-    wchar_t jongsung[16];     // 종성
-    wchar_t jongsung2[16];    // 종성2 (겹받침)
-    int step;                 // 현재 단계 (0:초성, 1:중성, 2:종성, 3:겹받침)
-    bool flag_writing;        // 작성 중 플래그
-    bool flag_dotused;        // 점(·, ‥) 사용 플래그
-    bool flag_doubled;        // 겹받침 플래그
-    bool flag_addcursor;      // 커서 추가 플래그
-    bool flag_space;          // 스페이스 플래그
+    wchar_t chosung[16];      // 초성 (initial consonants)
+    wchar_t jungsung[16];     // 중성 (medial vowels)
+    wchar_t jongsung[16];     // 종성 (final consonants)
+    wchar_t jongsung2[16];    // 종성2 (double final consonants)
+    int step;                 // Current composition step (0:초성, 1:중성, 2:종성, 3:겹받침)
+    bool flag_writing;        // Composition in progress flag
+    bool flag_dotused;        // Dot (·, ‥) used flag
+    bool flag_doubled;        // Double final consonant flag
+    bool flag_addcursor;      // Add cursor flag
+    bool flag_space;          // Space flag
 } HangulState;
 
+// Core input state
 typedef struct {
     HangulState hangul;
     InputMode now_mode;
 
-    wchar_t engnum[16];       // 영문/숫자 버퍼
-    bool flag_initengnum;     // 영문/숫자 초기화 플래그
-    bool flag_engdelete;      // 영문 삭제 플래그
-    bool flag_upper;          // 대문자 플래그
+    wchar_t engnum[16];       // English/number buffer
+    bool flag_initengnum;     // English/number initialization flag
+    bool flag_engdelete;      // English delete flag
+    bool flag_upper;          // Uppercase flag
 
-    wchar_t text_buffer[MAX_TEXT_LEN];  // 텍스트 버퍼
-    int cursor_pos;           // 커서 위치
+    wchar_t text_buffer[MAX_TEXT_LEN];  // Main text buffer
+    int cursor_pos;           // Current cursor position
 } ChunjiinState;
 
-#endif // CHUNJIIN_INPUT_H
+// Hangul composition engine
+void hangul_init(HangulState *hangul);
+void hangul_make(ChunjiinState *state, int input);
+void hangul_write(ChunjiinState *state);
+int hangul_get_unicode(HangulState *hangul, const wchar_t *real_jong);
+void hangul_check_double(const wchar_t *jong, const wchar_t *jong2, wchar_t *result);
+
+#endif // CHUNJIIN_H

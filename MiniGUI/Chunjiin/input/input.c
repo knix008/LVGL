@@ -1,5 +1,5 @@
 #include "input.h"
-#include "hangul.h"
+#include "chunjiin.h"
 #include "english.h"
 #include "number.h"
 #include <string.h>

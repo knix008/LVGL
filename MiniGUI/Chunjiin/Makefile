@@ -13,12 +13,12 @@ MINIGUI_LIBS = -L./install/lib -lminigui_sa -ljpeg -lpng16 -lz -ldl -lharfbuzz -
 TARGET = chunjiin
 
 # Source files (modular structure)
-INPUT_SOURCES = input/input.c input/hangul.c input/english.c input/number.c
+INPUT_SOURCES = input/input.c input/chunjiin.c input/english.c input/number.c
 GUI_SOURCES = gui/gui.c
 MAIN_SOURCES = main.c
 
 SOURCES = $(MAIN_SOURCES) $(INPUT_SOURCES) $(GUI_SOURCES)
-HEADERS = input/chunjiin.h input/input.h input/hangul.h input/english.h input/number.h gui/gui.h
+HEADERS = input/chunjiin.h input/input.h input/english.h input/number.h gui/gui.h
 
 # Object files
 OBJECTS = $(SOURCES:.c=.o)
