@@ -46,8 +46,26 @@ echo "  - Complete Korean syllable formation"
 echo "  - Press Escape or Q to exit the application."
 echo ""
 
+# Check if gvfb is already running
+if ! pgrep -x "gvfb" > /dev/null; then
+    echo "Starting gvfb (virtual framebuffer server)..."
+    /usr/local/bin/gvfb -m > /dev/null 2>&1 &
+    GVFB_PID=$!
+    sleep 1
+    echo "gvfb started (PID: $GVFB_PID)"
+else
+    echo "gvfb is already running"
+    GVFB_PID=""
+fi
+
 # Run the application
 ./chunjiin
+
+# Clean up gvfb if we started it
+if [ ! -z "$GVFB_PID" ]; then
+    echo "Stopping gvfb..."
+    kill $GVFB_PID 2>/dev/null
+fi
 
 echo ""
 echo "ChunJiIn Korean Input Application has exited."

@@ -3,7 +3,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -g -O2 -Wno-unused-parameter
-LDFLAGS = -Wl,--as-needed
+LDFLAGS = -Wl,--as-needed -Wl,-rpath,'$$ORIGIN/install/lib'
 
 # Local MiniGUI installation paths
 MINIGUI_CFLAGS = -I./install/include

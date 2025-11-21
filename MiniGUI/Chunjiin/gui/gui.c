@@ -233,12 +233,12 @@ static LRESULT ButtonClickProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case MSG_CREATE: {
-            // Create text area
-            hTextArea = CreateWindow(CTRL_MLEDIT, "",
-                                   WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_HSCROLL |
-                                   ES_READONLY | ES_AUTOWRAP,
+            // Create text area using STATIC control for multi-line display (MLEDIT crashes on ARM64)
+            hTextArea = CreateWindowEx2(CTRL_STATIC, "",
+                                   WS_VISIBLE | WS_BORDER | SS_LEFT,
+                                   0,
                                    IDC_TEXT_AREA,
-                                   10, 10, 260, 100, hWnd, 0);
+                                   10, 10, 260, 100, hWnd, NULL, NULL, 0);
 
             if (korean_font_bold) {
                 SetWindowFont(hTextArea, korean_font_bold);
@@ -274,12 +274,13 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                 char button_text[256];
                 wchar_to_utf8(wtext, button_text, sizeof(button_text));
 
-                hButtons[i] = CreateWindow(CTRL_BUTTON, button_text,
+                hButtons[i] = CreateWindowEx2(CTRL_BUTTON, button_text,
                            WS_VISIBLE | BS_PUSHBUTTON,
+                           0,
                            key_ids[i],
                            button_start_x + positions[i][0] * button_spacing_x,
                            button_start_y + positions[i][1] * button_spacing_y,
-                           70, 40, hWnd, 0);
+                           70, 40, hWnd, NULL, NULL, 0);
 
                 if (korean_font_bold && hButtons[i] != HWND_INVALID) {
                     SetWindowFont(hButtons[i], korean_font_bold);
@@ -287,32 +288,35 @@ static LRESULT ChunjiinWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             }
 
             // Create control buttons
-            hModeButton = CreateWindow(CTRL_BUTTON, "Mode",
+            hModeButton = CreateWindowEx2(CTRL_BUTTON, "Mode",
                        WS_VISIBLE | BS_PUSHBUTTON,
+                       0,
                        IDC_MODE_BUTTON,
                        button_start_x + 0 * button_spacing_x,
                        button_start_y + 4 * button_spacing_y,
-                       70, 40, hWnd, 0);
+                       70, 40, hWnd, NULL, NULL, 0);
             if (korean_font_bold && hModeButton != HWND_INVALID) {
                 SetWindowFont(hModeButton, korean_font_bold);
             }
 
-            hPunctButton = CreateWindow(CTRL_BUTTON, ".,?",
+            hPunctButton = CreateWindowEx2(CTRL_BUTTON, ".,?",
                        WS_VISIBLE | BS_PUSHBUTTON,
+                       0,
                        IDC_PUNCT_BUTTON,
                        button_start_x + 1 * button_spacing_x,
                        button_start_y + 4 * button_spacing_y,
-                       70, 40, hWnd, 0);
+                       70, 40, hWnd, NULL, NULL, 0);
             if (korean_font_bold && hPunctButton != HWND_INVALID) {
                 SetWindowFont(hPunctButton, korean_font_bold);
             }
 
-            hEnterButton = CreateWindow(CTRL_BUTTON, "Enter",
+            hEnterButton = CreateWindowEx2(CTRL_BUTTON, "Enter",
                        WS_VISIBLE | BS_PUSHBUTTON,
+                       0,
                        IDC_ENTER_BUTTON,
                        button_start_x + 2 * button_spacing_x,
                        button_start_y + 4 * button_spacing_y,
-                       70, 40, hWnd, 0);
+                       70, 40, hWnd, NULL, NULL, 0);
             if (korean_font_bold && hEnterButton != HWND_INVALID) {
                 SetWindowFont(hEnterButton, korean_font_bold);
             }
