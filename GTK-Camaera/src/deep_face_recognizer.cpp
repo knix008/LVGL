@@ -55,11 +55,21 @@ cv::Mat DeepFaceRecognizer::preprocess_face(const cv::Mat& face_image) {
         cv::cvtColor(processed, processed, cv::COLOR_BGRA2BGR);
     }
 
+    // Add padding to avoid edge artifacts when resizing
+    int padding = 10;
+    cv::Mat padded;
+    cv::copyMakeBorder(processed, padded, padding, padding, padding, padding, 
+                      cv::BORDER_REPLICATE);
+
     // Resize to match model input (224x224 for FaceNet)
     int target_size = model_loader->get_input_width();
-    cv::resize(processed, processed, cv::Size(target_size, target_size));
+    cv::resize(padded, processed, cv::Size(target_size, target_size), 0, 0, cv::INTER_LINEAR);
 
-    return processed;
+    // Apply bilateral filter to reduce noise while preserving edges
+    cv::Mat filtered;
+    cv::bilateralFilter(processed, filtered, 5, 50, 50);
+
+    return filtered;
 }
 
 bool DeepFaceRecognizer::validate_face_image(const cv::Mat& image) {
@@ -364,6 +374,7 @@ int DeepFaceRecognizer::recognize(const cv::Mat& face_image, double& confidence)
     // Extract embedding
     std::vector<float> embedding = extract_embedding(face_image);
     if (embedding.empty()) {
+        std::cerr << "[Recognition] Failed to extract embedding" << std::endl;
         confidence = 0.0;
         return -1;
     }
@@ -371,11 +382,24 @@ int DeepFaceRecognizer::recognize(const cv::Mat& face_image, double& confidence)
     // Search FAISS index
     int person_id = faiss_index->search(embedding, confidence);
 
+    // Debug logging with detailed info
+    std::cout << "[Recognition] Person ID: " << person_id 
+              << ", Raw Confidence: " << confidence
+              << " (" << (confidence * 100.0) << "%)"
+              << ", Threshold: " << confidence_threshold 
+              << " (" << (confidence_threshold * 100.0) << "%)" << std::endl;
+
     // Apply threshold
     if (confidence < confidence_threshold) {
+        std::cout << "[Recognition] BELOW threshold (" << confidence << " < " << confidence_threshold 
+                  << ") - returning Unknown" << std::endl;
+        confidence = confidence;  // Keep the confidence value for display
         return -1;  // Unknown
     }
 
+    std::string person_name = get_label_name(person_id);
+    std::cout << "[Recognition] MATCH FOUND: " << person_name 
+              << " with confidence " << (confidence * 100.0) << "%" << std::endl;
     return person_id;
 }
 
@@ -496,4 +520,58 @@ void DeepFaceRecognizer::clear() {
     person_id_to_name.clear();
     name_to_person_id.clear();
     is_trained = false;
+}
+
+double DeepFaceRecognizer::compare_embeddings(const std::vector<float>& emb1, 
+                                              const std::vector<float>& emb2) {
+    if (emb1.size() != emb2.size() || emb1.empty()) {
+        return 0.0;
+    }
+
+    // Compute L2 distance
+    float distance = 0.0f;
+    for (size_t i = 0; i < emb1.size(); i++) {
+        float diff = emb1[i] - emb2[i];
+        distance += diff * diff;
+    }
+    distance = std::sqrt(distance);
+
+    // Convert to similarity using the same formula as FAISS
+    float d_squared = distance * distance;
+    float cos_theta = 1.0f - (d_squared / 2.0f);
+    cos_theta = std::max(-1.0f, std::min(1.0f, cos_theta));
+    double similarity = (1.0 + cos_theta) / 2.0;
+
+    return similarity;
+}
+
+std::vector<std::pair<std::string, double>> 
+DeepFaceRecognizer::recognize_top_k(const cv::Mat& face_image, int k) {
+    std::vector<std::pair<std::string, double>> results;
+
+    if (!is_trained || !faiss_index->is_index_built()) {
+        std::cerr << "Error: Model not trained" << std::endl;
+        return results;
+    }
+
+    // Extract embedding
+    std::vector<float> embedding = extract_embedding(face_image);
+    if (embedding.empty()) {
+        return results;
+    }
+
+    // Get top-k matches
+    std::vector<double> confidences;
+    std::vector<int> person_ids = faiss_index->search_k(embedding, k, confidences);
+
+    // Convert to name-confidence pairs
+    for (size_t i = 0; i < person_ids.size(); i++) {
+        std::string name = get_label_name(person_ids[i]);
+        results.push_back({name, confidences[i]});
+        
+        std::cout << "[Top-" << (i+1) << "] " << name 
+                  << ": " << (confidences[i] * 100.0) << "%" << std::endl;
+    }
+
+    return results;
 }

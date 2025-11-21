@@ -114,12 +114,21 @@ bool FAISSIndex::add_vectors(const std::vector<int>& ids,
 }
 
 double FAISSIndex::distance_to_similarity(float distance) const {
-    // Convert L2 distance to similarity score (0-1)
-    // For normalized embeddings, L2 distance ranges from 0 to 2
-    // 0 = identical, 2 = completely different
-    // similarity = 1 - (distance / 2)
-    float normalized_distance = std::min(distance / 2.0f, 1.0f);
-    return static_cast<double>(1.0f - normalized_distance);
+    // For L2-normalized embeddings, use cosine similarity
+    // L2 distance between normalized vectors: d = sqrt(2 - 2*cos(theta))
+    // So: cos(theta) = 1 - (d^2 / 2)
+    // Similarity score (0-1): (1 + cos(theta)) / 2
+    
+    float d_squared = distance * distance;
+    float cos_theta = 1.0f - (d_squared / 2.0f);
+    
+    // Clamp to valid range
+    cos_theta = std::max(-1.0f, std::min(1.0f, cos_theta));
+    
+    // Convert to 0-1 similarity (0 = opposite, 1 = identical)
+    double similarity = (1.0 + cos_theta) / 2.0;
+    
+    return similarity;
 }
 
 // Simple L2 distance computation

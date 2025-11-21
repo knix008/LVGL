@@ -18,7 +18,7 @@ private:
     std::map<int, std::string> person_id_to_name;
     std::map<std::string, int> name_to_person_id;
 
-    double confidence_threshold = 0.6;  // 60% similarity threshold
+    double confidence_threshold = 0.35;  // Lowered from 0.6 to 0.35 for better detection
     FaceDatabase* db = nullptr;
     bool is_trained = false;
     std::string model_path;
@@ -57,8 +57,12 @@ public:
     bool is_model_loaded() const;
     int get_num_people() const;
 
-    // Embedding extraction
+    // Embedding extraction and analysis
     std::vector<float> extract_embedding(const cv::Mat& face_image);
+    double compare_embeddings(const std::vector<float>& emb1, const std::vector<float>& emb2);
+    
+    // Advanced recognition with top-k results
+    std::vector<std::pair<std::string, double>> recognize_top_k(const cv::Mat& face_image, int k = 3);
 
     // Index management
     bool save_index(const std::string& filepath);

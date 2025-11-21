@@ -90,7 +90,14 @@ bool ModelLoader::load_model(const std::string& model_path) {
 
 cv::Mat ModelLoader::normalize_image(const cv::Mat& image) {
     cv::Mat normalized;
-    image.convertTo(normalized, CV_32F, 1.0 / 255.0);  // Normalize to [0, 1]
+    // FaceNet typically uses [-1, 1] normalization or standardization
+    // First convert to [0, 1]
+    image.convertTo(normalized, CV_32F, 1.0 / 255.0);
+    
+    // Then convert to [-1, 1] range (centered around 0)
+    // This is more common for FaceNet models
+    normalized = (normalized - 0.5) * 2.0;
+    
     return normalized;
 }
 
@@ -116,10 +123,24 @@ std::vector<float> ModelLoader::preprocess_image(const cv::Mat& image) {
 
     // Resize to model input size
     cv::Mat resized;
-    cv::resize(img, resized, cv::Size(expected_width, expected_height));
+    cv::resize(img, resized, cv::Size(expected_width, expected_height), 0, 0, cv::INTER_LINEAR);
+
+    // Apply histogram equalization for better contrast (helps with lighting differences)
+    cv::Mat equalized;
+    if (resized.channels() == 3) {
+        cv::Mat ycrcb;
+        cv::cvtColor(resized, ycrcb, cv::COLOR_BGR2YCrCb);
+        std::vector<cv::Mat> channels;
+        cv::split(ycrcb, channels);
+        cv::equalizeHist(channels[0], channels[0]);  // Equalize Y channel
+        cv::merge(channels, ycrcb);
+        cv::cvtColor(ycrcb, equalized, cv::COLOR_YCrCb2BGR);
+    } else {
+        equalized = resized.clone();
+    }
 
     // Normalize
-    cv::Mat normalized = normalize_image(resized);
+    cv::Mat normalized = normalize_image(equalized);
 
     // Convert to float array in CHW format (Channels, Height, Width)
     std::vector<float> input_data;
