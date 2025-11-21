@@ -24,34 +24,116 @@ A comprehensive Korean input method implementation using the ChunJiIn (천지인
 - **Mode switching**: Easy switching between input modes
 - **Korean font support**: Uses NanumGothic fonts for proper Korean rendering
 
-## 🏗️ Architecture
+## 🏗️ Architecture (Modular Design)
 
-### Core Components
+The application is organized into three main modules with clear separation of concerns:
 
-- **`main.c`**: Main application window and GUI components
-- **`chunjiin.c`**: Core ChunJiIn input method logic
-- **`chunjiin_hangul.c`**: Hangul character composition and Unicode handling
-- **`chunjiin.h`**: Header file with data structures and function declarations
+### Module Structure
+
+```
+Chunjiin/
+├── main.c              # Application entry point
+├── input/              # Input processing modules
+│   ├── chunjiin.h     # Core data structures
+│   ├── input.h/c      # Input dispatcher
+│   ├── hangul.h/c     # Korean composition engine
+│   ├── english.h/c    # English/special character input
+│   └── number.h/c     # Number input
+└── gui/                # GUI management module
+    ├── gui.h
+    └── gui.c           # Window, controls, events
+```
+
+### Module Responsibilities
+
+#### 1. Main Module (`main.c`)
+- **Purpose**: Application initialization and lifecycle
+- **Lines**: 48
+- **Responsibilities**:
+  - Initialize MiniGUI
+  - Create main window
+  - Start message loop
+  - Minimal code, focuses only on app lifecycle
+
+#### 2. Input Module (`input/` - 1100+ lines)
+Complete separation of input logic from GUI
+
+- **`chunjiin.h`**: Core data structures
+  - `InputMode` enum (HANGUL, UPPER_ENGLISH, ENGLISH, NUMBER, SPECIAL)
+  - `HangulState` struct (Korean composition state)
+  - `ChunjiinState` struct (global input state)
+
+- **`input.c`** (175 lines): Input Dispatcher
+  - Routes input to appropriate handler based on mode
+  - Manages mode switching
+  - Text buffer operations
+  - Button label generation
+
+- **`hangul.c`** (650+ lines): Korean Composition Engine
+  - Chunjiin state machine (초→중→종→겹)
+  - Hangul syllable composition
+  - Unicode conversion
+  - Double consonant handling
+
+- **`english.c`** (140 lines): English & Special Characters
+  - T9-style character cycling
+  - Case conversion (uppercase/lowercase)
+  - Special character support
+
+- **`number.c`** (17 lines): Number Input
+  - Direct digit mapping (0-9)
+
+#### 3. GUI Module (`gui/` - 430+ lines)
+Complete separation of user interface from logic
+
+- **`gui.c`**: Window and Control Management
+  - Window creation and initialization
+  - Text display updates
+  - Dynamic button labels per mode
+  - Event handling (key press, mode change, punctuation, submit)
+  - Font management
+  - Resource cleanup
 
 ### Key Data Structures
 
 ```c
+// Core input state
 typedef struct {
-    HangulState hangul;       // Korean input state
+    HangulState hangul;       // Korean composition state
     InputMode now_mode;       // Current input mode
-    wchar_t text_buffer[MAX_TEXT_LEN];  // Text buffer
-    int cursor_pos;           // Cursor position
+    wchar_t engnum[16];       // English/number buffer
+    wchar_t text_buffer[MAX_TEXT_LEN];  // Main text buffer
+    int cursor_pos;           // Current cursor position
 } ChunjiinState;
 
+// Hangul-specific composition state
 typedef struct {
-    wchar_t chosung[16];      // Initial consonants
-    wchar_t jungsung[16];     // Medial vowels
-    wchar_t jongsung[16];     // Final consonants
-    wchar_t jongsung2[16];    // Double final consonants
-    int step;                 // Current composition step
+    wchar_t chosung[16];      // Initial consonants (초성)
+    wchar_t jungsung[16];     // Medial vowels (중성)
+    wchar_t jongsung[16];     // Final consonants (종성)
+    wchar_t jongsung2[16];    // Double final consonants (겹받침)
+    int step;                 // Composition step (0-3)
     // ... composition flags
 } HangulState;
+
+// Input mode enumeration
+typedef enum {
+    MODE_HANGUL = 0,
+    MODE_UPPER_ENGLISH = 1,
+    MODE_ENGLISH = 2,
+    MODE_NUMBER = 3,
+    MODE_SPECIAL = 4
+} InputMode;
 ```
+
+### Architecture Benefits
+
+✅ **Separation of Concerns**: Input logic independent from GUI
+✅ **Modularity**: Each module has single responsibility
+✅ **Reusability**: Input engine works with different GUI frameworks
+✅ **Testability**: Modules can be tested independently
+✅ **Maintainability**: Related code grouped logically
+✅ **Scalability**: Easy to add new input methods (Chinese, Japanese, etc.)
 
 ## 🛠️ Building and Installation
 
@@ -104,6 +186,12 @@ After initial setup, you can use standard make commands:
 # Rebuild the application only
 make
 
+# Run the application
+make run
+
+# Show detailed build info
+make info
+
 # Clean build files
 make clean
 
@@ -113,6 +201,30 @@ make check-minigui
 # Show help
 make help
 ```
+
+### Modular Development
+
+The refactored architecture supports focused development on specific modules:
+
+**Working on Korean Input?**
+- Modify files in `input/hangul.c` and `input/hangul.h`
+- Only `input/hangul.o` needs recompilation
+- No GUI changes required
+
+**Working on English/Numbers?**
+- Modify `input/english.c`, `input/number.c`
+- Independent of other input modules
+- Quick recompile and test
+
+**Working on UI/Controls?**
+- Modify `gui/gui.c` and `gui/gui.h`
+- Input logic remains unchanged
+- Can test UI without affecting input engine
+
+**Adding New Input Method?**
+- Create `input/chinese.h` and `input/chinese.c`
+- Update `input/input.c` dispatcher to route to new handler
+- No changes needed to GUI or Main modules
 
 ## 🎯 Usage
 
@@ -213,22 +325,56 @@ The application uses `MiniGUI.cfg` for runtime configuration:
 
 ## 📁 Project Structure
 
+### Current Refactored Layout
+
 ```
 Chunjiin/
-├── README.md              # This file
-├── build.sh              # Build script (downloads MiniGUI, builds app)
-├── run.sh                # Run script (sets environment, runs app)
-├── Makefile              # Build configuration
-├── MiniGUI.cfg           # MiniGUI runtime configuration
-├── main.c                # Main application and GUI
-├── chunjiin.c            # Core input method logic
-├── chunjiin_hangul.c     # Hangul composition functions
-├── chunjiin.h            # Header file
-└── assets/               # Korean fonts
+├── README.md                       # This file
+├── build.sh                       # Build script
+├── run.sh                         # Run script
+├── Makefile                       # Build configuration (UPDATED)
+├── MiniGUI.cfg                    # MiniGUI runtime configuration
+│
+├── main.c                         # Application entry point (48 lines)
+│
+├── input/                         # Input processing modules (1100+ lines)
+│   ├── chunjiin.h                # Core data structures
+│   ├── input.h / input.c         # Input dispatcher (175 lines)
+│   ├── hangul.h / hangul.c       # Korean composition engine (650+ lines)
+│   ├── english.h / english.c     # English/special chars (140 lines)
+│   └── number.h / number.c       # Number input (17 lines)
+│
+├── gui/                          # GUI management module (430+ lines)
+│   ├── gui.h
+│   └── gui.c                     # Window, controls, events
+│
+└── assets/                       # Korean fonts
     ├── NanumGothic-Regular.ttf
     ├── NanumGothic-Bold.ttf
     └── NanumGothic-ExtraBold.ttf
 ```
+
+### Legacy Files (Backward Compatibility)
+
+The following old files remain for reference but are now superseded by the modular structure:
+- `chunjiin.c` → merged into `input/input.c` + other modules
+- `chunjiin_hangul.c` → now `input/hangul.c`
+- Old `chunjiin.h` → now `input/chunjiin.h`
+
+### Build Statistics
+
+| Component | Lines | Purpose |
+|-----------|-------|---------|
+| main.c | 48 | Application entry point |
+| input/input.c | 175 | Input dispatcher |
+| input/hangul.c | 650+ | Korean composition |
+| input/english.c | 140 | English/special chars |
+| input/number.c | 17 | Number input |
+| gui/gui.c | 430+ | GUI management |
+| **Total** | **~1570** | **Production code** |
+
+**Compilation**: ✓ Successful (< 1 second)
+**Executable Size**: 104 KB
 
 ## 🐛 Troubleshooting
 

@@ -12,7 +12,6 @@ minigui/
 
 # Executables
 chunjiin
-chunjiin_app
 
 # Logs
 *.log

@@ -10,11 +10,15 @@ MINIGUI_CFLAGS = -I./install/include
 MINIGUI_LIBS = -L./install/lib -lminigui_sa -ljpeg -lpng16 -lz -ldl -lharfbuzz -lfreetype -lm -lpthread -linput -ldrm -ludev
 
 # Target executable
-TARGET = chunjiin_app
+TARGET = chunjiin
 
-# Source files
-SOURCES = main.c chunjiin.c chunjiin_hangul.c
-HEADERS = chunjiin.h
+# Source files (modular structure)
+INPUT_SOURCES = input/input.c input/hangul.c input/english.c input/number.c
+GUI_SOURCES = gui/gui.c
+MAIN_SOURCES = main.c
+
+SOURCES = $(MAIN_SOURCES) $(INPUT_SOURCES) $(GUI_SOURCES)
+HEADERS = input/chunjiin.h input/input.h input/hangul.h input/english.h input/number.h gui/gui.h
 
 # Object files
 OBJECTS = $(SOURCES:.c=.o)
@@ -42,7 +46,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET) $(MINIGUI_LIBS) $(LDFLAGS)
 
 # Compile source files with header dependencies
-%.o: %.c $(HEADERS)
+%.o: %.c
 	@echo "Compiling $<..."
 	$(CC) $(CFLAGS) $(MINIGUI_CFLAGS) -c $< -o $@
 
@@ -86,13 +90,17 @@ install-deps:
 
 # Show build information
 info:
-	@echo "ChunJiIn Korean Input Application"
-	@echo "=================================="
+	@echo "ChunJiIn Korean Input Application (Modular Architecture)"
+	@echo "========================================================"
 	@echo "Compiler:       $(CC)"
 	@echo "CFLAGS:         $(CFLAGS)"
 	@echo "Target:         $(TARGET)"
-	@echo "Sources:        $(SOURCES)"
-	@echo "Objects:        $(OBJECTS)"
+	@echo ""
+	@echo "Modules:"
+	@echo "  Main:         $(MAIN_SOURCES)"
+	@echo "  Input:        $(INPUT_SOURCES)"
+	@echo "  GUI:          $(GUI_SOURCES)"
+	@echo ""
 	@echo "Font directory: $(FONT_DIR)"
 	@echo ""
 	@echo "MiniGUI Status:"

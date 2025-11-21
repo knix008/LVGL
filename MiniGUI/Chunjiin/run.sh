@@ -6,8 +6,8 @@
 echo "Starting ChunJiIn Korean Input Application..."
 
 # Check if the application exists
-if [ ! -f "./chunjiin_app" ]; then
-    echo "Error: chunjiin_app executable not found!"
+if [ ! -f "./chunjiin" ]; then
+    echo "Error: chunjiin executable not found!"
     echo "Please run './build.sh' first to build MiniGUI and the application."
     exit 1
 fi
@@ -47,7 +47,7 @@ echo "  - Press Escape or Q to exit the application."
 echo ""
 
 # Run the application
-./chunjiin_app
+./chunjiin
 
 echo ""
 echo "ChunJiIn Korean Input Application has exited."
