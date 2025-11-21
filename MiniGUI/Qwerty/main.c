@@ -467,13 +467,14 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 korean_font_needs_destroy = FALSE; // System fonts don't need to be destroyed
             }
 
-            // Create text box - use mledit control for multi-line support
+            // Create text box - use STATIC control instead of MLEDIT (MLEDIT crashes on ARM64)
             printf("Creating text box...\n");
-            hTextBox = CreateWindow("mledit", "",
-                WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_AUTOWRAP,
+            hTextBox = CreateWindowEx2(CTRL_STATIC, "",
+                WS_VISIBLE | WS_BORDER | SS_LEFT,
+                0,
                 IDC_TEXTBOX,
                 20, 20, 650, 120,
-                hWnd, 0);
+                hWnd, NULL, NULL, 0);
             printf("Text box created, handle: %p\n", hTextBox);
             if (hTextBox == HWND_INVALID) {
                 printf("ERROR: Failed to create text box\n");
