@@ -202,8 +202,29 @@ bool DeepFaceRecognizer::train_from_images(const std::string& dataset_path) {
 
     std::cout << "Starting training from images in: " << dataset_path << std::endl;
 
+    // Clear existing FAISS index and embeddings before retraining
+    std::cout << "Clearing existing FAISS index..." << std::endl;
+    faiss_index->clear();
+
+    // Clear old embeddings from database
+    if (db) {
+        std::cout << "Clearing old embeddings from database..." << std::endl;
+        db->clear_all_embeddings();
+    }
+
+    // Clear in-memory label maps (will be rebuilt during extraction)
+    person_id_to_name.clear();
+    name_to_person_id.clear();
+
     // Extract embeddings from all images
+    // Note: This will call register_person() for each person folder,
+    // which adds them to both the database and the label maps
     auto embeddings_data = extract_embeddings_from_directory(dataset_path);
+
+    // Reload label maps from database to ensure consistency
+    // This captures any new persons added during extraction
+    std::cout << "Reloading label maps from database..." << std::endl;
+    load_labels_from_database();
 
     if (embeddings_data.empty()) {
         std::cerr << "Error: No embeddings extracted from dataset" << std::endl;
@@ -237,6 +258,12 @@ bool DeepFaceRecognizer::train_from_embeddings(const std::vector<int>& person_id
     try {
         std::cout << "Building FAISS index with " << embeddings.size() << " embeddings..." << std::endl;
 
+        // Debug: Print all person IDs being added to FAISS
+        std::cout << "[Training] Person IDs being added to FAISS:" << std::endl;
+        for (size_t i = 0; i < person_ids.size(); i++) {
+            std::cout << "  Embedding " << i << " -> person_id=" << person_ids[i] << std::endl;
+        }
+
         // Build FAISS index
         if (!faiss_index->build_index(embeddings.size())) {
             std::cerr << "Error: Failed to build FAISS index" << std::endl;
@@ -260,6 +287,12 @@ bool DeepFaceRecognizer::train_from_embeddings(const std::vector<int>& person_id
         std::cout << "  Total embeddings: " << embeddings.size() << std::endl;
         std::cout << "  Total people: " << get_num_people() << std::endl;
         std::cout << "  FAISS index clusters: " << faiss_index->get_num_clusters() << std::endl;
+
+        // Debug: Print final label map state
+        std::cout << "[Training] Final label map state:" << std::endl;
+        for (const auto& [id, name] : person_id_to_name) {
+            std::cout << "  ID " << id << " -> " << name << std::endl;
+        }
 
         return true;
 
@@ -420,28 +453,43 @@ std::string DeepFaceRecognizer::recognize_with_name(const cv::Mat& face_image,
 }
 
 int DeepFaceRecognizer::register_person(const std::string& name) {
-    // Check if person already registered
+    // Check if person already registered in memory
     auto it = name_to_person_id.find(name);
     if (it != name_to_person_id.end()) {
         return it->second;
     }
 
-    // Find next available ID
-    int new_id = 1;
-    for (const auto& [id, n] : person_id_to_name) {
-        if (id >= new_id) {
-            new_id = id + 1;
+    int new_id = -1;
+
+    // Register in database if available and get the database-assigned ID
+    if (db) {
+        // First check if person already exists in database
+        PersonRecord person;
+        if (db->get_person_by_name(name, person)) {
+            new_id = person.id;
+        } else {
+            // Add new person to database
+            db->add_person(name);
+            // Get the database-assigned ID
+            if (db->get_person_by_name(name, person)) {
+                new_id = person.id;
+            }
         }
     }
 
-    // Register in memory
+    // Fallback: generate ID if database not available
+    if (new_id < 0) {
+        new_id = 1;
+        for (const auto& [id, n] : person_id_to_name) {
+            if (id >= new_id) {
+                new_id = id + 1;
+            }
+        }
+    }
+
+    // Register in memory with the correct ID
     person_id_to_name[new_id] = name;
     name_to_person_id[name] = new_id;
-
-    // Register in database if available
-    if (db) {
-        db->add_person(name);
-    }
 
     std::cout << "Registered person: " << name << " (ID: " << new_id << ")" << std::endl;
     return new_id;
@@ -456,7 +504,12 @@ bool DeepFaceRecognizer::set_label_name(int person_id, const std::string& name) 
 std::string DeepFaceRecognizer::get_label_name(int person_id) const {
     auto it = person_id_to_name.find(person_id);
     if (it != person_id_to_name.end()) {
+        std::cout << "[Label] Found: person_id=" << person_id << " -> name=" << it->second << std::endl;
         return it->second;
+    }
+    std::cout << "[Label] NOT FOUND: person_id=" << person_id << " (map has " << person_id_to_name.size() << " entries)" << std::endl;
+    for (const auto& [id, name] : person_id_to_name) {
+        std::cout << "  - ID " << id << " -> " << name << std::endl;
     }
     return "Unknown";
 }
@@ -480,6 +533,7 @@ void DeepFaceRecognizer::load_labels_from_database() {
         for (const auto& person : people) {
             person_id_to_name[person.id] = person.name;
             name_to_person_id[person.name] = person.id;
+            std::cout << "[DB Load] ID " << person.id << " -> " << person.name << std::endl;
         }
         std::cout << "Loaded " << people.size() << " people from database" << std::endl;
     }
@@ -515,6 +569,12 @@ bool DeepFaceRecognizer::load_index(const std::string& filepath) {
     if (!faiss_index->load_index(filepath)) {
         return false;
     }
+
+    // IMPORTANT: Reload label maps from database after loading FAISS index
+    // The FAISS index contains person_ids, but the label maps (person_id -> name)
+    // need to be loaded from the database to resolve names
+    std::cout << "Loading label maps from database after FAISS index load..." << std::endl;
+    load_labels_from_database();
 
     is_trained = true;
     return true;

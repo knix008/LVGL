@@ -620,6 +620,39 @@ bool FaceDatabase::delete_face_embedding(int id) {
     }
 }
 
+bool FaceDatabase::clear_all_embeddings() {
+    if (!is_open || !db) return false;
+
+    try {
+        // Delete all embeddings
+        const char* sql = "DELETE FROM face_embeddings";
+        char* err_msg = nullptr;
+        int rc = sqlite3_exec(db, sql, nullptr, nullptr, &err_msg);
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to clear embeddings: " << err_msg << std::endl;
+            sqlite3_free(err_msg);
+            return false;
+        }
+
+        // Reset face counts for all people
+        const char* reset_sql = "UPDATE people SET face_count = 0";
+        rc = sqlite3_exec(db, reset_sql, nullptr, nullptr, &err_msg);
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to reset face counts: " << err_msg << std::endl;
+            sqlite3_free(err_msg);
+            return false;
+        }
+
+        std::cout << "All embeddings cleared from database" << std::endl;
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in clear_all_embeddings: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool FaceDatabase::update_face_count(int person_id) {
     if (!is_open || !db) return false;
 

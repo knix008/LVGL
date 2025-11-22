@@ -114,20 +114,30 @@ bool FAISSIndex::add_vectors(const std::vector<int>& ids,
 }
 
 double FAISSIndex::distance_to_similarity(float distance) const {
-    // For L2-normalized embeddings, use cosine similarity
-    // L2 distance between normalized vectors: d = sqrt(2 - 2*cos(theta))
-    // So: cos(theta) = 1 - (d^2 / 2)
-    // Similarity score (0-1): (1 + cos(theta)) / 2
-    
+    // For ArcFace with L2-normalized embeddings:
+    // L2 distance range: [0, 2] where 0 = identical, 2 = opposite
+    //
+    // Typical thresholds for face recognition:
+    // - Same person: distance < 1.0 (similarity > 0.75)
+    // - Different person: distance > 1.2 (similarity < 0.64)
+    //
+    // Using cosine similarity derived from L2 distance:
+    // d² = 2 - 2·cos(θ)  =>  cos(θ) = 1 - d²/2
+    // Then map cos(θ) from [-1, 1] to [0, 1]
+
     float d_squared = distance * distance;
+
+    // Clamp d² to valid range [0, 4] for normalized vectors
+    d_squared = std::min(d_squared, 4.0f);
+
     float cos_theta = 1.0f - (d_squared / 2.0f);
-    
-    // Clamp to valid range
+
+    // Clamp to valid cosine range
     cos_theta = std::max(-1.0f, std::min(1.0f, cos_theta));
-    
+
     // Convert to 0-1 similarity (0 = opposite, 1 = identical)
     double similarity = (1.0 + cos_theta) / 2.0;
-    
+
     return similarity;
 }
 
@@ -150,7 +160,8 @@ int FAISSIndex::search(const std::vector<float>& query_embedding, double& confid
     }
 
     if (query_embedding.size() != static_cast<size_t>(dimension)) {
-        std::cerr << "Error: Query embedding dimension mismatch" << std::endl;
+        std::cerr << "Error: Query embedding dimension mismatch. Expected "
+                  << dimension << ", got " << query_embedding.size() << std::endl;
         confidence = 0.0;
         return -1;
     }
@@ -177,6 +188,16 @@ int FAISSIndex::search(const std::vector<float>& query_embedding, double& confid
         // Convert distance to confidence
         confidence = distance_to_similarity(min_distance);
         int person_id = person_ids[best_index];
+
+        // Debug: show intermediate calculation
+        float d_sq = min_distance * min_distance;
+        float cos_t = 1.0f - (d_sq / 2.0f);
+        std::cout << "[FAISS] Best match: index=" << best_index
+                  << ", person_id=" << person_id
+                  << ", L2_dist=" << min_distance
+                  << ", d²=" << d_sq
+                  << ", cos=" << cos_t
+                  << ", sim=" << confidence << std::endl;
 
         return person_id;
 

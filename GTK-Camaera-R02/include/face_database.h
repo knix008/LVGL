@@ -60,6 +60,7 @@ public:
     bool get_face_embeddings(int person_id, std::vector<FaceEmbedding>& embeddings);
     bool get_all_face_embeddings(std::vector<FaceEmbedding>& embeddings);
     bool delete_face_embedding(int id);
+    bool clear_all_embeddings();  // Clear all embeddings for retraining
     bool update_face_count(int person_id);
 
     // Query
