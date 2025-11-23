@@ -8,9 +8,8 @@ onnxruntime-*/
 faiss/
 models/*.onnx
 models/*.bin
-!dataset/A
-!dataset/B
-dataset
+!dataset/A1
+!dataset/B2
 
 
 # Executable
