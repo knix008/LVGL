@@ -14,7 +14,7 @@ private:
     std::map<int, std::string> label_to_name;
     int next_label = 0;
     bool is_trained = false;
-    double confidence_threshold = 0.7;  // 70% similarity threshold
+    double confidence_threshold = 0.5;  // 50% similarity threshold
     FaceDatabase* db = nullptr;  // Database reference
 
     // Helper to serialize cv::Mat to bytes

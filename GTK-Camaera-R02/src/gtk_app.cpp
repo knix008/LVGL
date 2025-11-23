@@ -259,10 +259,8 @@ gboolean GTKApp::refresh_frame() {
                             face.id = -1;
                             unknown_count++;
 
-                            // Always update cache with unknown result
-                            last_recognized_name = "Unknown";
-                            last_recognized_confidence = confidence * 100.0;
-                            has_recognition_result = true;
+                            // Don't cache unknown results - keep the last successful recognition
+                            // This prevents flickering between recognized and unknown states
 
                             // Track best unknown face as fallback
                             if (!has_best_face && face.confidence > best_confidence) {
@@ -877,30 +875,13 @@ void GTKApp::capture_photo() {
                 // Add face image to database (for record keeping)
                 face_database.add_face_image(person.id, filename);
                 
-                // Detect face in the saved frame
-                std::vector<Face> detected_faces = face_detector.detect_faces(last_frame);
-                
-                if (detected_faces.empty()) {
-                    gtk_label_set_text(GTK_LABEL(status_label), "Status: No face detected in photo. Try again.");
-                    std::cerr << "No face detected in captured photo" << std::endl;
-                } else {
-                    // Use the first detected face
-                    cv::Mat face_roi = last_frame(detected_faces[0].bbox);
-                    
-                    // Add training data and automatically retrain
-                    if (face_recognizer.add_training_data(face_roi, person.id)) {
-                        face_recognition_enabled = true;
-                        gchar status_text[200];
-                        g_snprintf(status_text, sizeof(status_text),
-                                  "Status: Photo added & model updated - %s (Total: %d faces)", 
-                                  person_name.c_str(), face_database.get_total_faces());
-                        gtk_label_set_text(GTK_LABEL(status_label), status_text);
-                        std::cout << "Photo saved and model updated: " << filename << std::endl;
-                    } else {
-                        gtk_label_set_text(GTK_LABEL(status_label), "Status: Photo saved but training failed");
-                        std::cerr << "Failed to add training data" << std::endl;
-                    }
-                }
+                // Just save the photo without training
+                gchar status_text[200];
+                g_snprintf(status_text, sizeof(status_text),
+                          "Status: Photo saved - %s (Total: %d faces)", 
+                          person_name.c_str(), face_database.get_total_faces());
+                gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                std::cout << "Photo saved: " << filename << std::endl;
             } else {
                 gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to save photo");
                 std::cerr << "Failed to save photo" << std::endl;

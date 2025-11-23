@@ -18,7 +18,7 @@ private:
     std::map<int, std::string> person_id_to_name;
     std::map<std::string, int> name_to_person_id;
 
-    double confidence_threshold = 0.70;  // 70% threshold for reliable face recognition
+    double confidence_threshold = 0.50;  // 50% threshold for reliable face recognition
     int min_face_size_for_recognition = 80;  // Minimum face size (width/height) for reliable recognition (>70% confidence)
     FaceDatabase* db = nullptr;
     bool is_trained = false;
