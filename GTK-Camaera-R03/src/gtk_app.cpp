@@ -85,6 +85,10 @@ bool GTKApp::init() {
         error_rate_label = gtk_label_new("Detection Rate: 0% | Error: 0%");
         gtk_box_pack_end(GTK_BOX(hbox), error_rate_label, FALSE, FALSE, 0);
 
+        // Create recognition time label
+        recognition_time_label = gtk_label_new("Recognition: 0ms");
+        gtk_box_pack_end(GTK_BOX(hbox), recognition_time_label, FALSE, FALSE, 0);
+
         // Open camera
         if (!camera.open(0)) {
             LOG_WARN("Camera initialization failed");
@@ -260,6 +264,12 @@ gboolean GTKApp::refresh_frame() {
                     return TRUE;
                 }
 
+                // Update recognition processing time
+                gchar recognition_time_text[100];
+                g_snprintf(recognition_time_text, sizeof(recognition_time_text),
+                          "Recognition: %.1fms", processed.processing_time_ms);
+                gtk_label_set_text(GTK_LABEL(recognition_time_label), recognition_time_text);
+
                 // Track best recognized face for UI display
                 std::string best_person_name = "None detected";
                 double best_confidence = 0.0;
@@ -311,12 +321,6 @@ gboolean GTKApp::refresh_frame() {
 
                 // Draw all detected faces on frame for display
                 if (!processed.faces.empty()) {
-                    LOG_INFO("[DISPLAY] About to draw " << processed.faces.size() << " faces");
-                    for (size_t i = 0; i < processed.faces.size(); i++) {
-                        LOG_INFO("[DISPLAY]   Face " << i << ": id=" << processed.faces[i].id
-                                 << ", name='" << processed.faces[i].name
-                                 << "', confidence=" << processed.faces[i].confidence << "%");
-                    }
                     draw_faces_on_frame(processed.frame, processed.faces);
                 }
 
@@ -483,9 +487,6 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                                 (face.name != "Unknown") &&
                                 (face.name != "Too far");
 
-            // Debug: Log recognition status
-            LOG_INFO("[DRAW] Face: ID=" << face.id << ", Name='" << face.name
-                     << "', Confidence=" << face.confidence << "%, is_recognized=" << (is_recognized ? "TRUE" : "FALSE"));
 
             // Use dynamic bounding box based on detected face size
             // Scale the detected face by configured scale factor

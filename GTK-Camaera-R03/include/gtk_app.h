@@ -33,6 +33,7 @@ private:
     GtkWidget* face_info_label;
     GtkWidget* face_count_label;
     GtkWidget* error_rate_label;
+    GtkWidget* recognition_time_label;  // Display elapsed time for recognition
 
     // Camera and Face Recognition
     Camera camera;
