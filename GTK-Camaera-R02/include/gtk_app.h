@@ -53,6 +53,9 @@ private:
     // Dynamic bounding box sizing based on detected face size
     static constexpr double DYNAMIC_BOX_SCALE = 1.2;  // Scale multiplier for detected face size (20% larger)
 
+    // Face recognition confidence threshold
+    static constexpr double RECOGNITION_THRESHOLD = 70.0;  // Confidence threshold for face recognition (%)
+
     // Training thread management
     std::thread training_thread;
     std::atomic<bool> training_success;

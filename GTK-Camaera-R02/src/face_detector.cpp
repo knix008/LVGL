@@ -56,11 +56,13 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
         cv::Mat enhanced;
         cv::equalizeHist(gray, enhanced);
 
-        // Detect faces
+        // Detect faces with confidence levels
         std::vector<cv::Rect> face_rects;
+        std::vector<int> num_detections;
         face_cascade.detectMultiScale(
             enhanced,
             face_rects,
+            num_detections,
             scale_factor,
             min_neighbors,
             0,
@@ -79,7 +81,14 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
             face.bbox = face_rects[i];
             face.id = -1;  // Unknown
             face.name = "Unknown";
-            face.confidence = 0.0;
+
+            // Calculate confidence based on number of detections at this scale
+            // More detections = higher confidence (min_neighbors is baseline)
+            // Confidence ranges from 50% to 100%
+            int detection_count = (i < num_detections.size()) ? num_detections[i] : min_neighbors;
+            face.confidence = 50.0 + ((detection_count / static_cast<double>(min_neighbors * 2)) * 50.0);
+            face.confidence = std::min(face.confidence, 100.0);  // Cap at 100%
+
             faces.push_back(face);
         }
 

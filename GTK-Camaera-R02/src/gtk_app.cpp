@@ -227,6 +227,17 @@ gboolean GTKApp::refresh_frame() {
                     for (size_t i = 0; i < faces.size(); i++) {
                         auto& face = faces[i];
 
+                        // Only perform face recognition if detection confidence is above threshold
+                        if (face.confidence <= RECOGNITION_THRESHOLD) {
+                            std::cout << "[Recognition] Face detection confidence (" << face.confidence
+                                      << "%) below threshold (" << RECOGNITION_THRESHOLD
+                                      << "%) - Skipping recognition" << std::endl;
+                            face.name = "Unknown";
+                            face.id = -1;
+                            unknown_count++;
+                            continue;
+                        }
+
                         // Validate bbox is within frame bounds
                         if (face.bbox.x < 0 || face.bbox.y < 0 ||
                             face.bbox.x + face.bbox.width > frame.cols ||
@@ -235,7 +246,7 @@ gboolean GTKApp::refresh_frame() {
                             continue;
                         }
 
-                        // Check if face size is sufficient for reliable recognition (>70% confidence)
+                        // Check if face size is sufficient for reliable recognition
                         if (!face_recognizer.is_face_size_sufficient(face.bbox.width, face.bbox.height)) {
                             std::cout << "[Recognition] Face too small (" << face.bbox.width << "x" << face.bbox.height
                                       << "), minimum required: " << face_recognizer.get_min_face_size_for_recognition()
@@ -436,13 +447,21 @@ void GTKApp::toggle_camera() {
     try {
         if (!camera_running) {
             // Start camera
+            if (!camera.is_camera_active()) {
+                // Reopen camera if it was closed
+                if (!camera.open(0)) {
+                    std::cerr << "Failed to open camera" << std::endl;
+                    gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to open camera");
+                    return;
+                }
+            }
             camera.start();
             camera_running = true;
             gtk_button_set_label(GTK_BUTTON(toggle_button), "Stop Camera");
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Running");
         } else {
-            // Stop camera
-            camera.stop();
+            // Stop camera and release resources
+            camera.close();
             camera_running = false;
             gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Stopped");
@@ -515,8 +534,8 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
     try {
         for (const auto& face : faces) {
-            // Determine if face is recognized (confidence > 70% and not Unknown)
-            bool is_recognized = (face.confidence > 70.0) && (face.name != "Unknown") && (face.name != "Too far");
+            // Determine if face is recognized (confidence > threshold and not Unknown)
+            bool is_recognized = (face.confidence > RECOGNITION_THRESHOLD) && (face.name != "Unknown") && (face.name != "Too far");
 
             // Use dynamic bounding box based on detected face size
             // Scale the detected face by 20% for the bounding box
