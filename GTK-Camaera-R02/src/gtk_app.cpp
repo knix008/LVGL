@@ -226,7 +226,14 @@ gboolean GTKApp::refresh_frame() {
                         try {
                             // Lock mutex to protect ONNX Runtime (not thread-safe)
                             std::lock_guard<std::mutex> lock(recognition_mutex);
+
+                            // Measure face recognition time
+                            auto start_time = std::chrono::high_resolution_clock::now();
                             label = face_recognizer.recognize(face_roi, confidence);
+                            auto end_time = std::chrono::high_resolution_clock::now();
+
+                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+                            std::cout << "[Timing] Face recognition: " << duration.count() << " ms" << std::endl;
                         } catch (const std::exception& e) {
                             std::cerr << "[ERROR] Face recognition failed: " << e.what() << std::endl;
                             // Continue with unknown label
