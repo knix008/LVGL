@@ -9,7 +9,7 @@ onnxruntime-*/
 faiss/
 models/*.onnx
 models/*.bin
-dataset/*
+dataset/
 
 
 # Executable
