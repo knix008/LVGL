@@ -884,7 +884,7 @@ void GTKApp::capture_photo() {
                 // Register person in database if not already registered
                 PersonRecord person;
                 bool person_exists = face_database.get_person_by_name(person_name, person);
-                
+
                 if (!person_exists) {
                     if (face_database.add_person(person_name)) {
                         LOG_INFO("Person registered in database: " << person_name);
@@ -900,14 +900,124 @@ void GTKApp::capture_photo() {
 
                 // Add face image to database (for record keeping)
                 face_database.add_face_image(person.id, filename);
-                
-                // Just save the photo without training
-                gchar status_text[200];
-                g_snprintf(status_text, sizeof(status_text),
-                          "Status: Photo saved - %s (Total: %d faces)", 
-                          person_name.c_str(), face_database.get_total_faces());
-                gtk_label_set_text(GTK_LABEL(status_label), status_text);
-                LOG_DEBUG("Photo saved: " << filename);
+
+                // Extract and store face embedding
+                cv::Mat face_image = cv::imread(filename);
+                if (!face_image.empty()) {
+                    // Detect face in the captured image to get proper face ROI
+                    // This ensures the embedding is extracted from the same region as in live stream
+                    std::vector<Face> detected_faces = face_detector.detect_faces(face_image);
+                    std::vector<float> embedding;
+                    cv::Mat image_for_training = face_image;  // Default to full image
+
+                    if (!detected_faces.empty()) {
+                        // Use the largest detected face
+                        cv::Rect best_bbox = detected_faces[0].bbox;
+                        for (const auto& face : detected_faces) {
+                            if (face.bbox.area() > best_bbox.area()) {
+                                best_bbox = face.bbox;
+                            }
+                        }
+
+                        // Extract face ROI
+                        if (best_bbox.x >= 0 && best_bbox.y >= 0 &&
+                            best_bbox.x + best_bbox.width <= face_image.cols &&
+                            best_bbox.y + best_bbox.height <= face_image.rows) {
+                            cv::Mat face_roi = face_image(best_bbox).clone();
+                            embedding = face_recognizer.extract_embedding(face_roi);
+                            image_for_training = face_roi;  // Use face ROI for training
+                        } else {
+                            embedding = face_recognizer.extract_embedding(face_image);
+                        }
+                    } else {
+                        // No face detected, use full image as fallback
+                        embedding = face_recognizer.extract_embedding(face_image);
+                    }
+
+                    if (!embedding.empty()) {
+                        // Convert embedding to bytes and store in database
+                        std::vector<unsigned char> embedding_bytes(
+                            reinterpret_cast<unsigned char*>(embedding.data()),
+                            reinterpret_cast<unsigned char*>(embedding.data()) + embedding.size() * sizeof(float)
+                        );
+
+                        if (face_database.add_face_embedding(person.id, filename, embedding_bytes)) {
+                            gchar status_text[200];
+                            g_snprintf(status_text, sizeof(status_text),
+                                      "Status: Photo & embedding saved - %s (Total: %d faces)",
+                                      person_name.c_str(), face_database.get_total_faces());
+                            gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                            LOG_INFO("Embedding extracted and stored for: " << person_name);
+
+                            // Add embedding to FAISS index (incremental update, no full retrain needed)
+                            if (face_recognizer.add_training_data(image_for_training, person.id)) {
+                                gchar add_text[200];
+                                g_snprintf(add_text, sizeof(add_text),
+                                          "Status: %s added to recognition model",
+                                          person_name.c_str());
+                                gtk_label_set_text(GTK_LABEL(status_label), add_text);
+                                LOG_INFO("Person added to recognition model: " << person_name);
+
+                                // Reload FAISS index from disk to ensure memory reflects saved state
+                                std::string faiss_index_path = "faiss_index.bin";
+                                if (std::filesystem::exists(faiss_index_path)) {
+                                    if (face_recognizer.load_index(faiss_index_path)) {
+                                        // Index reloaded successfully
+                                    } else {
+                                        LOG_ERROR("Failed to reload FAISS index");
+                                    }
+                                }
+
+                                // Ensure label maps are up-to-date after reload
+                                face_recognizer.load_labels_from_database();
+
+                                // Verify person is in label maps
+                                std::string loaded_name = face_recognizer.get_label_name(person.id);
+                                if (loaded_name == "Unknown") {
+                                    // Manually register if needed
+                                    face_recognizer.register_person(person.name);
+                                }
+
+                                // Verify model is trained
+                                if (!face_recognizer.is_trained()) {
+                                    // Force train by loading the index again
+                                    if (std::filesystem::exists(faiss_index_path)) {
+                                        face_recognizer.load_index(faiss_index_path);
+                                    }
+                                }
+
+                                // Enable face recognition if not already enabled
+                                if (!face_recognition_enabled) {
+                                    face_recognition_enabled = true;
+                                }
+                            } else {
+                                gtk_label_set_text(GTK_LABEL(status_label), "Status: Embedding saved but adding to model failed");
+                                LOG_ERROR("Failed to add embedding to FAISS index");
+                            }
+                        } else {
+                            gchar status_text[200];
+                            g_snprintf(status_text, sizeof(status_text),
+                                      "Status: Photo saved but embedding storage failed - %s",
+                                      person_name.c_str());
+                            gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                            LOG_ERROR("Failed to store embedding for: " << person_name);
+                        }
+                    } else {
+                        gchar status_text[200];
+                        g_snprintf(status_text, sizeof(status_text),
+                                  "Status: Photo saved but embedding extraction failed - %s",
+                                  person_name.c_str());
+                        gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                        LOG_ERROR("Failed to extract embedding for: " << person_name);
+                    }
+                } else {
+                    gchar status_text[200];
+                    g_snprintf(status_text, sizeof(status_text),
+                              "Status: Photo saved but cannot load for embedding - %s",
+                              person_name.c_str());
+                    gtk_label_set_text(GTK_LABEL(status_label), status_text);
+                    LOG_ERROR("Failed to load saved image: " << filename);
+                }
             } else {
                 gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to save photo");
                 LOG_ERROR("Failed to save photo");

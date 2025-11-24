@@ -367,7 +367,32 @@ bool DeepFaceRecognizer::add_training_data(const cv::Mat& face_image, int person
         }
     }
 
+    // Ensure label maps are loaded from database
+    // This is important when adding embeddings incrementally
+    // Load first to get any existing people
+    load_labels_from_database();
+
+    // Then explicitly ensure this person_id has a label
+    // In case there's a timing issue with database commits
+    if (db) {
+        PersonRecord person;
+        if (db->get_person(person_id, person)) {
+            // Make sure this person is in our label map
+            if (person_id_to_name.find(person_id) == person_id_to_name.end()) {
+                person_id_to_name[person_id] = person.name;
+                name_to_person_id[person.name] = person_id;
+            }
+        }
+    }
+
     model_trained = (faiss_index->get_num_vectors() > 0);
+
+    // Save FAISS index to disk for persistence
+    if (model_trained) {
+        std::string index_path = "faiss_index.bin";
+        faiss_index->save_index(index_path);
+    }
+
     return true;
 }
 
