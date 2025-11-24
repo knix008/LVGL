@@ -76,7 +76,6 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
     result.processing_time_ms = 0.0;
 
     if (frame.empty()) {
-        LOG_WARN("Empty input frame");
         return result;
     }
 
@@ -129,14 +128,11 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
 
                                 if (face.id > 0) {
                                     face.name = recognizer->get_label_name(face.id);
-                                    LOG_DEBUG("Face recognized: ID=" << face.id << ", Name=" << face.name
-                                             << ", Confidence=" << face.confidence << "%");
                                 } else {
                                     face.name = "Unknown";
                                     face.id = -1;
                                 }
                             } catch (const std::exception& e) {
-                                LOG_WARN("Recognition error for face: " << e.what());
                                 face.id = -1;
                                 face.name = "Unknown";
                             }
@@ -148,7 +144,6 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
                     // Cache the recognition results
                     cached_faces = result.faces;
                 } else {
-                    LOG_DEBUG("Recognizer not ready (not trained yet)");
                     // Mark all faces as unknown if recognizer not ready
                     for (auto& face : result.faces) {
                         face.id = -1;
@@ -160,7 +155,6 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
             } else if (use_recognition_cache && !cached_faces.empty()) {
                 // Use cached recognition results between recognition intervals
                 // Apply cached recognition data to detected faces
-                LOG_DEBUG("Using cached recognition results");
                 for (size_t i = 0; i < result.faces.size() && i < cached_faces.size(); i++) {
                     result.faces[i].id = cached_faces[i].id;
                     result.faces[i].name = cached_faces[i].name;
