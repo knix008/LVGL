@@ -171,6 +171,35 @@ gboolean GTKApp::refresh_frame() {
         cv::Mat frame;
         if (camera.get_frame(frame)) {
             if (!frame.empty()) {
+                // Resize frame to match window display size (640x480) while maintaining aspect ratio
+                const int target_width = 640;
+                const int target_height = 480;
+
+                // Calculate scaling to fit within target size while maintaining aspect ratio
+                double scale = std::min(
+                    static_cast<double>(target_width) / frame.cols,
+                    static_cast<double>(target_height) / frame.rows
+                );
+
+                int new_width = static_cast<int>(frame.cols * scale);
+                int new_height = static_cast<int>(frame.rows * scale);
+
+                // Resize with scaling
+                cv::Mat scaled_frame;
+                cv::resize(frame, scaled_frame, cv::Size(new_width, new_height));
+
+                // Create output frame with letterboxing (black borders)
+                cv::Mat resized_frame = cv::Mat::zeros(target_height, target_width, scaled_frame.type());
+
+                // Calculate position to center the scaled frame
+                int x_offset = (target_width - new_width) / 2;
+                int y_offset = (target_height - new_height) / 2;
+
+                // Place scaled frame in center of output frame
+                scaled_frame.copyTo(resized_frame(cv::Rect(x_offset, y_offset, new_width, new_height)));
+
+                frame = resized_frame;
+
                 // Flip the frame horizontally for mirror effect
                 cv::flip(frame, frame, 1);
 
@@ -486,31 +515,31 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
     try {
         for (const auto& face : faces) {
-            // Only show green box for faces with confidence > 70%
+            // Determine if face is recognized (confidence > 70% and not Unknown)
             bool is_recognized = (face.confidence > 70.0) && (face.name != "Unknown") && (face.name != "Too far");
 
-            // Skip drawing for unrecognized faces (confidence <= 70%)
-            if (!is_recognized) {
-                continue;
-            }
+            // Use dynamic bounding box based on detected face size
+            // Scale the detected face by 20% for the bounding box
+            int box_width = static_cast<int>(face.bbox.width * DYNAMIC_BOX_SCALE);
+            int box_height = static_cast<int>(face.bbox.height * DYNAMIC_BOX_SCALE);
 
-            // Use fixed size bounding box, centered on the detected face
             int face_center_x = face.bbox.x + face.bbox.width / 2;
             int face_center_y = face.bbox.y + face.bbox.height / 2;
 
             cv::Rect expanded_bbox(
-                face_center_x - FIXED_BOX_WIDTH / 2,
-                face_center_y - FIXED_BOX_HEIGHT / 2,
-                FIXED_BOX_WIDTH,
-                FIXED_BOX_HEIGHT
+                face_center_x - box_width / 2,
+                face_center_y - box_height / 2,
+                box_width,
+                box_height
             );
 
             // Draw corner lines only (horizontal and vertical lines at each corner)
-            int corner_length = static_cast<int>(FIXED_BOX_WIDTH * 0.15); // 15% of fixed width for corner length
+            int corner_length = static_cast<int>(box_width * 0.15); // 15% of dynamic width for corner length
             int line_thickness = 2;
 
-            // Green color for recognized faces (confidence > 70%)
-            cv::Scalar color = cv::Scalar(0, 255, 0);
+            // Color based on recognition status
+            // Green for recognized faces, Red for unknown faces
+            cv::Scalar color = is_recognized ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
 
             // Top-left corner
             // Horizontal line
@@ -560,25 +589,34 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                     cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
                     color, line_thickness);
 
-            // Draw label with name and confidence (only for recognized faces > 70%)
-            std::string label = face.name + " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+            // Draw label with name and confidence
+            std::string label;
+            if (is_recognized) {
+                label = face.name + " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+            } else {
+                label = "Unknown (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+            }
 
             int baseline = 0;
-            cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+            cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.45, 1, &baseline);
 
-            // Green background for recognized faces
-            cv::Scalar bg_color = cv::Scalar(0, 255, 0);
+            // Background color based on recognition status
+            // Green background for recognized/known faces, Red for unknown faces
+            cv::Scalar bg_color = is_recognized ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 200);
 
-            // Draw background for text (above the face area)
+            // Text color: black text for known faces, white text for unknown faces
+            cv::Scalar text_color = is_recognized ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
+
+            // Draw background for text (above the face area) with minimal padding
             cv::rectangle(frame,
-                         cv::Point(expanded_bbox.x, expanded_bbox.y - text_size.height - 5),
-                         cv::Point(expanded_bbox.x + text_size.width, expanded_bbox.y),
+                         cv::Point(expanded_bbox.x - 1, expanded_bbox.y - text_size.height - 4),
+                         cv::Point(expanded_bbox.x + text_size.width + 1, expanded_bbox.y),
                          bg_color, -1);
 
-            // Draw text
+            // Draw text with normal font weight
             cv::putText(frame, label,
-                       cv::Point(expanded_bbox.x, expanded_bbox.y - 5),
-                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
+                       cv::Point(expanded_bbox.x, expanded_bbox.y - 3),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.45, text_color, 1);
         }
     } catch (const std::exception& e) {
         std::cerr << "Exception in draw_faces_on_frame: " << e.what() << std::endl;

@@ -50,9 +50,8 @@ private:
     double last_recognized_confidence;
     bool has_recognition_result;
 
-    // Fixed bounding box size for stable display
-    static constexpr int FIXED_BOX_WIDTH = 180;   // Fixed width for face box (reduced 10%)
-    static constexpr int FIXED_BOX_HEIGHT = 180;  // Fixed height for face box (reduced 10%)
+    // Dynamic bounding box sizing based on detected face size
+    static constexpr double DYNAMIC_BOX_SCALE = 1.2;  // Scale multiplier for detected face size (20% larger)
 
     // Training thread management
     std::thread training_thread;
