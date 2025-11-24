@@ -307,7 +307,13 @@ bool DeepFaceRecognizer::train_from_embeddings(const std::vector<int>& person_id
             std::cout << "FAISS index saved to: " << index_path << std::endl;
         }
 
-        is_trained = true;
+        model_trained = true;
+
+        // CRITICAL: Reload label maps from database after training
+        // This ensures person_id -> name mappings are available for recognition
+        std::cout << "Reloading label maps from database..." << std::endl;
+        load_labels_from_database();
+
         std::cout << "Training completed successfully!" << std::endl;
         std::cout << "  Total embeddings: " << embeddings.size() << std::endl;
         std::cout << "  Total people: " << get_num_people() << std::endl;
@@ -421,14 +427,14 @@ bool DeepFaceRecognizer::add_training_data(const cv::Mat& face_image, int person
         }
     }
 
-    is_trained = (faiss_index->get_num_vectors() > 0);
+    model_trained = (faiss_index->get_num_vectors() > 0);
     std::cout << "Added training data for person " << person_id
               << " - Total vectors: " << faiss_index->get_num_vectors() << std::endl;
     return true;
 }
 
 int DeepFaceRecognizer::recognize(const cv::Mat& face_image, double& confidence) {
-    if (!is_trained || !faiss_index->is_index_built()) {
+    if (!model_trained || !faiss_index->is_index_built()) {
         std::cerr << "Error: Model not trained" << std::endl;
         confidence = 0.0;
         return -1;
@@ -568,7 +574,7 @@ void DeepFaceRecognizer::set_confidence_threshold(double threshold) {
     confidence_threshold = std::max(0.0, std::min(1.0, threshold));
 }
 
-int DeepFaceRecognizer::get_num_people() const {
+int DeepFaceRecognizer::get_person_count() const {
     return person_id_to_name.size();
 }
 
@@ -601,15 +607,21 @@ bool DeepFaceRecognizer::load_index(const std::string& filepath) {
     std::cout << "Loading label maps from database after FAISS index load..." << std::endl;
     load_labels_from_database();
 
-    is_trained = true;
+    model_trained = true;
     return true;
 }
 
-void DeepFaceRecognizer::clear() {
-    faiss_index->clear();
+void DeepFaceRecognizer::clear_model() {
+    if (faiss_index) {
+        faiss_index->clear();
+    }
     person_id_to_name.clear();
     name_to_person_id.clear();
-    is_trained = false;
+    model_trained = false;
+}
+
+void DeepFaceRecognizer::clear() {
+    clear_model();
 }
 
 double DeepFaceRecognizer::compare_embeddings(const std::vector<float>& emb1, 
@@ -639,7 +651,7 @@ std::vector<std::pair<std::string, double>>
 DeepFaceRecognizer::recognize_top_k(const cv::Mat& face_image, int k) {
     std::vector<std::pair<std::string, double>> results;
 
-    if (!is_trained || !faiss_index->is_index_built()) {
+    if (!model_trained || !faiss_index->is_index_built()) {
         std::cerr << "Error: Model not trained" << std::endl;
         return results;
     }

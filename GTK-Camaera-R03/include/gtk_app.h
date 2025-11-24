@@ -8,10 +8,17 @@
 #include <atomic>
 #include <mutex>
 #include <map>
+#include <memory>
 #include "camera.h"
 #include "face_detector.h"
 #include "deep_face_recognizer.h"
 #include "face_database.h"
+#include "frame_processor.h"
+#include "ui_renderer.h"
+#include "training_manager.h"
+#include "config.h"
+#include "logger.h"
+#include "exceptions.h"
 
 class GTKApp {
 private:
@@ -33,6 +40,11 @@ private:
     DeepFaceRecognizer face_recognizer;
     FaceDatabase face_database;
 
+    // Refactored components
+    std::unique_ptr<FrameProcessor> frame_processor;
+    std::unique_ptr<UIRenderer> ui_renderer;
+    std::unique_ptr<TrainingManager> training_manager;
+
     guint refresh_timer;
     bool camera_running;
     bool face_recognition_enabled;
@@ -50,11 +62,9 @@ private:
     double last_recognized_confidence;
     bool has_recognition_result;
 
-    // Dynamic bounding box sizing based on detected face size
-    static constexpr double DYNAMIC_BOX_SCALE = 1.2;  // Scale multiplier for detected face size (20% larger)
-
-    // Face recognition confidence threshold
-    static constexpr double RECOGNITION_THRESHOLD = 70.0;  // Confidence threshold for face recognition (%)
+    // Use Config constants for thresholds
+    // DYNAMIC_BOX_SCALE -> Config::BOUNDING_BOX_SCALE
+    // RECOGNITION_THRESHOLD -> 70.0 (percentage, derived from Config::RECOGNITION_CONFIDENCE_THRESHOLD * 100)
 
     // Training thread management
     std::thread training_thread;

@@ -27,7 +27,7 @@ bool GTKApp::init() {
         // Create main window
         window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
         gtk_window_set_title(GTK_WINDOW(window), "GTK Webcam Viewer");
-        gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+        gtk_window_set_default_size(GTK_WINDOW(window), Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT);
         gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 
         // Connect window destroy signal
@@ -40,7 +40,7 @@ bool GTKApp::init() {
 
         // Create image display widget
         image_widget = gtk_image_new();
-        gtk_widget_set_size_request(image_widget, 640, 480);
+        gtk_widget_set_size_request(image_widget, Config::DISPLAY_WIDTH, Config::DISPLAY_HEIGHT);
         gtk_box_pack_start(GTK_BOX(vbox), image_widget, TRUE, TRUE, 0);
 
         // Create horizontal box for controls
@@ -87,7 +87,7 @@ bool GTKApp::init() {
 
         // Open camera
         if (!camera.open(0)) {
-            std::cerr << "Warning: Camera initialization failed" << std::endl;
+            LOG_WARN("Camera initialization failed");
             // Update status but continue - user can try to enable camera later
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Not Available");
             gtk_widget_set_sensitive(toggle_button, FALSE);
@@ -95,6 +95,52 @@ bool GTKApp::init() {
 
         // Load face recognizer
         load_face_recognizer();
+
+        // Initialize frame processor
+        try {
+            frame_processor = std::make_unique<FrameProcessor>();
+
+            // Create and initialize a new FaceDetector for the frame processor
+            auto detector = std::make_unique<FaceDetector>();
+            if (!detector->initialize()) {
+                LOG_ERROR("Failed to initialize FaceDetector for FrameProcessor");
+                throw std::runtime_error("FaceDetector initialization failed");
+            }
+
+            frame_processor->initialize(
+                std::move(detector),
+                &face_recognizer
+            );
+            frame_processor->set_frame_scale(1.0);
+            frame_processor->set_horizontal_flip(true);
+            frame_processor->set_recognition_interval(Config::RECOGNITION_UPDATE_INTERVAL_US);
+            LOG_INFO("Frame processor initialized successfully");
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to initialize frame processor: " << e.what());
+            throw;
+        }
+
+        // Initialize UI renderer
+        try {
+            ui_renderer = std::make_unique<UIRenderer>(
+                Config::DISPLAY_WIDTH,
+                Config::DISPLAY_HEIGHT
+            );
+            LOG_INFO("UI renderer initialized successfully");
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to initialize UI renderer: " << e.what());
+            throw;
+        }
+
+        // Initialize training manager
+        try {
+            training_manager = std::make_unique<TrainingManager>();
+            training_manager->initialize(&face_recognizer, &face_database);
+            LOG_INFO("Training manager initialized successfully");
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to initialize training manager: " << e.what());
+            throw;
+        }
 
         // Show all widgets
         gtk_widget_show_all(window);
@@ -104,7 +150,7 @@ bool GTKApp::init() {
 
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Exception during initialization: " << e.what() << std::endl;
+        LOG_ERROR("Exception during initialization: " << e.what());
         return false;
     }
 }
@@ -173,8 +219,8 @@ gboolean GTKApp::refresh_frame() {
         if (camera.get_frame(frame)) {
             if (!frame.empty()) {
                 // Resize frame to match window display size (640x480) while maintaining aspect ratio
-                const int target_width = 640;
-                const int target_height = 480;
+                const int target_width = Config::DISPLAY_WIDTH;
+                const int target_height = Config::DISPLAY_HEIGHT;
 
                 // Calculate scaling to fit within target size while maintaining aspect ratio
                 double scale = std::min(
@@ -204,8 +250,15 @@ gboolean GTKApp::refresh_frame() {
                 // Flip the frame horizontally for mirror effect
                 cv::flip(frame, frame, 1);
 
-                // Detect faces
-                std::vector<Face> faces = face_detector.detect_faces(frame);
+                // Use FrameProcessor for face detection and recognition
+                ProcessedFrame processed = frame_processor->process_frame(
+                    frame,
+                    face_recognition_enabled && !training_in_progress
+                );
+
+                if (!processed.is_valid) {
+                    return TRUE;
+                }
 
                 // Track best recognized face for UI display
                 std::string best_person_name = "None detected";
@@ -213,146 +266,22 @@ gboolean GTKApp::refresh_frame() {
                 int recognized_count = 0;
                 int unknown_count = 0;
 
-                // Recognize faces if model is trained
-                Face best_face;  // Store best face for display
-                bool has_best_face = false;
-
-                // Live face recognition with slow update rate (1.5 seconds)
-                // This minimizes load on ONNX Runtime to prevent crashes
-                // Skip recognition if training is in progress to avoid mutex contention
-                gint64 recognition_time = g_get_monotonic_time();
-                bool should_run_recognition = (recognition_time - last_recognition_time) > 1500000; // 1.5 seconds
-
-                if (face_recognition_enabled && !faces.empty() && should_run_recognition && !training_in_progress) {
-                    last_recognition_time = recognition_time;
-                    for (size_t i = 0; i < faces.size(); i++) {
-                        auto& face = faces[i];
-
-                        // Only perform face recognition if detection confidence is above threshold
-                        if (face.confidence <= RECOGNITION_THRESHOLD) {
-                            std::cout << "[Recognition] Face detection confidence (" << face.confidence
-                                      << "%) below threshold (" << RECOGNITION_THRESHOLD
-                                      << "%) - Skipping recognition" << std::endl;
-                            face.name = "Unknown";
-                            face.id = -1;
-                            unknown_count++;
-                            continue;
-                        }
-
-                        // Validate bbox is within frame bounds
-                        if (face.bbox.x < 0 || face.bbox.y < 0 ||
-                            face.bbox.x + face.bbox.width > frame.cols ||
-                            face.bbox.y + face.bbox.height > frame.rows) {
-                            std::cerr << "[ERROR] Face bbox out of bounds! Skipping..." << std::endl;
-                            continue;
-                        }
-
-                        // Check if face size is sufficient for reliable recognition
-                        if (!face_recognizer.is_face_size_sufficient(face.bbox.width, face.bbox.height)) {
-                            std::cout << "[Recognition] Face too small (" << face.bbox.width << "x" << face.bbox.height
-                                      << "), minimum required: " << face_recognizer.get_min_face_size_for_recognition()
-                                      << "x" << face_recognizer.get_min_face_size_for_recognition()
-                                      << " - Skipping recognition" << std::endl;
-                            face.name = "Too far";
-                            face.confidence = 0.0;
-                            face.id = -1;
-                            unknown_count++;
-                            continue;
-                        }
-
-                        cv::Mat face_roi = frame(face.bbox);
-                        double confidence = 0.0;
-
-                        int label = -1;
-                        try {
-                            // Lock mutex to protect ONNX Runtime (not thread-safe)
-                            std::lock_guard<std::mutex> lock(recognition_mutex);
-
-                            // Measure face recognition time
-                            auto start_time = std::chrono::high_resolution_clock::now();
-                            label = face_recognizer.recognize(face_roi, confidence);
-                            auto end_time = std::chrono::high_resolution_clock::now();
-
-                            auto duration = std::chrono::duration<double>(end_time - start_time);
-                            std::cout << "[Timing] Face recognition: " << std::fixed << std::setprecision(3) << duration.count() << " seconds" << std::endl;
-                        } catch (const std::exception& e) {
-                            std::cerr << "[ERROR] Face recognition failed: " << e.what() << std::endl;
-                            // Continue with unknown label
-                            label = -1;
-                            confidence = 0.0;
-                        }
-
-                        if (label != -1) {
-                            face.name = face_recognizer.get_label_name(label);
-                            face.confidence = confidence * 100.0;  // Convert similarity to percentage
-                            face.id = label;
-                            recognized_count++;
-
-                            // Track best recognized face
-                            if (face.confidence > best_confidence) {
-                                best_confidence = face.confidence;
-                                best_person_name = face.name;
-                                best_face = face;  // Store best face
-                                has_best_face = true;
-
-                                // Cache result for continuous display
-                                last_recognized_name = face.name;
-                                last_recognized_confidence = face.confidence;
-                                has_recognition_result = true;
-                            }
-                        } else {
-                            // Set name to "Unknown" for unrecognized faces
-                            face.name = "Unknown";
-                            face.confidence = confidence * 100.0;  // Store confidence even for unknown
-                            face.id = -1;
-                            unknown_count++;
-
-                            // Don't cache unknown results - keep the last successful recognition
-                            // This prevents flickering between recognized and unknown states
-
-                            // Track best unknown face as fallback
-                            if (!has_best_face && face.confidence > best_confidence) {
-                                best_confidence = face.confidence;
-                                best_person_name = face.name;
-                                best_face = face;
-                            }
-                        }
-                    }
-                } else if (!faces.empty()) {
-                    // Use cached recognition result if available, or show as unknown
-                    // Find the largest face
-                    int best_idx = 0;
-                    int max_size = 0;
-                    for (size_t i = 0; i < faces.size(); ++i) {
-                        int face_size = faces[i].bbox.width * faces[i].bbox.height;
-                        if (face_size > max_size) {
-                            max_size = face_size;
-                            best_idx = i;
-                        }
-                    }
-
-                    // Use cached result for display
-                    if (has_recognition_result && face_recognition_enabled) {
-                        faces[best_idx].name = last_recognized_name;
-                        faces[best_idx].confidence = last_recognized_confidence;
-                        faces[best_idx].id = (last_recognized_name != "Unknown") ? 1 : -1;
-
-                        if (last_recognized_name != "Unknown") {
-                            recognized_count = 1;
-                            best_confidence = last_recognized_confidence;
-                            best_person_name = last_recognized_name;
-                        } else {
-                            unknown_count = 1;
+                // Count recognized vs unknown faces
+                for (const auto& face : processed.faces) {
+                    if (face.id != -1) {
+                        recognized_count++;
+                        // Track best (highest confidence)
+                        if (face.confidence > best_confidence) {
+                            best_confidence = face.confidence;
+                            best_person_name = face.name;
+                            // Cache result for continuous display
+                            last_recognized_name = face.name;
+                            last_recognized_confidence = face.confidence;
+                            has_recognition_result = true;
                         }
                     } else {
-                        faces[best_idx].name = "Unknown";
-                        faces[best_idx].confidence = 0.0;
-                        faces[best_idx].id = -1;
-                        unknown_count = 1;
+                        unknown_count++;
                     }
-
-                    best_face = faces[best_idx];
-                    has_best_face = true;
                 }
 
                 // Update UI with recognized person and confidence
@@ -378,15 +307,15 @@ gboolean GTKApp::refresh_frame() {
                 }
 
                 // Save clean frame for capture (BEFORE drawing on it)
-                last_frame = frame.clone();
+                last_frame = processed.frame.clone();
 
                 // Draw all detected faces on frame for display
-                if (!faces.empty()) {
-                    draw_faces_on_frame(frame, faces);
+                if (!processed.faces.empty()) {
+                    draw_faces_on_frame(processed.frame, processed.faces);
                 }
 
                 // Convert to pixbuf and display
-                GdkPixbuf* pixbuf = mat_to_pixbuf(frame);
+                GdkPixbuf* pixbuf = ui_renderer->mat_to_pixbuf(processed.frame);
                 if (pixbuf != nullptr) {
                     gtk_image_set_from_pixbuf(GTK_IMAGE(image_widget), pixbuf);
                     g_object_unref(pixbuf);
@@ -421,14 +350,18 @@ gboolean GTKApp::refresh_frame() {
             }
         } else if (!camera.is_camera_active()) {
             // Camera was stopped or disconnected
-            std::cout << "Camera disconnected" << std::endl;
+            LOG_INFO("Camera disconnected");
             camera_running = false;
             gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Disconnected");
             gtk_image_clear(GTK_IMAGE(image_widget));
         }
+    } catch (const DetectionException& e) {
+        LOG_WARN("Face detection error: " << e.what());
+    } catch (const RecognitionException& e) {
+        LOG_WARN("Face recognition error: " << e.what());
     } catch (const std::exception& e) {
-        std::cerr << "Exception in refresh_frame: " << e.what() << std::endl;
+        LOG_ERROR("Exception in refresh_frame: " << e.what());
         camera_running = false;
         gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - Check console");
@@ -449,7 +382,7 @@ void GTKApp::toggle_camera() {
             if (!camera.is_camera_active()) {
                 // Reopen camera if it was closed
                 if (!camera.open(0)) {
-                    std::cerr << "Failed to open camera" << std::endl;
+                    LOG_ERROR("Failed to open camera");
                     gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to open camera");
                     return;
                 }
@@ -470,7 +403,7 @@ void GTKApp::toggle_camera() {
             last_time = 0;
         }
     } catch (const std::exception& e) {
-        std::cerr << "[ERROR] Exception while toggling camera: " << e.what() << std::endl;
+        LOG_ERROR("Exception while toggling camera: " << e.what());
         camera_running = false;
         gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - Check console");
@@ -515,7 +448,7 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
     );
 
     if (pixbuf == nullptr) {
-        std::cerr << "Failed to create pixbuf" << std::endl;
+        LOG_ERROR("Failed to create pixbuf");
         return nullptr;
     }
 
@@ -534,12 +467,13 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
     try {
         for (const auto& face : faces) {
             // Determine if face is recognized (confidence > threshold and not Unknown)
-            bool is_recognized = (face.confidence > RECOGNITION_THRESHOLD) && (face.name != "Unknown") && (face.name != "Too far");
+            double threshold_percent = Config::RECOGNITION_CONFIDENCE_THRESHOLD * 100.0;
+            bool is_recognized = (face.confidence > threshold_percent) && (face.name != "Unknown") && (face.name != "Too far");
 
             // Use dynamic bounding box based on detected face size
-            // Scale the detected face by 20% for the bounding box
-            int box_width = static_cast<int>(face.bbox.width * DYNAMIC_BOX_SCALE);
-            int box_height = static_cast<int>(face.bbox.height * DYNAMIC_BOX_SCALE);
+            // Scale the detected face by configured scale factor
+            int box_width = static_cast<int>(face.bbox.width * Config::BOUNDING_BOX_SCALE);
+            int box_height = static_cast<int>(face.bbox.height * Config::BOUNDING_BOX_SCALE);
 
             int face_center_x = face.bbox.x + face.bbox.width / 2;
             int face_center_y = face.bbox.y + face.bbox.height / 2;
@@ -641,29 +575,29 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                        cv::FONT_HERSHEY_SIMPLEX, 0.45, text_color, 1);
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception in draw_faces_on_frame: " << e.what() << std::endl;
+        LOG_ERROR("Exception in draw_faces_on_frame: " << e.what());
     }
 }
 
 void GTKApp::load_face_recognizer() {
     try {
-        std::cout << "Loading face recognizer (Deep Learning - FaceNet + FAISS)..." << std::endl;
+        LOG_INFO("Loading face recognizer (Deep Learning - ArcFace + FAISS)...");
 
         // Initialize database
         if (!face_database.open()) {
-            std::cerr << "Failed to open face database" << std::endl;
+            LOG_ERROR("Failed to open face database");
             return;
         }
 
         if (!face_database.initialize()) {
-            std::cerr << "Failed to initialize face database" << std::endl;
+            LOG_ERROR("Failed to initialize face database");
             face_database.close();
             return;
         }
 
         // Initialize face detector
         if (!face_detector.initialize()) {
-            std::cerr << "Failed to initialize face detector" << std::endl;
+            LOG_ERROR("Failed to initialize face detector");
             face_database.close();
             return;
         }
@@ -674,56 +608,56 @@ void GTKApp::load_face_recognizer() {
         // Load ArcFace ONNX model (InsightFace w600k_r50)
         std::string model_path = "models/arcface_w600k_r50.onnx";
         if (!std::filesystem::exists(model_path)) {
-            std::cerr << "Warning: ArcFace model not found at " << model_path << std::endl;
-            std::cerr << "Please download the model and place it at: " << model_path << std::endl;
-            std::cerr << "Visit: https://huggingface.co/public-data/insightface/tree/main/models/buffalo_l" << std::endl;
+            LOG_WARN("ArcFace model not found at " << model_path);
+            LOG_INFO("Please download the model and place it at: " << model_path);
+            LOG_INFO("Visit: https://huggingface.co/public-data/insightface/tree/main/models/buffalo_l");
             face_recognition_enabled = false;
             return;
         }
 
-        std::cout << "Loading ArcFace model from: " << model_path << std::endl;
+        LOG_INFO("Loading ArcFace model from: " << model_path);
         if (!face_recognizer.load_model(model_path)) {
-            std::cerr << "Failed to load ArcFace model" << std::endl;
+            LOG_ERROR("Failed to load ArcFace model");
             face_recognition_enabled = false;
             return;
         }
 
-        std::cout << "ArcFace model loaded successfully" << std::endl;
+        LOG_INFO("ArcFace model loaded successfully");
 
         // Try to load saved FAISS index first (faster startup)
         std::string faiss_index_path = "faiss_index.bin";
         if (std::filesystem::exists(faiss_index_path)) {
-            std::cout << "Loading saved FAISS index from: " << faiss_index_path << std::endl;
+            LOG_INFO("Loading saved FAISS index from: " << faiss_index_path);
             if (face_recognizer.load_index(faiss_index_path)) {
                 face_recognition_enabled = true;
-                std::cout << "FAISS index loaded successfully" << std::endl;
-                std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
-                std::cout << "Face recognition ready!" << std::endl;
+                LOG_INFO("FAISS index loaded successfully");
+                LOG_INFO("Number of people in database: " << face_database.get_num_people());
+                LOG_INFO("Face recognition ready!");
                 return;
             } else {
-                std::cerr << "Failed to load FAISS index, will try training from database" << std::endl;
+                LOG_WARN("Failed to load FAISS index, will try training from database");
             }
         }
 
         // Fallback: Try to train from database embeddings
         if (face_database.get_total_faces() > 0) {
-            std::cout << "Loading face embeddings from database..." << std::endl;
+            LOG_INFO("Loading face embeddings from database...");
             if (face_recognizer.train_from_database()) {
                 face_recognition_enabled = true;
-                std::cout << "Face recognizer loaded successfully" << std::endl;
-                std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
-                std::cout << "Total faces in database: " << face_database.get_total_faces() << std::endl;
+                LOG_INFO("Face recognizer loaded successfully");
+                LOG_INFO("Number of people in database: " << face_database.get_num_people());
+                LOG_INFO("Total faces in database: " << face_database.get_total_faces());
             } else {
-                std::cerr << "Failed to train from database" << std::endl;
+                LOG_ERROR("Failed to train from database");
                 face_recognition_enabled = false;
             }
         } else {
-            std::cout << "No face data in database yet. Add photos to start recognizing faces." << std::endl;
+            LOG_INFO("No face data in database yet. Add photos to start recognizing faces.");
             face_recognition_enabled = false;
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "Exception in load_face_recognizer: " << e.what() << std::endl;
+        LOG_ERROR("Exception in load_face_recognizer: " << e.what());
         face_recognition_enabled = false;
     }
 }
@@ -768,7 +702,7 @@ void GTKApp::train_model() {
     gtk_widget_set_sensitive(train_button, FALSE);
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Training model from dataset... please wait");
 
-    std::cout << "Starting training from dataset..." << std::endl;
+    LOG_INFO("Starting training from dataset...");
 
     // Join previous training thread if it exists
     if (training_thread.joinable()) {
@@ -798,10 +732,10 @@ void GTKApp::on_training_finished() {
     if (training_success) {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training complete! Ready to recognize faces.");
         face_recognition_enabled = true;
-        std::cout << "Training successful!" << std::endl;
+        LOG_INFO("Training successful!");
     } else {
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Training failed - add photos and try again");
-        std::cerr << "Training failed" << std::endl;
+        LOG_ERROR("Training failed");
         face_recognition_enabled = false;
     }
 
@@ -901,11 +835,11 @@ void GTKApp::capture_photo() {
             try {
                 if (!std::filesystem::exists(person_dir)) {
                     std::filesystem::create_directories(person_dir);
-                    std::cout << "Created person directory: " << person_dir << std::endl;
+                    LOG_DEBUG("Created person directory: " << person_dir);
                 }
             } catch (const std::exception& e) {
                 gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to create person directory");
-                std::cerr << "Error creating directory: " << e.what() << std::endl;
+                LOG_ERROR("Error creating directory: " << e.what());
                 return;
             }
 
@@ -921,7 +855,7 @@ void GTKApp::capture_photo() {
                     }
                 }
             } catch (const std::exception& e) {
-                std::cerr << "Error counting files: " << e.what() << std::endl;
+                LOG_ERROR("Error counting files: " << e.what());
             }
 
             // Generate filename: A1/1.jpg, A1/2.jpg, etc.
@@ -935,11 +869,11 @@ void GTKApp::capture_photo() {
                 
                 if (!person_exists) {
                     if (face_database.add_person(person_name)) {
-                        std::cout << "Person registered in database: " << person_name << std::endl;
+                        LOG_INFO("Person registered in database: " << person_name);
                         // Get the newly created person
                         face_database.get_person_by_name(person_name, person);
                     } else {
-                        std::cerr << "Failed to register person in database" << std::endl;
+                        LOG_ERROR("Failed to register person in database");
                         gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to register person");
                         gtk_widget_destroy(dialog);
                         return;
@@ -955,10 +889,10 @@ void GTKApp::capture_photo() {
                           "Status: Photo saved - %s (Total: %d faces)", 
                           person_name.c_str(), face_database.get_total_faces());
                 gtk_label_set_text(GTK_LABEL(status_label), status_text);
-                std::cout << "Photo saved: " << filename << std::endl;
+                LOG_DEBUG("Photo saved: " << filename);
             } else {
                 gtk_label_set_text(GTK_LABEL(status_label), "Status: Failed to save photo");
-                std::cerr << "Failed to save photo" << std::endl;
+                LOG_ERROR("Failed to save photo");
             }
         } else {
             gtk_label_set_text(GTK_LABEL(status_label), "Status: Invalid input - please enter initial and ID");

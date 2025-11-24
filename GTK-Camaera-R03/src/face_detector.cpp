@@ -1,5 +1,6 @@
 #include "face_detector.h"
-#include <iostream>
+#include "logger.h"
+#include <fstream>
 
 FaceDetector::FaceDetector() {}
 
@@ -9,8 +10,24 @@ bool FaceDetector::initialize() {
         "haarcascades/haarcascade_frontalface_default.xml"
     );
 
+    // If not found, try common system paths
     if (cascade_path.empty()) {
-        std::cerr << "Error: Could not find haarcascade_frontalface_default.xml" << std::endl;
+        const char* common_paths[] = {
+            "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
+        };
+
+        for (const auto& path : common_paths) {
+            if (std::ifstream(path).good()) {
+                cascade_path = path;
+                break;
+            }
+        }
+    }
+
+    if (cascade_path.empty()) {
+        LOG_ERROR("Could not find haarcascade_frontalface_default.xml");
         return false;
     }
 
@@ -19,11 +36,11 @@ bool FaceDetector::initialize() {
 
 bool FaceDetector::load_cascade(const std::string& cascade_path) {
     if (!face_cascade.load(cascade_path)) {
-        std::cerr << "Error: Failed to load cascade classifier from: " << cascade_path << std::endl;
+        LOG_ERROR("Failed to load cascade classifier from: " << cascade_path);
         return false;
     }
 
-    std::cout << "Face cascade loaded successfully from: " << cascade_path << std::endl;
+    LOG_INFO("Face cascade loaded successfully from: " << cascade_path);
     return true;
 }
 
@@ -31,12 +48,12 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
     std::vector<Face> faces;
 
     if (frame.empty()) {
-        std::cerr << "Error: Input frame is empty" << std::endl;
+        LOG_WARN("Input frame is empty");
         return faces;
     }
 
     if (!is_loaded()) {
-        std::cerr << "Error: Face cascade not loaded" << std::endl;
+        LOG_ERROR("Face cascade not loaded");
         return faces;
     }
 
@@ -94,7 +111,7 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
 
         return faces;
     } catch (const std::exception& e) {
-        std::cerr << "Exception in detect_faces: " << e.what() << std::endl;
+        LOG_ERROR("Exception in detect_faces: " << e.what());
         return faces;
     }
 }
