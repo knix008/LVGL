@@ -7,6 +7,7 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <map>
 #include "camera.h"
 #include "face_detector.h"
 #include "deep_face_recognizer.h"
@@ -48,6 +49,10 @@ private:
     std::string last_recognized_name;
     double last_recognized_confidence;
     bool has_recognition_result;
+
+    // Fixed bounding box size for stable display
+    static constexpr int FIXED_BOX_WIDTH = 200;   // Fixed width for face box
+    static constexpr int FIXED_BOX_HEIGHT = 200;  // Fixed height for face box
 
     // Training thread management
     std::thread training_thread;

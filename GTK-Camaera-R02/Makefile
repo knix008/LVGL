@@ -76,6 +76,7 @@ debug-run: debug
 # Clean build artifacts (keep external dependencies)
 clean:
 	@rm -rf $(OBJ_DIR) $(TARGET)
+	@rm -rf *.db *.bin
 	@echo "Cleaned build artifacts"
 
 # Full clean including external dependencies (be careful!)

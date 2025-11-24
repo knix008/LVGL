@@ -112,11 +112,13 @@ std::vector<float> ModelLoader::preprocess_image(const cv::Mat& image) {
 
     cv::Mat img = image.clone();
 
-    // Convert grayscale to BGR if needed
+    // Convert to RGB (ArcFace expects RGB, OpenCV uses BGR)
     if (img.channels() == 1) {
-        cv::cvtColor(img, img, cv::COLOR_GRAY2BGR);
+        cv::cvtColor(img, img, cv::COLOR_GRAY2RGB);
     } else if (img.channels() == 4) {
-        cv::cvtColor(img, img, cv::COLOR_BGRA2BGR);
+        cv::cvtColor(img, img, cv::COLOR_BGRA2RGB);
+    } else if (img.channels() == 3) {
+        cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
     }
 
     // Resize to model input size (112x112 for ArcFace)

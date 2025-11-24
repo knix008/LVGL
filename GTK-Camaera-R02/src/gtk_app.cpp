@@ -479,25 +479,19 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
     try {
         for (const auto& face : faces) {
-            // Increase face area by 30% to hide the face itself
-            int width = face.bbox.width;
-            int height = face.bbox.height;
-            int new_width = static_cast<int>(width * 1.3);
-            int new_height = static_cast<int>(height * 1.3);
-
-            // Calculate centered expansion
-            int x_offset = (new_width - width) / 2;
-            int y_offset = (new_height - height) / 2;
+            // Use fixed size bounding box, centered on the detected face
+            int face_center_x = face.bbox.x + face.bbox.width / 2;
+            int face_center_y = face.bbox.y + face.bbox.height / 2;
 
             cv::Rect expanded_bbox(
-                face.bbox.x - x_offset,
-                face.bbox.y - y_offset,
-                new_width,
-                new_height
+                face_center_x - FIXED_BOX_WIDTH / 2,
+                face_center_y - FIXED_BOX_HEIGHT / 2,
+                FIXED_BOX_WIDTH,
+                FIXED_BOX_HEIGHT
             );
 
             // Draw corner lines only (horizontal and vertical lines at each corner)
-            int corner_length = static_cast<int>(new_width * 0.15); // 15% of width for corner length
+            int corner_length = static_cast<int>(FIXED_BOX_WIDTH * 0.15); // 15% of fixed width for corner length
             int line_thickness = 2;
 
             // Use different colors based on confidence: Green for high confidence, Yellow for low
@@ -631,7 +625,22 @@ void GTKApp::load_face_recognizer() {
 
         std::cout << "ArcFace model loaded successfully" << std::endl;
 
-        // Try to train from database embeddings
+        // Try to load saved FAISS index first (faster startup)
+        std::string faiss_index_path = "faiss_index.bin";
+        if (std::filesystem::exists(faiss_index_path)) {
+            std::cout << "Loading saved FAISS index from: " << faiss_index_path << std::endl;
+            if (face_recognizer.load_index(faiss_index_path)) {
+                face_recognition_enabled = true;
+                std::cout << "FAISS index loaded successfully" << std::endl;
+                std::cout << "Number of people in database: " << face_database.get_num_people() << std::endl;
+                std::cout << "Face recognition ready!" << std::endl;
+                return;
+            } else {
+                std::cerr << "Failed to load FAISS index, will try training from database" << std::endl;
+            }
+        }
+
+        // Fallback: Try to train from database embeddings
         if (face_database.get_total_faces() > 0) {
             std::cout << "Loading face embeddings from database..." << std::endl;
             if (face_recognizer.train_from_database()) {

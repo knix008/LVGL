@@ -4,6 +4,7 @@
 #include "model_loader.h"
 #include "faiss_index.h"
 #include "face_database.h"
+#include "face_detector.h"
 #include <opencv2/opencv.hpp>
 #include <map>
 #include <string>
@@ -14,11 +15,12 @@ class DeepFaceRecognizer {
 private:
     std::unique_ptr<ModelLoader> model_loader;
     std::unique_ptr<FAISSIndex> faiss_index;
+    std::unique_ptr<FaceDetector> face_detector;  // For detecting faces in training images
 
     std::map<int, std::string> person_id_to_name;
     std::map<std::string, int> name_to_person_id;
 
-    double confidence_threshold = 0.50;  // 50% threshold for reliable face recognition
+    double confidence_threshold = 0.70;  // 70% threshold for reliable face recognition
     int min_face_size_for_recognition = 80;  // Minimum face size (width/height) for reliable recognition (>70% confidence)
     FaceDatabase* db = nullptr;
     bool is_trained = false;

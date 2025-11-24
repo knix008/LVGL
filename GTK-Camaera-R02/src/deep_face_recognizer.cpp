@@ -8,7 +8,9 @@ namespace fs = std::filesystem;
 
 DeepFaceRecognizer::DeepFaceRecognizer() {
     model_loader = std::make_unique<ModelLoader>();
-    faiss_index = std::make_unique<FAISSIndex>(128);  // FaceNet uses 128-D embeddings
+    faiss_index = std::make_unique<FAISSIndex>(128);  // Will be resized when model loads
+    face_detector = std::make_unique<FaceDetector>();
+    face_detector->initialize();  // Initialize Haar cascade for face detection
 }
 
 bool DeepFaceRecognizer::load_model(const std::string& onnx_model_path) {
@@ -55,21 +57,12 @@ cv::Mat DeepFaceRecognizer::preprocess_face(const cv::Mat& face_image) {
         cv::cvtColor(processed, processed, cv::COLOR_BGRA2BGR);
     }
 
-    // Add padding to avoid edge artifacts when resizing
-    int padding = 10;
-    cv::Mat padded;
-    cv::copyMakeBorder(processed, padded, padding, padding, padding, padding, 
-                      cv::BORDER_REPLICATE);
-
-    // Resize to match model input (224x224 for FaceNet)
+    // Resize directly to match model input (112x112 for ArcFace)
+    // No padding - ArcFace expects the face to fill the frame
     int target_size = model_loader->get_input_width();
-    cv::resize(padded, processed, cv::Size(target_size, target_size), 0, 0, cv::INTER_LINEAR);
+    cv::resize(processed, processed, cv::Size(target_size, target_size), 0, 0, cv::INTER_LINEAR);
 
-    // Apply bilateral filter to reduce noise while preserving edges
-    cv::Mat filtered;
-    cv::bilateralFilter(processed, filtered, 5, 50, 50);
-
-    return filtered;
+    return processed;
 }
 
 bool DeepFaceRecognizer::validate_face_image(const cv::Mat& image) {
@@ -153,14 +146,44 @@ DeepFaceRecognizer::extract_embeddings_from_directory(const std::string& dataset
                     continue;
                 }
 
-                // Load and extract embedding
+                // Load image
                 cv::Mat image = cv::imread(image_file.path().string());
                 if (image.empty()) {
                     std::cerr << "Warning: Could not load image: " << image_file.path() << std::endl;
                     continue;
                 }
 
-                std::vector<float> embedding = extract_embedding(image);
+                // Detect faces in the image
+                std::vector<Face> detected_faces = face_detector->detect_faces(image);
+
+                if (detected_faces.empty()) {
+                    std::cerr << "Warning: No face detected in: " << image_file.path() << std::endl;
+                    continue;
+                }
+
+                // Use the largest face detected (most likely the main subject)
+                cv::Rect best_face = detected_faces[0].bbox;
+                for (const auto& face : detected_faces) {
+                    if (face.bbox.area() > best_face.area()) {
+                        best_face = face.bbox;
+                    }
+                }
+
+                // Expand the face region slightly to include some context
+                int expand_x = static_cast<int>(best_face.width * 0.1);
+                int expand_y = static_cast<int>(best_face.height * 0.1);
+                cv::Rect expanded_face(
+                    std::max(0, best_face.x - expand_x),
+                    std::max(0, best_face.y - expand_y),
+                    std::min(image.cols - best_face.x + expand_x, best_face.width + 2 * expand_x),
+                    std::min(image.rows - best_face.y + expand_y, best_face.height + 2 * expand_y)
+                );
+
+                // Crop the face region
+                cv::Mat face_crop = image(expanded_face).clone();
+
+                // Extract embedding from cropped face
+                std::vector<float> embedding = extract_embedding(face_crop);
                 if (!embedding.empty()) {
                     result.push_back({person_id, embedding});
                     image_count++;
@@ -276,10 +299,12 @@ bool DeepFaceRecognizer::train_from_embeddings(const std::vector<int>& person_id
             return false;
         }
 
-        // Save index to disk
-        std::string index_path = "models/faiss_index.bin";
+        // Save index to disk (in project root directory)
+        std::string index_path = "faiss_index.bin";
         if (!faiss_index->save_index(index_path)) {
             std::cerr << "Warning: Could not save FAISS index to disk" << std::endl;
+        } else {
+            std::cout << "FAISS index saved to: " << index_path << std::endl;
         }
 
         is_trained = true;

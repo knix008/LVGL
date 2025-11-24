@@ -4,12 +4,12 @@ build/
 *.a
 *.so
 *.out
+*.bin
 onnxruntime-*/
 faiss/
 models/*.onnx
 models/*.bin
-!dataset/A1
-!dataset/B2
+dataset/
 
 
 # Executable
@@ -32,6 +32,7 @@ Makefile.cmake
 # Dependencies
 *.db
 face_database.db
+faiss_index.bin
 
 # Temporary files
 *.tmp
