@@ -311,6 +311,12 @@ gboolean GTKApp::refresh_frame() {
 
                 // Draw all detected faces on frame for display
                 if (!processed.faces.empty()) {
+                    LOG_DEBUG("About to draw " << processed.faces.size() << " faces");
+                    for (size_t i = 0; i < processed.faces.size(); i++) {
+                        LOG_DEBUG("  Face " << i << ": id=" << processed.faces[i].id
+                                 << ", name=" << processed.faces[i].name
+                                 << ", confidence=" << processed.faces[i].confidence << "%");
+                    }
                     draw_faces_on_frame(processed.frame, processed.faces);
                 }
 
@@ -476,6 +482,10 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                                 (face.confidence >= threshold_percent) &&
                                 (face.name != "Unknown") &&
                                 (face.name != "Too far");
+
+            // Debug: Log recognition status
+            LOG_DEBUG("[Display] Face: ID=" << face.id << ", Name=" << face.name
+                     << ", Confidence=" << face.confidence << "%, Recognized=" << is_recognized);
 
             // Use dynamic bounding box based on detected face size
             // Scale the detected face by configured scale factor
