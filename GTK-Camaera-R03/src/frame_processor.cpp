@@ -95,11 +95,14 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
         total_faces_detected += result.detection_count;
 
         // Initialize all detected faces as unknown by default
+        // Only set to Unknown if not already recognized (face.id > 0)
         for (auto& face : result.faces) {
-            if (face.id == 0) {  // If not set
+            if (face.id == 0 || face.id < 0) {  // If not recognized yet or explicitly unknown
                 face.id = -1;
                 face.name = "Unknown";
+                // Don't reset confidence here - let it be set by recognition
             }
+            // If face.id > 0, it's already recognized - preserve that status
         }
 
         // Recognize faces if enabled and recognizer is available
@@ -142,6 +145,8 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
                             face.name = "Unknown";
                         }
                     }
+                    // Cache the recognition results
+                    cached_faces = result.faces;
                 } else {
                     LOG_DEBUG("Recognizer not ready (not trained yet)");
                     // Mark all faces as unknown if recognizer not ready
@@ -150,6 +155,16 @@ ProcessedFrame FrameProcessor::process_frame(const cv::Mat& frame, bool enable_r
                         face.name = "Unknown";
                         face.confidence = 0.0;
                     }
+                    cached_faces.clear();
+                }
+            } else if (use_recognition_cache && !cached_faces.empty()) {
+                // Use cached recognition results between recognition intervals
+                // Apply cached recognition data to detected faces
+                LOG_DEBUG("Using cached recognition results");
+                for (size_t i = 0; i < result.faces.size() && i < cached_faces.size(); i++) {
+                    result.faces[i].id = cached_faces[i].id;
+                    result.faces[i].name = cached_faces[i].name;
+                    result.faces[i].confidence = cached_faces[i].confidence;
                 }
             }
         }

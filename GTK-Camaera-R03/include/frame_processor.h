@@ -42,6 +42,9 @@ private:
     long recognition_update_interval_us;
     bool use_recognition_cache;
 
+    // Cache for recognition results between recognition intervals
+    std::vector<Face> cached_faces;  // Store last recognized faces
+
     // Preprocessing parameters
     double frame_scale;
     bool flip_horizontal;

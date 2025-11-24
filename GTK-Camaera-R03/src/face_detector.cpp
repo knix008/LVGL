@@ -98,13 +98,9 @@ std::vector<Face> FaceDetector::detect_faces(const cv::Mat& frame) {
             face.bbox = face_rects[i];
             face.id = -1;  // Unknown
             face.name = "Unknown";
-
-            // Calculate confidence based on number of detections at this scale
-            // More detections = higher confidence (min_neighbors is baseline)
-            // Confidence ranges from 50% to 100%
-            int detection_count = (i < num_detections.size()) ? num_detections[i] : min_neighbors;
-            face.confidence = 50.0 + ((detection_count / static_cast<double>(min_neighbors * 2)) * 50.0);
-            face.confidence = std::min(face.confidence, 100.0);  // Cap at 100%
+            // Initialize confidence to 0.0 - will be set by recognition process
+            // (Detection confidence is not meaningful for display - only recognition confidence matters)
+            face.confidence = 0.0;
 
             faces.push_back(face);
         }
