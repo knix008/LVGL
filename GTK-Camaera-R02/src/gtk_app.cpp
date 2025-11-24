@@ -1,6 +1,7 @@
 #include "gtk_app.h"
 #include <iostream>
 #include <chrono>
+#include <iomanip>
 #include <filesystem>
 
 GTKApp::GTKApp()
@@ -272,8 +273,8 @@ gboolean GTKApp::refresh_frame() {
                             label = face_recognizer.recognize(face_roi, confidence);
                             auto end_time = std::chrono::high_resolution_clock::now();
 
-                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-                            std::cout << "[Timing] Face recognition: " << duration.count() << " ms" << std::endl;
+                            auto duration = std::chrono::duration<double>(end_time - start_time);
+                            std::cout << "[Timing] Face recognition: " << std::fixed << std::setprecision(3) << duration.count() << " seconds" << std::endl;
                         } catch (const std::exception& e) {
                             std::cerr << "[ERROR] Face recognition failed: " << e.what() << std::endl;
                             // Continue with unknown label
@@ -379,11 +380,9 @@ gboolean GTKApp::refresh_frame() {
                 // Save clean frame for capture (BEFORE drawing on it)
                 last_frame = frame.clone();
 
-                // Draw only the best face on frame for display
-                if (has_best_face) {
-                    std::vector<Face> best_faces;
-                    best_faces.push_back(best_face);
-                    draw_faces_on_frame(frame, best_faces);
+                // Draw all detected faces on frame for display
+                if (!faces.empty()) {
+                    draw_faces_on_frame(frame, faces);
                 }
 
                 // Convert to pixbuf and display
@@ -609,11 +608,15 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                     color, line_thickness);
 
             // Draw label with name and confidence
+            // Note: face.confidence may contain either detection confidence or recognition confidence
+            // For display, show the current confidence value
             std::string label;
+            int confidence_display = static_cast<int>(face.confidence);
+
             if (is_recognized) {
-                label = face.name + " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+                label = face.name + " (" + std::to_string(confidence_display) + "%)";
             } else {
-                label = "Unknown (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
+                label = "Unknown (" + std::to_string(confidence_display) + "%)";
             }
 
             int baseline = 0;
