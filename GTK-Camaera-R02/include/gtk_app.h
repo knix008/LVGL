@@ -51,8 +51,8 @@ private:
     bool has_recognition_result;
 
     // Fixed bounding box size for stable display
-    static constexpr int FIXED_BOX_WIDTH = 200;   // Fixed width for face box
-    static constexpr int FIXED_BOX_HEIGHT = 200;  // Fixed height for face box
+    static constexpr int FIXED_BOX_WIDTH = 180;   // Fixed width for face box (reduced 10%)
+    static constexpr int FIXED_BOX_HEIGHT = 180;  // Fixed height for face box (reduced 10%)
 
     // Training thread management
     std::thread training_thread;

@@ -486,6 +486,14 @@ GdkPixbuf* GTKApp::mat_to_pixbuf(const cv::Mat& mat) {
 void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces) {
     try {
         for (const auto& face : faces) {
+            // Only show green box for faces with confidence > 70%
+            bool is_recognized = (face.confidence > 70.0) && (face.name != "Unknown") && (face.name != "Too far");
+
+            // Skip drawing for unrecognized faces (confidence <= 70%)
+            if (!is_recognized) {
+                continue;
+            }
+
             // Use fixed size bounding box, centered on the detected face
             int face_center_x = face.bbox.x + face.bbox.width / 2;
             int face_center_y = face.bbox.y + face.bbox.height / 2;
@@ -501,8 +509,8 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
             int corner_length = static_cast<int>(FIXED_BOX_WIDTH * 0.15); // 15% of fixed width for corner length
             int line_thickness = 2;
 
-            // Use different colors based on confidence: Green for high confidence, Yellow for low
-            cv::Scalar color = (face.confidence > 60.0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 255, 255);
+            // Green color for recognized faces (confidence > 70%)
+            cv::Scalar color = cv::Scalar(0, 255, 0);
 
             // Top-left corner
             // Horizontal line
@@ -552,24 +560,14 @@ void GTKApp::draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces)
                     cv::Point(expanded_bbox.x + expanded_bbox.width, expanded_bbox.y + expanded_bbox.height - corner_length),
                     color, line_thickness);
 
-            // Draw label with name and confidence
-            std::string label = face.name;
-            if (face.confidence > 0) {
-                label += " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
-            }
+            // Draw label with name and confidence (only for recognized faces > 70%)
+            std::string label = face.name + " (" + std::to_string(static_cast<int>(face.confidence)) + "%)";
 
             int baseline = 0;
             cv::Size text_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
 
-            // Use different background color based on confidence and recognition status
-            cv::Scalar bg_color;
-            if (face.name == "Unknown") {
-                bg_color = cv::Scalar(0, 255, 255);  // Yellow background for unknown faces
-            } else if (face.confidence > 60.0) {
-                bg_color = cv::Scalar(0, 255, 0);   // Green background for recognized faces
-            } else {
-                bg_color = cv::Scalar(0, 255, 255);  // Yellow background for low confidence
-            }
+            // Green background for recognized faces
+            cv::Scalar bg_color = cv::Scalar(0, 255, 0);
 
             // Draw background for text (above the face area)
             cv::rectangle(frame,
