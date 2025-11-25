@@ -1,226 +1,261 @@
-# Number Input System with LVGL 8.4
+# Button8.4-Alpha - LVGL Number Input System
 
-A simple and functional number input system built with LVGL 8.4 for a 320x640 window resolution. This application provides a clean interface for entering numbers with a virtual keypad.
+A number input system built with LVGL 8.4 and SDL2, featuring Korean font support, PNG image display, and an interactive button matrix interface.
 
 ## Features
 
-- **Number Keypad**: 0-9 digits with clear (지우기) and backspace (←) buttons
-- **Display**: Shows the entered numbers in real-time with top-left alignment
-- **Enter Function**: Shows popup dialog with entered number and clears the text box
-- **Custom UI**: Dodger blue buttons with white text that turn light orange when clicked
-- **Korean Font Support**: Uses NanumGothicCoding-Bold fonts for Korean text display
-- **Responsive**: Real-time text updates as you type
-
-## Screenshots
-
-The application displays:
-- A title "숫자 입력 시스템" (Number Input System in Korean)
-- A text display area showing entered numbers
-- A 4x4 keypad with numbers 0-9, Clear (지우기), Backspace (←), and Enter (입력) buttons
-
-## Requirements
-
-- LVGL 8.4 library
-- SDL2 development libraries
-- FreeType library
-- GCC compiler with C99 support
-- Make
-
-## Installation
-
-### Ubuntu/Debian
-```bash
-sudo apt update
-sudo apt install libsdl2-dev libfreetype-dev build-essential
-```
-
-### CentOS/RHEL/Fedora
-```bash
-sudo yum install SDL2-devel freetype-devel gcc make
-# or for newer versions:
-sudo dnf install SDL2-devel freetype-devel gcc make
-```
-
-### macOS
-```bash
-brew install sdl2 freetype
-```
-
-## Building
-
-The project uses a simple Makefile for building:
-
-```bash
-# Build the application
-make
-
-# Build with debug symbols
-make debug
-
-# Build optimized release version
-make release
-
-# Clean build artifacts
-make clean
-
-# Clean everything including LVGL library
-make distclean
-
-# Show available targets
-make help
-```
-
-## Running
-
-After building, the executable will be created in the project root:
-
-```bash
-# Run the application
-./number
-```
-
-The application will open a 320x640 window with the number input interface.
-
-## Usage
-
-1. **Enter Numbers**: Click on the number buttons (0-9) to input digits
-2. **Clear**: Press '지우기' to clear the entire input and reset to "0"
-3. **Backspace**: Press '←' to delete the last entered digit
-4. **Enter**: Press '입력' to show a popup dialog with the entered number and clear the text box
-5. **Exit**: Close the window or press Escape to exit
+- **Interactive Number Input**: 12-button keypad matrix with numeric buttons (0-9), clear, backspace, and enter functions
+- **Korean Font Support**: Full Korean text rendering using FreeType and NanumGothicCoding-Bold font
+- **PNG Image Display**: Dialog box displays a custom 80x80 PNG image from the buttons directory
+- **SDL2 Graphics Backend**: Cross-platform rendering using SDL2
+- **Responsive UI**: Real-time display updates with formatted input display
+- **Dark Theme Dialog**: Semi-transparent dark dialog with shadows for visual hierarchy
 
 ## Project Structure
 
 ```
-Button8.4/
-├── main.c              # Main application source
-├── Makefile           # Build configuration
-├── lv_conf.h          # LVGL configuration
-├── lvgl/              # LVGL 8.4 library
-│   ├── src/           # LVGL source files
-│   └── lib/           # Pre-built LVGL library
-├── number              # Executable (after build)
-├── .gitignore         # Git ignore file
-└── README.md          # This file
+Button8.4-Alpha/
+├── main.c                          # Main application code
+├── lv_conf.h                       # LVGL configuration file
+├── Makefile                        # Build configuration
+├── setup.sh                        # Setup script for dependencies
+├── lvgl/                           # LVGL library (v8.4)
+├── fonts/                          # Korean font files
+│   ├── NanumGothicCoding-Bold.ttf
+│   └── NanumGothicCoding.ttf
+├── buttons/                        # Button images
+│   ├── Button-Info-icon-resized.png (80x80 pixels)
+│   ├── Button-Info-icon-original.png
+│   └── Button-Info-icon-resized.png
+└── assets/                         # Asset files
+    └── images/
+        └── button_png.png
 ```
 
-## Technical Details
+## System Requirements
 
-### Architecture
-- **Display**: SDL2 window with LVGL rendering
-- **Input**: Mouse/touch input through SDL2
-- **Rendering**: Double-buffered LVGL rendering to SDL texture
-- **UI**: LVGL button matrix for keypad interface
+### Dependencies
+- **Build Tools**: GCC, Make, Git
+- **SDL2**: SDL2 development libraries (`libsdl2-dev`)
+- **FreeType**: Font rendering (`libfreetype6-dev`)
+- **libpng**: PNG image support (`libpng16-dev`)
 
-### Key Components
-- **Display Driver**: Custom SDL2 flush callback for rendering
-- **Input Driver**: Mouse state reading for button interactions
-- **Button Matrix**: LVGL button matrix with custom callback handling
-- **Text Display**: LVGL label with left-aligned text
-- **Popup Dialog**: Custom dialog with Korean font support for displaying entered numbers
-- **Korean Fonts**: FreeType-based Korean font rendering with NanumGothicCoding-Bold
-
-### Configuration
+### Display Configuration
 - **Resolution**: 320x640 pixels
 - **Color Depth**: 32-bit ARGB8888
-- **Buffer Size**: 10% of screen resolution for double buffering
-- **Font**: Default LVGL Montserrat font
+- **Double Buffering**: Enabled for smooth rendering
 
-## Customization
+## Installation
 
-### Window Resolution
-To change the resolution, modify these constants in `main.c`:
-```c
-#define DISP_HOR_RES 320
-#define DISP_VER_RES 640
+### 1. Install Dependencies
+
+Run the setup script:
+```bash
+bash setup.sh
 ```
 
-### Keypad Layout
-The keypad layout is defined in the `btnm_map` array:
-```c
-static const char *btnm_map[] = {
-    "1", "2", "3", "\n",
-    "4", "5", "6", "\n", 
-    "7", "8", "9", "\n",
-    "지우기", "0", "←", "\n",
-    "입력", ""
-};
+Or manually install required packages:
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  build-essential \
+  libsdl2-dev \
+  libfreetype6-dev \
+  libpng16-dev \
+  git
 ```
 
-### Button Styling
-The application uses custom button colors:
-- **Default**: Dodger blue (#1E90FF) with white text
-- **Pressed**: Light orange (#FFB366) with white text
-- **Focused**: Dodger blue (#1E90FF) with white text
-- **Focused + Pressed**: Light orange (#FFB366) with white text
+### 2. Verify Font Files
 
-To customize further:
-1. Modify the color values in the `create_number_input_ui()` function
-2. Use `lv_obj_set_style_*()` functions for additional styling
+Ensure the following font files exist:
+- `fonts/NanumGothicCoding-Bold.ttf`
+- `fonts/NanumGothicCoding.ttf`
 
-### Text Processing
-The `button_matrix_cb()` function handles all button interactions. To modify behavior:
-1. Edit the callback function in `main.c`
-2. Add custom logic for number processing
-3. Modify the enter button behavior
+### 3. Build the Project
+
+```bash
+make clean
+make
+```
+
+## Usage
+
+### Run the Application
+
+```bash
+./test
+```
+
+### Keyboard Controls
+
+| Button | Function |
+|--------|----------|
+| 0-9 | Input numeric digits |
+| 지우기 | Clear input buffer |
+| ← | Backspace/delete last digit |
+| 입력 | Submit/Enter (shows dialog) |
+| 닫기 | Close dialog |
+
+## Build Configuration
+
+### Makefile Targets
+
+```bash
+make                    # Build the application (default)
+make clean             # Remove build artifacts
+make distclean         # Remove all artifacts including LVGL library
+make run               # Build and run the application
+make debug             # Build with debug symbols
+make release           # Build optimized release version
+make install           # Install executable to /usr/local/bin
+make help              # Show available targets
+```
+
+### Compiler Flags
+
+- **Standard**: C99
+- **Optimization**: -O2 (default), -O3 (release)
+- **Debug**: -g (enabled by default)
+- **Warnings**: -Wall -Wextra
+
+## LVGL Configuration
+
+Key LVGL settings in `lv_conf.h`:
+
+### Color Depth
+- **LV_COLOR_DEPTH**: 32-bit ARGB8888
+
+### Image Decoder Support
+- **LV_USE_PNG**: 1 (PNG decoder enabled)
+- **LV_USE_LODEPNG**: 1 (Pure C PNG decoder)
+- **LV_USE_LIBPNG**: 1 (External libpng library)
+
+### Font System
+- **LV_USE_FREETYPE**: 1 (TrueType font support)
+
+## Font Configuration
+
+Three Korean font sizes are loaded:
+- **Size 16**: Dialog text labels
+- **Size 20**: Display area and buttons
+- **Size 24**: Alternative large font (currently unused)
+
+### Font File Location
+```c
+"fonts/NanumGothicCoding-Bold.ttf"
+```
+
+## PNG Image Handling
+
+### Image Specifications
+- **File**: `buttons/Button-Info-icon-resized.png`
+- **Dimensions**: 80x80 pixels
+- **Format**: PNG with transparency (RGBA)
+- **Display Path**: `"A:buttons/Button-Info-icon-resized.png"`
+
+### Image in Dialog
+The PNG image is displayed at the top of the dialog box:
+- **Size**: 80x80 pixels
+- **Position**: Top-center with 10px margin
+- **Supports**: Full transparency and alpha blending
+
+## UI Components
+
+### Main Window
+- **Display Container**: Shows current input with size 20 Korean font
+- **Keypad Matrix**: 4x4 button grid with custom colors
+  - Default: Dodger blue (#1E90FF)
+  - Pressed/Focused: Light orange (#FFB366)
+
+### Dialog Box
+- **Background**: Dark gray with 60% opacity
+- **Border**: 2px dark gray border with 10px radius
+- **Shadow**: 20px shadow for depth effect
+- **Contents**:
+  - 80x80 PNG image at top
+  - "숫자 입력" (Number Input) title
+  - Input number display
+  - "닫기" (Close) button
+
+## Building LVGL Library
+
+The LVGL static library (`lvgl/lib/liblvgl.a`) is built with:
+- All core LVGL functionality
+- PNG decoder support (LODEPNG + libpng)
+- FreeType font support
+- SDL2 backend support
+
+### Library Files Generated
+- Object files: `lvgl/build/*.o` (239 files)
+- Static library: `lvgl/lib/liblvgl.a` (1.7MB)
+
+## Display Driver
+
+### SDL2 Backend Implementation
+- **Display Flush Callback**: Renders LVGL draw buffer to SDL2 texture
+- **Input Callback**: Handles mouse input from SDL2
+- **Pixel Format**: ARGB8888
+- **Texture Access**: Streaming mode for performance
 
 ## Troubleshooting
 
-### Build Issues
-- **Missing SDL2**: Install SDL2 development libraries
-- **Missing FreeType**: Install FreeType development libraries
-- **LVGL not found**: Ensure `lvgl/lib/liblvgl.a` exists
-- **Compilation errors**: Check GCC version (C99 support required)
+### Issue: PNG image not displaying
+**Solution**: Ensure `lv_png_init()` is called after `lv_init()` and PNG decoders are enabled in `lv_conf.h`
 
-### Runtime Issues
-- **Window doesn't appear**: Check SDL2 installation
-- **No input response**: Verify mouse/touch input is working
-- **Segmentation fault**: Ensure proper LVGL initialization
-- **Text not updating**: Check button callback registration
+### Issue: Korean font not loading
+**Solution**: Verify font files exist in `fonts/` directory and FreeType is properly initialized
 
-### Performance
-- **Slow rendering**: Reduce buffer size or disable double buffering
-- **High CPU usage**: Increase SDL_Delay() value in main loop
-- **Memory issues**: Check LVGL memory configuration in `lv_conf.h`
+### Issue: Build errors with libpng
+**Solution**: Ensure libpng development libraries are installed (`libpng16-dev`)
 
-## Development
+### Issue: SDL2 not found
+**Solution**: Install SDL2 development packages: `sudo apt-get install libsdl2-dev`
 
-### Adding Features
-1. **New Button Types**: Add to `btnm_map` and handle in `button_matrix_cb()`
-2. **Custom Styling**: Use LVGL style functions in `create_number_input_ui()`
-3. **Input Validation**: Add validation logic in the callback function
-4. **File Operations**: Add file I/O for saving/loading numbers
+## Development Notes
 
-### Debugging
-- **Debug Output**: Uncomment printf statements in callback functions
-- **LVGL Logging**: Enable logging in `lv_conf.h`
-- **SDL Debug**: Use SDL debug flags for input/display issues
+### Font Loading Process
+1. FreeType library initialization
+2. Load three font sizes (16, 20, 24) from TTF file
+3. Apply fonts to appropriate UI components
+4. Check for failures and fall back gracefully
+
+### Image Decoding Process
+1. `lv_png_init()` registers PNG decoder
+2. LVGL uses LODEPNG or libpng based on configuration
+3. Images loaded via `lv_img_set_src()` with `A:` prefix
+4. `A:` prefix maps to the application working directory
+
+### Input Processing Flow
+1. Button press detected in button matrix
+2. Button callback (`button_matrix_cb`) invoked
+3. Input buffer updated
+4. Display label refreshed
+5. On Enter: Dialog created and displayed
+
+## Performance
+
+- **Compilation Time**: ~5 seconds
+- **Executable Size**: 684KB
+- **LVGL Library Size**: 1.7MB
+- **Runtime Memory**: Efficient double-buffering implementation
 
 ## License
 
-This project uses LVGL which is licensed under the MIT License. See the LVGL license file for details.
+This project uses LVGL 8.4 (MIT License) and SDL2 (Zlib License).
 
-## Contributing
+## References
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- [LVGL Documentation](https://docs.lvgl.io/8.4/)
+- [SDL2 Documentation](https://wiki.libsdl.org/)
+- [FreeType Documentation](https://www.freetype.org/freetype2/docs/)
 
-## Changelog
+## Version
 
-### Version 1.0
-- Initial release
-- Basic number input functionality
-- SDL2 + LVGL integration
-- Default button styling
-- Top-left text alignment
+- **Project**: Button8.4-Alpha
+- **LVGL Version**: 8.4 (release/v8.4)
+- **Build Date**: 2025-11-25
+- **Platform**: Linux
 
-## Support
+---
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the LVGL documentation
-3. Check SDL2 documentation for display issues
-4. Create an issue in the project repository
+Last Updated: 2025-11-25
