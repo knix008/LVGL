@@ -83,6 +83,7 @@ private:
     static void on_capture_button_clicked(GtkWidget* widget, gpointer user_data);
     static void on_window_destroy(GtkWidget* widget, gpointer user_data);
     static gboolean on_training_complete(gpointer user_data);
+    static gboolean on_camera_stop_complete(gpointer user_data);
 
     // Instance methods
     gboolean refresh_frame();
@@ -90,6 +91,7 @@ private:
     void train_model();
     void train_model_async();
     void on_training_finished();
+    void on_camera_stop_finished();
     void capture_photo();
     void update_ui();
     GdkPixbuf* mat_to_pixbuf(const cv::Mat& mat);

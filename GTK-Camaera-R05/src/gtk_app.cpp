@@ -467,27 +467,49 @@ bool GTKApp::stop_camera_safe() {
         if (!camera_running) {
             return true;  // Already stopped
         }
-        camera.close();
+
+        // Set flag first to prevent refresh_frame from displaying more frames
         camera_running = false;
 
-        // Clear the display and update UI labels
-        gtk_image_clear(GTK_IMAGE(image_widget));
-        gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
-        gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Stopped");
-        gtk_label_set_text(GTK_LABEL(fps_label), "FPS: 0");
-        gtk_label_set_text(GTK_LABEL(face_info_label), "Person: None detected");
-        gtk_label_set_text(GTK_LABEL(face_count_label), "Confidence: 0%");
-        gtk_label_set_text(GTK_LABEL(recognition_time_label), "Recognition: 0ms");
-        gtk_label_set_text(GTK_LABEL(error_rate_label), "Detection Rate: 0% | Error: 0%");
+        // Close camera hardware (safe to do from any thread)
+        camera.close();
 
+        // Clear any cached frames (safe to do from any thread)
+        last_frame.release();
+
+        // Reset counters (safe to do from any thread)
         frame_count = 0;
         last_time = 0;
+
+        // Schedule UI update on main GTK thread to avoid segmentation fault
+        g_idle_add(on_camera_stop_complete, this);
 
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Exception while stopping camera: " << e.what());
         return false;
     }
+}
+
+gboolean GTKApp::on_camera_stop_complete(gpointer user_data) {
+    GTKApp* self = static_cast<GTKApp*>(user_data);
+    self->on_camera_stop_finished();
+    return FALSE; // Remove from idle handlers
+}
+
+void GTKApp::on_camera_stop_finished() {
+    // This runs on the main GTK thread, so it's safe to call GTK functions
+    gtk_image_clear(GTK_IMAGE(image_widget));
+    gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
+    gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Stopped");
+    gtk_label_set_text(GTK_LABEL(fps_label), "FPS: 0");
+    gtk_label_set_text(GTK_LABEL(face_info_label), "Person: None detected");
+    gtk_label_set_text(GTK_LABEL(face_count_label), "Confidence: 0%");
+    gtk_label_set_text(GTK_LABEL(recognition_time_label), "Recognition: 0ms");
+    gtk_label_set_text(GTK_LABEL(error_rate_label), "Detection Rate: 0% | Error: 0%");
+
+    // Force widget redraw to ensure clear takes effect immediately
+    gtk_widget_queue_draw(image_widget);
 }
 
 void GTKApp::on_window_destroy(GtkWidget* /*widget*/, gpointer user_data) {
