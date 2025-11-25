@@ -136,6 +136,15 @@ bool GTKApp::init() {
             throw;
         }
 
+        // Initialize socket server for remote control
+        try {
+            setup_socket_server();
+            LOG_INFO("Socket server initialized successfully");
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to initialize socket server: " << e.what());
+            // Continue without socket server - not critical
+        }
+
         // Initialize training manager
         try {
             training_manager = std::make_unique<TrainingManager>();
@@ -169,6 +178,11 @@ void GTKApp::cleanup() {
         return;
     }
     cleanup_done = true;
+
+    // Stop socket server first (before other cleanup)
+    if (socket_server) {
+        socket_server->stop();
+    }
 
     // Stop camera and frame processing
     camera_running = false;  // Signal to stop processing frames
@@ -417,6 +431,56 @@ void GTKApp::toggle_camera() {
         camera_running = false;
         gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
         gtk_label_set_text(GTK_LABEL(status_label), "Status: Error - Check console");
+    }
+}
+
+// Thread-safe camera start (for use from socket thread)
+bool GTKApp::start_camera_safe() {
+    try {
+        if (camera_running) {
+            return true;  // Already running
+        }
+        if (!camera.is_camera_active()) {
+            if (!camera.open(0)) {
+                LOG_ERROR("Failed to open camera");
+                return false;
+            }
+        }
+        camera.start();
+        camera_running = true;
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception while starting camera: " << e.what());
+        return false;
+    }
+}
+
+// Thread-safe camera stop (for use from socket thread)
+bool GTKApp::stop_camera_safe() {
+    try {
+        if (!camera_running) {
+            return true;  // Already stopped
+        }
+        camera.close();
+        camera_running = false;
+
+        // Clear the display and update UI labels
+        gtk_image_clear(GTK_IMAGE(image_widget));
+        gtk_button_set_label(GTK_BUTTON(toggle_button), "Start Camera");
+        gtk_label_set_text(GTK_LABEL(status_label), "Status: Camera Stopped");
+        gtk_label_set_text(GTK_LABEL(fps_label), "FPS: 0");
+        gtk_label_set_text(GTK_LABEL(face_info_label), "Person: None detected");
+        gtk_label_set_text(GTK_LABEL(face_count_label), "Confidence: 0%");
+        gtk_label_set_text(GTK_LABEL(recognition_time_label), "Recognition: 0ms");
+        gtk_label_set_text(GTK_LABEL(error_rate_label), "Detection Rate: 0% | Error: 0%");
+
+        frame_count = 0;
+        last_time = 0;
+
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception while stopping camera: " << e.what());
+        return false;
     }
 }
 
@@ -1041,5 +1105,201 @@ void GTKApp::capture_photo() {
     }
     
     gtk_label_set_text(GTK_LABEL(status_label), "Status: Live stream resumed");
+}
+
+void GTKApp::setup_socket_server() {
+    socket_server = std::make_unique<SocketServer>();
+
+    // Register command handlers
+    socket_server->register_command("camera_on", [this](const std::string& args) {
+        return handle_camera_on(args);
+    });
+
+    socket_server->register_command("camera_off", [this](const std::string& args) {
+        return handle_camera_off(args);
+    });
+
+    socket_server->register_command("capture", [this](const std::string& args) {
+        return handle_capture(args);
+    });
+
+    socket_server->register_command("registering", [this](const std::string& args) {
+        return handle_registering(args);
+    });
+
+    socket_server->register_command("status", [this](const std::string& args) {
+        return handle_status(args);
+    });
+
+    // Start the socket server
+    if (!socket_server->start()) {
+        throw std::runtime_error("Failed to start socket server");
+    }
+}
+
+std::string GTKApp::handle_camera_on(const std::string& /* args */) {
+    if (start_camera_safe()) {
+        return "OK:Camera started";
+    } else {
+        return "ERROR:Failed to start camera";
+    }
+}
+
+std::string GTKApp::handle_camera_off(const std::string& /* args */) {
+    if (stop_camera_safe()) {
+        return "OK:Camera stopped";
+    } else {
+        return "ERROR:Failed to stop camera";
+    }
+}
+
+std::string GTKApp::handle_capture(const std::string& args) {
+    if (!camera_running) {
+        return "ERROR:Camera not running";
+    }
+
+    // Parse arguments: "initial:id"
+    std::istringstream iss(args);
+    std::string initial, id_str;
+    std::getline(iss, initial, ':');
+    std::getline(iss, id_str);
+
+    if (initial.empty() || id_str.empty()) {
+        return "ERROR:Missing arguments. Usage: capture:A:1";
+    }
+
+    // Convert initial to uppercase
+    initial[0] = std::toupper(initial[0]);
+
+    // Validate ID is numeric
+    try {
+        std::stoi(id_str);
+    } catch (...) {
+        return "ERROR:Invalid ID. Must be numeric.";
+    }
+
+    std::string person_name = initial + id_str;
+
+    // Create dataset directory if it doesn't exist
+    if (!std::filesystem::exists("dataset")) {
+        std::filesystem::create_directory("dataset");
+    }
+
+    std::string person_dir = "dataset/" + person_name;
+    if (!std::filesystem::exists(person_dir)) {
+        std::filesystem::create_directories(person_dir);
+    }
+
+    // Count existing files for this person
+    int sequence = 1;
+    for (const auto& entry : std::filesystem::directory_iterator(person_dir)) {
+        if (entry.is_regular_file()) {
+            std::string ext = entry.path().extension().string();
+            if (ext == ".jpg" || ext == ".png" || ext == ".bmp") {
+                sequence++;
+            }
+        }
+    }
+
+    std::string filename = person_dir + "/" + std::to_string(sequence) + ".jpg";
+
+    // Save the current frame
+    if (last_frame.empty() || !cv::imwrite(filename, last_frame)) {
+        return "ERROR:Failed to capture photo";
+    }
+
+    // Register person in database if not already registered
+    PersonRecord person;
+    bool person_exists = face_database.get_person_by_name(person_name, person);
+
+    if (!person_exists) {
+        if (!face_database.add_person(person_name)) {
+            return "ERROR:Failed to register person";
+        }
+        face_database.get_person_by_name(person_name, person);
+    }
+
+    // Add face image to database
+    face_database.add_face_image(person.id, filename);
+
+    // Extract and store face embedding
+    cv::Mat face_image = cv::imread(filename);
+    if (!face_image.empty()) {
+        std::vector<Face> detected_faces = face_detector.detect_faces(face_image);
+        std::vector<float> embedding;
+        cv::Mat image_for_training = face_image;
+
+        if (!detected_faces.empty()) {
+            cv::Rect best_bbox = detected_faces[0].bbox;
+            for (const auto& face : detected_faces) {
+                if (face.bbox.area() > best_bbox.area()) {
+                    best_bbox = face.bbox;
+                }
+            }
+
+            if (best_bbox.x >= 0 && best_bbox.y >= 0 &&
+                best_bbox.x + best_bbox.width <= face_image.cols &&
+                best_bbox.y + best_bbox.height <= face_image.rows) {
+                cv::Mat face_roi = face_image(best_bbox).clone();
+                embedding = face_recognizer.extract_embedding(face_roi);
+                image_for_training = face_roi;
+            } else {
+                embedding = face_recognizer.extract_embedding(face_image);
+            }
+        } else {
+            embedding = face_recognizer.extract_embedding(face_image);
+        }
+
+        if (!embedding.empty()) {
+            std::vector<unsigned char> embedding_bytes(
+                reinterpret_cast<unsigned char*>(embedding.data()),
+                reinterpret_cast<unsigned char*>(embedding.data()) + embedding.size() * sizeof(float)
+            );
+
+            if (face_database.add_face_embedding(person.id, filename, embedding_bytes)) {
+                if (face_recognizer.add_training_data(image_for_training, person.id)) {
+                    std::string faiss_index_path = "faiss_index.bin";
+                    if (std::filesystem::exists(faiss_index_path)) {
+                        face_recognizer.load_index(faiss_index_path);
+                    }
+                    face_recognizer.load_labels_from_database();
+
+                    if (!face_recognition_enabled) {
+                        face_recognition_enabled = true;
+                    }
+
+                    return "OK:Photo captured and person added - " + person_name;
+                } else {
+                    return "ERROR:Failed to add to recognition model";
+                }
+            } else {
+                return "ERROR:Failed to store embedding";
+            }
+        } else {
+            return "ERROR:Failed to extract embedding";
+        }
+    } else {
+        return "ERROR:Failed to load captured image";
+    }
+}
+
+std::string GTKApp::handle_registering(const std::string& /* args */) {
+    if (training_in_progress) {
+        return "ERROR:Training already in progress";
+    }
+
+    train_model_async();
+    return "OK:Training started";
+}
+
+std::string GTKApp::handle_status(const std::string& /* args */) {
+    std::string status;
+    status += "camera_running:" + std::string(camera_running ? "true" : "false") + ",";
+    status += "recognition_enabled:" + std::string(face_recognition_enabled ? "true" : "false") + ",";
+    status += "training_in_progress:" + std::string(training_in_progress ? "true" : "false") + ",";
+    status += "people_count:" + std::to_string(face_database.get_num_people()) + ",";
+    status += "total_faces:" + std::to_string(face_database.get_total_faces());
+
+    return "OK:" + status;
 }
 

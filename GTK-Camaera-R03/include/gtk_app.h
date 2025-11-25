@@ -16,6 +16,7 @@
 #include "frame_processor.h"
 #include "ui_renderer.h"
 #include "training_manager.h"
+#include "socket_server.h"
 #include "config.h"
 #include "logger.h"
 #include "exceptions.h"
@@ -45,6 +46,7 @@ private:
     std::unique_ptr<FrameProcessor> frame_processor;
     std::unique_ptr<UIRenderer> ui_renderer;
     std::unique_ptr<TrainingManager> training_manager;
+    std::unique_ptr<SocketServer> socket_server;
 
     guint refresh_timer;
     bool camera_running;
@@ -93,6 +95,18 @@ private:
     GdkPixbuf* mat_to_pixbuf(const cv::Mat& mat);
     void draw_faces_on_frame(cv::Mat& frame, const std::vector<Face>& faces);
     void load_face_recognizer();
+
+    // Socket command handlers
+    void setup_socket_server();
+    std::string handle_camera_on(const std::string& args);
+    std::string handle_camera_off(const std::string& args);
+    std::string handle_capture(const std::string& args);
+    std::string handle_registering(const std::string& args);
+    std::string handle_status(const std::string& args);
+
+    // Thread-safe camera control (for use from socket server thread)
+    bool start_camera_safe();
+    bool stop_camera_safe();
 
 public:
     GTKApp();

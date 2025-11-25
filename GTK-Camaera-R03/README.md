@@ -222,25 +222,59 @@ The application displays real-time metrics in the status bar:
 
 ```
 gtk-webcam/
-├── include/
+├── include/                  # Main server headers
 │   ├── camera.h              # Camera capture interface
 │   ├── gtk_app.h             # GTK application class
 │   ├── face_detector.h       # Haar Cascade face detection
-│   ├── face_recognizer.h     # LBPH face recognition model
-│   └── face_database.h       # SQLite3 person/face database
-├── src/
+│   ├── face_database.h       # SQLite3 person/face database
+│   └── socket_server.h       # Socket server for remote control
+├── src/                      # Main server implementation
 │   ├── main.cpp              # Application entry point
 │   ├── camera.cpp            # Camera implementation
 │   ├── gtk_app.cpp           # GTK UI & main application logic
 │   ├── face_detector.cpp     # Face detection implementation
-│   ├── face_recognizer.cpp   # LBPH recognition implementation
-│   └── face_database.cpp     # Database operations
+│   ├── face_database.cpp     # Database operations
+│   └── socket_server.cpp     # Socket server implementation
+├── client/                   # Client applications (GUI & CLI)
+│   ├── include/
+│   │   ├── gtk_client.h      # GTK client GUI class
+│   │   ├── socket_client_lib.h  # Socket client library
+│   │   └── socket_server.h   # Socket server (shared with main app)
+│   └── src/
+│       ├── gtk_client.cpp    # GTK client GUI implementation
+│       ├── gtk_client_main.cpp  # GTK client entry point
+│       ├── socket_client.cpp # CLI socket client
+│       ├── socket_client_lib.cpp # Socket client library implementation
+│       └── socket_server.cpp # Socket server implementation (shared)
 ├── dataset/                  # Training images directory (structure: dataset/PersonID/)
 ├── face_database.db          # SQLite3 database (auto-created)
 ├── CMakeLists.txt            # CMake build configuration
 ├── Makefile                  # Make build configuration
 └── README.md                 # This file
 ```
+
+### Build System Structure
+
+The Makefile now organizes builds into three separate executables:
+
+**Main Application:**
+- `gtk_webcam`: Server-side face recognition application
+  - Includes all server components: camera, detection, recognition, database
+  - Uses socket_server for remote control via clients
+
+**Client Applications:**
+- `socket_client`: Command-line socket client for controlling the server
+  - Minimal dependencies, pure socket communication
+  - Built from: `client/src/socket_client.cpp` + `client/src/socket_client_lib.cpp`
+
+- `gtk_client`: GUI client application for controlling the server
+  - Full GTK interface with visual feedback
+  - Built from: `client/src/*.cpp` (all client sources) + `build/logger.o`
+
+**Build Configuration:**
+- Client sources compile with `-I$(CLIENT_INCLUDE_DIR)` for proper header resolution
+- Client objects stored in `build/client/` directory
+- Main app excludes GTK client GUI files to avoid symbol conflicts
 
 ### Architecture Design: Filesystem + Database Model
 

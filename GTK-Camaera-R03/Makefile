@@ -37,27 +37,54 @@ LIBS := $(shell pkg-config --libs gtk+-3.0 gdk-pixbuf-2.0 opencv4) -pthread -lsq
 SRC_DIR := src
 OBJ_DIR := build
 INCLUDE_DIR := include
+CLIENT_DIR := client
+CLIENT_SRC_DIR := $(CLIENT_DIR)/src
+CLIENT_INCLUDE_DIR := $(CLIENT_DIR)/include
+CLIENT_OBJ_DIR := $(OBJ_DIR)/client
 
 # Source and object files
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+# Exclude GTK client GUI files from main build (main app uses socket server directly)
+SOURCES := $(filter-out $(SRC_DIR)/gtk_client.cpp $(SRC_DIR)/gtk_client_main.cpp $(SRC_DIR)/socket_client_lib.cpp, $(SOURCES))
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SOURCES))
+
+# Client sources
+CLIENT_SOURCES := $(wildcard $(CLIENT_SRC_DIR)/*.cpp)
+CLIENT_OBJECTS := $(patsubst $(CLIENT_SRC_DIR)/%.cpp, $(CLIENT_OBJ_DIR)/%.o, $(CLIENT_SOURCES))
+
 TARGET := gtk_webcam
+SOCKET_CLIENT := socket_client
+GTK_CLIENT := gtk_client
 
 # Default target
-all: $(TARGET)
+all: $(TARGET) $(SOCKET_CLIENT) $(GTK_CLIENT)
 
 # Create directories
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
+$(OBJ_DIR) $(CLIENT_OBJ_DIR):
+	@mkdir -p $@
 
 # Compile source files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
+# Compile client source files
+$(CLIENT_OBJ_DIR)/%.o: $(CLIENT_SRC_DIR)/%.cpp | $(CLIENT_OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -I$(CLIENT_INCLUDE_DIR) -c $< -o $@
+
 # Link executable
 $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
 	@echo "Build completed: $(TARGET)"
+
+# Build socket client
+$(SOCKET_CLIENT): $(CLIENT_OBJ_DIR)/socket_client.o
+	$(CXX) $(CXXFLAGS) -o $@ $<
+	@echo "Build completed: $(SOCKET_CLIENT)"
+
+# Build GTK client
+$(GTK_CLIENT): $(CLIENT_OBJ_DIR)/socket_client_lib.o $(CLIENT_OBJ_DIR)/gtk_client.o $(CLIENT_OBJ_DIR)/gtk_client_main.o $(CLIENT_OBJ_DIR)/socket_server.o $(OBJ_DIR)/logger.o
+	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
+	@echo "Build completed: $(GTK_CLIENT)"
 
 # Run the application
 run: $(TARGET)
@@ -75,7 +102,7 @@ debug-run: debug
 
 # Clean build artifacts (keep external dependencies)
 clean:
-	@rm -rf $(OBJ_DIR) $(TARGET)
+	@rm -rf $(OBJ_DIR) $(TARGET) $(SOCKET_CLIENT) $(GTK_CLIENT)
 	@rm -rf *.db *.bin
 	@echo "Cleaned build artifacts"
 
@@ -89,12 +116,17 @@ distclean: clean
 help:
 	@echo "GTK Webcam Application - Build Targets"
 	@echo "======================================"
-	@echo "make          - Build the application"
-	@echo "make run      - Build and run the application"
+	@echo "make          - Build the application, socket client, and GTK client"
+	@echo "make run      - Build and run the main application"
 	@echo "make debug    - Build with debug symbols"
 	@echo "make debug-run - Build and run with GDB debugger"
 	@echo "make clean    - Remove build artifacts (keeps ONNX Runtime & FAISS)"
 	@echo "make distclean - Remove all artifacts including ONNX Runtime & FAISS"
 	@echo "make help     - Show this help message"
+	@echo ""
+	@echo "Executables:"
+	@echo "  ./$(TARGET)       - Main GTK face recognition server"
+	@echo "  ./$(SOCKET_CLIENT) - Command-line socket client"
+	@echo "  ./$(GTK_CLIENT)    - GTK client GUI"
 
 .PHONY: all run debug debug-run clean distclean help

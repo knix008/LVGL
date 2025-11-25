@@ -29,53 +29,69 @@ The GTK Face Recognition Application is a real-time face detection and recogniti
 ### High-Level Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          GTK Application (GUI)                       │
-│                        gtk_app.cpp / gtk_app.h                       │
-└────────────┬────────────────────────────────┬──────────────────────┘
-             │                                │
-      ┌──────▼────────────┐          ┌────────▼─────────────┐
-      │   Frame Processor │          │   Training Manager   │
-      │ (frame_processor) │          │ (training_manager)   │
-      └────────┬──────────┘          └────────┬─────────────┘
-               │                               │
-      ┌────────▼──────────────┐      ┌────────▼────────────────────┐
-      │  Face Detection       │      │  Recognition Model Training  │
-      │  - FaceDetector       │      │  - train_from_images        │
-      │    (Haar Cascade)     │      │  - train_from_database      │
-      └────────┬──────────────┘      └────────┬────────────────────┘
-               │                               │
-      ┌────────▼──────────────┐      ┌────────▼────────────────────┐
-      │  Face Recognition     │      │  DeepFaceRecognizer         │
-      │  - Embedding Extract  │      │  - ArcFace Model            │
-      │  - FAISS Search       │      │  - FAISS Index              │
-      └────────┬──────────────┘      └────────┬────────────────────┘
-               │                               │
-      ┌────────▼──────────────────────────────▼────────────────────┐
-      │              Face Database (SQLite3)                         │
-      │  - people table (person_id, name, face_count)               │
-      │  - face_images table (person_id, image_path)                │
-      │  - face_embeddings table (person_id, embedding_bytes)       │
-      │  - faiss_index.bin (persisted index)                        │
-      └──────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                    Main Server (gtk_webcam)                             │
+│                    gtk_app.cpp / gtk_app.h                              │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  Core Recognition Pipeline                                       │  │
+│  │  ├─ Frame Processor (frame_processor)                            │  │
+│  │  ├─ Face Detection (FaceDetector - Haar Cascade)                │  │
+│  │  ├─ Face Recognition (DeepFaceRecognizer - ArcFace + FAISS)    │  │
+│  │  └─ Training Manager (training_manager)                         │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                            │                                             │
+│                            ├─ Socket Server (socket_server)              │
+│                            │                                             │
+│                            ├─ Face Database (SQLite3)                   │
+│                            │                                             │
+│                            └─ UI Renderer (ui_renderer)                 │
+└──────────────────────┬─────────────────────────────────────────────────┘
+                       │
+      ┌────────────────┼────────────────┐
+      │                │                │
+      │          Unix Domain Socket     │
+      │          (/tmp/face_recognition.sock)
+      │                │                │
+      ▼                ▼                ▼
+┌─────────────┐ ┌──────────────────────────────────┐
+│socket_client│ │     gtk_client (GUI Client)      │
+│  (CLI)      │ │  client/src/*.cpp                │
+│             │ │  ├─ gtk_client_main.cpp          │
+│             │ │  ├─ gtk_client.cpp               │
+│             │ │  ├─ socket_client_lib.cpp        │
+│             │ │  ├─ socket_server.cpp (shared)   │
+│             │ │  └─ socket_client.cpp            │
+│             │ └──────────────────────────────────┘
+└─────────────┘
 ```
 
 ### Component Hierarchy
 
 ```
-GTKApp (Main Application)
-├── Camera (Webcam capture)
-├── FaceDetector (Haar Cascade detection)
-├── DeepFaceRecognizer (ArcFace + FAISS)
-│   ├── ModelLoader (ONNX Runtime)
-│   ├── FAISSIndex (Vector search)
-│   └── FaceDatabase (Data persistence)
-├── FrameProcessor (Processing pipeline)
-│   ├── FaceDetector
-│   └── DeepFaceRecognizer
-├── TrainingManager (Training orchestration)
-├── UIRenderer (UI updates)
-└── FaceDatabase (SQLite interface)
+Main Server (gtk_webcam)
+├── GTKApp (Main Application - src/gtk_app.cpp)
+│   ├── Camera (Webcam capture)
+│   ├── SocketServer (Remote command interface)
+│   ├── FaceDetector (Haar Cascade detection)
+│   ├── DeepFaceRecognizer (ArcFace + FAISS)
+│   │   ├── ModelLoader (ONNX Runtime)
+│   │   ├── FAISSIndex (Vector search)
+│   │   └── FaceDatabase (Data persistence)
+│   ├── FrameProcessor (Processing pipeline)
+│   │   ├── FaceDetector
+│   │   └── DeepFaceRecognizer
+│   ├── TrainingManager (Training orchestration)
+│   ├── UIRenderer (UI updates)
+│   └── FaceDatabase (SQLite interface)
+
+Client Applications
+├── socket_client (CLI - client/src/socket_client.cpp)
+│   └── SocketClientLib (Connection handler)
+│
+└── gtk_client (GUI - client/src/gtk_client.cpp)
+    ├── GTKClient (GUI Application)
+    ├── SocketClientLib (Connection handler)
+    └── SocketServer (Server control)
 ```
 
 ---
@@ -335,6 +351,137 @@ namespace Config {
     const double BOUNDING_BOX_SCALE = 1.2;
 }
 ```
+
+---
+
+## Client Components
+
+### 12. **SocketServer** (socket_server.cpp / socket_server.h - server/include & client/include)
+**Responsibility:** Unix domain socket server for remote command control
+
+**Key Responsibilities:**
+- Listen for incoming client connections on Unix domain socket
+- Parse and execute commands from remote clients
+- Register command handlers for specific operations
+- Send responses back to clients
+
+**Key Methods:**
+- `start()` - Start socket server in background thread
+- `stop()` - Stop server and close socket
+- `register_command(name, callback)` - Register command handler
+- `is_running()` - Check server status
+
+**Supported Commands:**
+- `camera_on` - Start camera
+- `camera_off` - Stop camera
+- `capture:initial:id` - Capture and register person
+- `registering` - Train recognition model
+- `status` - Get application status
+
+**Response Format:**
+- Success: `OK:message`
+- Error: `ERROR:error_message`
+
+---
+
+### 13. **SocketClientLib** (socket_client_lib.cpp / socket_client_lib.h - client/src & client/include)
+**Responsibility:** Client library for communicating with socket server
+
+**Key Responsibilities:**
+- Establish connections to Unix domain socket
+- Send commands to server
+- Parse server responses
+- Provide high-level API methods
+
+**Key Methods:**
+- `camera_on()` - Send camera_on command
+- `camera_off()` - Send camera_off command
+- `capture(initial, id)` - Send capture command
+- `registering()` - Send training command
+- `status()` - Get server status
+- `send_command(cmd, args)` - Send arbitrary command
+- `send_raw(cmd_string)` - Send raw command string
+
+**Response Structure:**
+```cpp
+struct Response {
+    bool success;           // true for OK, false for ERROR
+    std::string message;    // Response message content
+};
+```
+
+---
+
+### 14. **GTKClient** (gtk_client.cpp / gtk_client.h - client/src & client/include)
+**Responsibility:** GUI client application for controlling face recognition server
+
+**Key Responsibilities:**
+- Provide graphical user interface for server control
+- Display server responses and status
+- Send commands to server via SocketClientLib
+- Handle user interactions
+
+**Key Methods:**
+- `init()` - Initialize GTK UI
+- `run()` - Start GTK main loop
+- `cleanup()` - Clean up resources
+- `handle_camera_on()` - Handle camera start button
+- `handle_camera_off()` - Handle camera stop button
+- `handle_capture()` - Handle photo capture request
+- `handle_registering()` - Handle training request
+- `handle_status()` - Handle status query
+- `append_response(title, response)` - Display response in UI
+
+**UI Components:**
+- Camera On/Off buttons
+- Capture Photo button (with person ID input)
+- Training/Registering button
+- Status label
+- Response text display
+
+---
+
+### 15. **socket_client** (socket_client.cpp - client/src)
+**Responsibility:** Command-line socket client for server control
+
+**Key Responsibilities:**
+- Provide CLI interface for server commands
+- Parse command-line arguments
+- Execute commands via SocketClientLib
+- Display results to console
+
+**Supported Commands:**
+```bash
+./socket_client camera_on
+./socket_client camera_off
+./socket_client capture A 1
+./socket_client registering
+./socket_client status
+```
+
+---
+
+## Client Directory Structure
+
+```
+client/
+├── include/                          # Client headers
+│   ├── gtk_client.h                  # GTK client GUI class
+│   ├── socket_client_lib.h           # Socket client library
+│   └── socket_server.h               # Shared socket server header
+│
+└── src/                              # Client implementation
+    ├── gtk_client.cpp                # GTK client GUI implementation
+    ├── gtk_client_main.cpp           # GTK client entry point
+    ├── socket_client.cpp             # CLI client program
+    ├── socket_client_lib.cpp         # Socket client library implementation
+    └── socket_server.cpp             # Socket server implementation (shared with main)
+```
+
+**Build Artifacts:**
+- `socket_client` - CLI client executable
+- `gtk_client` - GUI client executable
+- Object files: `build/client/*.o`
 
 ---
 
