@@ -4,6 +4,7 @@
 *.dylib
 *.dll
 *.exe
+*.txt
 
 # Executables
 qwerty

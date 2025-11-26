@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <string.h>
 #include <locale.h>
+#include <stdio.h>
 #include "qwerty.h"
 
 // Application state
@@ -171,6 +172,127 @@ static void on_lang_clicked(GtkWidget *widget, gpointer data) {
     qwerty_reset_composition(&app_state.qwerty);
     update_status();
     update_button_labels();
+}
+
+// Save file callback
+static void on_save_clicked(GtkWidget *widget, gpointer data) {
+    (void)widget;  // Unused parameter
+    (void)data;    // Unused parameter
+
+    GtkWidget *dialog = gtk_file_chooser_dialog_new(
+        "Save Text File",
+        GTK_WINDOW(app_state.window),
+        GTK_FILE_CHOOSER_ACTION_SAVE,
+        "_Cancel", GTK_RESPONSE_CANCEL,
+        "_Save", GTK_RESPONSE_ACCEPT,
+        NULL
+    );
+
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), "text.txt");
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        GtkTextIter start, end;
+        gtk_text_buffer_get_bounds(app_state.text_buffer, &start, &end);
+        gchar *text = gtk_text_buffer_get_text(app_state.text_buffer, &start, &end, FALSE);
+
+        FILE *file = fopen(filename, "w");
+        if (file) {
+            fprintf(file, "%s", text);
+            fclose(file);
+
+            GtkWidget *msg_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app_state.window),
+                GTK_DIALOG_DESTROY_WITH_PARENT,
+                GTK_MESSAGE_INFO,
+                GTK_BUTTONS_OK,
+                "File saved successfully to:\n%s",
+                filename
+            );
+            gtk_dialog_run(GTK_DIALOG(msg_dialog));
+            gtk_widget_destroy(msg_dialog);
+        } else {
+            GtkWidget *msg_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app_state.window),
+                GTK_DIALOG_DESTROY_WITH_PARENT,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Error saving file:\n%s",
+                filename
+            );
+            gtk_dialog_run(GTK_DIALOG(msg_dialog));
+            gtk_widget_destroy(msg_dialog);
+        }
+
+        g_free(text);
+        g_free(filename);
+    }
+
+    gtk_widget_destroy(dialog);
+}
+
+// Open file callback
+static void on_open_clicked(GtkWidget *widget, gpointer data) {
+    (void)widget;  // Unused parameter
+    (void)data;    // Unused parameter
+
+    GtkWidget *dialog = gtk_file_chooser_dialog_new(
+        "Open Text File",
+        GTK_WINDOW(app_state.window),
+        GTK_FILE_CHOOSER_ACTION_OPEN,
+        "_Cancel", GTK_RESPONSE_CANCEL,
+        "_Open", GTK_RESPONSE_ACCEPT,
+        NULL
+    );
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        FILE *file = fopen(filename, "r");
+        if (file) {
+            fseek(file, 0, SEEK_END);
+            long file_size = ftell(file);
+            fseek(file, 0, SEEK_SET);
+
+            char *buffer = g_malloc(file_size + 1);
+            size_t read_size = fread(buffer, 1, file_size, file);
+            buffer[read_size] = '\0';
+            fclose(file);
+
+            clear_all_text();
+            insert_text(buffer);
+
+            GtkWidget *msg_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app_state.window),
+                GTK_DIALOG_DESTROY_WITH_PARENT,
+                GTK_MESSAGE_INFO,
+                GTK_BUTTONS_OK,
+                "File loaded successfully from:\n%s",
+                filename
+            );
+            gtk_dialog_run(GTK_DIALOG(msg_dialog));
+            gtk_widget_destroy(msg_dialog);
+
+            g_free(buffer);
+        } else {
+            GtkWidget *msg_dialog = gtk_message_dialog_new(
+                GTK_WINDOW(app_state.window),
+                GTK_DIALOG_DESTROY_WITH_PARENT,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Error opening file:\n%s",
+                filename
+            );
+            gtk_dialog_run(GTK_DIALOG(msg_dialog));
+            gtk_widget_destroy(msg_dialog);
+        }
+
+        g_free(filename);
+    }
+
+    gtk_widget_destroy(dialog);
 }
 
 // Clear text callback
@@ -381,7 +503,13 @@ static void activate(GtkApplication *app, gpointer user_data) {
     app_state.lang_button = create_key_button("한/영", G_CALLBACK(on_lang_clicked), NULL, 80);
     gtk_box_pack_start(GTK_BOX(row_box), app_state.lang_button, FALSE, FALSE, 0);
 
-    button = create_key_button("Space", G_CALLBACK(on_space_clicked), NULL, 450);
+    button = create_key_button("Open", G_CALLBACK(on_open_clicked), NULL, 75);
+    gtk_box_pack_start(GTK_BOX(row_box), button, FALSE, FALSE, 0);
+
+    button = create_key_button("Space", G_CALLBACK(on_space_clicked), NULL, 350);
+    gtk_box_pack_start(GTK_BOX(row_box), button, FALSE, FALSE, 0);
+
+    button = create_key_button("Save", G_CALLBACK(on_save_clicked), NULL, 75);
     gtk_box_pack_start(GTK_BOX(row_box), button, FALSE, FALSE, 0);
 
     button = create_key_button("Clear", G_CALLBACK(on_clear_clicked), NULL, 80);
