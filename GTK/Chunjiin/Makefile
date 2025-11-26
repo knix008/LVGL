@@ -4,7 +4,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O2 $(shell pkg-config --cflags gtk+-3.0)
 LIBS = $(shell pkg-config --libs gtk+-3.0) -lfontconfig
 TARGET = chunjiin
-SOURCES = main.c chunjiin.c chunjiin_hangul.c
+SOURCES = main.c chunjiin.c chunjiin_hangul.c file.c gui.c gui_utils.c
 OBJECTS = $(SOURCES:.c=.o)
 
 # Required packages
@@ -42,7 +42,7 @@ check-deps:
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET) $(LIBS)
 
-%.o: %.c chunjiin.h
+%.o: %.c chunjiin.h file.h gui.h gui_utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

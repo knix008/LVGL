@@ -64,11 +64,4 @@ void check_double(const wchar_t *jong, const wchar_t *jong2, wchar_t *result);
 // 모드 변경
 void change_mode(ChunjiinState *state);
 
-// 버튼 텍스트 가져오기
-const wchar_t* get_button_text(InputMode mode, int button_num);
-
-// 파일 저장/로드 함수
-int save_text_to_file(const wchar_t *text, const char *filename);
-int load_text_from_file(wchar_t *text, size_t max_len, const char *filename);
-
 #endif // CHUNJIIN_H
