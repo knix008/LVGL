@@ -137,25 +137,25 @@ void on_clear_clicked(GtkWidget *widget __attribute__((unused)), gpointer data) 
 // 엔터 버튼 핸들러 - 결과 팝업 표시 후 텍스트 지우기
 void on_enter_clicked(GtkWidget *widget __attribute__((unused)), gpointer data) {
     AppWidgets *app = (AppWidgets *)data;
-    
+
     // 현재 모드 저장
     InputMode current_mode = app->state.now_mode;
-    
+
     // 현재 텍스트 가져오기
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds(app->text_buffer, &start, &end);
     gchar *text = gtk_text_buffer_get_text(app->text_buffer, &start, &end, FALSE);
-    
+
     // 팝업 다이얼로그 생성
     GtkWidget *dialog = gtk_dialog_new_with_buttons("입력 결과",
                                                    GTK_WINDOW(app->window),
                                                    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                                    "확인", GTK_RESPONSE_OK,
                                                    NULL);
-    
+
     // 다이얼로그 크기 설정
     gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 200);
-    
+
     // 메시지 레이블 생성
     GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     GtkWidget *label = gtk_label_new(text);
@@ -165,27 +165,134 @@ void on_enter_clicked(GtkWidget *widget __attribute__((unused)), gpointer data) 
     // 레이블에 CSS 클래스 적용
     GtkStyleContext *context = gtk_widget_get_style_context(label);
     gtk_style_context_add_class(context, "dialog-label");
-    
+
     // 여백 설정
     gtk_widget_set_margin_start(label, 20);
     gtk_widget_set_margin_end(label, 20);
     gtk_widget_set_margin_top(label, 20);
     gtk_widget_set_margin_bottom(label, 20);
-    
+
     gtk_container_add(GTK_CONTAINER(content_area), label);
-    
+
     // 다이얼로그 표시
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
-    
+
     // 메모리 해제
     g_free(text);
-    
+
     // 텍스트 지우기 (모드는 보존)
     chunjiin_init(&app->state);
     app->state.now_mode = current_mode;  // 모드 복원
     gtk_text_buffer_set_text(app->text_buffer, "", -1);
+}
+
+// 저장 버튼 핸들러
+void on_save_clicked(GtkWidget *widget __attribute__((unused)), gpointer data) {
+    AppWidgets *app = (AppWidgets *)data;
+
+    GtkWidget *dialog = gtk_file_chooser_dialog_new("파일 저장",
+                                                    GTK_WINDOW(app->window),
+                                                    GTK_FILE_CHOOSER_ACTION_SAVE,
+                                                    "_취소", GTK_RESPONSE_CANCEL,
+                                                    "_저장", GTK_RESPONSE_ACCEPT,
+                                                    NULL);
+
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), "chunjiin_text.txt");
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        if (save_text_to_file(app->state.text_buffer, filename) == 0) {
+            GtkWidget *info_dialog = gtk_dialog_new_with_buttons("저장 성공",
+                                                                 GTK_WINDOW(app->window),
+                                                                 GTK_DIALOG_MODAL,
+                                                                 "확인", GTK_RESPONSE_OK,
+                                                                 NULL);
+            GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(info_dialog));
+            GtkWidget *label = gtk_label_new("파일이 저장되었습니다.");
+            gtk_container_add(GTK_CONTAINER(content), label);
+            gtk_widget_show_all(info_dialog);
+            gtk_dialog_run(GTK_DIALOG(info_dialog));
+            gtk_widget_destroy(info_dialog);
+        } else {
+            GtkWidget *error_dialog = gtk_dialog_new_with_buttons("저장 실패",
+                                                                  GTK_WINDOW(app->window),
+                                                                  GTK_DIALOG_MODAL,
+                                                                  "확인", GTK_RESPONSE_OK,
+                                                                  NULL);
+            GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(error_dialog));
+            GtkWidget *label = gtk_label_new("파일 저장에 실패했습니다.");
+            gtk_container_add(GTK_CONTAINER(content), label);
+            gtk_widget_show_all(error_dialog);
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+        }
+
+        g_free(filename);
+    }
+
+    gtk_widget_destroy(dialog);
+}
+
+// 로드 버튼 핸들러
+void on_load_clicked(GtkWidget *widget __attribute__((unused)), gpointer data) {
+    AppWidgets *app = (AppWidgets *)data;
+
+    GtkWidget *dialog = gtk_file_chooser_dialog_new("파일 열기",
+                                                    GTK_WINDOW(app->window),
+                                                    GTK_FILE_CHOOSER_ACTION_OPEN,
+                                                    "_취소", GTK_RESPONSE_CANCEL,
+                                                    "_열기", GTK_RESPONSE_ACCEPT,
+                                                    NULL);
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        if (load_text_from_file(app->state.text_buffer, MAX_TEXT_LEN, filename) == 0) {
+            app->state.cursor_pos = wcslen(app->state.text_buffer);
+
+            // 텍스트 뷰 업데이트
+            gchar *utf8_text = wchar_to_utf8(app->state.text_buffer, MAX_TEXT_LEN);
+            gtk_text_buffer_set_text(app->text_buffer, utf8_text, -1);
+            g_free(utf8_text);
+
+            // 커서를 끝으로 이동
+            GtkTextIter end;
+            gtk_text_buffer_get_end_iter(app->text_buffer, &end);
+            gtk_text_buffer_place_cursor(app->text_buffer, &end);
+
+            GtkWidget *info_dialog = gtk_dialog_new_with_buttons("로드 성공",
+                                                                 GTK_WINDOW(app->window),
+                                                                 GTK_DIALOG_MODAL,
+                                                                 "확인", GTK_RESPONSE_OK,
+                                                                 NULL);
+            GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(info_dialog));
+            GtkWidget *label = gtk_label_new("파일이 로드되었습니다.");
+            gtk_container_add(GTK_CONTAINER(content), label);
+            gtk_widget_show_all(info_dialog);
+            gtk_dialog_run(GTK_DIALOG(info_dialog));
+            gtk_widget_destroy(info_dialog);
+        } else {
+            GtkWidget *error_dialog = gtk_dialog_new_with_buttons("로드 실패",
+                                                                  GTK_WINDOW(app->window),
+                                                                  GTK_DIALOG_MODAL,
+                                                                  "확인", GTK_RESPONSE_OK,
+                                                                  NULL);
+            GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(error_dialog));
+            GtkWidget *label = gtk_label_new("파일 로드에 실패했습니다.");
+            gtk_container_add(GTK_CONTAINER(content), label);
+            gtk_widget_show_all(error_dialog);
+            gtk_dialog_run(GTK_DIALOG(error_dialog));
+            gtk_widget_destroy(error_dialog);
+        }
+
+        g_free(filename);
+    }
+
+    gtk_widget_destroy(dialog);
 }
 
 void activate(GtkApplication *app_gtk, gpointer user_data __attribute__((unused))) {
@@ -282,7 +389,7 @@ void activate(GtkApplication *app_gtk, gpointer user_data __attribute__((unused)
     }
 
     // 5번째 행에 3개의 버튼 추가: 모드, 지우기, 엔터
-    
+
     // 모드 변경 버튼
     app->mode_button = gtk_button_new_with_label("모드");
     gtk_widget_set_size_request(app->mode_button, 100, 80);
@@ -303,6 +410,22 @@ void activate(GtkApplication *app_gtk, gpointer user_data __attribute__((unused)
     apply_button_font(enter_button, "NanumGothicCoding", 20);
     g_signal_connect(enter_button, "clicked", G_CALLBACK(on_enter_clicked), app);
     gtk_grid_attach(GTK_GRID(button_grid), enter_button, 2, 4, 1, 1);
+
+    // 6번째 행에 3개의 버튼 추가: 저장, 로드, (빈칸 또는 추가 버튼)
+
+    // 저장 버튼
+    GtkWidget *save_button = gtk_button_new_with_label("저장");
+    gtk_widget_set_size_request(save_button, 100, 80);
+    apply_button_font(save_button, "NanumGothicCoding", 20);
+    g_signal_connect(save_button, "clicked", G_CALLBACK(on_save_clicked), app);
+    gtk_grid_attach(GTK_GRID(button_grid), save_button, 0, 5, 1, 1);
+
+    // 로드 버튼
+    GtkWidget *load_button = gtk_button_new_with_label("로드");
+    gtk_widget_set_size_request(load_button, 100, 80);
+    apply_button_font(load_button, "NanumGothicCoding", 20);
+    g_signal_connect(load_button, "clicked", G_CALLBACK(on_load_clicked), app);
+    gtk_grid_attach(GTK_GRID(button_grid), load_button, 1, 5, 1, 1);
 
     // 정보 레이블
     GtkWidget *info_label = gtk_label_new(NULL);

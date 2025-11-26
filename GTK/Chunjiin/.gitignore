@@ -139,3 +139,4 @@ callgrind.out.*
 # Test files (optional)
 test_output/
 *.test
+*.txt
