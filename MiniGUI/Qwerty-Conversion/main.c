@@ -89,6 +89,62 @@
 #define SAVE_DIR "/tmp/korean_input"
 #define MAX_FILENAME 256
 
+// UI Layout Constants
+#define TEXTBOX_X 20
+#define TEXTBOX_Y 20
+#define TEXTBOX_WIDTH 650
+#define TEXTBOX_HEIGHT 70
+
+#define KEYBOARD_START_Y 110
+#define KEY_WIDTH 40
+#define KEY_HEIGHT 40
+#define KEY_SPACING 42
+#define WINDOW_WIDTH 700
+
+// Dialog Constants - Save Dialog
+#define SAVE_DLG_WIDTH 300
+#define SAVE_DLG_HEIGHT 140
+#define SAVE_DLG_X 100
+#define SAVE_DLG_Y 100
+#define SAVE_LABEL_X 10
+#define SAVE_LABEL_Y 15
+#define SAVE_LABEL_WIDTH 280
+#define SAVE_LABEL_HEIGHT 20
+#define SAVE_INPUT_X 10
+#define SAVE_INPUT_Y 38
+#define SAVE_INPUT_WIDTH 280
+#define SAVE_INPUT_HEIGHT 25
+#define SAVE_BTN_Y 80
+#define SAVE_OK_BTN_X 80
+#define SAVE_CANCEL_BTN_X 160
+#define SAVE_BTN_WIDTH 60
+#define SAVE_BTN_HEIGHT 25
+
+// Dialog Constants - Load Dialog
+#define LOAD_DLG_WIDTH 300
+#define LOAD_DLG_HEIGHT 240
+#define LOAD_DLG_X 100
+#define LOAD_DLG_Y 100
+#define LOAD_LABEL_X 10
+#define LOAD_LABEL_Y 15
+#define LOAD_LABEL_WIDTH 280
+#define LOAD_LABEL_HEIGHT 20
+#define LOAD_LIST_X 10
+#define LOAD_LIST_Y 38
+#define LOAD_LIST_WIDTH 280
+#define LOAD_LIST_HEIGHT 120
+#define LOAD_BTN_Y 170
+#define LOAD_OK_BTN_X 80
+#define LOAD_CANCEL_BTN_X 160
+#define LOAD_BTN_WIDTH 60
+#define LOAD_BTN_HEIGHT 25
+
+// Dialog Control IDs
+#define SAVE_LABEL_ID 1000
+#define SAVE_INPUT_ID 1001
+#define LOAD_LABEL_ID 1000
+#define LOAD_LIST_ID 1002
+
 // Global variables
 static HWND hMainWnd = HWND_INVALID;
 static HWND hTextBox = HWND_INVALID;
@@ -547,7 +603,7 @@ static void handle_key_click(int key_id) {
         DLGTEMPLATE dlg_template = {
             WS_BORDER | WS_CAPTION,
             WS_EX_NONE,
-            100, 100, 300, 140,
+            SAVE_DLG_X, SAVE_DLG_Y, SAVE_DLG_WIDTH, SAVE_DLG_HEIGHT,
             "Save Korean Input",
             0, 0,
             4,
@@ -559,8 +615,8 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_STATIC,
                 WS_VISIBLE | SS_LEFT,
-                10, 15, 280, 20,
-                1000,
+                SAVE_LABEL_X, SAVE_LABEL_Y, SAVE_LABEL_WIDTH, SAVE_LABEL_HEIGHT,
+                SAVE_LABEL_ID,
                 "Enter filename (without .txt):",
                 0,
                 WS_EX_NONE
@@ -568,8 +624,8 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_EDIT,
                 WS_VISIBLE | WS_TABSTOP | WS_BORDER,
-                10, 38, 280, 25,
-                1001,
+                SAVE_INPUT_X, SAVE_INPUT_Y, SAVE_INPUT_WIDTH, SAVE_INPUT_HEIGHT,
+                SAVE_INPUT_ID,
                 "",
                 0,
                 WS_EX_NONE
@@ -577,7 +633,7 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_BUTTON,
                 WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                80, 80, 60, 25,
+                SAVE_OK_BTN_X, SAVE_BTN_Y, SAVE_BTN_WIDTH, SAVE_BTN_HEIGHT,
                 IDOK,
                 "OK",
                 0,
@@ -586,7 +642,7 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_BUTTON,
                 WS_VISIBLE | WS_TABSTOP,
-                160, 80, 60, 25,
+                SAVE_CANCEL_BTN_X, SAVE_BTN_Y, SAVE_BTN_WIDTH, SAVE_BTN_HEIGHT,
                 IDCANCEL,
                 "Cancel",
                 0,
@@ -606,7 +662,7 @@ static void handle_key_click(int key_id) {
         DLGTEMPLATE dlg_template = {
             WS_BORDER | WS_CAPTION,
             WS_EX_NONE,
-            100, 100, 300, 240,
+            LOAD_DLG_X, LOAD_DLG_Y, LOAD_DLG_WIDTH, LOAD_DLG_HEIGHT,
             "Load Korean Input",
             0, 0,
             4,
@@ -618,8 +674,8 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_STATIC,
                 WS_VISIBLE | SS_LEFT,
-                10, 15, 280, 20,
-                1000,
+                LOAD_LABEL_X, LOAD_LABEL_Y, LOAD_LABEL_WIDTH, LOAD_LABEL_HEIGHT,
+                LOAD_LABEL_ID,
                 "Select a file to load:",
                 0,
                 WS_EX_NONE
@@ -627,8 +683,8 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_LISTBOX,
                 WS_VISIBLE | WS_TABSTOP | WS_BORDER,
-                10, 38, 280, 120,
-                1002,
+                LOAD_LIST_X, LOAD_LIST_Y, LOAD_LIST_WIDTH, LOAD_LIST_HEIGHT,
+                LOAD_LIST_ID,
                 "",
                 0,
                 WS_EX_NONE
@@ -636,7 +692,7 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_BUTTON,
                 WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                80, 170, 60, 25,
+                LOAD_OK_BTN_X, LOAD_BTN_Y, LOAD_BTN_WIDTH, LOAD_BTN_HEIGHT,
                 IDOK,
                 "OK",
                 0,
@@ -645,7 +701,7 @@ static void handle_key_click(int key_id) {
             {
                 CTRL_BUTTON,
                 WS_VISIBLE | WS_TABSTOP,
-                160, 170, 60, 25,
+                LOAD_CANCEL_BTN_X, LOAD_BTN_Y, LOAD_BTN_WIDTH, LOAD_BTN_HEIGHT,
                 IDCANCEL,
                 "Cancel",
                 0,
@@ -811,7 +867,7 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
                 WS_VISIBLE | WS_BORDER | SS_LEFT,
                 0,
                 IDC_TEXTBOX,
-                20, 20, 650, 70,
+                TEXTBOX_X, TEXTBOX_Y, TEXTBOX_WIDTH, TEXTBOX_HEIGHT,
                 hWnd, NULL, NULL, 0);
             printf("Text box created, handle: %p\n", hTextBox);
             if (hTextBox == HWND_INVALID) {
@@ -828,156 +884,152 @@ static LRESULT KoreanInputWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
             // Full QWERTY keyboard layout
             int btn_idx = 0;
-            int key_width = 40;
-            int key_height = 40;
-            int key_spacing = 42;
 
             // Calculate keyboard width and center it
             // Row 0 is the widest: 13 keys (40px each) + 1 backspace (65px) + spacing
-            int keyboard_width = (key_spacing * 13) + 65;  // Total width of row 0
-            int window_width = 700;  // Window client width (reduced back to original)
-            int start_x = (window_width - keyboard_width) / 2;  // Center position
-            int start_y = 110;
+            int keyboard_width = (KEY_SPACING * 13) + 65;  // Total width of row 0
+            int start_x = (WINDOW_WIDTH - keyboard_width) / 2;  // Center position
+            int start_y = KEYBOARD_START_Y;
 
             // Row 0: ` 1 2 3 4 5 6 7 8 9 0 - = Backspace
             hKeyButtons[btn_idx++] = CreateWindow("button", "'", WS_VISIBLE | WS_CHILD, IDC_KEY_GRAVE,
-                start_x, start_y, key_width, key_height, hWnd, 0);
+                start_x, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "1", WS_VISIBLE | WS_CHILD, IDC_KEY_1,
-                start_x + key_spacing, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "2", WS_VISIBLE | WS_CHILD, IDC_KEY_2,
-                start_x + key_spacing * 2, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 2, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "3", WS_VISIBLE | WS_CHILD, IDC_KEY_3,
-                start_x + key_spacing * 3, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 3, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "4", WS_VISIBLE | WS_CHILD, IDC_KEY_4,
-                start_x + key_spacing * 4, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 4, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "5", WS_VISIBLE | WS_CHILD, IDC_KEY_5,
-                start_x + key_spacing * 5, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 5, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "6", WS_VISIBLE | WS_CHILD, IDC_KEY_6,
-                start_x + key_spacing * 6, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 6, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "7", WS_VISIBLE | WS_CHILD, IDC_KEY_7,
-                start_x + key_spacing * 7, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 7, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "8", WS_VISIBLE | WS_CHILD, IDC_KEY_8,
-                start_x + key_spacing * 8, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 8, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "9", WS_VISIBLE | WS_CHILD, IDC_KEY_9,
-                start_x + key_spacing * 9, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 9, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "0", WS_VISIBLE | WS_CHILD, IDC_KEY_0,
-                start_x + key_spacing * 10, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 10, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "-", WS_VISIBLE | WS_CHILD, IDC_KEY_MINUS,
-                start_x + key_spacing * 11, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 11, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "=", WS_VISIBLE | WS_CHILD, IDC_KEY_EQUAL,
-                start_x + key_spacing * 12, start_y, key_width, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 12, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "←", WS_VISIBLE | WS_CHILD, IDC_KEY_BACKSPACE,
-                start_x + key_spacing * 13, start_y, 65, key_height, hWnd, 0);
+                start_x + KEY_SPACING * 13, start_y, 65, KEY_HEIGHT, hWnd, 0);
 
             // Row 1: QWERTYUIOP + [ ] backslash
-            start_y += key_spacing + 5;
+            start_y += KEY_SPACING + 5;
             int row1_x = start_x + 20;
             hKeyButtons[btn_idx++] = CreateWindow("button", "q", WS_VISIBLE | WS_CHILD, IDC_KEY_Q,
-                row1_x, start_y, key_width, key_height, hWnd, 0);
+                row1_x, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "w", WS_VISIBLE | WS_CHILD, IDC_KEY_W,
-                row1_x + key_spacing, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "e", WS_VISIBLE | WS_CHILD, IDC_KEY_E,
-                row1_x + key_spacing * 2, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 2, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "r", WS_VISIBLE | WS_CHILD, IDC_KEY_R,
-                row1_x + key_spacing * 3, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 3, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "t", WS_VISIBLE | WS_CHILD, IDC_KEY_T,
-                row1_x + key_spacing * 4, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 4, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "y", WS_VISIBLE | WS_CHILD, IDC_KEY_Y,
-                row1_x + key_spacing * 5, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 5, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "u", WS_VISIBLE | WS_CHILD, IDC_KEY_U,
-                row1_x + key_spacing * 6, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 6, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "i", WS_VISIBLE | WS_CHILD, IDC_KEY_I,
-                row1_x + key_spacing * 7, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 7, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "o", WS_VISIBLE | WS_CHILD, IDC_KEY_O,
-                row1_x + key_spacing * 8, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 8, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "p", WS_VISIBLE | WS_CHILD, IDC_KEY_P,
-                row1_x + key_spacing * 9, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 9, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "[", WS_VISIBLE | WS_CHILD, IDC_KEY_LBRACKET,
-                row1_x + key_spacing * 10, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 10, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "]", WS_VISIBLE | WS_CHILD, IDC_KEY_RBRACKET,
-                row1_x + key_spacing * 11, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 11, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "\\", WS_VISIBLE | WS_CHILD, IDC_KEY_BACKSLASH,
-                row1_x + key_spacing * 12, start_y, key_width, key_height, hWnd, 0);
+                row1_x + KEY_SPACING * 12, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
 
             // Row 2: ASDFGHJKL + ; ' - centered
-            start_y += key_spacing;
+            start_y += KEY_SPACING;
             // Calculate Row 2 width: 11 keys (a-l, ;, ') = 11 × 42px = 462px
-            int row2_width = key_spacing * 11;
-            int row2_x = (window_width - row2_width) / 2;
+            int row2_width = KEY_SPACING * 11;
+            int row2_x = (WINDOW_WIDTH - row2_width) / 2;
             hKeyButtons[btn_idx++] = CreateWindow("button", "a", WS_VISIBLE | WS_CHILD, IDC_KEY_A,
-                row2_x, start_y, key_width, key_height, hWnd, 0);
+                row2_x, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "s", WS_VISIBLE | WS_CHILD, IDC_KEY_S,
-                row2_x + key_spacing, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "d", WS_VISIBLE | WS_CHILD, IDC_KEY_D,
-                row2_x + key_spacing * 2, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 2, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "f", WS_VISIBLE | WS_CHILD, IDC_KEY_F,
-                row2_x + key_spacing * 3, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 3, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "g", WS_VISIBLE | WS_CHILD, IDC_KEY_G,
-                row2_x + key_spacing * 4, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 4, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "h", WS_VISIBLE | WS_CHILD, IDC_KEY_H,
-                row2_x + key_spacing * 5, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 5, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "j", WS_VISIBLE | WS_CHILD, IDC_KEY_J,
-                row2_x + key_spacing * 6, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 6, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "k", WS_VISIBLE | WS_CHILD, IDC_KEY_K,
-                row2_x + key_spacing * 7, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 7, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "l", WS_VISIBLE | WS_CHILD, IDC_KEY_L,
-                row2_x + key_spacing * 8, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 8, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", ";", WS_VISIBLE | WS_CHILD, IDC_KEY_SEMICOLON,
-                row2_x + key_spacing * 9, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 9, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "'", WS_VISIBLE | WS_CHILD, IDC_KEY_QUOTE,
-                row2_x + key_spacing * 10, start_y, key_width, key_height, hWnd, 0);
+                row2_x + KEY_SPACING * 10, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             // Enter button moved to bottom row
 
             // Row 3: Shift + ZXCVBNM + , . / + Shift - centered
-            start_y += key_spacing;
+            start_y += KEY_SPACING;
             // Calculate Row 3 width: LShift(60) + 10 keys + RShift(60) + proper spacing = 60 + 10*42 + 60 = 540px
-            int row3_width = 60 + key_spacing * 10 + 60;
-            int row3_x = (window_width - row3_width) / 2;
+            int row3_width = 60 + KEY_SPACING * 10 + 60;
+            int row3_x = (WINDOW_WIDTH - row3_width) / 2;
             hKeyButtons[btn_idx++] = CreateWindow("button", "Shift", WS_VISIBLE | WS_CHILD, IDC_KEY_LEFTSHIFT,
-                row3_x, start_y, 60, key_height, hWnd, 0);
+                row3_x, start_y, 60, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "z", WS_VISIBLE | WS_CHILD, IDC_KEY_Z,
-                row3_x + 60, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "x", WS_VISIBLE | WS_CHILD, IDC_KEY_X,
-                row3_x + 60 + key_spacing, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "c", WS_VISIBLE | WS_CHILD, IDC_KEY_C,
-                row3_x + 60 + key_spacing * 2, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 2, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "v", WS_VISIBLE | WS_CHILD, IDC_KEY_V,
-                row3_x + 60 + key_spacing * 3, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 3, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "b", WS_VISIBLE | WS_CHILD, IDC_KEY_B,
-                row3_x + 60 + key_spacing * 4, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 4, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "n", WS_VISIBLE | WS_CHILD, IDC_KEY_N,
-                row3_x + 60 + key_spacing * 5, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 5, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "m", WS_VISIBLE | WS_CHILD, IDC_KEY_M,
-                row3_x + 60 + key_spacing * 6, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 6, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", ",", WS_VISIBLE | WS_CHILD, IDC_KEY_COMMA,
-                row3_x + 60 + key_spacing * 7, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 7, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", ".", WS_VISIBLE | WS_CHILD, IDC_KEY_PERIOD,
-                row3_x + 60 + key_spacing * 8, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 8, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "/", WS_VISIBLE | WS_CHILD, IDC_KEY_SLASH,
-                row3_x + 60 + key_spacing * 9, start_y, key_width, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 9, start_y, KEY_WIDTH, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "Shift", WS_VISIBLE | WS_CHILD, IDC_KEY_RIGHTSHIFT,
-                row3_x + 60 + key_spacing * 10, start_y, 60, key_height, hWnd, 0);
+                row3_x + 60 + KEY_SPACING * 10, start_y, 60, KEY_HEIGHT, hWnd, 0);
 
             // Row 4: Special keys with Enter button at the end - centered (no Shift)
-            start_y += key_spacing + 5;
+            start_y += KEY_SPACING + 5;
             // Calculate Row 4 width: Eng(65) + gap(10) + Space(250) + gap(10) + Enter(90) = 425
             int row4_width = 65 + 10 + 250 + 10 + 90;
-            int row4_x = (window_width - row4_width) / 2; // Centered
+            int row4_x = (WINDOW_WIDTH - row4_width) / 2; // Centered
             hKeyButtons[btn_idx++] = CreateWindow("button", "English", WS_VISIBLE | WS_CHILD, IDC_KEY_MODE,
-                row4_x, start_y, 65, key_height, hWnd, 0);
+                row4_x, start_y, 65, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "Space", WS_VISIBLE | WS_CHILD, IDC_KEY_SPACE,
-                row4_x + 65 + 10, start_y, 250, key_height, hWnd, 0);
+                row4_x + 65 + 10, start_y, 250, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "Enter", WS_VISIBLE | WS_CHILD, IDC_KEY_ENTER,
-                row4_x + 65 + 10 + 250 + 10, start_y, 90, key_height, hWnd, 0);
+                row4_x + 65 + 10 + 250 + 10, start_y, 90, KEY_HEIGHT, hWnd, 0);
 
             // Row 5: Store and Load buttons
-            start_y += key_spacing + 5;
+            start_y += KEY_SPACING + 5;
             int row5_width = 60 + 10 + 60;
-            int row5_x = (window_width - row5_width) / 2;
+            int row5_x = (WINDOW_WIDTH - row5_width) / 2;
             hKeyButtons[btn_idx++] = CreateWindow("button", "Store", WS_VISIBLE | WS_CHILD, IDC_KEY_STORE,
-                row5_x, start_y, 60, key_height, hWnd, 0);
+                row5_x, start_y, 60, KEY_HEIGHT, hWnd, 0);
             hKeyButtons[btn_idx++] = CreateWindow("button", "Load", WS_VISIBLE | WS_CHILD, IDC_KEY_LOAD,
-                row5_x + 60 + 10, start_y, 60, key_height, hWnd, 0);
+                row5_x + 60 + 10, start_y, 60, KEY_HEIGHT, hWnd, 0);
 
             // Apply Korean font to all buttons
             if (korean_font) {
