@@ -25,13 +25,3 @@ Makefile
 # Generated files
 lib/
 bin/
-
-# Test/Demo files
-test_*.sh
-build_*.sh
-*_test.html
-*_test.js
-
-# Data directories
-models/
-certs/

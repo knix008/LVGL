@@ -7,20 +7,104 @@ set(CMAKE_CXX_STANDARD 14)
 # Force rebuild on every make
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
 
-# Detect CPU architecture
+# ============================================================================
+# CPU ARCHITECTURE DETECTION
+# ============================================================================
+message(STATUS "========== System Architecture Detection ==========")
+message(STATUS "System: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Processor: ${CMAKE_SYSTEM_PROCESSOR}")
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
     set(ARCH_TYPE "aarch64")
-    message(STATUS "Detected ARM64 architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)")
+    set(ARCH_BITS "64")
+    message(STATUS "✓ Detected ARM64 (aarch64) architecture")
+    message(STATUS "  - 64-bit ARM processor")
+    message(STATUS "  - Suitable for: Raspberry Pi 4/5, Apple Silicon (native), other ARM64 boards")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|x86_64|x64)")
     set(ARCH_TYPE "x86_64")
-    message(STATUS "Detected x86-64 architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|armv7)")
+    set(ARCH_BITS "64")
+    message(STATUS "✓ Detected x86-64 (AMD64/Intel64) architecture")
+    message(STATUS "  - 64-bit Intel/AMD x86 processor")
+    message(STATUS "  - Suitable for: Desktop computers, laptops, servers")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|armv7l|armv7)")
     set(ARCH_TYPE "arm")
-    message(STATUS "Detected ARM 32-bit architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    set(ARCH_BITS "32")
+    message(STATUS "✓ Detected ARM 32-bit architecture")
+    message(STATUS "  - 32-bit ARM processor")
+    message(STATUS "  - Suitable for: Older Raspberry Pi models, older ARM boards")
 else()
     set(ARCH_TYPE "unknown")
-    message(WARNING "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}, build may fail")
+    set(ARCH_BITS "unknown")
+    message(WARNING "✗ Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    message(WARNING "  Build may fail due to architecture mismatch")
+    message(WARNING "  Please report this issue with your system information")
 endif()
+
+message(STATUS "Architecture Set: ${ARCH_TYPE} (${ARCH_BITS}-bit)")
+message(STATUS "====================================================")
+
+# ============================================================================
+# DEPENDENCY VERIFICATION
+# ============================================================================
+message(STATUS "")
+message(STATUS "========== Dependency Verification ==========")
+
+# Function to check if a command exists
+function(check_program PROGRAM_NAME DISPLAY_NAME)
+    find_program(PROGRAM_PATH ${PROGRAM_NAME})
+    if(PROGRAM_PATH)
+        message(STATUS "✓ ${DISPLAY_NAME}: FOUND")
+        set(${PROGRAM_NAME}_FOUND TRUE PARENT_SCOPE)
+    else()
+        message(WARNING "✗ ${DISPLAY_NAME}: NOT FOUND")
+        set(${PROGRAM_NAME}_FOUND FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Check build tools
+check_program(cmake "CMake")
+check_program(make "GNU Make")
+check_program(gcc "GCC Compiler")
+check_program(g++ "G++ Compiler")
+check_program(pkg-config "pkg-config")
+
+# Check system packages
+message(STATUS "")
+message(STATUS "Checking system libraries...")
+
+find_package(SDL2 QUIET)
+if(SDL2_FOUND)
+    message(STATUS "✓ SDL2: FOUND")
+else()
+    message(WARNING "✗ SDL2: NOT FOUND (libsdl2-dev)")
+endif()
+
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(FREETYPE QUIET freetype2)
+    if(FREETYPE_FOUND)
+        message(STATUS "✓ FreeType2: FOUND")
+    else()
+        message(WARNING "✗ FreeType2: NOT FOUND (libfreetype6-dev)")
+    endif()
+
+    pkg_check_modules(OPENSSL QUIET openssl)
+    if(OPENSSL_FOUND)
+        message(STATUS "✓ OpenSSL: FOUND")
+    else()
+        message(WARNING "✗ OpenSSL: NOT FOUND (libssl-dev)")
+    endif()
+
+    pkg_check_modules(FFMPEG QUIET libavformat libavcodec libavutil libswscale)
+    if(FFMPEG_FOUND)
+        message(STATUS "✓ FFmpeg: FOUND")
+    else()
+        message(WARNING "✗ FFmpeg: NOT FOUND (libavformat-dev libavcodec-dev libavutil-dev libswscale-dev)")
+    endif()
+endif()
+
+message(STATUS "============================================")
+message(STATUS "")
 
 set(LVGL_DIR "lvgl")
 set(LV_DRIVERS_DIR "lvgl/src/drivers")

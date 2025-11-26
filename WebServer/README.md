@@ -28,37 +28,50 @@ A comprehensive multimedia application built with LVGL (Light and Versatile Grap
 
 ### Prerequisites
 
-- **Build Tools**: CMake (3.10 or higher), Make, GCC/Clang
-- **Libraries**:
-  - SDL2 (`libsdl2-dev`)
-  - FreeType2 (`libfreetype6-dev`)
-  - OpenSSL (`libssl-dev`) - for TLS 1.3 support
-  - FFmpeg development packages (`libavformat-dev`, `libavcodec-dev`, `libavutil-dev`, `libswscale-dev`)
-  - PkgConfig
-- **Testing**: curl (for API testing)
+The build system automatically detects your CPU architecture (x86-64, ARM64, ARM 32-bit) and verifies all dependencies.
 
-### Installation
+**Supported Architectures:**
+- ✓ x86-64 (Intel/AMD) - Desktop, Laptop, Server
+- ✓ ARM64 (aarch64) - Raspberry Pi 4/5, Apple Silicon, ARM64 boards
+- ✓ ARM 32-bit - Older Raspberry Pi, ARM32 boards
 
-1. **Install dependencies** (Ubuntu/Debian):
+### Automated Setup (Recommended)
+
+The easiest way to build is using the automated setup script:
+
 ```bash
+cd Source
+./build_setup.sh
+cd build
+make
+./main
+```
+
+**What `build_setup.sh` does:**
+1. ✓ Detects your system architecture
+2. ✓ Checks for required dependencies
+3. ✓ Offers to install missing packages
+4. ✓ Runs CMake configuration
+5. ✓ Shows build instructions
+
+### Manual Installation
+
+If you prefer manual setup:
+
+```bash
+cd Source
+
+# Install dependencies (Ubuntu/Debian)
 sudo apt-get install -y \
     cmake make build-essential \
     libsdl2-dev libfreetype6-dev libssl-dev \
     libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
     pkg-config
-```
 
-2. **Build the application**:
-```bash
-cd Source
-mkdir -p build
-cd build
+# Build
+mkdir -p build && cd build
 cmake ..
 make
-```
-
-3. **Run the application**:
-```bash
 ./main
 ```
 
@@ -244,25 +257,35 @@ Available tab values: `db`, `settings`, `info`, `calendar`, `clock`, `video`
 
 ### Building from Source
 
+#### Automated Build (Recommended)
+
 ```bash
-# Navigate to Source directory
 cd Source
-
-# Create build directory
-mkdir -p build
+./build_setup.sh      # Automatically detect architecture and check dependencies
 cd build
-
-# Configure with CMake
-cmake ..
-
-# Build all targets
 make
+```
 
-# Or build specific target
+#### Manual Build
+
+```bash
+cd Source
+mkdir -p build && cd build
+cmake ..
+make
+```
+
+**For detailed build instructions, see [Source/BUILD.md](Source/BUILD.md)**
+
+#### Build Specific Targets
+
+```bash
 make main              # Build main application only
 make test_chunjiin     # Build ChunJiIn input test
 make calendar_test     # Build calendar test
 make clock_test        # Build clock test
+make qwerty_korean_test # Build QWERTY Korean test
+make video_test        # Build video playback test
 ```
 
 ### Running Individual Tests
