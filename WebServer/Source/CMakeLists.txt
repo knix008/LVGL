@@ -138,41 +138,6 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 add_compile_definitions(MG_TLS=MG_TLS_OPENSSL)
 
-# Use local ONNX Runtime installation
-set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
-include_directories(${ONNXRUNTIME_DIR}/include)
-
-# Verify ONNX Runtime library architecture matches system
-set(ONNXRUNTIME_LIB "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3")
-if(EXISTS ${ONNXRUNTIME_LIB})
-    execute_process(
-        COMMAND file ${ONNXRUNTIME_LIB}
-        OUTPUT_VARIABLE ONNXRUNTIME_FILE_INFO
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    if(ARCH_TYPE STREQUAL "aarch64")
-        if(NOT ONNXRUNTIME_FILE_INFO MATCHES "ARM aarch64")
-            message(FATAL_ERROR
-                "ONNX Runtime library architecture mismatch!\n"
-                "System is ARM64 but library is: ${ONNXRUNTIME_FILE_INFO}\n"
-                "Please download the ARM64 version from:\n"
-                "https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-aarch64-1.16.3.tgz")
-        endif()
-    elseif(ARCH_TYPE STREQUAL "x86_64")
-        if(NOT ONNXRUNTIME_FILE_INFO MATCHES "x86-64")
-            message(FATAL_ERROR
-                "ONNX Runtime library architecture mismatch!\n"
-                "System is x86-64 but library is: ${ONNXRUNTIME_FILE_INFO}\n"
-                "Please download the x86-64 version from:\n"
-                "https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz")
-        endif()
-    endif()
-    message(STATUS "ONNX Runtime library architecture verified: ${ARCH_TYPE}")
-else()
-    message(FATAL_ERROR "ONNX Runtime library not found at: ${ONNXRUNTIME_LIB}")
-endif()
-
 add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
 
 # SQLCipher compile definitions
@@ -288,11 +253,6 @@ target_include_directories(main PRIVATE include sqlcipher sqlite lvgl lvgl/src/l
 
 # Link against LVGL library and other dependencies
 target_link_libraries(main lvgl_lib ${SDL2_LIBRARIES} ${FREETYPE_LIBRARIES} ${OPENSSL_LIBRARIES})
-
-
-
-# Link ONNX Runtime library
-target_link_libraries(main ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3)
 
 # Link FFmpeg libraries for video support
 target_link_libraries(main avformat avcodec avutil swscale z)
