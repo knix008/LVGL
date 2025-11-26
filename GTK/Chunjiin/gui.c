@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "gui_utils.h"
+#include "encoding.h"
 #include "file.h"
 #include "chunjiin.h"
 #include <glib.h>
