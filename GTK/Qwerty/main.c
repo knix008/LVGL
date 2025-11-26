@@ -15,7 +15,7 @@ typedef struct {
     QwertyState qwerty;
 } AppState;
 
-static AppState app_state = {NULL, NULL, NULL, NULL, {NULL, NULL}, NULL, NULL, {LANG_ENGLISH, 0, 0, {0, 0, 0, 0}}};
+static AppState app_state;
 
 // Global storage for key buttons to update labels
 static GtkWidget *key_buttons[50];
@@ -63,6 +63,14 @@ static void insert_text(const char *text) {
     gtk_text_buffer_insert(app_state.text_buffer, &iter, text, -1);
 }
 
+// Clear all text from the text buffer
+static void clear_all_text() {
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(app_state.text_buffer, &start, &end);
+    gtk_text_buffer_delete(app_state.text_buffer, &start, &end);
+    qwerty_reset_composition(&app_state.qwerty);
+}
+
 // Button click callback
 static void on_key_clicked(GtkWidget *widget, gpointer data) {
     (void)widget;  // Unused parameter
@@ -101,11 +109,31 @@ static void on_space_clicked(GtkWidget *widget, gpointer data) {
 }
 
 // Enter callback
+// Shows the content of the text view in a dialog and clears it.
 static void on_enter_clicked(GtkWidget *widget, gpointer data) {
     (void)widget;  // Unused parameter
     (void)data;    // Unused parameter
-    insert_text("\n");
-    qwerty_reset_composition(&app_state.qwerty);
+
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(app_state.text_buffer, &start, &end);
+    gchar *text = gtk_text_buffer_get_text(app_state.text_buffer, &start, &end, FALSE);
+
+    // Create a dialog box to display the entered text.
+    GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(app_state.window),
+                                               GTK_DIALOG_DESTROY_WITH_PARENT,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "You entered:\n%s",
+                                               text);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Result");
+
+    // Show the dialog and wait for the user to click "OK".
+    gtk_dialog_run(GTK_DIALOG(dialog));
+
+    // Destroy the dialog and clear the text view.
+    gtk_widget_destroy(dialog);
+    clear_all_text();
+    g_free(text);
 }
 
 // Tab callback
@@ -149,10 +177,7 @@ static void on_lang_clicked(GtkWidget *widget, gpointer data) {
 static void on_clear_clicked(GtkWidget *widget, gpointer data) {
     (void)widget;  // Unused parameter
     (void)data;    // Unused parameter
-    GtkTextIter start, end;
-    gtk_text_buffer_get_bounds(app_state.text_buffer, &start, &end);
-    gtk_text_buffer_delete(app_state.text_buffer, &start, &end);
-    qwerty_reset_composition(&app_state.qwerty);
+    clear_all_text();
 }
 
 // Create a keyboard button
@@ -205,13 +230,13 @@ static void update_button_labels() {
 }
 
 // Create the GUI
+// This function is called when the application starts.
 static void activate(GtkApplication *app, gpointer user_data) {
     (void)user_data;  // Unused parameter
     GtkWidget *window;
     GtkWidget *main_box;
     GtkWidget *text_scroll;
     GtkWidget *keyboard_box;
-    GtkWidget *row_box;
     GtkWidget *button;
 
     // Initialize qwerty state
@@ -220,7 +245,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     // Create main window
     window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Korean/English QWERTY Keypad");
-    gtk_window_set_default_size(GTK_WINDOW(window), 1000, 600);
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     app_state.window = window;
 
@@ -264,7 +289,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_box_pack_start(GTK_BOX(main_box), keyboard_box, FALSE, FALSE, 5);
 
     // Row 0: Numbers and symbols
-    row_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    GtkWidget *row_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_widget_set_halign(row_box, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(keyboard_box), row_box, FALSE, FALSE, 2);
 
@@ -362,6 +387,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     button = create_key_button("Clear", G_CALLBACK(on_clear_clicked), NULL, 80);
     gtk_box_pack_start(GTK_BOX(row_box), button, FALSE, FALSE, 0);
 
+    // Show all widgets in the window.
     gtk_widget_show_all(window);
 }
 
@@ -373,6 +399,8 @@ int main(int argc, char **argv) {
 
     app = gtk_application_new("com.qwerty.keypad", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+    
+    // Run the application.
     status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
 

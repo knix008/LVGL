@@ -1,0 +1,25 @@
+# Build artifacts
+*.o
+*.a
+*.dylib
+*.dll
+*.exe
+
+# Executables
+qwerty
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CMake/build directories
+build/
+cmake-build-debug/
+cmake-build-release/
+
+# Dependencies
+*.dep

@@ -1,28 +1,25 @@
-# Makefile for Korean/English QWERTY Keypad
-
+# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -g
+
+# GTK3 flags using pkg-config
 GTK_CFLAGS = $(shell pkg-config --cflags gtk+-3.0)
 GTK_LIBS = $(shell pkg-config --libs gtk+-3.0)
 
+# Source and object files
+SRCS = main.c qwerty.c
+OBJS = $(SRCS:.c=.o)
+
+# Executable name
 TARGET = qwerty
-OBJS = main.o qwerty.o
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) -o $(TARGET) $(OBJS) $(GTK_LIBS)
+	$(CC) $(OBJS) -o $(TARGET) $(GTK_LIBS)
 
-main.o: main.c qwerty.h
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) -c main.c
-
-qwerty.o: qwerty.c qwerty.h
-	$(CC) $(CFLAGS) -c qwerty.c
+%.o: %.c
+	$(CC) $(CFLAGS) $(GTK_CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(OBJS)
-
-run: $(TARGET)
-	./$(TARGET)
-
-.PHONY: all clean run
+	rm -f $(OBJS) $(TARGET)

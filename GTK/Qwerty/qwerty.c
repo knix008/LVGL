@@ -29,7 +29,7 @@ static const wchar_t JONG_JAMO[] = {
 // Key mappings for QWERTY layout
 KeyMap key_maps[47] = {
     // Row 0
-    {"`", "~", "`", "~"},
+    {"'", "~", "'", "~"},  // Changed to apostrophe for visibility in both button and text
     {"1", "!", "1", "!"},
     {"2", "@", "2", "@"},
     {"3", "#", "3", "#"},
@@ -119,6 +119,62 @@ static int get_jong_index(wchar_t ch) {
     return -1;
 }
 
+// Combine two vowels into a compound vowel if possible
+static wchar_t combine_vowels(wchar_t first, wchar_t second) {
+    // Define vowel combinations that form compound vowels
+    struct {
+        wchar_t first;
+        wchar_t second;
+        wchar_t result;
+    } combinations[] = {
+        {L'ㅗ', L'ㅏ', L'ㅘ'},  // ㅗ + ㅏ = ㅘ
+        {L'ㅗ', L'ㅐ', L'ㅙ'},  // ㅗ + ㅐ = ㅙ
+        {L'ㅗ', L'ㅣ', L'ㅚ'},  // ㅗ + ㅣ = ㅚ
+        {L'ㅜ', L'ㅓ', L'ㅝ'},  // ㅜ + ㅓ = ㅝ (this is the key one for 권!)
+        {L'ㅜ', L'ㅔ', L'ㅞ'},  // ㅜ + ㅔ = ㅞ
+        {L'ㅜ', L'ㅣ', L'ㅟ'},  // ㅜ + ㅣ = ㅟ
+        {L'ㅡ', L'ㅣ', L'ㅢ'},  // ㅡ + ㅣ = ㅢ
+    };
+
+    for (size_t i = 0; i < sizeof(combinations) / sizeof(combinations[0]); i++) {
+        if (combinations[i].first == first && combinations[i].second == second) {
+            return combinations[i].result;
+        }
+    }
+
+    return 0; // No combination possible
+}
+
+// Combine two consonants into a compound jongsung if possible
+static wchar_t combine_consonants(wchar_t first, wchar_t second) {
+    // Define consonant combinations that form compound jongsung
+    struct {
+        wchar_t first;
+        wchar_t second;
+        wchar_t result;
+    } combinations[] = {
+        {L'ㄱ', L'ㅅ', L'ㄳ'},  // ㄱ + ㅅ = ㄳ
+        {L'ㄴ', L'ㅈ', L'ㄵ'},  // ㄴ + ㅈ = ㄵ
+        {L'ㄴ', L'ㅎ', L'ㄶ'},  // ㄴ + ㅎ = ㄶ
+        {L'ㄹ', L'ㄱ', L'ㄺ'},  // ㄹ + ㄱ = ㄺ
+        {L'ㄹ', L'ㅁ', L'ㄻ'},  // ㄹ + ㅁ = ㄻ
+        {L'ㄹ', L'ㅂ', L'ㄼ'},  // ㄹ + ㅂ = ㄼ
+        {L'ㄹ', L'ㅅ', L'ㄽ'},  // ㄹ + ㅅ = ㄽ
+        {L'ㄹ', L'ㅌ', L'ㄾ'},  // ㄹ + ㅌ = ㄾ
+        {L'ㄹ', L'ㅍ', L'ㄿ'},  // ㄹ + ㅍ = ㄿ
+        {L'ㄹ', L'ㅎ', L'ㅀ'},  // ㄹ + ㅎ = ㅀ
+        {L'ㅂ', L'ㅅ', L'ㅄ'},  // ㅂ + ㅅ = ㅄ
+    };
+
+    for (size_t i = 0; i < sizeof(combinations) / sizeof(combinations[0]); i++) {
+        if (combinations[i].first == first && combinations[i].second == second) {
+            return combinations[i].result;
+        }
+    }
+
+    return 0; // No combination possible
+}
+
 // Compose Hangul syllable from cho, jung, jong
 static wchar_t compose_hangul(wchar_t cho, wchar_t jung, wchar_t jong) {
     int cho_idx = get_cho_index(cho);
@@ -133,7 +189,7 @@ static wchar_t compose_hangul(wchar_t cho, wchar_t jung, wchar_t jong) {
 
 // Initialize qwerty state
 void qwerty_init(QwertyState *state) {
-    state->current_language = LANG_ENGLISH;
+    state->current_language = LANG_KOREAN;
     state->shift_pressed = 0;
     state->caps_lock = 0;
     state->hangul.cho = 0;
@@ -187,9 +243,12 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.composing = 1;
             strcpy(output, jamo_str);
         } else if (state->hangul.jung == 0) {
-            // Already have cho, replace it
-            *delete_previous = 1;
+            // Already have cho, but no jung yet
+            // Cannot combine initial consonants, so start new syllable
             state->hangul.cho = wch;
+            state->hangul.jung = 0;
+            state->hangul.jong = 0;
+            state->hangul.composing = 1;
             strcpy(output, jamo_str);
         } else if (state->hangul.jong == 0) {
             // Have cho+jung, add jong
@@ -197,7 +256,10 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jong = wch;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, state->hangul.jong);
             if (composed) {
-                wctomb(output, composed);
+                int len = wctomb(output, composed);
+                if (len > 0) {
+                    output[len] = '\0';
+                }
             } else {
                 // Can't compose, insert separately
                 *delete_previous = 0;
@@ -205,11 +267,32 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
                 state->hangul.composing = 0;
             }
         } else {
-            // Already have complete syllable, start new one
-            state->hangul.cho = wch;
-            state->hangul.jung = 0;
-            state->hangul.jong = 0;
-            strcpy(output, jamo_str);
+            // Already have complete syllable (cho+jung+jong)
+            // Try to combine jong with new consonant for compound jongsung
+            wchar_t compound = combine_consonants(state->hangul.jong, wch);
+            if (compound != 0) {
+                // Successful compound jongsung combination
+                *delete_previous = 1;
+                state->hangul.jong = compound;
+                wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, state->hangul.jong);
+                if (composed) {
+                    int len = wctomb(output, composed);
+                    if (len > 0) {
+                        output[len] = '\0';
+                    }
+                } else {
+                    // Can't compose, insert separately
+                    *delete_previous = 0;
+                    strcpy(output, jamo_str);
+                    state->hangul.composing = 0;
+                }
+            } else {
+                // No compound possible, start new syllable
+                state->hangul.cho = wch;
+                state->hangul.jung = 0;
+                state->hangul.jong = 0;
+                strcpy(output, jamo_str);
+            }
         }
     } else if (qwerty_is_vowel(wch)) {
         if (!state->hangul.composing || state->hangul.cho == 0) {
@@ -222,7 +305,10 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jung = wch;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             if (composed) {
-                wctomb(output, composed);
+                int len = wctomb(output, composed);
+                if (len > 0) {
+                    output[len] = '\0';
+                }
             } else {
                 // Can't compose, insert separately
                 *delete_previous = 0;
@@ -234,7 +320,10 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             *delete_previous = 1;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             char utf8_syllable[7] = {0};
-            wctomb(utf8_syllable, composed);
+            int len = wctomb(utf8_syllable, composed);
+            if (len > 0) {
+                utf8_syllable[len] = '\0';
+            }
             strcpy(output, utf8_syllable);
 
             // Start new syllable with jong as cho
@@ -243,12 +332,35 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jong = 0;
             wchar_t new_composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             char utf8_new[7] = {0};
-            wctomb(utf8_new, new_composed);
+            len = wctomb(utf8_new, new_composed);
+            if (len > 0) {
+                utf8_new[len] = '\0';
+            }
             strcat(output, utf8_new);
         } else {
-            // Already have cho+jung, start new syllable
-            state->hangul.composing = 0;
-            strcpy(output, jamo_str);
+            // Already have cho+jung, try to combine vowels for compound vowel
+            wchar_t compound = combine_vowels(state->hangul.jung, wch);
+            if (compound != 0) {
+                // Successful compound vowel combination
+                *delete_previous = 1;
+                state->hangul.jung = compound;
+                wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
+                if (composed) {
+                    int len = wctomb(output, composed);
+                    if (len > 0) {
+                        output[len] = '\0';
+                    }
+                } else {
+                    // Can't compose, insert separately
+                    *delete_previous = 0;
+                    strcpy(output, jamo_str);
+                    state->hangul.composing = 0;
+                }
+            } else {
+                // No compound possible, start new syllable
+                state->hangul.composing = 0;
+                strcpy(output, jamo_str);
+            }
         }
     } else {
         // Not a jamo, just insert
