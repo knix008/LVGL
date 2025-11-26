@@ -1,5 +1,37 @@
+# Build directories
 build/
 opencv_build/
-opencv_install
+opencv_install/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated files
+lib/
+bin/
+
+# Test/Demo files
+test_*.sh
+build_*.sh
+*_test.html
+*_test.js
+
+# Data directories
 models/
 certs/

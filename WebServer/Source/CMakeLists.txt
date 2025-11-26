@@ -16,6 +16,7 @@ set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
 file(MAKE_DIRECTORY ${LIB_DIR})
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${LVGL_DIR}
     ${LVGL_DIR}/src
     ${LVGL_DIR}/src/libs
@@ -67,16 +68,17 @@ file(GLOB_RECURSE LVGL_SOURCES
     ${LVGL_DIR}/src/*.cpp
 )
 
-# Exclude problematic ThorVG files
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgGl.*\\.cpp$")
-list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*tvgWg.*\\.cpp$")
+# Exclude all ThorVG files
+list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*thorvg/.*\\.cpp$")
+list(FILTER LVGL_SOURCES EXCLUDE REGEX ".*thorvg/.*\\.c$")
 file(GLOB LV_DRIVERS_SOURCES
     ${LV_DRIVERS_DIR}/sdl/*.c
 )
 
 # Create LVGL library
 add_library(lvgl_lib STATIC ${LVGL_SOURCES} ${LV_DRIVERS_SOURCES})
-target_include_directories(lvgl_lib PUBLIC 
+target_include_directories(lvgl_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${LVGL_DIR}
     ${LVGL_DIR}/src
     ${LVGL_DIR}/src/libs
@@ -123,7 +125,6 @@ set(MAIN_SOURCES
     src/qwerty_korean.c
     src/chunjiin_input.c
     src/ui_callbacks.c
-    src/svg_example.c
     src/web_server.c
     src/mongoose.c
     src/web_control.c
