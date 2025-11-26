@@ -46,7 +46,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TARGET) $(TARGET).exe
+	rm -f $(OBJECTS) $(TARGET) $(TARGET).exe *.txt
 
 install: $(TARGET)
 	@echo "Installing $(TARGET)..."
