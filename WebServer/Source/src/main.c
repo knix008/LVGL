@@ -12,7 +12,7 @@
 int main(void)
 {
     lv_init();
-    
+
     // Initialize SDL display driver
     lv_display_t * disp = lv_sdl_window_create(800, 600);
     if (disp == NULL) {
@@ -52,7 +52,7 @@ int main(void)
 
     printf("Tab menu GUI created successfully. Window should appear now.\n");
     printf("Web interface available at: http://localhost:8080\n");
-    printf("Press Ctrl+C to exit.\n");
+    printf("Close the window to exit.\n");
 
     while(1) {
         lv_timer_handler();

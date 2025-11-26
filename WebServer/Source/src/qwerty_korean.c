@@ -143,9 +143,8 @@ void qwerty_handle_space(char* input_buffer, size_t* input_len, wchar_t* output_
         input_buffer[(*input_len)++] = ' ';
         input_buffer[*input_len] = '\0';
     }
-    // Add space to output buffer
-    output_buffer[*input_len-1] = L' ';
-    output_buffer[*input_len] = L'\0';
+    // Recompose the output buffer to properly handle the space
+    qwerty_compose_korean_characters(input_buffer, *input_len, output_buffer);
 }
 
 void qwerty_handle_character(char* input_buffer, size_t* input_len, wchar_t* output_buffer, int ch) {
@@ -325,9 +324,12 @@ void qwerty_compose_korean_characters(const char* input_buffer, size_t input_len
                         temp_output[temp_len++] = wc;
                     }
                 } else {
-                    // Not a Korean character, keep it in the input buffer
-                    // and start a new Korean syllable after it
-                    // For now, we'll just advance past it
+                    // Not a Korean character, check if it's a space or other character
+                    if (current_char == ' ') {
+                        // Add space to output
+                        temp_output[temp_len++] = L' ';
+                    }
+                    // Otherwise just skip it
                 }
                 i++;
             }

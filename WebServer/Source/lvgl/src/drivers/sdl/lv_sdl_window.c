@@ -13,6 +13,7 @@
 #include "lv_sdl_window.h"
 #if LV_USE_SDL
 #include <stdbool.h>
+#include <unistd.h>
 #include "../../core/lv_refr.h"
 #include "../../stdlib/lv_string.h"
 #include "../../core/lv_global.h"
@@ -82,6 +83,7 @@ static void res_chg_event_cb(lv_event_t * e);
  *  STATIC VARIABLES
  **********************/
 static bool inited = false;
+static bool quit_requested = false;
 static lv_timer_t * event_handler_timer;
 
 /**********************
@@ -218,6 +220,11 @@ void lv_sdl_quit(void)
     }
 }
 
+bool lv_sdl_quit_requested(void)
+{
+    return quit_requested;
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
@@ -346,7 +353,13 @@ static void sdl_event_handler(lv_timer_t * t)
                     lv_refr_now(disp);
                     break;
                 case SDL_WINDOWEVENT_CLOSE:
+                    LV_LOG_USER("Window close event detected");
+#if LV_SDL_DIRECT_EXIT
+                    /* Exit the application immediately when window is closed */
+                    _exit(0);
+#else
                     lv_display_delete(disp);
+#endif
                     break;
                 default:
                     break;

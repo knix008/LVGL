@@ -11,6 +11,39 @@ echo "Checking SQLCipher amalgamation files..."
 # Change to SQLCipher directory
 cd sqlcipher
 
+# Function to check and rebuild a binary if needed
+check_and_rebuild_binary() {
+    local binary_name=$1
+    local makefile_target=$2
+    local need_rebuild=0
+
+    if [ ! -f "$binary_name" ]; then
+        echo "$binary_name not found, will build it..."
+        need_rebuild=1
+    elif ! ./$binary_name --version &> /dev/null && ! ./$binary_name 2>&1 | head -1 | grep -q "usage\|Usage\|error" ; then
+        echo "$binary_name is not compatible with current architecture, rebuilding..."
+        need_rebuild=1
+    fi
+
+    if [ $need_rebuild -eq 1 ]; then
+        echo "Building $binary_name for $(uname -m) architecture..."
+        rm -f "$binary_name"
+        make -f Makefile.linux-generic "$makefile_target"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to build $binary_name"
+            cd ..
+            exit 1
+        fi
+        echo "$binary_name built successfully"
+    fi
+}
+
+# Check and rebuild required binaries for current architecture
+echo "Checking binary compatibility..."
+check_and_rebuild_binary "jimsh" "jimsh"
+check_and_rebuild_binary "mksourceid" "mksourceid"
+check_and_rebuild_binary "src-verify" "src-verify"
+
 # Check if amalgamation files already exist
 if [ -f "sqlite3.h" ] && [ -f "sqlite3.c" ]; then
     echo "SQLCipher amalgamation files already exist!"

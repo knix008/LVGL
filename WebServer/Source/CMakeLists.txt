@@ -7,6 +7,21 @@ set(CMAKE_CXX_STANDARD 14)
 # Force rebuild on every make
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
 
+# Detect CPU architecture
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+    set(ARCH_TYPE "aarch64")
+    message(STATUS "Detected ARM64 architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)")
+    set(ARCH_TYPE "x86_64")
+    message(STATUS "Detected x86-64 architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|armv7)")
+    set(ARCH_TYPE "arm")
+    message(STATUS "Detected ARM 32-bit architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+else()
+    set(ARCH_TYPE "unknown")
+    message(WARNING "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}, build may fail")
+endif()
+
 set(LVGL_DIR "lvgl")
 set(LV_DRIVERS_DIR "lvgl/src/drivers")
 set(SQLCIPHER_DIR "sqlcipher")
@@ -17,13 +32,13 @@ file(MAKE_DIRECTORY ${LIB_DIR})
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${LVGL_DIR}
-    ${LVGL_DIR}/src
-    ${LVGL_DIR}/src/libs
-    ${LVGL_DIR}/src/libs/freetype
-    ${LV_DRIVERS_DIR}
-    ${LV_DRIVERS_DIR}/sdl
-    ${SQLCIPHER_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LVGL_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LVGL_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LVGL_DIR}/src/libs
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LVGL_DIR}/src/libs/freetype
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LV_DRIVERS_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/${LV_DRIVERS_DIR}/sdl
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SQLCIPHER_DIR}
 )
 
 find_package(SDL2 REQUIRED)
@@ -42,6 +57,37 @@ add_compile_definitions(MG_TLS=MG_TLS_OPENSSL)
 # Use local ONNX Runtime installation
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime")
 include_directories(${ONNXRUNTIME_DIR}/include)
+
+# Verify ONNX Runtime library architecture matches system
+set(ONNXRUNTIME_LIB "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so.1.16.3")
+if(EXISTS ${ONNXRUNTIME_LIB})
+    execute_process(
+        COMMAND file ${ONNXRUNTIME_LIB}
+        OUTPUT_VARIABLE ONNXRUNTIME_FILE_INFO
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if(ARCH_TYPE STREQUAL "aarch64")
+        if(NOT ONNXRUNTIME_FILE_INFO MATCHES "ARM aarch64")
+            message(FATAL_ERROR
+                "ONNX Runtime library architecture mismatch!\n"
+                "System is ARM64 but library is: ${ONNXRUNTIME_FILE_INFO}\n"
+                "Please download the ARM64 version from:\n"
+                "https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-aarch64-1.16.3.tgz")
+        endif()
+    elseif(ARCH_TYPE STREQUAL "x86_64")
+        if(NOT ONNXRUNTIME_FILE_INFO MATCHES "x86-64")
+            message(FATAL_ERROR
+                "ONNX Runtime library architecture mismatch!\n"
+                "System is x86-64 but library is: ${ONNXRUNTIME_FILE_INFO}\n"
+                "Please download the x86-64 version from:\n"
+                "https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz")
+        endif()
+    endif()
+    message(STATUS "ONNX Runtime library architecture verified: ${ARCH_TYPE}")
+else()
+    message(FATAL_ERROR "ONNX Runtime library not found at: ${ONNXRUNTIME_LIB}")
+endif()
 
 add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
 
@@ -132,7 +178,22 @@ set(MAIN_SOURCES
 
 # SQLCipher amalgamation files
 set(SQLCIPHER_SOURCES
-    ${SQLCIPHER_DIR}/sqlite3.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SQLCIPHER_DIR}/sqlite3.c
+)
+
+# Add custom command to build SQLCipher with architecture check
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${SQLCIPHER_DIR}/sqlite3.c ${CMAKE_CURRENT_SOURCE_DIR}/${SQLCIPHER_DIR}/sqlite3.h
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_sqlcipher.sh
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Building SQLCipher amalgamation files with architecture verification for ${ARCH_TYPE}"
+    VERBATIM
+)
+
+# Mark SQLCipher sources as generated
+set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SQLCIPHER_DIR}/sqlite3.c
+    PROPERTIES GENERATED TRUE
 )
 
 # Create main executable
