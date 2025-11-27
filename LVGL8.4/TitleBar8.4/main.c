@@ -127,7 +127,7 @@ static void create_gui(void) {
     lv_obj_t *btn1 = lv_btn_create(status_bar);
     lv_obj_set_size(btn1, 60, 40);
     lv_obj_align(btn1, LV_ALIGN_LEFT_MID, 5, 0);
-    lv_obj_set_style_bg_color(btn1, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_bg_color(btn1, lv_color_hex(0x1A1A1A), 0);  // Dark black
     lv_obj_set_style_border_width(btn1, 1, 0);
     lv_obj_set_style_border_color(btn1, lv_color_hex(0x888888), 0);
     lv_obj_t *label1 = lv_label_create(btn1);
@@ -142,7 +142,7 @@ static void create_gui(void) {
     lv_obj_t *btn2 = lv_btn_create(status_bar);
     lv_obj_set_size(btn2, 60, 40);
     lv_obj_align(btn2, LV_ALIGN_LEFT_MID, 70, 0);
-    lv_obj_set_style_bg_color(btn2, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_bg_color(btn2, lv_color_hex(0x1A1A1A), 0);  // Dark black
     lv_obj_set_style_border_width(btn2, 1, 0);
     lv_obj_set_style_border_color(btn2, lv_color_hex(0x888888), 0);
     lv_obj_t *label2 = lv_label_create(btn2);
@@ -157,7 +157,7 @@ static void create_gui(void) {
     lv_obj_t *btn3 = lv_btn_create(status_bar);
     lv_obj_set_size(btn3, 60, 40);
     lv_obj_align(btn3, LV_ALIGN_RIGHT_MID, -5, 0);
-    lv_obj_set_style_bg_color(btn3, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_bg_color(btn3, lv_color_hex(0x1A1A1A), 0);  // Dark black
     lv_obj_set_style_border_width(btn3, 1, 0);
     lv_obj_set_style_border_color(btn3, lv_color_hex(0x888888), 0);
     lv_obj_t *label3 = lv_label_create(btn3);
