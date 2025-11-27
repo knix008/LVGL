@@ -30,7 +30,7 @@ bin/
 *.d
 
 # LVGL build (can be large)
-lvgl/build/
+lvgl/
 
 # Temporary and backup files
 *.tmp
