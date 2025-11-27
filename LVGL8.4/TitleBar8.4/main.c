@@ -34,6 +34,13 @@ static lv_color_t buf2[BUF_SIZE];
 static lv_indev_drv_t indev_drv;
 static lv_indev_t *indev = NULL;
 
+// Exit button callback
+static void exit_btn_callback(lv_event_t *e) {
+    (void)e;  // Unused
+    // Set running flag to 0 to exit main loop
+    exit(0);  // Exit the program
+}
+
 // Update title bar with current date and time
 static void update_title_bar(void) {
     time_t now = time(NULL);
@@ -104,30 +111,86 @@ static void create_gui(void) {
         1000,  // 1 second
         NULL
     );
+
+    // Create status bar at the bottom
+    lv_obj_t *status_bar = lv_obj_create(app_state.screen);
+    lv_obj_set_size(status_bar, SCREEN_WIDTH, 50);
+    lv_obj_align(status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x1A1A1A), 0);
+    lv_obj_set_style_bg_opa(status_bar, 128, 0);  // 50% transparency
+    lv_obj_set_style_border_width(status_bar, 0, 0);  // No border
+    lv_obj_set_style_radius(status_bar, 0, 0);  // Sharp corners
+    lv_obj_set_style_pad_all(status_bar, 5, 0);
+
+    // Create menu buttons on the status bar
+    // Button 1 - Menu (메뉴)
+    lv_obj_t *btn1 = lv_btn_create(status_bar);
+    lv_obj_set_size(btn1, 60, 40);
+    lv_obj_align(btn1, LV_ALIGN_LEFT_MID, 5, 0);
+    lv_obj_set_style_bg_color(btn1, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_border_width(btn1, 1, 0);
+    lv_obj_set_style_border_color(btn1, lv_color_hex(0x888888), 0);
+    lv_obj_t *label1 = lv_label_create(btn1);
+    lv_label_set_text(label1, "메뉴");
+    lv_obj_set_style_text_color(label1, lv_color_hex(0xFFFFFF), 0);  // White text
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, 0);  // Center label in button
+    if (app_state.font_20) {
+        lv_obj_set_style_text_font(label1, app_state.font_20, 0);
+    }
+
+    // Button 2 - Back (뒤로)
+    lv_obj_t *btn2 = lv_btn_create(status_bar);
+    lv_obj_set_size(btn2, 60, 40);
+    lv_obj_align(btn2, LV_ALIGN_LEFT_MID, 70, 0);
+    lv_obj_set_style_bg_color(btn2, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_border_width(btn2, 1, 0);
+    lv_obj_set_style_border_color(btn2, lv_color_hex(0x888888), 0);
+    lv_obj_t *label2 = lv_label_create(btn2);
+    lv_label_set_text(label2, "뒤로");
+    lv_obj_set_style_text_color(label2, lv_color_hex(0xFFFFFF), 0);  // White text
+    lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);  // Center label in button
+    if (app_state.font_20) {
+        lv_obj_set_style_text_font(label2, app_state.font_20, 0);
+    }
+
+    // Button 3 (right side) - Exit button (종료)
+    lv_obj_t *btn3 = lv_btn_create(status_bar);
+    lv_obj_set_size(btn3, 60, 40);
+    lv_obj_align(btn3, LV_ALIGN_RIGHT_MID, -5, 0);
+    lv_obj_set_style_bg_color(btn3, lv_color_hex(0x4A4A4A), 0);  // Brighter gray
+    lv_obj_set_style_border_width(btn3, 1, 0);
+    lv_obj_set_style_border_color(btn3, lv_color_hex(0x888888), 0);
+    lv_obj_t *label3 = lv_label_create(btn3);
+    lv_label_set_text(label3, "종료");
+    lv_obj_set_style_text_color(label3, lv_color_hex(0xFFFFFF), 0);  // White text
+    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 0);  // Center label in button
+    if (app_state.font_20) {
+        lv_obj_set_style_text_font(label3, app_state.font_20, 0);
+    }
+
+    // Add exit callback to Exit button
+    lv_obj_add_event_cb(btn3, exit_btn_callback, LV_EVENT_CLICKED, NULL);
 }
 
 // Initialize fonts
 static int init_fonts(void) {
-    // For simplicity, use the default LVGL font
-    // If you want to use FreeType fonts, uncomment and configure:
+    // Initialize FreeType for Korean font support
+    if (!lv_freetype_init(0, 0, 0)) {
+        fprintf(stderr, "Warning: FreeType initialization failed\n");
+    }
 
-    // if (!lv_freetype_init(0, 0, 0)) {
-    //     fprintf(stderr, "Warning: FreeType initialization failed\n");
-    // }
-    //
-    // static lv_ft_info_t info;
-    // info.name = "assets/NotoSansKR-Regular.ttf";
-    // info.weight = 20;
-    // info.style = FT_FONT_STYLE_NORMAL;
-    // if (lv_ft_font_init(&info)) {
-    //     app_state.font_20 = info.font;
-    // } else {
-    //     fprintf(stderr, "Warning: Failed to load font\n");
-    //     app_state.font_20 = NULL;
-    // }
-
-    // Use default LVGL font
-    app_state.font_20 = NULL;  // NULL means use default font
+    // Load NotoSansKR font for Korean character support
+    static lv_ft_info_t info;
+    info.name = "assets/NotoSansKR-Regular.ttf";
+    info.weight = 16;
+    info.style = FT_FONT_STYLE_NORMAL;
+    if (lv_ft_font_init(&info)) {
+        app_state.font_20 = info.font;
+        fprintf(stderr, "NotoSansKR font loaded successfully\n");
+    } else {
+        fprintf(stderr, "Warning: Failed to load NotoSansKR font\n");
+        app_state.font_20 = NULL;
+    }
 
     return 0;
 }
