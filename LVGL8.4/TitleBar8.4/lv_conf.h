@@ -69,7 +69,7 @@
 
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /** Size of memory available for `lv_malloc()` in bytes (>= 2kB) */
-    #define LV_MEM_SIZE (4 * 1024 * 1024U)          /**< [bytes] 4MB for JPEG/PNG/GIF decoding */
+    #define LV_MEM_SIZE (8 * 1024 * 1024U)          /**< [bytes] 8MB for large JPEG/PNG/GIF decoding */
 
     /** Size of the memory expand for `lv_malloc()` in bytes */
     #define LV_MEM_POOL_EXPAND_SIZE 0
@@ -459,7 +459,7 @@
  *  If size is 0, the cache function is not enabled and the decoded memory will be
  *  released immediately after use. 
  *  Increased for better TrueType font caching performance. */
-#define LV_CACHE_DEF_SIZE       (2 * 1024 * 1024U)  /* 2MB cache for JPEG images and fonts */
+#define LV_CACHE_DEF_SIZE       (12 * 1024 * 1024U)  /* 12MB cache for big JPEG images and fonts */
 
 /** Default number of image header cache entries. The cache is used to store the headers of images
  *  The main logic is like `LV_CACHE_DEF_SIZE` but for image headers. */

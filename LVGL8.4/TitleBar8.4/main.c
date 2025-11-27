@@ -65,9 +65,14 @@ static void create_gui(void) {
 
     // Create background image widget using lv_img (proper image widget)
     lv_obj_t *bg_img = lv_img_create(app_state.screen);
-    lv_img_set_src(bg_img, "A:assets/background-bikini-woman.jpg");
-    lv_obj_set_size(bg_img, SCREEN_WIDTH, SCREEN_HEIGHT);
-    lv_obj_align(bg_img, LV_ALIGN_CENTER, 0, 0);
+    lv_img_set_src(bg_img, "A:assets/background-bikini-woman-big.jpg");
+
+    // Set explicit size to match screen resolution (320x640)
+    lv_obj_set_width(bg_img, SCREEN_WIDTH);
+    lv_obj_set_height(bg_img, SCREEN_HEIGHT);
+
+    // Position the image to fill the screen
+    lv_obj_align(bg_img, LV_ALIGN_TOP_LEFT, 0, 0);
 
     // Move image to background so other objects appear on top
     lv_obj_move_background(bg_img);
