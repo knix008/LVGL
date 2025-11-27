@@ -131,6 +131,12 @@ static void on_space_clicked(lv_event_t *e) {
     qwerty_reset_composition(&app_state.qwerty);
 }
 
+// Message box button callback - closes the message box
+static void on_msgbox_clicked(lv_event_t *e) {
+    lv_obj_t *msgbox = lv_event_get_current_target(e);
+    lv_msgbox_close(msgbox);
+}
+
 // Enter callback - shows popup with text and clears
 static void on_enter_clicked(lv_event_t *e) {
     (void)e;
@@ -152,6 +158,9 @@ static void on_enter_clicked(lv_event_t *e) {
             lv_obj_set_style_text_font(text_label, app_state.korean_font_20, 0);
         }
     }
+
+    // Add event handler to close the message box when OK button is clicked
+    lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
 
     // Center the message box
     lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
@@ -199,6 +208,81 @@ static void on_clear_clicked(lv_event_t *e) {
     (void)e;
     lv_textarea_set_text(app_state.text_area, "");
     qwerty_reset_composition(&app_state.qwerty);
+}
+
+// Save text to file callback
+static void on_save_clicked(lv_event_t *e) {
+    (void)e;
+
+    const char *text = lv_textarea_get_text(app_state.text_area);
+    const char *filename = "saved_input.txt";
+
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        // Show error message
+        static const char * btns[] = {"OK", ""};
+        lv_obj_t *msgbox = lv_msgbox_create(lv_scr_act(), "Error", "Failed to save file!", btns, true);
+        lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+        lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
+        return;
+    }
+
+    fprintf(file, "%s", text);
+    fclose(file);
+
+    // Show success message
+    static const char * btns[] = {"OK", ""};
+    lv_obj_t *msgbox = lv_msgbox_create(lv_scr_act(), "Success", "File saved successfully!", btns, true);
+    lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
+}
+
+// Restore text from file callback
+static void on_restore_clicked(lv_event_t *e) {
+    (void)e;
+
+    const char *filename = "saved_input.txt";
+
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        // Show error message
+        static const char * btns[] = {"OK", ""};
+        lv_obj_t *msgbox = lv_msgbox_create(lv_scr_act(), "Error", "Failed to open file!", btns, true);
+        lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+        lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
+        return;
+    }
+
+    // Read file content
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *buffer = malloc(file_size + 1);
+    if (buffer == NULL) {
+        fclose(file);
+        static const char * btns[] = {"OK", ""};
+        lv_obj_t *msgbox = lv_msgbox_create(lv_scr_act(), "Error", "Memory allocation failed!", btns, true);
+        lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+        lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
+        return;
+    }
+
+    size_t bytes_read = fread(buffer, 1, file_size, file);
+    buffer[bytes_read] = '\0';
+    fclose(file);
+
+    // Set text to text area
+    lv_textarea_set_text(app_state.text_area, buffer);
+    free(buffer);
+
+    qwerty_reset_composition(&app_state.qwerty);
+
+    // Show success message
+    static const char * btns[] = {"OK", ""};
+    lv_obj_t *msgbox = lv_msgbox_create(lv_scr_act(), "Success", "File restored successfully!", btns, true);
+    lv_obj_add_event_cb(msgbox, on_msgbox_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_align(msgbox, LV_ALIGN_CENTER, 0, 0);
 }
 
 // Create a keyboard button
@@ -418,9 +502,9 @@ static void create_gui(void) {
         num_key_buttons++;
     }
 
-    // Create Enter button and set it to blue color
+    // Create Enter button and set it to green color
     app_state.enter_button = create_key_button(row, "⏎", on_enter_clicked, NULL, 61);  // Reduced from 64
-    lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x0000FF), 0);  // Blue color
+    lv_obj_set_style_bg_color(app_state.enter_button, lv_color_hex(0x28A745), 0);  // Green color
     
     // Set Enter button label color to white for better contrast
     lv_obj_t *enter_label = lv_obj_get_child(app_state.enter_button, 0);
@@ -469,6 +553,22 @@ static void create_gui(void) {
     // Create Clear button and set it to orange color
     app_state.clear_button = create_key_button(row, "Clear", on_clear_clicked, NULL, 58);  // Reduced from 61
     lv_obj_set_style_bg_color(app_state.clear_button, lv_color_hex(0xFF8C00), 0);  // Orange color
+
+    // Row 5: Save and Restore buttons
+    row = lv_obj_create(keyboard_cont);
+    lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(row, 0, 0);
+    lv_obj_set_style_pad_gap(row, 2, 0);
+    lv_obj_set_style_border_width(row, 0, 0);
+
+    // Create Save button with green color
+    lv_obj_t *save_button = create_key_button(row, "Save", on_save_clicked, NULL, 229);
+    lv_obj_set_style_bg_color(save_button, lv_color_hex(0x28A745), 0);  // Green color
+
+    // Create Restore button with blue color
+    lv_obj_t *restore_button = create_key_button(row, "Restore", on_restore_clicked, NULL, 229);
+    lv_obj_set_style_bg_color(restore_button, lv_color_hex(0x007BFF), 0);  // Blue color
 
     // Initial button state update
     update_button_labels();
