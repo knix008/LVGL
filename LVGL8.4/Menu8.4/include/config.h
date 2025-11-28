@@ -67,7 +67,8 @@ enum {
     SCREEN_MAIN = 0,
     SCREEN_MENU = 1,
     SCREEN_INFO = 2,
-    SCREEN_ADMIN = 3
+    SCREEN_ADMIN = 3,
+    SCREEN_NETWORK = 4
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "../include/menu.h"
 #include "../include/info.h"
 #include "../include/admin.h"
+#include "../include/network.h"
 #include <string.h>
 
 // ============================================================================
@@ -31,6 +32,9 @@ void update_title_bar_location(int screen_id) {
                 break;
             case SCREEN_ADMIN:
                 name = "관리자 설정";
+                break;
+            case SCREEN_NETWORK:
+                name = "네트워크 설정";
                 break;
             default:
                 name = "홈";
@@ -72,6 +76,11 @@ void show_screen(int screen_id) {
 
     if (screen_id == SCREEN_ADMIN && (screen_stack_top < 0 || screen_stack[screen_stack_top].screen_id != SCREEN_ADMIN)) {
         create_admin_screen();
+        update_title_bar_location(screen_id);
+    }
+
+    if (screen_id == SCREEN_NETWORK && (screen_stack_top < 0 || screen_stack[screen_stack_top].screen_id != SCREEN_NETWORK)) {
+        create_network_screen();
         update_title_bar_location(screen_id);
     }
 }
