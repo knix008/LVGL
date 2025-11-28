@@ -8,6 +8,7 @@
 // ============================================================================
 
 void apply_button_style(lv_obj_t *btn, uint32_t bg_color);
+void apply_circle_button_style(lv_obj_t *btn, uint32_t bg_color);
 void apply_label_style(lv_obj_t *label);
 void apply_bar_style(lv_obj_t *bar, uint32_t bg_color);
 

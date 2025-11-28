@@ -26,16 +26,15 @@ static lv_obj_t *create_network_title_bar(lv_obj_t *parent) {
     lv_obj_align(title_bar, LV_ALIGN_TOP_MID, 0, 0);
     apply_bar_style(title_bar, COLOR_BG_TITLE);
 
-    // Back button
+    // Back button (circular)
     lv_obj_t *back_btn = lv_btn_create(title_bar);
-    lv_obj_set_size(back_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
+    lv_obj_set_size(back_btn, TITLE_BAR_HEIGHT - 20, TITLE_BAR_HEIGHT - 20);  // Square button for circle
     lv_obj_align(back_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
-    apply_button_style(back_btn, COLOR_BUTTON_BACK);
+    apply_circle_button_style(back_btn, COLOR_BUTTON_BACK);
 
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "이전");
-    apply_label_style(back_label);
-    lv_obj_align(back_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_t *back_img = lv_img_create(back_btn);
+    lv_img_set_src(back_img, IMG_BACK_BUTTON);
+    lv_obj_align(back_img, LV_ALIGN_CENTER, 0, 0);
 
     lv_obj_add_event_cb(back_btn, back_btn_callback, LV_EVENT_CLICKED, NULL);
 
@@ -43,7 +42,7 @@ static lv_obj_t *create_network_title_bar(lv_obj_t *parent) {
     lv_obj_t *title_label = lv_label_create(title_bar);
     lv_label_set_text(title_label, "");  // Will be updated by update_title_bar_location
     apply_label_style(title_label);
-    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, BUTTON_WIDTH + PADDING_HORIZONTAL * 2, 0);
+    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, (TITLE_BAR_HEIGHT - 20) + PADDING_HORIZONTAL * 2, 0);
 
     // Store the title label so it can be updated
     extern AppState app_state;
