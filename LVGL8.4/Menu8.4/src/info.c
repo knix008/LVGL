@@ -1,10 +1,8 @@
-#include "../include/menu.h"
+#include "../include/info.h"
 #include "../include/config.h"
 #include "../include/types.h"
 #include "../include/style.h"
 #include "../include/screen.h"
-#include "../include/info.h"
-#include "../include/admin.h"
 
 // ============================================================================
 // EVENT CALLBACKS
@@ -18,21 +16,11 @@ static void back_btn_callback(lv_event_t *e) {
     }
 }
 
-static void info_btn_callback(lv_event_t *e) {
-    (void)e;
-    create_info_screen();
-}
-
-static void admin_btn_callback(lv_event_t *e) {
-    (void)e;
-    create_admin_screen();
-}
-
 // ============================================================================
-// MENU SCREEN COMPONENTS
+// INFO SCREEN COMPONENTS
 // ============================================================================
 
-static lv_obj_t *create_menu_title_bar(lv_obj_t *parent) {
+static lv_obj_t *create_info_title_bar(lv_obj_t *parent) {
     lv_obj_t *title_bar = lv_obj_create(parent);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, TITLE_BAR_HEIGHT);
     lv_obj_align(title_bar, LV_ALIGN_TOP_MID, 0, 0);
@@ -63,12 +51,12 @@ static lv_obj_t *create_menu_title_bar(lv_obj_t *parent) {
 
     // Update the title with breadcrumb path
     extern void update_title_bar_location(int screen_id);
-    update_title_bar_location(SCREEN_MENU);
+    update_title_bar_location(SCREEN_INFO);
 
     return title_bar;
 }
 
-static lv_obj_t *create_menu_content(lv_obj_t *parent) {
+static lv_obj_t *create_info_content(lv_obj_t *parent) {
     lv_obj_t *content = lv_obj_create(parent);
     lv_obj_set_size(content, SCREEN_WIDTH, SCREEN_HEIGHT - TITLE_BAR_HEIGHT - STATUS_BAR_HEIGHT);
     lv_obj_align(content, LV_ALIGN_TOP_MID, 0, TITLE_BAR_HEIGHT);
@@ -78,32 +66,28 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     // Allow only vertical scrolling
     lv_obj_set_scroll_dir(content, LV_DIR_VER);
 
-    // Create menu buttons
-    const char *menu_labels[] = {"관리자 설정", "메뉴 2", "메뉴 3", "Info"};
+    // Create info text
+    lv_obj_t *info_label = lv_label_create(content);
+    lv_label_set_long_mode(info_label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(info_label, SCREEN_WIDTH - 20);
+    apply_label_style(info_label);
+    lv_obj_set_style_pad_all(info_label, 10, 0);
+    lv_obj_align(info_label, LV_ALIGN_TOP_LEFT, 10, 10);
 
-    for (int i = 0; i < MENU_ITEMS_COUNT; i++) {
-        lv_obj_t *btn = lv_btn_create(content);
-        lv_obj_set_size(btn, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT);
-        lv_obj_align(btn, LV_ALIGN_TOP_MID, 0, OFFSET_BUTTON_START_Y + i * (MENU_BUTTON_HEIGHT + MENU_BUTTON_MARGIN));
-        apply_button_style(btn, COLOR_BUTTON_BG);
-
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, menu_labels[i]);
-        apply_label_style(label);
-        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-
-        // Add event handlers
-        if (i == 0) {
-            lv_obj_add_event_cb(btn, admin_btn_callback, LV_EVENT_CLICKED, NULL);
-        } else if (i == 3) {
-            lv_obj_add_event_cb(btn, info_btn_callback, LV_EVENT_CLICKED, NULL);
-        }
-    }
+    lv_label_set_text(info_label,
+        "애플리케이션 정보\n\n"
+        "이름: LVGL Menu\n\n"
+        "버전: 8.4\n\n"
+        "설명:\n"
+        "LVGL 프레임워크로 만든\n"
+        "현대적인 메뉴 애플리케이션\n\n"
+        "ⓒ 2024 All Rights Reserved"
+    );
 
     return content;
 }
 
-static lv_obj_t *create_menu_status_bar(lv_obj_t *parent) {
+static lv_obj_t *create_info_status_bar(lv_obj_t *parent) {
     lv_obj_t *status_bar = lv_obj_create(parent);
     lv_obj_set_size(status_bar, SCREEN_WIDTH, STATUS_BAR_HEIGHT);
     lv_obj_align(status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -113,28 +97,28 @@ static lv_obj_t *create_menu_status_bar(lv_obj_t *parent) {
 }
 
 // ============================================================================
-// MENU SCREEN CREATION
+// INFO SCREEN CREATION
 // ============================================================================
 
-void create_menu_screen(void) {
-    lv_obj_t *menu_screen = lv_obj_create(NULL);
-    lv_obj_set_size(menu_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
-    lv_obj_set_style_bg_color(menu_screen, lv_color_hex(COLOR_BG_DARK), 0);
+void create_info_screen(void) {
+    lv_obj_t *info_screen = lv_obj_create(NULL);
+    lv_obj_set_size(info_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_set_style_bg_color(info_screen, lv_color_hex(COLOR_BG_DARK), 0);
 
-    // Disable scrolling on menu screen
-    lv_obj_set_scrollbar_mode(menu_screen, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_clear_flag(menu_screen, LV_OBJ_FLAG_SCROLLABLE);
+    // Disable scrolling on info screen
+    lv_obj_set_scrollbar_mode(info_screen, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(info_screen, LV_OBJ_FLAG_SCROLLABLE);
 
     // Add to screen stack BEFORE creating title bar so breadcrumb can be built correctly
     if (screen_stack_top + 1 < MAX_SCREENS) {
         screen_stack_top++;
-        screen_stack[screen_stack_top].screen = menu_screen;
-        screen_stack[screen_stack_top].screen_id = SCREEN_MENU;
+        screen_stack[screen_stack_top].screen = info_screen;
+        screen_stack[screen_stack_top].screen_id = SCREEN_INFO;
     }
 
-    create_menu_title_bar(menu_screen);
-    create_menu_content(menu_screen);
-    create_menu_status_bar(menu_screen);
+    create_info_title_bar(info_screen);
+    create_info_content(info_screen);
+    create_info_status_bar(info_screen);
 
-    lv_scr_load(menu_screen);
+    lv_scr_load(info_screen);
 }

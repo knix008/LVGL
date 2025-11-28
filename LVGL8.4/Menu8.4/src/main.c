@@ -17,7 +17,7 @@
 // GLOBAL APPLICATION STATE
 // ============================================================================
 
-AppState app_state = {NULL, NULL, NULL, NULL};
+AppState app_state = {NULL, NULL, NULL, NULL, NULL};
 ScreenState screen_stack[MAX_SCREENS];
 int screen_stack_top = -1;
 
