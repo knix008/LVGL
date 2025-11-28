@@ -6,7 +6,7 @@
 *.lib
 *.dll
 menu
-main.o
+src/*.o
 
 # IDE and editor
 .vscode/

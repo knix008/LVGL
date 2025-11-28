@@ -1,20 +1,26 @@
-# LVGL Title Bar Application
+# LVGL Menu Application
 
-A minimal LVGL 8.4 application featuring a transparent title bar at the top of the window that displays real-time date and time information with day of week.
+A modular LVGL 8.4 application featuring a window-switching menu system with screen navigation stack. The main screen displays real-time date and time information, and a menu window provides access to various application features.
 
 ## Features
 
-- **Transparent Title Bar**: Semi-transparent title bar positioned at the top of the window with a dark background
-- **Real-time Date/Time Display**: Shows current date and time with day of week
-  - Format: `Monday 14:30:45 / 2025-11-27`
+- **Window Switching System**: Navigate between main screen and menu screen with a stack-based navigation system
+- **Real-time Date/Time Display**: Shows current date and time with day of week on the main screen
+  - Format: `Wednesday HH:MM:SS\nYYYY-MM-DD`
   - Updates every second automatically
+- **Menu Screen**: Dedicated menu window with 4 menu items accessible via "메뉴" (Menu) button
+- **Navigation Buttons**:
+  - "메뉴" (Menu): Navigate to menu screen
+  - "이전" (Previous): Navigate back to home screen
+  - "종료" (Exit): Quit the application
+- **Korean Text Support**: Full support for Korean language UI elements
 - **Background Image Support**:
   - JPEG format (via SJPG/TJPGD decoder)
   - PNG format (via LODEPNG decoder)
   - GIF animations
 - **Portrait Display Mode**: 320x640 pixel window suitable for mobile/tablet interfaces
 - **SDL2 Integration**: Cross-platform rendering using SDL2 backend
-- **Multi-format Graphics**: Support for multiple image formats simultaneously
+- **Modular Architecture**: Separated into logical modules (home, menu, style, screen, init)
 
 ## Dependencies
 
@@ -109,49 +115,61 @@ The application runs continuously, updating the date/time display every second.
 
 ### Window Size
 
-The window is configured for portrait orientation:
+The window is configured for portrait orientation in [include/config.h](include/config.h):
 
 ```c
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 640
+#define TITLE_BAR_HEIGHT 70
+#define STATUS_BAR_HEIGHT 50
 ```
 
-Modify these values in [main.c:10-11](main.c#L10-L11) to change the window size.
+Modify these values to change the window size and layout. Then rebuild:
 
-### Title Bar Appearance
+```bash
+make clean && make
+```
 
-Customize the title bar in the `create_gui()` function:
+### Color Configuration
+
+All colors are defined in [include/config.h](include/config.h):
 
 ```c
-// Background color and transparency
-lv_obj_set_style_bg_color(app_state.title_bar, lv_color_hex(0xFFFFFF), 0);
-lv_obj_set_style_bg_opa(app_state.title_bar, 180, 0);  // 70% opacity
-
-// Border styling (blue border)
-lv_obj_set_style_border_width(app_state.title_bar, 2, 0);
-lv_obj_set_style_border_color(app_state.title_bar, lv_color_hex(0x4A90E2), 0);
-
-// Height
-lv_obj_set_size(app_state.title_bar, SCREEN_WIDTH, 60);
+#define COLOR_BG_DARK 0x1A1A1A        // Dark background
+#define COLOR_BG_TITLE 0x2C3E50       // Title bar background
+#define COLOR_TEXT 0xFFFFFF           // Text color (white)
+#define COLOR_BUTTON_BG 0x3498DB      // Button background
+#define COLOR_BUTTON_BACK 0xE74C3C    // Back button background
+#define COLOR_BORDER 0x34495E         // Border color
+#define COLOR_TRANSPARENT 0x00        // Transparent background
 ```
 
 ### Font Configuration
 
-By default, the application uses LVGL's built-in font. If you want to use custom TrueType fonts, uncomment the FreeType initialization in the `init_fonts()` function:
+The application uses FreeType with NotoSansKR font, loaded in [src/init.c:32-48](src/init.c#L32-L48):
 
 ```c
-// Uncomment this section in init_fonts() to use custom fonts
-if (!lv_freetype_init(0, 0, 0)) {
-    fprintf(stderr, "Warning: FreeType initialization failed\n");
-}
+int init_fonts(void) {
+    if (!lv_freetype_init(0, 0, 0)) {
+        fprintf(stderr, "Warning: FreeType initialization failed\n");
+    }
 
-static lv_ft_info_t info;
-info.name = "assets/NotoSansKR-Regular.ttf";
-info.weight = 20;
-info.style = FT_FONT_STYLE_NORMAL;
-if (lv_ft_font_init(&info)) {
-    app_state.font_20 = info.font;
+    static lv_ft_info_t info;
+    info.name = "assets/NotoSansKR-Regular.ttf";
+    info.weight = FONT_SIZE;  // Defined in config.h
+    info.style = FT_FONT_STYLE_NORMAL;
+
+    if (lv_ft_font_init(&info)) {
+        app_state.font_20 = info.font;
+    }
+    return 0;
 }
+```
+
+To change the font or size, modify [include/config.h](include/config.h):
+
+```c
+#define FONT_SIZE 20                  // Font size in pixels
 ```
 
 ## Makefile Targets
@@ -168,34 +186,83 @@ make help         # Show help information
 
 ```
 .
-├── main.c           # Main application source code
-├── Makefile         # Build configuration
-├── lv_conf.h        # LVGL configuration file
-├── setup.sh         # Setup script for building LVGL
-├── lvgl/            # LVGL library directory
-├── assets/          # Font files (optional)
-├── README.md        # This file
-└── .gitignore       # Git ignore patterns
+├── src/                 # Source files
+│   ├── main.c          # Application entry point and event loop
+│   ├── home.c          # Main/home screen implementation
+│   ├── menu.c          # Menu screen implementation
+│   ├── screen.c        # Screen management and navigation
+│   ├── style.c         # UI styling helper functions
+│   └── init.c          # SDL2 and LVGL initialization
+├── include/            # Header files
+│   ├── config.h        # Application configuration and constants
+│   ├── types.h         # Data structure definitions
+│   ├── screen.h        # Screen management declarations
+│   ├── style.h         # Styling function declarations
+│   ├── init.h          # Initialization function declarations
+│   ├── home.h          # Home screen declarations
+│   └── menu.h          # Menu screen declarations
+├── assets/             # Font and image files
+├── lvgl/               # LVGL library directory
+├── Makefile            # Build configuration
+├── lv_conf.h           # LVGL configuration file
+├── setup.sh            # Setup script for building LVGL
+├── README.md           # This file
+└── .gitignore          # Git ignore patterns
 ```
 
 ## Architecture
 
+### Modular Design
+
+The application is organized into focused modules:
+
+- **main.c**: Entry point, global state, and event loop
+- **home.c**: Main/home screen with date/time display
+- **menu.c**: Menu screen with navigation buttons and menu items
+- **screen.c**: Screen navigation and stack management
+- **style.c**: Reusable UI styling helper functions
+- **init.c**: SDL2 and LVGL initialization
+
 ### Application State
 
-The `AppState` structure manages:
+The `AppState` structure manages global GUI state:
 
 ```c
 typedef struct {
     lv_obj_t *screen;      // Main display screen
     lv_obj_t *title_bar;   // Title bar container
     lv_obj_t *title_label; // Title text label
-    lv_font_t *font_20;    // Font for title (if custom fonts used)
+    lv_font_t *font_20;    // Font for text rendering
 } AppState;
 ```
 
-### Title Bar Update
+### Screen Navigation
 
-The title bar updates automatically via an LVGL timer:
+The `ScreenState` structure tracks each screen in the navigation stack:
+
+```c
+typedef struct {
+    lv_obj_t *screen;      // Screen object
+    int screen_id;         // Screen identifier (SCREEN_MAIN, SCREEN_MENU)
+} ScreenState;
+```
+
+A stack-based navigation system supports up to 10 screens (configurable):
+- `screen_stack[MAX_SCREENS]`: Array of screens
+- `screen_stack_top`: Current position in the stack
+- `show_screen()`: Navigate to a screen by ID
+- `back_btn_callback()`: Return to previous screen
+
+### Screen IDs
+
+```c
+#define SCREEN_MAIN 0      // Home screen
+#define SCREEN_MENU 1      // Menu screen
+```
+
+### Real-time Date/Time Display
+
+The home screen title bar updates automatically via an LVGL timer:
 
 ```c
 lv_timer_create(
@@ -205,56 +272,90 @@ lv_timer_create(
 );
 ```
 
-### Date/Time Formatting
-
-The `update_title_bar()` function formats the date/time as:
-
+Date/time format:
 ```
-Monday, 2025-11-27  14:30:45
+Wednesday
+14:30:45
+2025-11-28
 ```
 
 Components:
 - Day of week (Sunday-Saturday)
-- Date in YYYY-MM-DD format
 - Time in HH:MM:SS format (24-hour)
+- Date in YYYY-MM-DD format
 
 ## Initialization Flow
 
-1. **SDL2 Initialization** (`init_sdl()`): Creates window, renderer, and texture
-2. **LVGL Initialization** (`init_lvgl()`): Sets up display driver and input device
-3. **Font Initialization** (`init_fonts()`): Loads fonts (uses LVGL default by default)
-4. **GUI Creation** (`create_gui()`): Creates title bar and labels
-5. **Timer Setup**: Creates a 1-second update timer for the date/time display
-6. **Main Loop**: Handles events and updates LVGL
+1. **SDL2 Initialization** (`init_sdl()` in init.c): Creates window, renderer, and texture
+2. **LVGL Initialization** (`init_lvgl()` in init.c): Sets up display driver and input device
+3. **Font Initialization** (`init_fonts()` in init.c): Loads FreeType fonts (NotoSansKR)
+4. **GUI Creation** (`create_gui()` in home.c): Creates home screen with title bar and status bar
+5. **Timer Setup**: Creates 1-second update timer for date/time display
+6. **Screen Stack Initialize**: Home screen added to screen stack at position 0
+7. **Main Loop** (in main.c):
+   - Handles SDL events (quit, ESC key)
+   - Updates LVGL tick counter
+   - Calls LVGL timer handler for screen updates
+   - 5ms frame delay for smooth rendering
 
 ## Customization Examples
 
 ### Change Title Bar Color
 
+Edit [src/home.c:27](src/home.c#L27) in `create_main_title_bar()`:
+
 ```c
-// In create_gui(), modify:
-lv_obj_set_style_bg_color(app_state.title_bar, lv_color_hex(0xYYYYYY), 0);
+apply_bar_style(app_state.title_bar, 0x2C3E50);  // New color value
 ```
 
-### Change Opacity
+### Change Menu Button Label
+
+Edit [src/menu.c:31](src/menu.c#L31) in `create_menu_title_bar()`:
 
 ```c
-// In create_gui(), modify (0-255, where 255 is fully opaque):
-lv_obj_set_style_bg_opa(app_state.title_bar, 200, 0);  // 78% opacity
+lv_label_set_text(title_label, "메인 메뉴");  // New title
 ```
 
-### Change Title Bar Height
+### Add More Menu Items
+
+Edit [src/menu.c:59-60](src/menu.c#L59-L60) in `create_menu_content()`:
 
 ```c
-// In create_gui(), modify:
-lv_obj_set_size(app_state.title_bar, SCREEN_WIDTH, 80);  // 80 pixels high
+int menu_items = 6;  // Change from 4 to 6
+const char *menu_labels[] = {
+    "메뉴 1", "메뉴 2", "메뉴 3", "메뉴 4", "메뉴 5", "메뉴 6"
+};
 ```
 
-### Change Text Color
+### Change Screen Dimensions
+
+Edit [include/config.h](include/config.h):
 
 ```c
-// In create_gui(), modify:
-lv_obj_set_style_text_color(app_state.title_label, lv_color_hex(0x000000), 0);  // Black
+#define SCREEN_WIDTH 480   // From 320
+#define SCREEN_HEIGHT 800  // From 640
+```
+
+Then rebuild: `make clean && make`
+
+### Change Update Frequency
+
+Edit [src/home.c:65](src/home.c#L65):
+
+```c
+lv_timer_create((lv_timer_cb_t)update_title_bar, 500, NULL);  // Update every 500ms instead of 1000ms
+```
+
+### Customize Button Styles
+
+Edit styling helper functions in [src/style.c](src/style.c):
+
+```c
+void apply_button_style(lv_obj_t *btn, uint32_t bg_color) {
+    lv_obj_set_style_bg_color(btn, lv_color_hex(bg_color), 0);
+    lv_obj_set_style_border_width(btn, 2, 0);  // Change border width
+    lv_obj_set_style_border_color(btn, lv_color_hex(0xFF6B6B), 0);  // New border color
+}
 ```
 
 ## Configuration (lv_conf.h)
@@ -302,6 +403,8 @@ The application uses POSIX file system with driver letter 'A':
 
 ### Build Errors
 
+**Compilation errors in src/ files**: Ensure all include paths are correct (should use `../include/` relative paths). Check the Makefile references `SRC_DIR = src` and `$(SRC_DIR)/*.o` in object file rules.
+
 **Missing SDL2 headers**: Ensure SDL2 dev libraries are installed:
 
 ```bash
@@ -314,11 +417,47 @@ pkg-config --cflags --libs sdl2
 pkg-config --cflags --libs freetype2
 ```
 
+**Linker errors**: Verify LVGL library is built:
+
+```bash
+ls -la lvgl/build/liblvgl.a
+```
+
+If missing, rebuild LVGL:
+
+```bash
+./setup.sh
+```
+
 ### Runtime Issues
 
 **Window doesn't appear**: Check that SDL2 and your graphics drivers are properly installed.
 
-**Time not updating**: Ensure LVGL timer handler is being called in the main loop (it is by default).
+**Menu button doesn't work**: Verify the event callback is registered in [src/home.c:88](src/home.c#L88):
+
+```c
+lv_obj_add_event_cb(menu_btn, menu_btn_callback, LV_EVENT_CLICKED, NULL);
+```
+
+**Back button doesn't work**: Verify screen stack navigation in [src/menu.c:46](src/menu.c#L46):
+
+```c
+lv_obj_add_event_cb(back_btn, back_btn_callback, LV_EVENT_CLICKED, NULL);
+```
+
+**Time not updating**: Ensure LVGL timer handler is being called in the main loop [src/main.c:70](src/main.c#L70):
+
+```c
+lv_timer_handler();
+```
+
+**Korean text not displaying**: Verify NotoSansKR font file exists:
+
+```bash
+ls -la assets/NotoSansKR-Regular.ttf
+```
+
+Check FreeType initialization in [src/init.c](src/init.c) is successful. Font load warnings are logged to stderr.
 
 **Image not displaying**:
 - Ensure image file exists: `ls -la assets/`
@@ -347,7 +486,21 @@ Refer to the LVGL license (typically MIT) and dependent libraries' licenses.
 
 ## Version
 
-- **Application**: 1.0
+- **Application**: 2.0 (Modular refactoring with menu system)
 - **LVGL**: 8.4
 - **SDL2**: Latest stable
-- **Build Date**: 2025-11-27
+- **FreeType**: Latest stable
+- **Last Updated**: 2025-11-28
+
+### Changelog
+
+#### v2.0 (2025-11-28)
+- Refactored monolithic main.c into modular components
+- Implemented window-switching menu system with screen stack navigation
+- Reorganized project structure: src/ and include/ directories
+- Added Korean language support with NotoSansKR font
+- Enhanced UI with separate home and menu screens
+- Updated Makefile for new directory structure
+
+#### v1.0
+- Initial LVGL title bar application with real-time date/time display
