@@ -290,7 +290,7 @@ void create_main_window(GtkApplication *app_gtk) {
         app->buttons[i] = gtk_button_new_with_label(utf8_text ? utf8_text : "");
         gtk_widget_set_size_request(app->buttons[i], 100, 80);
 
-        apply_button_font(app->buttons[i], "NanumGothicCoding", 20);
+        apply_button_font(app->buttons[i], "NanumGothicCoding", 24);
 
         g_object_set_data(G_OBJECT(app->buttons[i]), "button_num", GINT_TO_POINTER(i));
         g_signal_connect(app->buttons[i], "clicked", G_CALLBACK(on_button_clicked), app);
