@@ -55,6 +55,9 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     lv_obj_set_style_bg_color(content, lv_color_hex(COLOR_BG_DARK), 0);
     lv_obj_set_style_border_width(content, 0, 0);
 
+    // Allow only vertical scrolling
+    lv_obj_set_scroll_dir(content, LV_DIR_VER);
+
     // Create menu buttons
     const char *menu_labels[] = {"메뉴 1", "메뉴 2", "메뉴 3", "메뉴 4"};
 
@@ -90,6 +93,10 @@ void create_menu_screen(void) {
     lv_obj_t *menu_screen = lv_obj_create(NULL);
     lv_obj_set_size(menu_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
     lv_obj_set_style_bg_color(menu_screen, lv_color_hex(COLOR_BG_DARK), 0);
+
+    // Disable scrolling on menu screen
+    lv_obj_set_scrollbar_mode(menu_screen, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(menu_screen, LV_OBJ_FLAG_SCROLLABLE);
 
     create_menu_title_bar(menu_screen);
     create_menu_content(menu_screen);

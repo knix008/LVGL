@@ -54,6 +54,11 @@ static void create_main_title_bar(void) {
     lv_obj_align(app_state.title_bar, LV_ALIGN_TOP_MID, 0, 0);
     apply_bar_style(app_state.title_bar, COLOR_BG_TITLE);
 
+    // Disable scrolling on title bar - must stay fixed
+    lv_obj_set_scrollbar_mode(app_state.title_bar, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(app_state.title_bar, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_scroll_to(app_state.title_bar, 0, 0, LV_ANIM_OFF);
+
     app_state.title_label = lv_label_create(app_state.title_bar);
     lv_obj_set_style_text_color(app_state.title_label, lv_color_hex(COLOR_TEXT), 0);
     lv_label_set_long_mode(app_state.title_label, LV_LABEL_LONG_WRAP);
@@ -75,11 +80,19 @@ static void create_main_status_bar(void) {
     lv_obj_align(status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
     apply_bar_style(status_bar, COLOR_BG_TITLE);
 
+    // Disable scrolling on status bar - buttons must stay fixed
+    lv_obj_set_scrollbar_mode(status_bar, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_scroll_to(status_bar, 0, 0, LV_ANIM_OFF);
+
     // Menu button
     lv_obj_t *menu_btn = lv_btn_create(status_bar);
     lv_obj_set_size(menu_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
     lv_obj_align(menu_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
     apply_button_style(menu_btn, COLOR_BUTTON_BG);
+    lv_obj_set_scrollbar_mode(menu_btn, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(menu_btn, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_scroll_to(menu_btn, 0, 0, LV_ANIM_OFF);
 
     lv_obj_t *menu_label = lv_label_create(menu_btn);
     lv_label_set_text(menu_label, "메뉴");
@@ -92,6 +105,9 @@ static void create_main_status_bar(void) {
     lv_obj_set_size(exit_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
     lv_obj_align(exit_btn, LV_ALIGN_RIGHT_MID, -PADDING_HORIZONTAL, 0);
     apply_button_style(exit_btn, COLOR_BUTTON_BG);
+    lv_obj_set_scrollbar_mode(exit_btn, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(exit_btn, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_scroll_to(exit_btn, 0, 0, LV_ANIM_OFF);
 
     lv_obj_t *exit_label = lv_label_create(exit_btn);
     lv_label_set_text(exit_label, "종료");
@@ -113,6 +129,11 @@ void create_gui(void) {
         screen_stack[0].screen = app_state.screen;
         screen_stack[0].screen_id = SCREEN_MAIN;
     }
+
+    // Disable all scrolling on main screen - buttons must stay fixed
+    lv_obj_set_scrollbar_mode(app_state.screen, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(app_state.screen, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_scroll_to(app_state.screen, 0, 0, LV_ANIM_OFF);
 
     // Background image
     lv_obj_t *bg_img = lv_img_create(app_state.screen);
