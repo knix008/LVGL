@@ -35,7 +35,7 @@ static lv_obj_t *create_menu_title_bar(lv_obj_t *parent) {
     // Back button
     lv_obj_t *back_btn = lv_btn_create(title_bar);
     lv_obj_set_size(back_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
-    lv_obj_align(back_btn, LV_ALIGN_LEFT_MID, 5, 0);
+    lv_obj_align(back_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
     apply_button_style(back_btn, COLOR_BUTTON_BACK);
 
     lv_obj_t *back_label = lv_label_create(back_btn);
@@ -56,17 +56,12 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     lv_obj_set_style_border_width(content, 0, 0);
 
     // Create menu buttons
-    int menu_items = 4;
     const char *menu_labels[] = {"메뉴 1", "메뉴 2", "메뉴 3", "메뉴 4"};
-    int button_width = 140;
-    int button_height = 50;
-    int button_margin = 20;
-    int start_y = 20;
 
-    for (int i = 0; i < menu_items; i++) {
+    for (int i = 0; i < MENU_ITEMS_COUNT; i++) {
         lv_obj_t *btn = lv_btn_create(content);
-        lv_obj_set_size(btn, button_width, button_height);
-        lv_obj_align(btn, LV_ALIGN_TOP_MID, 0, start_y + i * (button_height + button_margin));
+        lv_obj_set_size(btn, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT);
+        lv_obj_align(btn, LV_ALIGN_TOP_MID, 0, OFFSET_BUTTON_START_Y + i * (MENU_BUTTON_HEIGHT + MENU_BUTTON_MARGIN));
         apply_button_style(btn, COLOR_BUTTON_BG);
 
         lv_obj_t *label = lv_label_create(btn);

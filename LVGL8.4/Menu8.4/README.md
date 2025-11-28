@@ -46,15 +46,15 @@ The application supports multiple image formats for background images and graphi
 ```c
 // Load background image
 lv_obj_t *bg_img = lv_img_create(screen);
-lv_img_set_src(bg_img, "A:assets/background.jpg");  // JPEG
-lv_img_set_src(bg_img, "A:assets/background.png");  // PNG
+lv_img_set_src(bg_img, "A:assets/images/background.jpg");  // JPEG
+lv_img_set_src(bg_img, "A:assets/images/background.png");  // PNG
 
 // Create animated GIF
 lv_obj_t *gif = lv_gif_create(screen);
-lv_gif_set_src(gif, "A:assets/animation.gif");
+lv_gif_set_src(gif, "A:assets/images/animation.gif");
 ```
 
-**Note**: All image paths must use the `A:` file system driver prefix for POSIX file system access.
+**Note**: All image paths must use the `A:` file system driver prefix for POSIX file system access and should reference the `assets/images/` directory.
 
 ## Installation
 
@@ -144,6 +144,36 @@ All colors are defined in [include/config.h](include/config.h):
 #define COLOR_TRANSPARENT 0x00        // Transparent background
 ```
 
+### GUI Layout Configuration
+
+All GUI layout parameters are defined as macros in [include/config.h](include/config.h):
+
+```c
+// Padding and margins
+#define PADDING_HORIZONTAL 10           // Button padding (5px each side)
+#define PADDING_VERTICAL 5              // Vertical padding
+#define MARGIN_BUTTON 10                // Space between buttons
+#define OFFSET_BUTTON_START_Y 20        // Top offset for first menu button
+
+// Label and title widths
+#define TITLE_LABEL_WIDTH (SCREEN_WIDTH - 20)      // Title label width (300px)
+#define MENU_BUTTON_WIDTH (SCREEN_WIDTH - 20)      // Menu button width (300px)
+
+// Menu configuration
+#define MENU_ITEMS_COUNT 4              // Number of menu items
+#define MENU_BUTTON_HEIGHT 60           // Menu button height
+#define MENU_BUTTON_MARGIN 10           // Space between menu buttons
+
+// Update intervals (milliseconds)
+#define UPDATE_INTERVAL_TIMER 1000      // Date/time update frequency
+```
+
+This makes it easy to adjust layouts without changing code. For example:
+- Change `MENU_ITEMS_COUNT` to add/remove menu items
+- Change `MENU_BUTTON_HEIGHT` to make buttons taller/shorter
+- Change `PADDING_HORIZONTAL` to add/remove button margins
+- Change `UPDATE_INTERVAL_TIMER` to update date/time faster/slower
+
 ### Font Configuration
 
 The application uses FreeType with NotoSansKR font, loaded in [src/init.c:32-48](src/init.c#L32-L48):
@@ -155,7 +185,7 @@ int init_fonts(void) {
     }
 
     static lv_ft_info_t info;
-    info.name = "assets/NotoSansKR-Regular.ttf";
+    info.name = "assets/fonts/NotoSansKR-Regular.ttf";
     info.weight = FONT_SIZE;  // Defined in config.h
     info.style = FT_FONT_STYLE_NORMAL;
 
@@ -202,6 +232,8 @@ make help         # Show help information
 │   ├── home.h          # Home screen declarations
 │   └── menu.h          # Menu screen declarations
 ├── assets/             # Font and image files
+│   ├── fonts/          # TrueType font files (NotoSansKR-*.ttf)
+│   └── images/         # Image assets (background-bikini-woman-big.jpg)
 ├── lvgl/               # LVGL library directory
 ├── Makefile            # Build configuration
 ├── lv_conf.h           # LVGL configuration file
@@ -318,14 +350,23 @@ lv_label_set_text(title_label, "메인 메뉴");  // New title
 
 ### Add More Menu Items
 
-Edit [src/menu.c:59-60](src/menu.c#L59-L60) in `create_menu_content()`:
+Edit [src/menu.c:59-64](src/menu.c#L59-L64) in `create_menu_content()`:
 
 ```c
 int menu_items = 6;  // Change from 4 to 6
 const char *menu_labels[] = {
     "메뉴 1", "메뉴 2", "메뉴 3", "메뉴 4", "메뉴 5", "메뉴 6"
 };
+int button_width = SCREEN_WIDTH - 20;   // Width with 10px padding on each side
+int button_height = 60;                 // Button height
+int button_margin = 10;                 // Space between buttons
 ```
+
+The menu buttons have built-in padding. You can adjust:
+- `button_width`: Change the `- 20` value to add/remove padding (currently 10px on each side)
+- `button_height`: Taller/shorter buttons (currently 60px)
+- `button_margin`: Space between buttons (currently 10px)
+- `start_y`: Vertical offset of the first button (currently 20px)
 
 ### Change Screen Dimensions
 
@@ -357,6 +398,24 @@ void apply_button_style(lv_obj_t *btn, uint32_t bg_color) {
     lv_obj_set_style_border_color(btn, lv_color_hex(0xFF6B6B), 0);  // New border color
 }
 ```
+
+### Adjust Menu Button Layout
+
+Edit [src/menu.c:61-64](src/menu.c#L61-L64) in `create_menu_content()`:
+
+```c
+int button_width = SCREEN_WIDTH - 20;   // Width (320 - 20 = 300, with 10px padding each side)
+int button_height = 60;                 // Current height (adjust to 50, 70, etc.)
+int button_margin = 10;                 // Space between buttons (adjust to 5, 15, etc.)
+int start_y = 20;                       // Top offset of first button (adjust to 10, 30, etc.)
+```
+
+Menu button layout options:
+- **Increase padding**: Change `SCREEN_WIDTH - 20` to `SCREEN_WIDTH - 30` (15px padding each side)
+- **Decrease padding**: Change `SCREEN_WIDTH - 20` to `SCREEN_WIDTH - 10` (5px padding each side)
+- **Adjust button height**: Change 60 to 50, 70, 80, etc.
+- **Adjust spacing**: Change 10 to 5, 15, 20 for tighter/looser spacing
+- **Adjust top offset**: Change 20 to move buttons down/up
 
 ## Configuration (lv_conf.h)
 
@@ -454,14 +513,14 @@ lv_timer_handler();
 **Korean text not displaying**: Verify NotoSansKR font file exists:
 
 ```bash
-ls -la assets/NotoSansKR-Regular.ttf
+ls -la assets/fonts/NotoSansKR-Regular.ttf
 ```
 
 Check FreeType initialization in [src/init.c](src/init.c) is successful. Font load warnings are logged to stderr.
 
 **Image not displaying**:
-- Ensure image file exists: `ls -la assets/`
-- Verify file path uses `A:` prefix: `"A:assets/image.jpg"`
+- Ensure image file exists: `ls -la assets/images/`
+- Verify file path uses `A:` prefix: `"A:assets/images/image.jpg"`
 - Check that required image decoder is enabled in `lv_conf.h`:
   - For JPEG: `#define LV_USE_SJPG 1`
   - For PNG: `#define LV_USE_PNG 1 and LV_USE_LODEPNG 1`

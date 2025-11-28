@@ -34,6 +34,29 @@
 #define FONT_SIZE 16
 
 // ============================================================================
+// GUI LAYOUT CONFIGURATION
+// ============================================================================
+
+// Padding and margins
+#define PADDING_HORIZONTAL 10
+#define PADDING_VERTICAL 5
+#define PADDING_BUTTON 20
+#define MARGIN_BUTTON 10
+#define OFFSET_BUTTON_START_Y 20
+
+// Label and title widths
+#define TITLE_LABEL_WIDTH (SCREEN_WIDTH - 20)
+#define MENU_BUTTON_WIDTH (SCREEN_WIDTH - 20)
+
+// Menu configuration
+#define MENU_ITEMS_COUNT 4
+#define MENU_BUTTON_HEIGHT 60
+#define MENU_BUTTON_MARGIN 10
+
+// Update intervals (milliseconds)
+#define UPDATE_INTERVAL_TIMER 1000
+
+// ============================================================================
 // SCREEN IDS
 // ============================================================================
 

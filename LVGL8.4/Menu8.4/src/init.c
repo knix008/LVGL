@@ -35,7 +35,7 @@ int init_fonts(void) {
     }
 
     static lv_ft_info_t info;
-    info.name = "assets/NotoSansKR-Regular.ttf";
+    info.name = "assets/fonts/NotoSansKR-Regular.ttf";
     info.weight = FONT_SIZE;
     info.style = FT_FONT_STYLE_NORMAL;
 

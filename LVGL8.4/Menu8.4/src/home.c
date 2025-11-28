@@ -58,11 +58,11 @@ static void create_main_title_bar(void) {
     lv_obj_set_style_text_color(app_state.title_label, lv_color_hex(COLOR_TEXT), 0);
     lv_label_set_long_mode(app_state.title_label, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_align(app_state.title_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_width(app_state.title_label, SCREEN_WIDTH - 20);
+    lv_obj_set_width(app_state.title_label, TITLE_LABEL_WIDTH);
     lv_obj_align(app_state.title_label, LV_ALIGN_CENTER, 0, 0);
 
     update_title_bar();
-    lv_timer_create((lv_timer_cb_t)update_title_bar, 1000, NULL);
+    lv_timer_create((lv_timer_cb_t)update_title_bar, UPDATE_INTERVAL_TIMER, NULL);
 }
 
 // ============================================================================
@@ -78,7 +78,7 @@ static void create_main_status_bar(void) {
     // Menu button
     lv_obj_t *menu_btn = lv_btn_create(status_bar);
     lv_obj_set_size(menu_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
-    lv_obj_align(menu_btn, LV_ALIGN_LEFT_MID, 5, 0);
+    lv_obj_align(menu_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
     apply_button_style(menu_btn, COLOR_BUTTON_BG);
 
     lv_obj_t *menu_label = lv_label_create(menu_btn);
@@ -90,7 +90,7 @@ static void create_main_status_bar(void) {
     // Exit button
     lv_obj_t *exit_btn = lv_btn_create(status_bar);
     lv_obj_set_size(exit_btn, BUTTON_WIDTH, BUTTON_HEIGHT);
-    lv_obj_align(exit_btn, LV_ALIGN_RIGHT_MID, -5, 0);
+    lv_obj_align(exit_btn, LV_ALIGN_RIGHT_MID, -PADDING_HORIZONTAL, 0);
     apply_button_style(exit_btn, COLOR_BUTTON_BG);
 
     lv_obj_t *exit_label = lv_label_create(exit_btn);
@@ -116,7 +116,7 @@ void create_gui(void) {
 
     // Background image
     lv_obj_t *bg_img = lv_img_create(app_state.screen);
-    lv_img_set_src(bg_img, "A:assets/background-bikini-woman-big.jpg");
+    lv_img_set_src(bg_img, "A:assets/images/background-bikini-woman-big.jpg");
     lv_obj_set_width(bg_img, SCREEN_WIDTH);
     lv_obj_set_height(bg_img, SCREEN_HEIGHT);
     lv_obj_align(bg_img, LV_ALIGN_TOP_LEFT, 0, 0);
