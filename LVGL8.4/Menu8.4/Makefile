@@ -25,8 +25,9 @@ ALL_CFLAGS = $(CFLAGS) $(INCLUDES) $(SDL_CFLAGS) $(FREETYPE_CFLAGS)
 ALL_LIBS = $(LVGL_LIB) $(SDL_LIBS) $(FREETYPE_LIBS) $(JPEG_LIBS) $(LDFLAGS)
 
 TARGET = menu
-SRCS = main.c
-OBJS = main.o
+SRC_DIR = src
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/home.c $(SRC_DIR)/menu.c $(SRC_DIR)/screen.c $(SRC_DIR)/style.c $(SRC_DIR)/init.c
+OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/home.o $(SRC_DIR)/menu.o $(SRC_DIR)/screen.o $(SRC_DIR)/style.o $(SRC_DIR)/init.o
 
 all: check_setup $(TARGET)
 
@@ -44,12 +45,12 @@ $(TARGET): $(OBJS)
 	@echo "Linking $@..."
 	$(CC) -o $(TARGET) $(OBJS) $(ALL_LIBS)
 
-main.o: main.c lv_conf.h
+%.o: %.c
 	@echo "Compiling $<..."
-	$(CC) $(ALL_CFLAGS) -c main.c
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) main.o
+	rm -f $(TARGET) $(OBJS)
 
 clean-lvgl:
 	@echo "Cleaning LVGL build directory..."
