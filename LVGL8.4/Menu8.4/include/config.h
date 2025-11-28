@@ -56,6 +56,9 @@
 // Update intervals (milliseconds)
 #define UPDATE_INTERVAL_TIMER 1000
 
+// Frame timing (milliseconds)
+#define FRAME_DELAY_MS 1
+
 // ============================================================================
 // SCREEN IDS
 // ============================================================================

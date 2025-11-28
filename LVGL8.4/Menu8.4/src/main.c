@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
         }
 
         lv_timer_handler();
-        SDL_Delay(5);
+        SDL_Delay(FRAME_DELAY_MS);
     }
 
     // Cleanup is handled by the OS on exit
