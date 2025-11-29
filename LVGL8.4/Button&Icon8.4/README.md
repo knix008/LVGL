@@ -1,18 +1,31 @@
 # LVGL Menu Application
 
-A modular LVGL 8.4 application featuring a window-switching menu system with screen navigation stack. The main screen displays real-time date and time information, and a menu window provides access to various application features.
+A modern LVGL 8.4 application featuring a hierarchical menu system with breadcrumb navigation, icon-based status bar, and absolute path navigation support.
 
 ## Features
 
-- **Window Switching System**: Navigate between main screen and menu screen with a stack-based navigation system
+- **Hierarchical Navigation System**: Breadcrumb-style navigation showing current location path
+  - Format: `홈 > 메뉴 > 관리자 설정`
+  - Automatically updates based on navigation stack
+- **Absolute Path Navigation**: Status bar buttons use absolute paths instead of stacking
+  - Click any status bar button to navigate directly to that screen
+  - Navigation path always shows: `홈 > 메뉴 > [Target Screen]`
+- **Icon-Based Menu System**: Modern UI with icon + label buttons
+  - Menu buttons display icons on the left with text labels on the right
+  - Status bar features circular icon buttons for quick navigation
 - **Real-time Date/Time Display**: Shows current date and time with day of week on the main screen
-  - Format: `Wednesday HH:MM:SS\nYYYY-MM-DD`
+  - Format: `Wednesday 14:30:45 2025-11-29`
   - Updates every second automatically
-- **Menu Screen**: Dedicated menu window with 4 menu items accessible via "메뉴" (Menu) button
-- **Navigation Buttons**:
-  - "메뉴" (Menu): Navigate to menu screen
-  - "이전" (Previous): Navigate back to home screen
-  - "종료" (Exit): Quit the application
+- **Multiple Screens**: Navigate between different application sections
+  - Main Screen (홈): Home screen with background image and date/time
+  - Menu Screen (메뉴): Main menu with icon buttons
+  - Info Screen (정보): Application information
+  - Admin Screen (관리자 설정): Admin settings
+  - Network Screen (네트워크 설정): Network configuration
+- **Navigation Controls**:
+  - Back Button: Navigate back through the hierarchy
+  - Status Bar Icons: Quick access to all major screens
+  - Menu Button: Navigate to menu from home screen
 - **Korean Text Support**: Full support for Korean language UI elements
 - **Background Image Support**:
   - JPEG format (via SJPG/TJPGD decoder)
@@ -20,7 +33,36 @@ A modular LVGL 8.4 application featuring a window-switching menu system with scr
   - GIF animations
 - **Portrait Display Mode**: 320x640 pixel window suitable for mobile/tablet interfaces
 - **SDL2 Integration**: Cross-platform rendering using SDL2 backend
-- **Modular Architecture**: Separated into logical modules (home, menu, style, screen, init)
+- **Modular Architecture**: Separated into logical modules (home, menu, info, admin, network, screen, style)
+
+## Navigation System
+
+### Breadcrumb Navigation
+
+The title bar displays a breadcrumb path showing your current location:
+
+```
+홈 > 메뉴 > 관리자 설정
+```
+
+The breadcrumb updates automatically as you navigate through screens.
+
+### Absolute Path Navigation
+
+Status bar buttons use absolute path navigation:
+
+- Clicking a status bar button resets the navigation stack
+- Always creates path: `홈 > 메뉴 > [Target Screen]`
+- Example: Clicking "Info" from "Admin" goes: `홈 > 메뉴 > 정보`
+
+This prevents deep navigation stacking and provides consistent breadcrumb paths.
+
+### Back Button Navigation
+
+The back button navigates backward through the hierarchy:
+
+- From `홈 > 메뉴 > 정보` → back → `홈 > 메뉴`
+- From `홈 > 메뉴` → back → `홈`
 
 ## Dependencies
 
@@ -52,6 +94,10 @@ lv_img_set_src(bg_img, "A:assets/images/background.png");  // PNG
 // Create animated GIF
 lv_obj_t *gif = lv_gif_create(screen);
 lv_gif_set_src(gif, "A:assets/images/animation.gif");
+
+// Create icon buttons
+lv_obj_t *img = lv_img_create(btn);
+lv_img_set_src(img, "A:assets/images/config.png");
 ```
 
 **Note**: All image paths must use the `A:` file system driver prefix for POSIX file system access and should reference the `assets/images/` directory.
@@ -120,8 +166,8 @@ The window is configured for portrait orientation in [include/config.h](include/
 ```c
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 640
-#define TITLE_BAR_HEIGHT 70
-#define STATUS_BAR_HEIGHT 50
+#define TITLE_BAR_HEIGHT 60
+#define STATUS_BAR_HEIGHT 60
 ```
 
 Modify these values to change the window size and layout. Then rebuild:
@@ -135,13 +181,13 @@ make clean && make
 All colors are defined in [include/config.h](include/config.h):
 
 ```c
-#define COLOR_BG_DARK 0x1A1A1A        // Dark background
-#define COLOR_BG_TITLE 0x2C3E50       // Title bar background
+#define COLOR_BG_DARK 0x2A2A2A        // Dark background
+#define COLOR_BG_TITLE 0x1A1A1A       // Title/status bar background
+#define COLOR_BUTTON_BG 0x1A1A1A      // Button background
+#define COLOR_BUTTON_BACK 0x444444    // Back button background
+#define COLOR_BORDER 0x888888         // Border color
 #define COLOR_TEXT 0xFFFFFF           // Text color (white)
-#define COLOR_BUTTON_BG 0x3498DB      // Button background
-#define COLOR_BUTTON_BACK 0xE74C3C    // Back button background
-#define COLOR_BORDER 0x34495E         // Border color
-#define COLOR_TRANSPARENT 0x00        // Transparent background
+#define COLOR_TRANSPARENT 128         // Transparent background
 ```
 
 ### GUI Layout Configuration
@@ -150,14 +196,15 @@ All GUI layout parameters are defined as macros in [include/config.h](include/co
 
 ```c
 // Padding and margins
-#define PADDING_HORIZONTAL 10           // Button padding (5px each side)
+#define PADDING_HORIZONTAL 10           // Horizontal padding
 #define PADDING_VERTICAL 5              // Vertical padding
+#define PADDING_BUTTON 20               // Button padding
 #define MARGIN_BUTTON 10                // Space between buttons
 #define OFFSET_BUTTON_START_Y 20        // Top offset for first menu button
 
 // Label and title widths
-#define TITLE_LABEL_WIDTH (SCREEN_WIDTH - 20)      // Title label width (300px)
-#define MENU_BUTTON_WIDTH (SCREEN_WIDTH - 20)      // Menu button width (300px)
+#define TITLE_LABEL_WIDTH (SCREEN_WIDTH - 20)      // Title label width
+#define MENU_BUTTON_WIDTH (SCREEN_WIDTH - 20)      // Menu button width
 
 // Menu configuration
 #define MENU_ITEMS_COUNT 4              // Number of menu items
@@ -166,40 +213,29 @@ All GUI layout parameters are defined as macros in [include/config.h](include/co
 
 // Update intervals (milliseconds)
 #define UPDATE_INTERVAL_TIMER 1000      // Date/time update frequency
+
+// Frame timing (milliseconds)
+#define FRAME_DELAY_MS 1                // Main loop delay
 ```
 
-This makes it easy to adjust layouts without changing code. For example:
-- Change `MENU_ITEMS_COUNT` to add/remove menu items
-- Change `MENU_BUTTON_HEIGHT` to make buttons taller/shorter
-- Change `PADDING_HORIZONTAL` to add/remove button margins
-- Change `UPDATE_INTERVAL_TIMER` to update date/time faster/slower
+### Image Paths
+
+Icon images are configured in [include/config.h](include/config.h):
+
+```c
+#define IMG_BACK_BUTTON "A:assets/images/backbutton.png"
+#define IMG_CONFIG "A:assets/images/config.png"
+#define IMG_SETUP "A:assets/images/setup.png"
+#define IMG_INFO "A:assets/images/Info.png"
+#define IMG_NETWORK "A:assets/images/network.png"
+```
 
 ### Font Configuration
 
-The application uses FreeType with NotoSansKR font, loaded in [src/init.c:32-48](src/init.c#L32-L48):
+The application uses FreeType with NotoSansKR font. Font size is configured in [include/config.h](include/config.h):
 
 ```c
-int init_fonts(void) {
-    if (!lv_freetype_init(0, 0, 0)) {
-        fprintf(stderr, "Warning: FreeType initialization failed\n");
-    }
-
-    static lv_ft_info_t info;
-    info.name = "assets/fonts/NotoSansKR-Regular.ttf";
-    info.weight = FONT_SIZE;  // Defined in config.h
-    info.style = FT_FONT_STYLE_NORMAL;
-
-    if (lv_ft_font_init(&info)) {
-        app_state.font_20 = info.font;
-    }
-    return 0;
-}
-```
-
-To change the font or size, modify [include/config.h](include/config.h):
-
-```c
-#define FONT_SIZE 20                  // Font size in pixels
+#define FONT_SIZE 16                  // Font size in pixels
 ```
 
 ## Makefile Targets
@@ -220,6 +256,9 @@ make help         # Show help information
 │   ├── main.c          # Application entry point and event loop
 │   ├── home.c          # Main/home screen implementation
 │   ├── menu.c          # Menu screen implementation
+│   ├── info.c          # Info screen implementation
+│   ├── admin.c         # Admin settings screen implementation
+│   ├── network.c       # Network settings screen implementation
 │   ├── screen.c        # Screen management and navigation
 │   ├── style.c         # UI styling helper functions
 │   └── init.c          # SDL2 and LVGL initialization
@@ -230,10 +269,13 @@ make help         # Show help information
 │   ├── style.h         # Styling function declarations
 │   ├── init.h          # Initialization function declarations
 │   ├── home.h          # Home screen declarations
-│   └── menu.h          # Menu screen declarations
-├── assets/             # Font and image files
+│   ├── menu.h          # Menu screen declarations
+│   ├── info.h          # Info screen declarations
+│   ├── admin.h         # Admin screen declarations
+│   └── network.h       # Network screen declarations
+├── assets/             # Asset files
 │   ├── fonts/          # TrueType font files (NotoSansKR-*.ttf)
-│   └── images/         # Image assets (background-bikini-woman-big.jpg)
+│   └── images/         # Image assets (PNG icons, backgrounds)
 ├── lvgl/               # LVGL library directory
 ├── Makefile            # Build configuration
 ├── lv_conf.h           # LVGL configuration file
@@ -250,8 +292,11 @@ The application is organized into focused modules:
 
 - **main.c**: Entry point, global state, and event loop
 - **home.c**: Main/home screen with date/time display
-- **menu.c**: Menu screen with navigation buttons and menu items
-- **screen.c**: Screen navigation and stack management
+- **menu.c**: Menu screen with icon buttons
+- **info.c**: Info screen with application information
+- **admin.c**: Admin settings screen
+- **network.c**: Network settings screen
+- **screen.c**: Screen navigation and breadcrumb management
 - **style.c**: Reusable UI styling helper functions
 - **init.c**: SDL2 and LVGL initialization
 
@@ -261,10 +306,11 @@ The `AppState` structure manages global GUI state:
 
 ```c
 typedef struct {
-    lv_obj_t *screen;      // Main display screen
-    lv_obj_t *title_bar;   // Title bar container
-    lv_obj_t *title_label; // Title text label
-    lv_font_t *font_20;    // Font for text rendering
+    lv_obj_t *screen;             // Main display screen
+    lv_obj_t *title_bar;          // Title bar container
+    lv_obj_t *title_label;        // Title text label (main screen)
+    lv_obj_t *current_title_label; // Current screen title label
+    lv_font_t *font_20;           // Font for text rendering
 } AppState;
 ```
 
@@ -275,21 +321,49 @@ The `ScreenState` structure tracks each screen in the navigation stack:
 ```c
 typedef struct {
     lv_obj_t *screen;      // Screen object
-    int screen_id;         // Screen identifier (SCREEN_MAIN, SCREEN_MENU)
+    int screen_id;         // Screen identifier
 } ScreenState;
 ```
 
-A stack-based navigation system supports up to 10 screens (configurable):
-- `screen_stack[MAX_SCREENS]`: Array of screens
+Navigation stack:
+- `screen_stack[MAX_SCREENS]`: Array of screens (up to 10)
 - `screen_stack_top`: Current position in the stack
 - `show_screen()`: Navigate to a screen by ID
-- `back_btn_callback()`: Return to previous screen
+- `update_title_bar_location()`: Update breadcrumb path
 
 ### Screen IDs
 
 ```c
-#define SCREEN_MAIN 0      // Home screen
-#define SCREEN_MENU 1      // Menu screen
+enum {
+    SCREEN_MAIN = 0,      // Home screen
+    SCREEN_MENU = 1,      // Menu screen
+    SCREEN_INFO = 2,      // Info screen
+    SCREEN_ADMIN = 3,     // Admin settings screen
+    SCREEN_NETWORK = 4    // Network settings screen
+};
+```
+
+### Navigation Callbacks
+
+**Absolute Path Navigation** (Status Bar Buttons):
+```c
+static void info_btn_callback(lv_event_t *e) {
+    if (screen_stack[screen_stack_top].screen_id != SCREEN_INFO) {
+        screen_stack_top = 0;          // Reset to MAIN
+        show_screen(SCREEN_MENU);      // Go through MENU
+        show_screen(SCREEN_INFO);      // Then to INFO
+    }
+}
+```
+
+**Hierarchical Navigation** (Back Button):
+```c
+static void back_btn_callback(lv_event_t *e) {
+    if (screen_stack_top > 0) {
+        screen_stack_top--;
+        show_screen(screen_stack[screen_stack_top].screen_id);
+    }
+}
 ```
 
 ### Real-time Date/Time Display
@@ -299,22 +373,54 @@ The home screen title bar updates automatically via an LVGL timer:
 ```c
 lv_timer_create(
     (lv_timer_cb_t)update_title_bar,
-    1000,  // 1 second interval
+    UPDATE_INTERVAL_TIMER,  // 1000ms = 1 second
     NULL
 );
 ```
 
 Date/time format:
 ```
-Wednesday
-14:30:45
-2025-11-28
+Wednesday 14:30:45
+2025-11-29
 ```
 
-Components:
-- Day of week (Sunday-Saturday)
-- Time in HH:MM:SS format (24-hour)
-- Date in YYYY-MM-DD format
+## UI Components
+
+### Status Bar Icons
+
+Each screen has a status bar with 4 circular icon buttons:
+
+1. **Config** (IMG_CONFIG): Navigate to admin settings
+2. **Setup** (IMG_SETUP): Navigate to admin settings
+3. **Info** (IMG_INFO): Navigate to info screen
+4. **Network** (IMG_NETWORK): Navigate to network settings
+
+Button configuration:
+- Size: 40x40 pixels
+- Spacing: 10 pixels
+- Style: Circular with `apply_circle_button_style()`
+
+### Menu Buttons
+
+Menu screen buttons display icons with text labels:
+
+```c
+// Icon on left (10px from edge)
+lv_obj_t *img = lv_img_create(btn);
+lv_img_set_src(img, menu_images[i]);
+lv_obj_align(img, LV_ALIGN_LEFT_MID, 10, 0);
+
+// Label on right (60px from edge)
+lv_obj_t *label = lv_label_create(btn);
+lv_label_set_text(label, menu_labels[i]);
+lv_obj_align(label, LV_ALIGN_LEFT_MID, 60, 0);
+```
+
+Menu items:
+- 관리자 설정 (Admin Settings) - config.png
+- 네트워크 설정 (Network Settings) - network.png
+- 메뉴 3 (Menu 3) - setup.png
+- Info - Info.png
 
 ## Initialization Flow
 
@@ -328,94 +434,72 @@ Components:
    - Handles SDL events (quit, ESC key)
    - Updates LVGL tick counter
    - Calls LVGL timer handler for screen updates
-   - 5ms frame delay for smooth rendering
+   - 1ms frame delay for smooth rendering
 
 ## Customization Examples
 
-### Change Title Bar Color
+### Add New Menu Item
 
-Edit [src/home.c:27](src/home.c#L27) in `create_main_title_bar()`:
-
-```c
-apply_bar_style(app_state.title_bar, 0x2C3E50);  // New color value
-```
-
-### Change Menu Button Label
-
-Edit [src/menu.c:31](src/menu.c#L31) in `create_menu_title_bar()`:
+Edit [src/menu.c](src/menu.c):
 
 ```c
-lv_label_set_text(title_label, "메인 메뉴");  // New title
-```
+// 1. Update menu item count in config.h
+#define MENU_ITEMS_COUNT 5
 
-### Add More Menu Items
-
-Edit [src/menu.c:59-64](src/menu.c#L59-L64) in `create_menu_content()`:
-
-```c
-int menu_items = 6;  // Change from 4 to 6
+// 2. Add new label and image
 const char *menu_labels[] = {
-    "메뉴 1", "메뉴 2", "메뉴 3", "메뉴 4", "메뉴 5", "메뉴 6"
+    "관리자 설정", "네트워크 설정", "메뉴 3", "Info", "새 메뉴"
 };
-int button_width = SCREEN_WIDTH - 20;   // Width with 10px padding on each side
-int button_height = 60;                 // Button height
-int button_margin = 10;                 // Space between buttons
-```
+const char *menu_images[] = {
+    IMG_CONFIG, IMG_NETWORK, IMG_SETUP, IMG_INFO, IMG_NEW_ICON
+};
 
-The menu buttons have built-in padding. You can adjust:
-- `button_width`: Change the `- 20` value to add/remove padding (currently 10px on each side)
-- `button_height`: Taller/shorter buttons (currently 60px)
-- `button_margin`: Space between buttons (currently 10px)
-- `start_y`: Vertical offset of the first button (currently 20px)
-
-### Change Screen Dimensions
-
-Edit [include/config.h](include/config.h):
-
-```c
-#define SCREEN_WIDTH 480   // From 320
-#define SCREEN_HEIGHT 800  // From 640
-```
-
-Then rebuild: `make clean && make`
-
-### Change Update Frequency
-
-Edit [src/home.c:65](src/home.c#L65):
-
-```c
-lv_timer_create((lv_timer_cb_t)update_title_bar, 500, NULL);  // Update every 500ms instead of 1000ms
-```
-
-### Customize Button Styles
-
-Edit styling helper functions in [src/style.c](src/style.c):
-
-```c
-void apply_button_style(lv_obj_t *btn, uint32_t bg_color) {
-    lv_obj_set_style_bg_color(btn, lv_color_hex(bg_color), 0);
-    lv_obj_set_style_border_width(btn, 2, 0);  // Change border width
-    lv_obj_set_style_border_color(btn, lv_color_hex(0xFF6B6B), 0);  // New border color
+// 3. Add event handler
+if (i == 4) {
+    lv_obj_add_event_cb(btn, new_menu_callback, LV_EVENT_CLICKED, NULL);
 }
 ```
 
-### Adjust Menu Button Layout
+### Add New Screen
 
-Edit [src/menu.c:61-64](src/menu.c#L61-L64) in `create_menu_content()`:
+1. Create new screen files: `src/newscreen.c` and `include/newscreen.h`
+2. Add screen ID in [include/config.h](include/config.h):
+```c
+enum {
+    SCREEN_MAIN = 0,
+    SCREEN_MENU = 1,
+    SCREEN_INFO = 2,
+    SCREEN_ADMIN = 3,
+    SCREEN_NETWORK = 4,
+    SCREEN_NEW = 5       // New screen
+};
+```
+3. Implement screen creation function following the pattern in existing screens
+4. Add navigation callback and status bar button
+
+### Change Status Bar Layout
+
+Edit status bar creation functions to adjust icon positions:
 
 ```c
-int button_width = SCREEN_WIDTH - 20;   // Width (320 - 20 = 300, with 10px padding each side)
-int button_height = 60;                 // Current height (adjust to 50, 70, etc.)
-int button_margin = 10;                 // Space between buttons (adjust to 5, 15, etc.)
-int start_y = 20;                       // Top offset of first button (adjust to 10, 30, etc.)
+int img_btn_size = 40;     // Change icon size
+int spacing = 10;          // Change spacing between icons
+int start_x = PADDING_HORIZONTAL;  // Change left margin
 ```
 
-Menu button layout options:
-- **Increase padding**: Change `SCREEN_WIDTH - 20` to `SCREEN_WIDTH - 30` (15px padding each side)
-- **Decrease padding**: Change `SCREEN_WIDTH - 20` to `SCREEN_WIDTH - 10` (5px padding each side)
-- **Adjust button height**: Change 60 to 50, 70, 80, etc.
-- **Adjust spacing**: Change 10 to 5, 15, 20 for tighter/looser spacing
-- **Adjust top offset**: Change 20 to move buttons down/up
+### Customize Breadcrumb Display
+
+Edit [src/screen.c](src/screen.c) in `update_title_bar_location()`:
+
+```c
+// Change separator
+strncat(breadcrumb, " → ", sizeof(breadcrumb) - strlen(breadcrumb) - 1);
+
+// Change screen names
+case SCREEN_INFO:
+    name = "App Info";  // English instead of Korean
+    break;
+```
 
 ## Configuration (lv_conf.h)
 
@@ -438,7 +522,7 @@ Configure which image formats to enable:
 
 ### Memory Configuration
 
-Adjust memory pool size based on your needs (for image decoding):
+Adjust memory pool size based on your needs:
 
 ```c
 // Default: 4MB for JPEG/PNG/GIF decoding
@@ -462,28 +546,24 @@ The application uses POSIX file system with driver letter 'A':
 
 ### Build Errors
 
-**Compilation errors in src/ files**: Ensure all include paths are correct (should use `../include/` relative paths). Check the Makefile references `SRC_DIR = src` and `$(SRC_DIR)/*.o` in object file rules.
+**Compilation errors**: Ensure all include paths are correct. Check the Makefile references `SRC_DIR = src`.
 
 **Missing SDL2 headers**: Ensure SDL2 dev libraries are installed:
-
 ```bash
 pkg-config --cflags --libs sdl2
 ```
 
 **Missing FreeType headers**: Ensure FreeType dev libraries are installed:
-
 ```bash
 pkg-config --cflags --libs freetype2
 ```
 
 **Linker errors**: Verify LVGL library is built:
-
 ```bash
 ls -la lvgl/build/liblvgl.a
 ```
 
 If missing, rebuild LVGL:
-
 ```bash
 ./setup.sh
 ```
@@ -492,45 +572,19 @@ If missing, rebuild LVGL:
 
 **Window doesn't appear**: Check that SDL2 and your graphics drivers are properly installed.
 
-**Menu button doesn't work**: Verify the event callback is registered in [src/home.c:88](src/home.c#L88):
+**Navigation not working**: Verify event callbacks are registered correctly.
 
-```c
-lv_obj_add_event_cb(menu_btn, menu_btn_callback, LV_EVENT_CLICKED, NULL);
-```
+**Breadcrumb not updating**: Check `update_title_bar_location()` is called after screen creation.
 
-**Back button doesn't work**: Verify screen stack navigation in [src/menu.c:46](src/menu.c#L46):
-
-```c
-lv_obj_add_event_cb(back_btn, back_btn_callback, LV_EVENT_CLICKED, NULL);
-```
-
-**Time not updating**: Ensure LVGL timer handler is being called in the main loop [src/main.c:70](src/main.c#L70):
-
-```c
-lv_timer_handler();
-```
+**Icons not displaying**:
+- Ensure image files exist: `ls -la assets/images/`
+- Verify file paths use `A:` prefix
+- Check image decoder is enabled in `lv_conf.h`
 
 **Korean text not displaying**: Verify NotoSansKR font file exists:
-
 ```bash
 ls -la assets/fonts/NotoSansKR-Regular.ttf
 ```
-
-Check FreeType initialization in [src/init.c](src/init.c) is successful. Font load warnings are logged to stderr.
-
-**Image not displaying**:
-- Ensure image file exists: `ls -la assets/images/`
-- Verify file path uses `A:` prefix: `"A:assets/images/image.jpg"`
-- Check that required image decoder is enabled in `lv_conf.h`:
-  - For JPEG: `#define LV_USE_SJPG 1`
-  - For PNG: `#define LV_USE_PNG 1 and LV_USE_LODEPNG 1`
-  - For GIF: `#define LV_USE_GIF 1`
-- If adding new image formats, rebuild LVGL: `make clean-lvgl && ./setup.sh`
-
-**Out of memory errors when loading images**:
-- Increase memory pool in `lv_conf.h`: `#define LV_MEM_SIZE (4 * 1024 * 1024U)`
-- Reduce image resolution or switch to smaller file sizes
-- Disable unused image format decoders to free memory
 
 ## References
 
@@ -545,13 +599,22 @@ Refer to the LVGL license (typically MIT) and dependent libraries' licenses.
 
 ## Version
 
-- **Application**: 2.0 (Modular refactoring with menu system)
+- **Application**: 3.0 (Icon-based UI with absolute path navigation)
 - **LVGL**: 8.4
 - **SDL2**: Latest stable
 - **FreeType**: Latest stable
-- **Last Updated**: 2025-11-28
+- **Last Updated**: 2025-11-29
 
 ### Changelog
+
+#### v3.0 (2025-11-29)
+- Implemented icon-based menu system with icon + label buttons
+- Added absolute path navigation for status bar buttons
+- Implemented breadcrumb navigation showing hierarchical path
+- Added circular icon buttons in status bar (40x40px)
+- Created Info, Admin, and Network screens
+- Enhanced menu buttons with left-aligned icons and labels
+- Updated navigation system to prevent deep stacking
 
 #### v2.0 (2025-11-28)
 - Refactored monolithic main.c into modular components

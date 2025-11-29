@@ -6,6 +6,9 @@
 *.lib
 *.dll
 menu
+title
+main
+button
 src/*.o
 
 # IDE and editor
