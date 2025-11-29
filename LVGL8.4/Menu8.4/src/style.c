@@ -48,6 +48,14 @@ void apply_circle_button_style(lv_obj_t *btn, uint32_t bg_color) {
     lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);  // Transparent background
     lv_obj_set_style_border_width(btn, 0, 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);  // No shadow
+
+    // Add visual feedback for pressed state
+    lv_obj_set_style_bg_opa(btn, LV_OPA_50, LV_STATE_PRESSED);  // Semi-transparent background when pressed
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x808080), LV_STATE_PRESSED);  // Gray overlay
+    lv_obj_set_style_shadow_width(btn, 8, LV_STATE_PRESSED);  // Add shadow when pressed
+    lv_obj_set_style_shadow_color(btn, lv_color_hex(0x000000), LV_STATE_PRESSED);  // Black shadow
+    lv_obj_set_style_shadow_opa(btn, LV_OPA_40, LV_STATE_PRESSED);  // Shadow opacity
+
     lv_obj_add_flag(btn, LV_OBJ_FLAG_ADV_HITTEST);
     lv_obj_add_event_cb(btn, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
 }
