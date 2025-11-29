@@ -98,8 +98,9 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     // Allow only vertical scrolling
     lv_obj_set_scroll_dir(content, LV_DIR_VER);
 
-    // Create menu buttons
+    // Create menu buttons with images and labels
     const char *menu_labels[] = {"관리자 설정", "네트워크 설정", "메뉴 3", "Info"};
+    const char *menu_images[] = {IMG_CONFIG, IMG_NETWORK, IMG_SETUP, IMG_INFO};
 
     for (int i = 0; i < MENU_ITEMS_COUNT; i++) {
         lv_obj_t *btn = lv_btn_create(content);
@@ -107,10 +108,16 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
         lv_obj_align(btn, LV_ALIGN_TOP_MID, 0, OFFSET_BUTTON_START_Y + i * (MENU_BUTTON_HEIGHT + MENU_BUTTON_MARGIN));
         apply_button_style(btn, COLOR_BUTTON_BG);
 
+        // Create image on the left side of the button
+        lv_obj_t *img = lv_img_create(btn);
+        lv_img_set_src(img, menu_images[i]);
+        lv_obj_align(img, LV_ALIGN_LEFT_MID, 10, 0);
+
+        // Create label on the right side of the image
         lv_obj_t *label = lv_label_create(btn);
         lv_label_set_text(label, menu_labels[i]);
         apply_label_style(label);
-        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_align(label, LV_ALIGN_LEFT_MID, 60, 0);
 
         // Add event handlers
         if (i == 0) {
