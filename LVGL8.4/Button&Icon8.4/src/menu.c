@@ -22,21 +22,30 @@ static void back_btn_callback(lv_event_t *e) {
 static void info_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_INFO) {
-        create_info_screen();
+        // Navigate using absolute path: clear stack to MENU then go to INFO
+        screen_stack_top = 0;  // Reset to MAIN
+        show_screen(SCREEN_MENU);  // Go through MENU
+        show_screen(SCREEN_INFO);  // Then to INFO
     }
 }
 
 static void admin_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_ADMIN) {
-        create_admin_screen();
+        // Navigate using absolute path: clear stack to MENU then go to ADMIN
+        screen_stack_top = 0;  // Reset to MAIN
+        show_screen(SCREEN_MENU);  // Go through MENU
+        show_screen(SCREEN_ADMIN);  // Then to ADMIN
     }
 }
 
 static void network_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_NETWORK) {
-        create_network_screen();
+        // Navigate using absolute path: clear stack to MENU then go to NETWORK
+        screen_stack_top = 0;  // Reset to MAIN
+        show_screen(SCREEN_MENU);  // Go through MENU
+        show_screen(SCREEN_NETWORK);  // Then to NETWORK
     }
 }
 
