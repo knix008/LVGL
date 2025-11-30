@@ -42,7 +42,27 @@ static void menu_btn_visual_effect(lv_event_t *e) {
 }
 
 // ============================================================================
-// PLUS/MINUS BUTTON CALLBACK
+// PLUS/MINUS BUTTON VISUAL EFFECTS
+// ============================================================================
+
+static void plus_minus_visual_effect(lv_event_t *e) {
+    lv_event_code_t code = lv_event_get_code(e);
+
+    // Get the plus/minus image button
+    lv_obj_t *img_btn = lv_event_get_current_target(e);
+    if (!img_btn) return;
+
+    if (code == LV_EVENT_PRESSED) {
+        // Scale down and reduce opacity when pressed
+        lv_img_set_zoom(img_btn, 230);  // Scale to 90% (256 = 100%)
+        lv_obj_set_style_img_opa(img_btn, LV_OPA_60, 0);  // Reduce opacity to 60%
+    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        // Restore normal size and opacity when released
+        lv_img_set_zoom(img_btn, 256);  // Restore to 100%
+        lv_obj_set_style_img_opa(img_btn, LV_OPA_COVER, 0);  // Restore full opacity
+    }
+}
+
 // ============================================================================
 
 static void plus_minus_btn_callback(lv_event_t *e) {
@@ -121,6 +141,11 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
         plus_minus_buttons[i].item_index = i;
         
         lv_obj_add_event_cb(plus_btn, plus_minus_btn_callback, LV_EVENT_CLICKED, &plus_minus_buttons[i]);
+        
+        // Add visual effect event callbacks for plus/minus button
+        lv_obj_add_event_cb(plus_btn, plus_minus_visual_effect, LV_EVENT_PRESSED, NULL);
+        lv_obj_add_event_cb(plus_btn, plus_minus_visual_effect, LV_EVENT_RELEASED, NULL);
+        lv_obj_add_event_cb(plus_btn, plus_minus_visual_effect, LV_EVENT_PRESS_LOST, NULL);
 
         // Add visual effect event callbacks (pass the menu icon image as user_data)
         lv_obj_add_event_cb(btn, menu_btn_visual_effect, LV_EVENT_PRESSED, img);
