@@ -8,6 +8,18 @@
 #include "../include/navigation.h"
 
 // ============================================================================
+// PLUS/MINUS BUTTON STATE MANAGEMENT
+// ============================================================================
+
+typedef struct {
+    lv_obj_t *button;
+    bool is_plus;  // true for plus, false for minus
+    int item_index;
+} plus_minus_btn_data_t;
+
+static plus_minus_btn_data_t plus_minus_buttons[MENU_ITEMS_COUNT];
+
+// ============================================================================
 // MENU BUTTON VISUAL EFFECTS
 // ============================================================================
 
@@ -30,19 +42,29 @@ static void menu_btn_visual_effect(lv_event_t *e) {
 }
 
 // ============================================================================
-// PLUS BUTTON CALLBACK
+// PLUS/MINUS BUTTON CALLBACK
 // ============================================================================
 
-static void plus_btn_callback(lv_event_t *e) {
+static void plus_minus_btn_callback(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
 
     if (code == LV_EVENT_CLICKED) {
-        // Get the user data (menu item index)
-        int *item_index = (int *)lv_event_get_user_data(e);
+        // Get the button data
+        plus_minus_btn_data_t *btn_data = (plus_minus_btn_data_t *)lv_event_get_user_data(e);
+        if (!btn_data || !btn_data->button) return;
 
-        // Handle plus button click for each menu item
-        // Add your specific logic here
-        printf("Plus button clicked for menu item: %d\n", *item_index);
+        // Toggle the button state
+        if (btn_data->is_plus) {
+            // Change from plus to minus
+            lv_img_set_src(btn_data->button, IMG_MINUS);
+            btn_data->is_plus = false;
+            printf("Changed to minus for menu item: %d\n", btn_data->item_index);
+        } else {
+            // Change from minus to plus
+            lv_img_set_src(btn_data->button, IMG_PLUS);
+            btn_data->is_plus = true;
+            printf("Changed to plus for menu item: %d\n", btn_data->item_index);
+        }
     }
 }
 
@@ -63,10 +85,8 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     // Create menu buttons with images and labels
     const char *menu_labels[] = {"관리자 설정", "네트워크 설정", "한글 입력", "Info"};
     const char *menu_images[] = {IMG_CONFIG, IMG_NETWORK, IMG_KOREAN, IMG_INFO};
-    static int item_indices[MENU_ITEMS_COUNT];
 
     for (int i = 0; i < MENU_ITEMS_COUNT; i++) {
-        item_indices[i] = i;
 
         lv_obj_t *btn = lv_btn_create(content);
         lv_obj_set_size(btn, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT);
@@ -89,7 +109,13 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
         lv_img_set_src(plus_btn, IMG_PLUS);
         lv_obj_align(plus_btn, LV_ALIGN_RIGHT_MID, -10, 0);
         lv_obj_add_flag(plus_btn, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_add_event_cb(plus_btn, plus_btn_callback, LV_EVENT_CLICKED, &item_indices[i]);
+        
+        // Initialize plus/minus button data
+        plus_minus_buttons[i].button = plus_btn;
+        plus_minus_buttons[i].is_plus = true;  // Start as plus
+        plus_minus_buttons[i].item_index = i;
+        
+        lv_obj_add_event_cb(plus_btn, plus_minus_btn_callback, LV_EVENT_CLICKED, &plus_minus_buttons[i]);
 
         // Add visual effect event callbacks (pass the menu icon image as user_data)
         lv_obj_add_event_cb(btn, menu_btn_visual_effect, LV_EVENT_PRESSED, img);
