@@ -79,6 +79,69 @@ static void clear_btn_callback(lv_event_t *e) {
     lv_label_set_text(text_display, "");
 }
 
+static void msgbox_event_callback(lv_event_t *e) {
+    lv_obj_t *mbox = lv_event_get_current_target(e);
+    lv_msgbox_close(mbox);
+}
+
+static void enter_btn_callback(lv_event_t *e) {
+    (void)e;
+
+    // Get the current text
+    char *utf8_text = wchar_to_utf8(chunjiin_state.text_buffer, MAX_TEXT_LEN);
+
+    // Create a message box with OK button and no close icon
+    static const char *btns[] = {"OK", ""};
+    lv_obj_t *mbox = lv_msgbox_create(NULL, "입력 결과", utf8_text, btns, false);
+    lv_obj_center(mbox);
+
+    // Apply black background with 50% transparency and no border to message box
+    lv_obj_set_style_bg_color(mbox, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(mbox, LV_OPA_50, 0);
+    lv_obj_set_style_border_width(mbox, 0, 0);
+
+    // Apply Korean font and white text color to the message box title and content
+    extern AppState app_state;
+    if (app_state.font_20) {
+        // Get the title label
+        lv_obj_t *title = lv_msgbox_get_title(mbox);
+        if (title) {
+            lv_obj_set_style_text_font(title, app_state.font_20, 0);
+            lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), 0);
+        }
+        // Get the text label
+        lv_obj_t *text = lv_msgbox_get_text(mbox);
+        if (text) {
+            lv_obj_set_style_text_font(text, app_state.font_20, 0);
+            lv_obj_set_style_text_color(text, lv_color_hex(0xFFFFFF), 0);
+        }
+    }
+
+    // Style the OK button with green color and center alignment
+    lv_obj_t *btns_obj = lv_msgbox_get_btns(mbox);
+    if (btns_obj) {
+        // Get the OK button itself and style it
+        lv_obj_t *ok_btn = lv_obj_get_child(btns_obj, 0);
+        if (ok_btn) {
+            lv_obj_set_style_bg_color(ok_btn, lv_color_hex(0x00FF00), 0);
+        }
+
+        // Make the button container transparent
+        lv_obj_set_style_bg_opa(btns_obj, LV_OPA_TRANSP, 0);
+
+        // Set the button container to match parent width and center its content
+        lv_obj_set_width(btns_obj, lv_pct(100));
+        lv_obj_set_style_text_align(btns_obj, LV_TEXT_ALIGN_CENTER, 0);
+    }
+
+    // Add event callback to close the message box when OK is clicked
+    lv_obj_add_event_cb(mbox, msgbox_event_callback, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // Clear the text area
+    chunjiin_init(&chunjiin_state);
+    lv_label_set_text(text_display, "");
+}
+
 static void info_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_INFO) {
@@ -200,7 +263,8 @@ static lv_obj_t *create_korean_input_content(lv_obj_t *parent) {
     // Row 1: ㄱ(4), ㄴ(5), ㄷ(6)
     // Row 2: ㅂ(7), ㅅ(8), ㅈ(9)
     // Row 3: 공백(10), ㅇㅁ(0), 삭제(11)
-    int btn_width = 90;
+    // All buttons have same size
+    int btn_width = 85;
     int btn_height = 60;
     int btn_spacing = 10;
     int grid_width = btn_width * 3 + btn_spacing * 2;
@@ -248,11 +312,12 @@ static lv_obj_t *create_korean_input_content(lv_obj_t *parent) {
 
     y_offset += grid_height + 10;
 
-    // Control buttons row - centered container
-    int ctrl_btn_width = 130;
-    int ctrl_btn_spacing = 10;
-    int ctrl_btn_height = 50;
-    int ctrl_row_width = ctrl_btn_width * 2 + ctrl_btn_spacing;
+    // Control buttons row - 3 buttons: 모드, 지우기, Enter
+    // Use same size as keyboard buttons
+    int ctrl_btn_width = btn_width;
+    int ctrl_btn_spacing = btn_spacing;
+    int ctrl_btn_height = btn_height;
+    int ctrl_row_width = ctrl_btn_width * 3 + ctrl_btn_spacing * 2;
 
     lv_obj_t *ctrl_container = lv_obj_create(content);
     lv_obj_set_size(ctrl_container, ctrl_row_width, ctrl_btn_height);
@@ -286,6 +351,19 @@ static lv_obj_t *create_korean_input_content(lv_obj_t *parent) {
     lv_obj_center(clear_btn_label);
 
     lv_obj_add_event_cb(clear_btn, clear_btn_callback, LV_EVENT_CLICKED, NULL);
+
+    // Enter button
+    lv_obj_t *enter_btn = lv_btn_create(ctrl_container);
+    lv_obj_set_size(enter_btn, ctrl_btn_width, ctrl_btn_height);
+    lv_obj_set_pos(enter_btn, (ctrl_btn_width + ctrl_btn_spacing) * 2, 0);
+    apply_button_style(enter_btn, COLOR_BUTTON_BG);
+
+    lv_obj_t *enter_label = lv_label_create(enter_btn);
+    lv_label_set_text(enter_label, "Enter");
+    apply_label_style(enter_label);
+    lv_obj_center(enter_label);
+
+    lv_obj_add_event_cb(enter_btn, enter_btn_callback, LV_EVENT_CLICKED, NULL);
 
     return content;
 }
