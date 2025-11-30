@@ -88,6 +88,9 @@ static void enter_btn_callback(lv_event_t *e) {
     static const char *btns[] = {"OK", ""};
     lv_obj_t *mbox = lv_msgbox_create(NULL, "입력 결과", utf8_text, btns, false);
     lv_obj_center(mbox);
+    
+    // Set msgbox width to match button row width (3 buttons + spacing)
+    lv_obj_set_width(mbox, 265);
 
     // Apply black background with 50% transparency and no border to message box
     lv_obj_set_style_bg_color(mbox, lv_color_hex(0x000000), 0);
@@ -160,16 +163,18 @@ static lv_obj_t *create_korean_input_content(lv_obj_t *parent) {
 
     // Text display area
     lv_obj_t *text_container = lv_obj_create(content);
-    lv_obj_set_size(text_container, SCREEN_WIDTH - 20, 100);
+    lv_obj_set_size(text_container, SCREEN_WIDTH - 45, 100);
     lv_obj_align(text_container, LV_ALIGN_TOP_MID, 0, y_offset);
     lv_obj_set_style_bg_color(text_container, lv_color_hex(0x000000), 0);
     lv_obj_set_style_border_color(text_container, lv_color_hex(COLOR_BORDER), 0);
     lv_obj_set_style_border_width(text_container, 2, 0);
     lv_obj_set_style_pad_all(text_container, 10, 0);
+    lv_obj_add_flag(text_container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(text_container, LV_DIR_HOR);
 
     text_display = lv_label_create(text_container);
     lv_label_set_long_mode(text_display, LV_LABEL_LONG_WRAP);
-    lv_obj_set_width(text_display, SCREEN_WIDTH - 60);
+    lv_obj_set_width(text_display, SCREEN_WIDTH - 70);
     apply_label_style(text_display);
     lv_label_set_text(text_display, "");
     lv_obj_align(text_display, LV_ALIGN_TOP_LEFT, 0, 0);
