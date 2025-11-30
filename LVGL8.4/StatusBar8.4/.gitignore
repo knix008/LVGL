@@ -1,5 +1,5 @@
 # Build outputs
-input
+status
 *.o
 *.a
 *.so
