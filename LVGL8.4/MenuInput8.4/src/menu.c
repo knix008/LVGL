@@ -7,6 +7,28 @@
 #include "../include/navigation.h"
 
 // ============================================================================
+// MENU BUTTON VISUAL EFFECTS
+// ============================================================================
+
+static void menu_btn_visual_effect(lv_event_t *e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *btn = lv_event_get_target(e);
+
+    // Get the image (first child of button)
+    lv_obj_t *img = lv_obj_get_child(btn, 0);
+
+    if (code == LV_EVENT_PRESSED) {
+        // Scale down and reduce opacity when pressed
+        lv_img_set_zoom(img, 230);  // Scale to 90% (256 = 100%)
+        lv_obj_set_style_img_opa(img, LV_OPA_60, 0);  // Reduce opacity to 60%
+    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        // Restore normal size and opacity when released
+        lv_img_set_zoom(img, 256);  // Restore to 100%
+        lv_obj_set_style_img_opa(img, LV_OPA_COVER, 0);  // Restore full opacity
+    }
+}
+
+// ============================================================================
 // MENU SCREEN COMPONENTS
 // ============================================================================
 
@@ -41,7 +63,12 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
         apply_label_style(label);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 60, 0);
 
-        // Add event handlers
+        // Add visual effect event callbacks
+        lv_obj_add_event_cb(btn, menu_btn_visual_effect, LV_EVENT_PRESSED, NULL);
+        lv_obj_add_event_cb(btn, menu_btn_visual_effect, LV_EVENT_RELEASED, NULL);
+        lv_obj_add_event_cb(btn, menu_btn_visual_effect, LV_EVENT_PRESS_LOST, NULL);
+
+        // Add navigation event handlers
         if (i == 0) {
             lv_obj_add_event_cb(btn, admin_btn_callback, LV_EVENT_CLICKED, NULL);
         } else if (i == 1) {
