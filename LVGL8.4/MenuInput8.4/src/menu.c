@@ -3,101 +3,12 @@
 #include "../include/types.h"
 #include "../include/style.h"
 #include "../include/screen.h"
-#include "../include/info.h"
-#include "../include/admin.h"
-#include "../include/network.h"
-#include "../include/korean_input.h"
-
-// ============================================================================
-// EVENT CALLBACKS
-// ============================================================================
-
-static void back_btn_callback(lv_event_t *e) {
-    (void)e;
-    if (screen_stack_top > 0) {
-        screen_stack_top--;
-        show_screen(screen_stack[screen_stack_top].screen_id);
-    }
-}
-
-static void info_btn_callback(lv_event_t *e) {
-    (void)e;
-    if (screen_stack[screen_stack_top].screen_id != SCREEN_INFO) {
-        // Navigate using absolute path: clear stack to MENU then go to INFO
-        screen_stack_top = 0;  // Reset to MAIN
-        show_screen(SCREEN_MENU);  // Go through MENU
-        show_screen(SCREEN_INFO);  // Then to INFO
-    }
-}
-
-static void admin_btn_callback(lv_event_t *e) {
-    (void)e;
-    if (screen_stack[screen_stack_top].screen_id != SCREEN_ADMIN) {
-        // Navigate using absolute path: clear stack to MENU then go to ADMIN
-        screen_stack_top = 0;  // Reset to MAIN
-        show_screen(SCREEN_MENU);  // Go through MENU
-        show_screen(SCREEN_ADMIN);  // Then to ADMIN
-    }
-}
-
-static void network_btn_callback(lv_event_t *e) {
-    (void)e;
-    if (screen_stack[screen_stack_top].screen_id != SCREEN_NETWORK) {
-        // Navigate using absolute path: clear stack to MENU then go to NETWORK
-        screen_stack_top = 0;  // Reset to MAIN
-        show_screen(SCREEN_MENU);  // Go through MENU
-        show_screen(SCREEN_NETWORK);  // Then to NETWORK
-    }
-}
-
-static void korean_input_btn_callback(lv_event_t *e) {
-    (void)e;
-    if (screen_stack[screen_stack_top].screen_id != SCREEN_KOREAN_INPUT) {
-        // Navigate using absolute path: clear stack to MENU then go to KOREAN_INPUT
-        screen_stack_top = 0;  // Reset to MAIN
-        show_screen(SCREEN_MENU);  // Go through MENU
-        show_screen(SCREEN_KOREAN_INPUT);  // Then to KOREAN_INPUT
-    }
-}
+#include "../include/screen_components.h"
+#include "../include/navigation.h"
 
 // ============================================================================
 // MENU SCREEN COMPONENTS
 // ============================================================================
-
-static lv_obj_t *create_menu_title_bar(lv_obj_t *parent) {
-    lv_obj_t *title_bar = lv_obj_create(parent);
-    lv_obj_set_size(title_bar, SCREEN_WIDTH, TITLE_BAR_HEIGHT);
-    lv_obj_align(title_bar, LV_ALIGN_TOP_MID, 0, 0);
-    apply_bar_style(title_bar, COLOR_BG_TITLE);
-
-    // Back button (circular)
-    lv_obj_t *back_btn = lv_btn_create(title_bar);
-    lv_obj_set_size(back_btn, TITLE_BAR_HEIGHT - 20, TITLE_BAR_HEIGHT - 20);  // Square button for circle
-    lv_obj_align(back_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
-    apply_circle_button_style(back_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *back_img = lv_img_create(back_btn);
-    lv_img_set_src(back_img, IMG_BACK_BUTTON);
-    lv_obj_align(back_img, LV_ALIGN_CENTER, 0, 0);
-
-    lv_obj_add_event_cb(back_btn, back_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Title label (positioned to the right of the back button)
-    lv_obj_t *title_label = lv_label_create(title_bar);
-    lv_label_set_text(title_label, "");  // Will be updated by update_title_bar_location
-    apply_label_style(title_label);
-    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, (TITLE_BAR_HEIGHT - 20) + PADDING_HORIZONTAL * 2, 0);
-
-    // Store the title label so it can be updated
-    extern AppState app_state;
-    app_state.current_title_label = title_label;
-
-    // Update the title with breadcrumb path
-    extern void update_title_bar_location(int screen_id);
-    update_title_bar_location(SCREEN_MENU);
-
-    return title_bar;
-}
 
 static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     lv_obj_t *content = lv_obj_create(parent);
@@ -145,87 +56,16 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
     return content;
 }
 
-static lv_obj_t *create_menu_status_bar(lv_obj_t *parent) {
-    lv_obj_t *status_bar = lv_obj_create(parent);
-    lv_obj_set_size(status_bar, SCREEN_WIDTH, STATUS_BAR_HEIGHT);
-    lv_obj_align(status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
-    apply_bar_style(status_bar, COLOR_BG_TITLE);
-
-    // Image button configuration
-    int img_btn_size = 40;
-    int spacing = 10;
-    int start_x = PADDING_HORIZONTAL;
-
-    // Config button with image
-    lv_obj_t *config_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(config_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(config_btn, start_x, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(config_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *config_img = lv_img_create(config_btn);
-    lv_img_set_src(config_img, IMG_CONFIG);
-    lv_obj_center(config_img);
-    lv_obj_add_event_cb(config_btn, admin_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Korean input button with image
-    lv_obj_t *korean_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(korean_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(korean_btn, start_x + img_btn_size + spacing, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(korean_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *korean_img = lv_img_create(korean_btn);
-    lv_img_set_src(korean_img, IMG_KOREAN);
-    lv_obj_center(korean_img);
-    lv_obj_add_event_cb(korean_btn, korean_input_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Info button with image
-    lv_obj_t *info_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(info_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(info_btn, start_x + (img_btn_size + spacing) * 2, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(info_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *info_img = lv_img_create(info_btn);
-    lv_img_set_src(info_img, IMG_INFO);
-    lv_obj_center(info_img);
-    lv_obj_add_event_cb(info_btn, info_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Network button with image
-    lv_obj_t *network_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(network_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(network_btn, start_x + (img_btn_size + spacing) * 3, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(network_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *network_img = lv_img_create(network_btn);
-    lv_img_set_src(network_img, IMG_NETWORK);
-    lv_obj_center(network_img);
-    lv_obj_add_event_cb(network_btn, network_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    return status_bar;
-}
-
 // ============================================================================
 // MENU SCREEN CREATION
 // ============================================================================
 
 void create_menu_screen(void) {
-    lv_obj_t *menu_screen = lv_obj_create(NULL);
-    lv_obj_set_size(menu_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
-    lv_obj_set_style_bg_color(menu_screen, lv_color_hex(COLOR_BG_DARK), 0);
+    lv_obj_t *menu_screen = create_screen_base(SCREEN_MENU);
 
-    // Disable scrolling on menu screen
-    lv_obj_set_scrollbar_mode(menu_screen, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_clear_flag(menu_screen, LV_OBJ_FLAG_SCROLLABLE);
-
-    // Add to screen stack BEFORE creating title bar so breadcrumb can be built correctly
-    if (screen_stack_top + 1 < MAX_SCREENS) {
-        screen_stack_top++;
-        screen_stack[screen_stack_top].screen = menu_screen;
-        screen_stack[screen_stack_top].screen_id = SCREEN_MENU;
-    }
-
-    create_menu_title_bar(menu_screen);
+    create_standard_title_bar(menu_screen, SCREEN_MENU);
     create_menu_content(menu_screen);
-    create_menu_status_bar(menu_screen);
+    create_standard_status_bar(menu_screen);
 
-    lv_scr_load(menu_screen);
+    finalize_screen(menu_screen, SCREEN_MENU);
 }

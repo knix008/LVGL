@@ -26,8 +26,8 @@ ALL_LIBS = $(LVGL_LIB) $(SDL_LIBS) $(FREETYPE_LIBS) $(JPEG_LIBS) $(LDFLAGS)
 
 TARGET = input
 SRC_DIR = src
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/home.c $(SRC_DIR)/menu.c $(SRC_DIR)/screen.c $(SRC_DIR)/style.c $(SRC_DIR)/init.c $(SRC_DIR)/info.c $(SRC_DIR)/admin.c $(SRC_DIR)/network.c $(SRC_DIR)/korean_input.c $(SRC_DIR)/chunjiin.c $(SRC_DIR)/chunjiin_hangul.c
-OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/home.o $(SRC_DIR)/menu.o $(SRC_DIR)/screen.o $(SRC_DIR)/style.o $(SRC_DIR)/init.o $(SRC_DIR)/info.o $(SRC_DIR)/admin.o $(SRC_DIR)/network.o $(SRC_DIR)/korean_input.o $(SRC_DIR)/chunjiin.o $(SRC_DIR)/chunjiin_hangul.o
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/home.c $(SRC_DIR)/menu.c $(SRC_DIR)/screen.c $(SRC_DIR)/style.c $(SRC_DIR)/init.c $(SRC_DIR)/info.c $(SRC_DIR)/admin.c $(SRC_DIR)/network.c $(SRC_DIR)/korean_input.c $(SRC_DIR)/chunjiin.c $(SRC_DIR)/chunjiin_hangul.c $(SRC_DIR)/navigation.c $(SRC_DIR)/screen_components.c
+OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/home.o $(SRC_DIR)/menu.o $(SRC_DIR)/screen.o $(SRC_DIR)/style.o $(SRC_DIR)/init.o $(SRC_DIR)/info.o $(SRC_DIR)/admin.o $(SRC_DIR)/network.o $(SRC_DIR)/korean_input.o $(SRC_DIR)/chunjiin.o $(SRC_DIR)/chunjiin_hangul.o $(SRC_DIR)/navigation.o $(SRC_DIR)/screen_components.o
 
 all: check_setup $(TARGET)
 
