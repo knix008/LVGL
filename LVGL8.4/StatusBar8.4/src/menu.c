@@ -53,17 +53,22 @@ static void plus_minus_btn_callback(lv_event_t *e) {
         plus_minus_btn_data_t *btn_data = (plus_minus_btn_data_t *)lv_event_get_user_data(e);
         if (!btn_data || !btn_data->button) return;
 
+        // Menu item to icon path mapping
+        const char *menu_icons[] = {IMG_CONFIG, IMG_NETWORK, IMG_KOREAN, IMG_INFO};
+
         // Toggle the button state
         if (btn_data->is_plus) {
-            // Change from plus to minus
+            // Change from plus to minus - add icon to status bar
             lv_img_set_src(btn_data->button, IMG_MINUS);
             btn_data->is_plus = false;
-            printf("Changed to minus for menu item: %d\n", btn_data->item_index);
+            add_status_bar_icon(btn_data->item_index, menu_icons[btn_data->item_index]);
+            printf("Added icon to status bar for menu item: %d\n", btn_data->item_index);
         } else {
-            // Change from minus to plus
+            // Change from minus to plus - remove icon from status bar
             lv_img_set_src(btn_data->button, IMG_PLUS);
             btn_data->is_plus = true;
-            printf("Changed to plus for menu item: %d\n", btn_data->item_index);
+            remove_status_bar_icon(btn_data->item_index);
+            printf("Removed icon from status bar for menu item: %d\n", btn_data->item_index);
         }
     }
 }

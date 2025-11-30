@@ -3,6 +3,10 @@
 #include "../include/config.h"
 #include "../include/style.h"
 #include "../include/screen.h"
+#include <stdio.h>
+
+// External reference to the global app state
+extern AppState app_state;
 
 // ============================================================================
 // STANDARD TITLE BAR
@@ -47,61 +51,37 @@ lv_obj_t *create_standard_title_bar(lv_obj_t *parent, int screen_id) {
 // ============================================================================
 
 lv_obj_t *create_standard_status_bar(lv_obj_t *parent) {
-    lv_obj_t *status_bar = lv_obj_create(parent);
-    lv_obj_set_size(status_bar, SCREEN_WIDTH, STATUS_BAR_HEIGHT);
-    lv_obj_align(status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
-    apply_bar_style(status_bar, COLOR_BG_TITLE);
+    // If status bar doesn't exist, create it
+    if (!app_state.status_bar) {
+        printf("Creating new persistent status bar\n");
+        app_state.status_bar = lv_obj_create(parent);
+        lv_obj_set_size(app_state.status_bar, SCREEN_WIDTH, STATUS_BAR_HEIGHT);
+        lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
+        apply_bar_style(app_state.status_bar, COLOR_BG_TITLE);
 
-    // Image button configuration
-    int img_btn_size = 40;
-    int spacing = 10;
-    int start_x = PADDING_HORIZONTAL;
+        // Ensure status bar is always visible and on top
+        lv_obj_clear_flag(app_state.status_bar, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(app_state.status_bar);
 
-    // Config button with image
-    lv_obj_t *config_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(config_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(config_btn, start_x, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(config_btn, COLOR_BUTTON_BACK);
+        // Initialize status icons array
+        for (int i = 0; i < MAX_STATUS_ICONS; i++) {
+            app_state.status_icons[i] = NULL;
+        }
+    } else {
+        // Move the existing status bar to the new parent screen
+        printf("Moving status bar to new parent screen\n");
+        lv_obj_set_parent(app_state.status_bar, parent);
+        lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
 
-    lv_obj_t *config_img = lv_img_create(config_btn);
-    lv_img_set_src(config_img, IMG_CONFIG);
-    lv_obj_center(config_img);
-    lv_obj_add_event_cb(config_btn, admin_btn_callback, LV_EVENT_CLICKED, NULL);
+        // Ensure it's visible and on top
+        lv_obj_clear_flag(app_state.status_bar, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(app_state.status_bar);
+    }
 
-    // Korean input button with image
-    lv_obj_t *korean_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(korean_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(korean_btn, start_x + img_btn_size + spacing, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(korean_btn, COLOR_BUTTON_BACK);
+    // Update status bar icons based on current selections
+    update_status_bar_icons();
 
-    lv_obj_t *korean_img = lv_img_create(korean_btn);
-    lv_img_set_src(korean_img, IMG_KOREAN);
-    lv_obj_center(korean_img);
-    lv_obj_add_event_cb(korean_btn, korean_input_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Info button with image
-    lv_obj_t *info_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(info_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(info_btn, start_x + (img_btn_size + spacing) * 2, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(info_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *info_img = lv_img_create(info_btn);
-    lv_img_set_src(info_img, IMG_INFO);
-    lv_obj_center(info_img);
-    lv_obj_add_event_cb(info_btn, info_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    // Network button with image
-    lv_obj_t *network_btn = lv_btn_create(status_bar);
-    lv_obj_set_size(network_btn, img_btn_size, img_btn_size);
-    lv_obj_set_pos(network_btn, start_x + (img_btn_size + spacing) * 3, (STATUS_BAR_HEIGHT - img_btn_size) / 2);
-    apply_circle_button_style(network_btn, COLOR_BUTTON_BACK);
-
-    lv_obj_t *network_img = lv_img_create(network_btn);
-    lv_img_set_src(network_img, IMG_NETWORK);
-    lv_obj_center(network_img);
-    lv_obj_add_event_cb(network_btn, network_btn_callback, LV_EVENT_CLICKED, NULL);
-
-    return status_bar;
+    return app_state.status_bar;
 }
 
 // ============================================================================
@@ -151,4 +131,131 @@ void finalize_screen(lv_obj_t *screen, int screen_id) {
 
     // Load the screen
     lv_scr_load(screen);
+}
+
+// ============================================================================
+// STATUS BAR ICON MANAGEMENT
+// ============================================================================
+
+void add_status_bar_icon(int menu_index, const char *icon_path) {
+    (void)icon_path;  // Icon path is determined from menu_index in update_status_bar_icons
+
+    if (menu_index < 0 || menu_index >= MAX_STATUS_ICONS) {
+        printf("Invalid menu index: %d\n", menu_index);
+        return;
+    }
+
+    if (!app_state.status_bar) {
+        printf("Status bar not initialized\n");
+        return;
+    }
+
+    // Mark as selected
+    app_state.menu_item_selected[menu_index] = true;
+
+    // Update the status bar icons
+    update_status_bar_icons();
+}
+
+void remove_status_bar_icon(int menu_index) {
+    if (menu_index < 0 || menu_index >= MAX_STATUS_ICONS) {
+        printf("Invalid menu index: %d\n", menu_index);
+        return;
+    }
+
+    // Mark as not selected
+    app_state.menu_item_selected[menu_index] = false;
+
+    // Update the status bar icons
+    update_status_bar_icons();
+}
+
+void update_status_bar_icons(void) {
+    if (!app_state.status_bar) {
+        printf("update_status_bar_icons: status_bar is NULL\n");
+        return;
+    }
+
+    printf("update_status_bar_icons: Updating status bar icons\n");
+    printf("  Selections: [%d, %d, %d, %d]\n",
+           app_state.menu_item_selected[0],
+           app_state.menu_item_selected[1],
+           app_state.menu_item_selected[2],
+           app_state.menu_item_selected[3]);
+
+    // Menu item to icon path mapping
+    const char *menu_icons[] = {IMG_CONFIG, IMG_NETWORK, IMG_KOREAN, IMG_INFO};
+
+    // First, clean all children from the status bar
+    lv_obj_clean(app_state.status_bar);
+
+    // Reset all icon references
+    for (int i = 0; i < MAX_STATUS_ICONS; i++) {
+        app_state.status_icons[i] = NULL;
+    }
+
+    // Icon configuration
+    int img_btn_size = 40;
+    int spacing = 10;
+    int start_x = PADDING_HORIZONTAL;
+
+    // Count how many icons are selected and create them
+    int icon_position = 0;
+    for (int i = 0; i < MAX_STATUS_ICONS; i++) {
+        if (app_state.menu_item_selected[i]) {
+            printf("  Creating icon %d at position %d\n", i, icon_position);
+
+            // Create button for this icon
+            lv_obj_t *icon_btn = lv_btn_create(app_state.status_bar);
+            lv_obj_set_size(icon_btn, img_btn_size, img_btn_size);
+            lv_obj_set_pos(icon_btn, start_x + icon_position * (img_btn_size + spacing),
+                          (STATUS_BAR_HEIGHT - img_btn_size) / 2);
+            apply_circle_button_style(icon_btn, COLOR_BUTTON_BACK);
+
+            // Create image inside button
+            lv_obj_t *icon_img = lv_img_create(icon_btn);
+            lv_img_set_src(icon_img, menu_icons[i]);
+            lv_obj_center(icon_img);
+
+            // Add navigation callback based on menu item
+            if (i == 0) {
+                lv_obj_add_event_cb(icon_btn, admin_btn_callback, LV_EVENT_CLICKED, NULL);
+            } else if (i == 1) {
+                lv_obj_add_event_cb(icon_btn, network_btn_callback, LV_EVENT_CLICKED, NULL);
+            } else if (i == 2) {
+                lv_obj_add_event_cb(icon_btn, korean_input_btn_callback, LV_EVENT_CLICKED, NULL);
+            } else if (i == 3) {
+                lv_obj_add_event_cb(icon_btn, info_btn_callback, LV_EVENT_CLICKED, NULL);
+            }
+
+            // Store reference to the icon button
+            app_state.status_icons[i] = icon_btn;
+            icon_position++;
+        }
+    }
+
+    printf("  Total icons created: %d\n", icon_position);
+
+    // Force a refresh of the status bar
+    lv_obj_invalidate(app_state.status_bar);
+}
+
+// ============================================================================
+// STATUS BAR RELOCATION FOR EXISTING SCREENS
+// ============================================================================
+
+void move_status_bar_to_screen(lv_obj_t *screen, int screen_id) {
+    // Don't move status bar to home screen (it has its own status bar)
+    if (screen_id == SCREEN_MAIN) {
+        return;
+    }
+
+    // If status bar exists, move it to this screen
+    if (app_state.status_bar && screen) {
+        printf("Relocating status bar to screen %d\n", screen_id);
+        lv_obj_set_parent(app_state.status_bar, screen);
+        lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
+        lv_obj_clear_flag(app_state.status_bar, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_move_foreground(app_state.status_bar);
+    }
 }

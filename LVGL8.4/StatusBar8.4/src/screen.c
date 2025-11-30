@@ -6,6 +6,7 @@
 #include "../include/admin.h"
 #include "../include/network.h"
 #include "../include/korean_input.h"
+#include "../include/screen_components.h"
 #include <string.h>
 
 // ============================================================================
@@ -64,6 +65,10 @@ void show_screen(int screen_id) {
         if (screen_stack[i].screen && screen_stack[i].screen_id == screen_id) {
             screen_stack_top = i;
             lv_scr_load(screen_stack[i].screen);
+
+            // Move the status bar to this existing screen
+            move_status_bar_to_screen(screen_stack[i].screen, screen_id);
+
             update_title_bar_location(screen_id);
             return;
         }

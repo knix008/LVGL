@@ -17,7 +17,16 @@
 // GLOBAL APPLICATION STATE
 // ============================================================================
 
-AppState app_state = {NULL, NULL, NULL, NULL, NULL};
+AppState app_state = {
+    .screen = NULL,
+    .title_bar = NULL,
+    .title_label = NULL,
+    .current_title_label = NULL,
+    .font_20 = NULL,
+    .status_bar = NULL,
+    .menu_item_selected = {false, false, false, false},
+    .status_icons = {NULL, NULL, NULL, NULL}
+};
 ScreenState screen_stack[MAX_SCREENS];
 int screen_stack_top = -1;
 
