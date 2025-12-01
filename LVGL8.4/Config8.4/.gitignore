@@ -1,5 +1,5 @@
-# Build outputs
-config
+# Build outputs and binary files.
+system
 *.o
 *.a
 *.so
