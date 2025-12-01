@@ -88,7 +88,8 @@ Example configuration:
 admin: true          # Admin settings icon
 network: false       # Network settings icon
 korean_input: true   # Korean input icon
-info: true          # Info icon
+info: true           # Info icon
+face: false          # Face icon
 ```
 
 ### How to Use
@@ -314,23 +315,23 @@ make help         # Show help information
 ├── src/                     # Source files
 │   ├── main.c              # Application entry point and event loop
 │   ├── home.c              # Main/home screen implementation
-│   ├── menu.c              # Menu screen implementation
+│   ├── menu.c              # Menu screen implementation with centralized configuration
 │   ├── info.c              # Info screen implementation
 │   ├── admin.c             # Admin settings screen implementation
 │   ├── network.c           # Network settings screen implementation
-│   ├── korean_input.c      # Korean input screen implementation
+│   ├── korean.c            # Korean input screen implementation
+│   ├── face.c              # Face screen implementation
 │   ├── chunjiin.c          # Chunjiin input method core logic
-│   ├── chunjiin_hangul.c   # Hangul syllable composition logic
-│   ├── screen.c            # Screen management and navigation stack
-│   ├── screen_components.c # Reusable UI components (title bar, status bar, etc.)
+│   ├── keypad.c            # Hangul syllable composition logic
+│   ├── screen.c            # Screen management, navigation stack, and UI components
 │   ├── navigation.c        # Centralized navigation callbacks
+│   ├── config.c            # Configuration file management (YAML)
 │   ├── style.c             # UI styling helper functions
 │   └── init.c              # SDL2 and LVGL initialization
 ├── include/                # Header files
 │   ├── config.h            # Application configuration and constants
-│   ├── types.h             # Data structure definitions
-│   ├── screen.h            # Screen management declarations
-│   ├── screen_components.h # UI component declarations
+│   ├── types.h             # Data structure definitions and menu configuration
+│   ├── screen.h            # Screen management and UI component declarations
 │   ├── navigation.h        # Navigation callback declarations
 │   ├── style.h             # Styling function declarations
 │   ├── init.h              # Initialization function declarations
@@ -339,7 +340,8 @@ make help         # Show help information
 │   ├── info.h              # Info screen declarations
 │   ├── admin.h             # Admin screen declarations
 │   ├── network.h           # Network screen declarations
-│   ├── korean_input.h      # Korean input screen declarations
+│   ├── korean.h            # Korean input screen declarations
+│   ├── face.h              # Face screen declarations
 │   └── chunjiin.h          # Chunjiin input method declarations
 ├── assets/              # Asset files
 │   ├── fonts/           # TrueType font files (NotoSansKR-*.ttf)
@@ -361,22 +363,23 @@ The application follows a component-based architecture with clear separation of 
 **Core Framework:**
 - **main.c**: Application entry point, global state, and event loop
 - **init.c**: SDL2 and LVGL initialization
-- **screen.c**: Screen navigation stack and breadcrumb management
-- **screen_components.c**: Reusable UI components (title bars, status bars, content areas)
+- **screen.c**: Screen navigation stack, breadcrumb management, and reusable UI components
 - **navigation.c**: Centralized navigation callbacks for consistent behavior
+- **config.c**: Configuration file management (YAML load/save)
 - **style.c**: Reusable UI styling helper functions
 
 **Screen Implementations:**
 - **home.c**: Main/home screen with date/time display
-- **menu.c**: Menu screen with icon buttons (53 lines)
-- **info.c**: Info screen with application information (50 lines)
-- **admin.c**: Admin settings screen (53 lines)
-- **network.c**: Network settings screen (52 lines)
-- **korean_input.c**: Korean input screen with Chunjiin keyboard (306 lines)
+- **menu.c**: Menu screen with centralized menu item configuration (MENU_ITEMS array)
+- **info.c**: Info screen with application information
+- **admin.c**: Admin settings screen
+- **network.c**: Network settings screen
+- **korean.c**: Korean input screen with Chunjiin keyboard
+- **face.c**: Face screen
 
 **Korean Input System:**
 - **chunjiin.c**: Chunjiin input method core logic (button handling, mode switching)
-- **chunjiin_hangul.c**: Hangul syllable composition and character mapping
+- **keypad.c**: Hangul syllable composition and character mapping
 
 ### Design Benefits
 
@@ -427,7 +430,8 @@ enum {
     SCREEN_INFO = 2,         // Info screen
     SCREEN_ADMIN = 3,        // Admin settings screen
     SCREEN_NETWORK = 4,      // Network settings screen
-    SCREEN_KOREAN_INPUT = 5  // Korean input screen
+    SCREEN_KOREAN_INPUT = 5, // Korean input screen
+    SCREEN_FACE = 6          // Face screen
 };
 ```
 
@@ -482,7 +486,7 @@ Wednesday 14:30:45
 
 ### Reusable Screen Components
 
-The application provides standardized screen components in [src/screen_components.c](src/screen_components.c):
+The application provides standardized screen components in [src/screen.c](src/screen.c):
 
 **Standard Title Bar** (`create_standard_title_bar`):
 - Displays breadcrumb navigation path
@@ -491,8 +495,8 @@ The application provides standardized screen components in [src/screen_component
 - Consistent across all screens
 
 **Standard Status Bar** (`create_standard_status_bar`):
-- Four circular icon buttons for quick navigation
-- Icons: Config, Korean Input, Info, Network
+- Circular icon buttons for quick navigation (configurable)
+- Icons dynamically loaded based on user configuration
 - Absolute path navigation to screens
 - Uniform styling and layout
 
@@ -513,6 +517,33 @@ The application provides standardized screen components in [src/screen_component
 - Sets as active screen
 - Updates breadcrumb path
 - Completes screen creation
+
+### Centralized Menu Configuration
+
+Menu items are configured in a single location using the `MENU_ITEMS` array in [src/menu.c](src/menu.c):
+
+```c
+const MenuItem MENU_ITEMS[MAX_STATUS_ICONS] = {
+    {"관리자 설정", IMG_CONFIG, "admin", SCREEN_ADMIN, admin_btn_callback},
+    {"네트워크 설정", IMG_NETWORK, "network", SCREEN_NETWORK, network_btn_callback},
+    {"한글 입력", IMG_KOREAN, "korean_input", SCREEN_KOREAN_INPUT, korean_input_btn_callback},
+    {"Info", IMG_INFO, "info", SCREEN_INFO, info_btn_callback},
+    {"Face", IMG_FACE, "face", SCREEN_FACE, settings_btn_callback}
+};
+```
+
+Each menu item contains:
+- **label**: Display text shown in menu
+- **icon_path**: Path to icon image
+- **config_key**: Key used in YAML configuration file
+- **screen_id**: Target screen identifier
+- **callback**: Navigation callback function
+
+This configuration is automatically used by:
+- Menu screen for button creation
+- Status bar for icon management
+- Configuration save/load system
+- Navigation callbacks
 
 **Example Screen Implementation:**
 ```c
@@ -790,25 +821,46 @@ The Korean input screen supports multiple input modes accessible via the "모드
 
 The Chunjiin implementation consists of three main components:
 
-1. **korean_input.c**: UI implementation with keyboard buttons and event handlers
+1. **korean.c**: UI implementation with keyboard buttons and event handlers
 2. **chunjiin.c**: Core input logic, button processing, and mode management
-3. **chunjiin_hangul.c**: Hangul syllable composition algorithm
+3. **keypad.c**: Hangul syllable composition algorithm
 
 The system automatically composes Korean syllables from consonant and vowel inputs following standard Hangul composition rules.
 
 ## Version
 
-- **Application**: 4.1 (Refactored Component-Based Architecture)
+- **Application**: 4.2 (Refactored with Centralized Menu Configuration)
 - **LVGL**: 8.4
 - **SDL2**: Latest stable
 - **FreeType**: Latest stable
-- **Last Updated**: 2025-11-30
+- **Last Updated**: 2025-12-01
 
 ### Changelog
 
+#### v4.2 (2025-12-01) - Centralized Menu Configuration & File Cleanup
+- **Menu system refactoring**: Introduced centralized menu configuration
+  - Created `MenuItem` structure in types.h
+  - Defined `MENU_ITEMS` array with all menu configurations in one place
+  - Eliminated hardcoded menu labels, icons, and callbacks throughout codebase
+  - Removed repetitive if-else chains for menu item handling
+- **File renaming for clarity**:
+  - `korean_input.c/h` → `korean.c/h`
+  - `chunjiin_hangul.c` → `keypad.c`
+  - Merged `screen_components.c/h` into `screen.c/h`
+- **Configuration system improvements**:
+  - Updated to use menu configuration keys from MENU_ITEMS
+  - Added support for 5th menu item (Face screen)
+  - Fixed segmentation faults in config save/load
+- **New Face screen**: Added customizable face screen accessible from menu
+- **Benefits**:
+  - Single source of truth for menu configuration
+  - Easy to add/modify menu items (just update MENU_ITEMS array)
+  - Improved type safety using structures
+  - Better code organization and maintainability
+
 #### v4.1 (2025-11-30) - Refactored Architecture
 - **Major refactoring**: Comprehensive code restructuring for maintainability
-- Created reusable component system (screen_components.c/h)
+- Created reusable component system
   - Standard title bar component with breadcrumb navigation
   - Standard status bar component with icon buttons
   - Standard content area component

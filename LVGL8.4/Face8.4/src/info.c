@@ -3,7 +3,6 @@
 #include "../include/types.h"
 #include "../include/style.h"
 #include "../include/screen.h"
-#include "../include/screen_components.h"
 #include "../include/navigation.h"
 
 // ============================================================================
