@@ -1,0 +1,6 @@
+status_bar:
+  admin: true
+  network: true
+  korean_input: true
+  info: false
+  face: true
