@@ -60,7 +60,7 @@ int load_status_bar_config(void);
 #define IMG_INFO "A:assets/images/Info.png"
 #define IMG_NETWORK "A:assets/images/network.png"
 #define IMG_KOREAN "A:assets/images/korean.png"
-#define IMG_PLUS "A:assets/images/plus_big.png"
+#define IMG_PLUS "A:assets/images/plus.png"
 #define IMG_MINUS "A:assets/images/minus.png"
 
 // ============================================================================

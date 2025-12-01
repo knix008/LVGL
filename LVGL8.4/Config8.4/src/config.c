@@ -24,7 +24,6 @@ static int ensure_config_directory(void) {
             fprintf(stderr, "Error: Failed to create config directory: %s\n", strerror(errno));
             return -1;
         }
-        fprintf(stderr, "Info: Created config directory\n");
     }
 
     return 0;
@@ -146,7 +145,6 @@ int save_status_bar_config(void) {
     yaml_emitter_delete(&emitter);
     fclose(file);
 
-    fprintf(stderr, "Info: Status bar configuration saved successfully\n");
     return 0;
 
 emitter_error:
@@ -163,8 +161,6 @@ emitter_error:
 int load_status_bar_config(void) {
     FILE *file = fopen(STATUS_BAR_CONFIG_FILE, "r");
     if (!file) {
-        fprintf(stderr, "Info: Config file not found, using defaults: %s\n", 
-                STATUS_BAR_CONFIG_FILE);
         // Initialize with default values (all disabled)
         for (int i = 0; i < MAX_STATUS_ICONS; i++) {
             app_state.menu_item_selected[i] = false;
@@ -266,7 +262,6 @@ int load_status_bar_config(void) {
     yaml_parser_delete(&parser);
     fclose(file);
 
-    fprintf(stderr, "Info: Status bar configuration loaded successfully\n");
     return 0;
 
 parser_error:
