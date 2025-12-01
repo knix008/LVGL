@@ -14,7 +14,7 @@ A modern LVGL 8.4 application featuring a hierarchical menu system with breadcru
   - Menu buttons display icons on the left with text labels on the right
   - Status bar features circular icon buttons for quick navigation
 - **Persistent Status Bar Configuration**: Status bar icons are saved and restored automatically
-  - Configuration stored in `config/status_bar_config.yaml`
+  - Configuration stored in `config/config.yaml`
   - Toggle icons on/off using +/− buttons in the menu
   - Settings persist across application restarts
 - **Real-time Date/Time Display**: Shows current date and time with day of week on the main screen
@@ -81,7 +81,7 @@ The status bar icon configuration is automatically saved and restored using YAML
 
 ### Configuration File
 
-Location: `config/status_bar_config.yaml`
+Location: `config/config.yaml`
 
 Example configuration:
 ```yaml
@@ -102,7 +102,7 @@ info: true          # Info icon
 
 ### Manual Editing
 
-You can also manually edit `config/status_bar_config.yaml`:
+You can also manually edit `config/config.yaml`:
 
 ```yaml
 admin: false

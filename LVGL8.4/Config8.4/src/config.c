@@ -78,6 +78,23 @@ int save_status_bar_config(void) {
         goto emitter_error;
     }
 
+    // Add "status_bar" key
+    yaml_scalar_event_initialize(&event, NULL, (yaml_char_t *)YAML_STR_TAG,
+                                (yaml_char_t *)"status_bar", 
+                                strlen("status_bar"),
+                                1, 1, YAML_PLAIN_SCALAR_STYLE);
+    if (!yaml_emitter_emit(&emitter, &event)) {
+        goto emitter_error;
+    }
+
+    // Start nested mapping for status_bar
+    yaml_mapping_start_event_initialize(&event, NULL, 
+                                        (yaml_char_t *)YAML_MAP_TAG, 1, 
+                                        YAML_ANY_MAPPING_STYLE);
+    if (!yaml_emitter_emit(&emitter, &event)) {
+        goto emitter_error;
+    }
+
     // Menu item labels for readability
     const char *menu_labels[] = {"admin", "network", "korean_input", "info"};
 
@@ -102,7 +119,13 @@ int save_status_bar_config(void) {
         }
     }
 
-    // End mapping
+    // End status_bar mapping
+    yaml_mapping_end_event_initialize(&event);
+    if (!yaml_emitter_emit(&emitter, &event)) {
+        goto emitter_error;
+    }
+
+    // End root mapping
     yaml_mapping_end_event_initialize(&event);
     if (!yaml_emitter_emit(&emitter, &event)) {
         goto emitter_error;
@@ -164,7 +187,8 @@ int load_status_bar_config(void) {
     // Menu item name to index mapping
     const char *menu_labels[] = {"admin", "network", "korean_input", "info"};
 
-    int in_mapping = 0;
+    int in_root_mapping = 0;
+    int in_status_bar_mapping = 0;
     char *last_key = NULL;
 
     // Parse YAML events
@@ -176,11 +200,17 @@ int load_status_bar_config(void) {
 
         switch (event.type) {
             case YAML_MAPPING_START_EVENT:
-                in_mapping = 1;
+                if (!in_root_mapping) {
+                    in_root_mapping = 1;
+                } else if (in_root_mapping && last_key && strcmp(last_key, "status_bar") == 0) {
+                    in_status_bar_mapping = 1;
+                    free(last_key);
+                    last_key = NULL;
+                }
                 break;
 
             case YAML_SCALAR_EVENT:
-                if (in_mapping) {
+                if (in_status_bar_mapping) {
                     if (!last_key) {
                         // This is a key
                         last_key = strdup((char *)event.data.scalar.value);
@@ -204,11 +234,18 @@ int load_status_bar_config(void) {
                         free(last_key);
                         last_key = NULL;
                     }
+                } else if (in_root_mapping && !last_key) {
+                    // Store root-level keys (like "status_bar")
+                    last_key = strdup((char *)event.data.scalar.value);
                 }
                 break;
 
             case YAML_MAPPING_END_EVENT:
-                in_mapping = 0;
+                if (in_status_bar_mapping) {
+                    in_status_bar_mapping = 0;
+                } else if (in_root_mapping) {
+                    in_root_mapping = 0;
+                }
                 break;
 
             default:

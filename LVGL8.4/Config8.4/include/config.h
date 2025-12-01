@@ -38,7 +38,7 @@
 // ============================================================================
 
 #define CONFIG_DIR "config"
-#define STATUS_BAR_CONFIG_FILE "config/status_bar_config.yaml"
+#define STATUS_BAR_CONFIG_FILE "config/config.yaml"
 
 // ============================================================================
 // CONFIGURATION MANAGEMENT FUNCTIONS
