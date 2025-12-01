@@ -53,7 +53,6 @@ lv_obj_t *create_standard_title_bar(lv_obj_t *parent, int screen_id) {
 lv_obj_t *create_standard_status_bar(lv_obj_t *parent) {
     // If status bar doesn't exist, create it
     if (!app_state.status_bar) {
-        printf("Creating new persistent status bar\n");
         app_state.status_bar = lv_obj_create(parent);
         lv_obj_set_size(app_state.status_bar, SCREEN_WIDTH, STATUS_BAR_HEIGHT);
         lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -69,7 +68,6 @@ lv_obj_t *create_standard_status_bar(lv_obj_t *parent) {
         }
     } else {
         // Move the existing status bar to the new parent screen
-        printf("Moving status bar to new parent screen\n");
         lv_obj_set_parent(app_state.status_bar, parent);
         lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -141,12 +139,10 @@ void add_status_bar_icon(int menu_index, const char *icon_path) {
     (void)icon_path;  // Icon path is determined from menu_index in update_status_bar_icons
 
     if (menu_index < 0 || menu_index >= MAX_STATUS_ICONS) {
-        printf("Invalid menu index: %d\n", menu_index);
         return;
     }
 
     if (!app_state.status_bar) {
-        printf("Status bar not initialized\n");
         return;
     }
 
@@ -159,7 +155,6 @@ void add_status_bar_icon(int menu_index, const char *icon_path) {
 
 void remove_status_bar_icon(int menu_index) {
     if (menu_index < 0 || menu_index >= MAX_STATUS_ICONS) {
-        printf("Invalid menu index: %d\n", menu_index);
         return;
     }
 
@@ -172,16 +167,8 @@ void remove_status_bar_icon(int menu_index) {
 
 void update_status_bar_icons(void) {
     if (!app_state.status_bar) {
-        printf("update_status_bar_icons: status_bar is NULL\n");
         return;
     }
-
-    printf("update_status_bar_icons: Updating status bar icons\n");
-    printf("  Selections: [%d, %d, %d, %d]\n",
-           app_state.menu_item_selected[0],
-           app_state.menu_item_selected[1],
-           app_state.menu_item_selected[2],
-           app_state.menu_item_selected[3]);
 
     // Menu item to icon path mapping
     const char *menu_icons[] = {IMG_CONFIG, IMG_NETWORK, IMG_KOREAN, IMG_INFO};
@@ -203,8 +190,6 @@ void update_status_bar_icons(void) {
     int icon_position = 0;
     for (int i = 0; i < MAX_STATUS_ICONS; i++) {
         if (app_state.menu_item_selected[i]) {
-            printf("  Creating icon %d at position %d\n", i, icon_position);
-
             // Create button for this icon
             lv_obj_t *icon_btn = lv_btn_create(app_state.status_bar);
             lv_obj_set_size(icon_btn, img_btn_size, img_btn_size);
@@ -234,8 +219,6 @@ void update_status_bar_icons(void) {
         }
     }
 
-    printf("  Total icons created: %d\n", icon_position);
-
     // Force a refresh of the status bar
     lv_obj_invalidate(app_state.status_bar);
 }
@@ -252,7 +235,6 @@ void move_status_bar_to_screen(lv_obj_t *screen, int screen_id) {
 
     // If status bar exists, move it to this screen
     if (app_state.status_bar && screen) {
-        printf("Relocating status bar to screen %d\n", screen_id);
         lv_obj_set_parent(app_state.status_bar, screen);
         lv_obj_align(app_state.status_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
         lv_obj_clear_flag(app_state.status_bar, LV_OBJ_FLAG_HIDDEN);

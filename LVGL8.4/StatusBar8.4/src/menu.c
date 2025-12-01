@@ -82,13 +82,11 @@ static void plus_minus_btn_callback(lv_event_t *e) {
             lv_img_set_src(btn_data->button, IMG_MINUS);
             btn_data->is_plus = false;
             add_status_bar_icon(btn_data->item_index, menu_icons[btn_data->item_index]);
-            printf("Added icon to status bar for menu item: %d\n", btn_data->item_index);
         } else {
             // Change from minus to plus - remove icon from status bar
             lv_img_set_src(btn_data->button, IMG_PLUS);
             btn_data->is_plus = true;
             remove_status_bar_icon(btn_data->item_index);
-            printf("Removed icon from status bar for menu item: %d\n", btn_data->item_index);
         }
     }
 }
