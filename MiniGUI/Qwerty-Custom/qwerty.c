@@ -232,7 +232,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
     *delete_previous = 0;
     output[0] = '\0';
 
-    mbtowc(&wch, jamo_str, MB_CUR_MAX);
+    custom_mbtowc(&wch, jamo_str, MB_CUR_MAX);
 
     if (qwerty_is_consonant(wch)) {
         if (!state->hangul.composing) {
@@ -256,7 +256,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jong = wch;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, state->hangul.jong);
             if (composed) {
-                int len = wctomb(output, composed);
+                int len = custom_wctomb(output, composed);
                 if (len > 0) {
                     output[len] = '\0';
                 }
@@ -276,7 +276,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
                 state->hangul.jong = compound;
                 wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, state->hangul.jong);
                 if (composed) {
-                    int len = wctomb(output, composed);
+                    int len = custom_wctomb(output, composed);
                     if (len > 0) {
                         output[len] = '\0';
                     }
@@ -305,7 +305,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jung = wch;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             if (composed) {
-                int len = wctomb(output, composed);
+                int len = custom_wctomb(output, composed);
                 if (len > 0) {
                     output[len] = '\0';
                 }
@@ -320,7 +320,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             *delete_previous = 1;
             wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             char utf8_syllable[7] = {0};
-            int len = wctomb(utf8_syllable, composed);
+            int len = custom_wctomb(utf8_syllable, composed);
             if (len > 0) {
                 utf8_syllable[len] = '\0';
             }
@@ -332,7 +332,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
             state->hangul.jong = 0;
             wchar_t new_composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
             char utf8_new[7] = {0};
-            len = wctomb(utf8_new, new_composed);
+            len = custom_wctomb(utf8_new, new_composed);
             if (len > 0) {
                 utf8_new[len] = '\0';
             }
@@ -346,7 +346,7 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
                 state->hangul.jung = compound;
                 wchar_t composed = compose_hangul(state->hangul.cho, state->hangul.jung, 0);
                 if (composed) {
-                    int len = wctomb(output, composed);
+                    int len = custom_wctomb(output, composed);
                     if (len > 0) {
                         output[len] = '\0';
                     }
@@ -367,4 +367,175 @@ void qwerty_process_korean_char(QwertyState *state, const char *jamo_str,
         strcpy(output, jamo_str);
         state->hangul.composing = 0;
     }
+}
+
+// Custom implementation of wctomb() - converts wide character to multibyte UTF-8
+int custom_wctomb(char *s, wchar_t wc) {
+    if (!s) {
+        return 0; // Not state-dependent
+    }
+
+    if (wc < 0x80) {
+        // 1-byte UTF-8 (ASCII)
+        s[0] = (char)wc;
+        return 1;
+    } else if (wc < 0x800) {
+        // 2-byte UTF-8
+        s[0] = (char)(0xC0 | (wc >> 6));
+        s[1] = (char)(0x80 | (wc & 0x3F));
+        return 2;
+    } else if (wc < 0x10000) {
+        // 3-byte UTF-8
+        s[0] = (char)(0xE0 | (wc >> 12));
+        s[1] = (char)(0x80 | ((wc >> 6) & 0x3F));
+        s[2] = (char)(0x80 | (wc & 0x3F));
+        return 3;
+    } else if (wc < 0x110000) {
+        // 4-byte UTF-8
+        s[0] = (char)(0xF0 | (wc >> 18));
+        s[1] = (char)(0x80 | ((wc >> 12) & 0x3F));
+        s[2] = (char)(0x80 | ((wc >> 6) & 0x3F));
+        s[3] = (char)(0x80 | (wc & 0x3F));
+        return 4;
+    }
+    
+    return -1; // Invalid wide character
+}
+
+// Custom implementation of mbtowc() - converts multibyte UTF-8 to wide character
+int custom_mbtowc(wchar_t *pwc, const char *s, size_t n) {
+    if (!s) {
+        return 0; // Not state-dependent
+    }
+    
+    if (n == 0) {
+        return -1;
+    }
+    
+    unsigned char byte1 = (unsigned char)s[0];
+    wchar_t wc;
+    int len;
+    
+    if (byte1 < 0x80) {
+        // 1-byte UTF-8 (ASCII)
+        wc = byte1;
+        len = 1;
+    } else if ((byte1 & 0xE0) == 0xC0) {
+        // 2-byte UTF-8
+        if (n < 2) {
+            return -1; // Incomplete sequence
+        }
+        unsigned char byte2 = (unsigned char)s[1];
+        if ((byte2 & 0xC0) != 0x80) {
+            return -1; // Invalid continuation byte
+        }
+        wc = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F);
+        len = 2;
+    } else if ((byte1 & 0xF0) == 0xE0) {
+        // 3-byte UTF-8
+        if (n < 3) {
+            return -1; // Incomplete sequence
+        }
+        unsigned char byte2 = (unsigned char)s[1];
+        unsigned char byte3 = (unsigned char)s[2];
+        if ((byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80) {
+            return -1; // Invalid continuation byte
+        }
+        wc = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F);
+        len = 3;
+    } else if ((byte1 & 0xF8) == 0xF0) {
+        // 4-byte UTF-8
+        if (n < 4) {
+            return -1; // Incomplete sequence
+        }
+        unsigned char byte2 = (unsigned char)s[1];
+        unsigned char byte3 = (unsigned char)s[2];
+        unsigned char byte4 = (unsigned char)s[3];
+        if ((byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80 || (byte4 & 0xC0) != 0x80) {
+            return -1; // Invalid continuation byte
+        }
+        wc = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
+        len = 4;
+    } else {
+        // Invalid UTF-8 start byte
+        return -1;
+    }
+    
+    if (pwc) {
+        *pwc = wc;
+    }
+    
+    return len;
+}
+
+// Custom implementation of mbstowcs() - converts multibyte string to wide character string
+size_t custom_mbstowcs(wchar_t *dest, const char *src, size_t n) {
+    size_t wc_count = 0;
+    size_t i = 0;
+    
+    if (!src) {
+        return (size_t)-1;
+    }
+    
+    while (src[i] != '\0' && wc_count < n) {
+        unsigned char byte1 = (unsigned char)src[i];
+        wchar_t wc;
+        
+        if (byte1 < 0x80) {
+            // 1-byte UTF-8 (ASCII)
+            wc = byte1;
+            i++;
+        } else if ((byte1 & 0xE0) == 0xC0) {
+            // 2-byte UTF-8
+            if (src[i + 1] == '\0') {
+                return (size_t)-1; // Incomplete sequence
+            }
+            unsigned char byte2 = (unsigned char)src[i + 1];
+            if ((byte2 & 0xC0) != 0x80) {
+                return (size_t)-1; // Invalid continuation byte
+            }
+            wc = ((byte1 & 0x1F) << 6) | (byte2 & 0x3F);
+            i += 2;
+        } else if ((byte1 & 0xF0) == 0xE0) {
+            // 3-byte UTF-8
+            if (src[i + 1] == '\0' || src[i + 2] == '\0') {
+                return (size_t)-1; // Incomplete sequence
+            }
+            unsigned char byte2 = (unsigned char)src[i + 1];
+            unsigned char byte3 = (unsigned char)src[i + 2];
+            if ((byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80) {
+                return (size_t)-1; // Invalid continuation byte
+            }
+            wc = ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F);
+            i += 3;
+        } else if ((byte1 & 0xF8) == 0xF0) {
+            // 4-byte UTF-8
+            if (src[i + 1] == '\0' || src[i + 2] == '\0' || src[i + 3] == '\0') {
+                return (size_t)-1; // Incomplete sequence
+            }
+            unsigned char byte2 = (unsigned char)src[i + 1];
+            unsigned char byte3 = (unsigned char)src[i + 2];
+            unsigned char byte4 = (unsigned char)src[i + 3];
+            if ((byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80 || (byte4 & 0xC0) != 0x80) {
+                return (size_t)-1; // Invalid continuation byte
+            }
+            wc = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
+            i += 4;
+        } else {
+            // Invalid UTF-8 start byte
+            return (size_t)-1;
+        }
+        
+        if (dest) {
+            dest[wc_count] = wc;
+        }
+        wc_count++;
+    }
+    
+    // Add null terminator if there's space
+    if (dest && wc_count < n) {
+        dest[wc_count] = L'\0';
+    }
+    
+    return wc_count;
 }

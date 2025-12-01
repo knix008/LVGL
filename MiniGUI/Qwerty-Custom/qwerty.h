@@ -45,4 +45,9 @@ int qwerty_is_vowel(wchar_t ch);
 // Key mappings array (47 keys)
 extern KeyMap key_maps[47];
 
+// Custom multibyte/wide character conversion functions
+int custom_wctomb(char *s, wchar_t wc);
+int custom_mbtowc(wchar_t *pwc, const char *s, size_t n);
+size_t custom_mbstowcs(wchar_t *dest, const char *src, size_t n);
+
 #endif // QWERTY_H
