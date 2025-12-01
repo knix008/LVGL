@@ -15,10 +15,10 @@ static lv_obj_t *create_info_content(lv_obj_t *parent) {
     // Create info text
     lv_obj_t *info_label = lv_label_create(content);
     lv_label_set_long_mode(info_label, LV_LABEL_LONG_WRAP);
-    lv_obj_set_width(info_label, SCREEN_WIDTH - 20);
+    lv_obj_set_width(info_label, SCREEN_WIDTH - CONTENT_WIDTH_PADDING);
     apply_label_style(info_label);
-    lv_obj_set_style_pad_all(info_label, 10, 0);
-    lv_obj_align(info_label, LV_ALIGN_TOP_LEFT, 10, 10);
+    lv_obj_set_style_pad_all(info_label, CONTENT_PADDING, 0);
+    lv_obj_align(info_label, LV_ALIGN_TOP_LEFT, CONTENT_PADDING, CONTENT_PADDING);
 
     lv_label_set_text(info_label,
         "애플리케이션 정보\n\n"
@@ -37,6 +37,10 @@ static lv_obj_t *create_info_content(lv_obj_t *parent) {
 // INFO SCREEN CREATION
 // ============================================================================
 
+/**
+ * Creates the information screen with title bar, content area, and status bar.
+ * Uses the standard screen creation pattern.
+ */
 void create_info_screen(void) {
     lv_obj_t *info_screen = create_screen_base(SCREEN_INFO);
 

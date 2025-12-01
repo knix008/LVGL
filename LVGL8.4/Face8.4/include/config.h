@@ -32,6 +32,39 @@
 
 #define MAX_SCREENS 10
 #define FONT_SIZE 16
+#define MAX_BREADCRUMB_LENGTH 256
+#define MAX_TITLE_LENGTH 256
+
+// ============================================================================
+// UI ELEMENT SIZING
+// ============================================================================
+
+#define ICON_SIZE_SMALL 40
+#define ICON_IMAGE_OFFSET 10
+#define LABEL_OFFSET_X 60
+#define BACK_BUTTON_PADDING 20
+#define CONTENT_PADDING 10
+#define CONTENT_WIDTH_PADDING 20
+#define CONTENT_WIDTH_LARGE_PADDING 40
+#define STATUS_ICON_SPACING 10
+#define VERTICAL_OFFSET_SMALL 20
+#define VERTICAL_OFFSET_MEDIUM 50
+#define VERTICAL_OFFSET_LARGE 80
+
+// ============================================================================
+// VISUAL EFFECTS
+// ============================================================================
+
+#define ZOOM_NORMAL 256      // 100% zoom
+#define ZOOM_PRESSED 230     // 90% zoom when pressed
+#define OPACITY_PRESSED 60   // 60% opacity when pressed
+
+// ============================================================================
+// CHUNJIIN KEYBOARD
+// ============================================================================
+
+#define CHUNJIIN_SPACE_KEY 10
+#define CHUNJIIN_DELETE_KEY 11
 
 // ============================================================================
 // CONFIGURATION FILE PATHS

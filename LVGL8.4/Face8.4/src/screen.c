@@ -18,9 +18,14 @@ extern AppState app_state;
 // SCREEN MANAGEMENT
 // ============================================================================
 
+/**
+ * Updates the breadcrumb navigation title bar to show the current screen location.
+ * 
+ * @param screen_id The screen ID to update the title bar for
+ */
 void update_title_bar_location(int screen_id) {
     (void)screen_id;  // Current screen_id is already in the screen_stack
-    static char breadcrumb[256];
+    static char breadcrumb[MAX_BREADCRUMB_LENGTH];
 
     // Build the breadcrumb path from the screen stack
     breadcrumb[0] = '\0';
@@ -67,6 +72,12 @@ void update_title_bar_location(int screen_id) {
     }
 }
 
+/**
+ * Shows a screen by screen ID, creating it if it doesn't exist or reusing it from the stack.
+ * Manages the screen stack and handles screen transitions with proper cleanup.
+ * 
+ * @param screen_id The screen ID to display (SCREEN_MENU, SCREEN_INFO, etc.)
+ */
 void show_screen(int screen_id) {
     // First check if screen already exists anywhere in the stack
     for (int i = 0; i < MAX_SCREENS; i++) {
@@ -126,7 +137,7 @@ lv_obj_t *create_standard_title_bar(lv_obj_t *parent, int screen_id) {
 
     // Back button (circular)
     lv_obj_t *back_btn = lv_btn_create(title_bar);
-    lv_obj_set_size(back_btn, TITLE_BAR_HEIGHT - 20, TITLE_BAR_HEIGHT - 20);
+    lv_obj_set_size(back_btn, TITLE_BAR_HEIGHT - BACK_BUTTON_PADDING, TITLE_BAR_HEIGHT - BACK_BUTTON_PADDING);
     lv_obj_align(back_btn, LV_ALIGN_LEFT_MID, PADDING_HORIZONTAL, 0);
     apply_circle_button_style(back_btn, COLOR_BUTTON_BACK);
 
@@ -140,7 +151,7 @@ lv_obj_t *create_standard_title_bar(lv_obj_t *parent, int screen_id) {
     lv_obj_t *title_label = lv_label_create(title_bar);
     lv_label_set_text(title_label, "");
     apply_label_style(title_label);
-    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, (TITLE_BAR_HEIGHT - 20) + PADDING_HORIZONTAL * 2, 0);
+    lv_obj_align(title_label, LV_ALIGN_LEFT_MID, (TITLE_BAR_HEIGHT - BACK_BUTTON_PADDING) + PADDING_HORIZONTAL * 2, 0);
 
     // Store the title label
     app_state.current_title_label = title_label;
@@ -206,6 +217,12 @@ lv_obj_t *create_standard_content(lv_obj_t *parent) {
 // BASE SCREEN CREATION
 // ============================================================================
 
+/**
+ * Creates a base screen object with standard size and styling.
+ * 
+ * @param screen_id The screen ID (currently unused, reserved for future customization)
+ * @return A configured LVGL screen object
+ */
 lv_obj_t *create_screen_base(int screen_id) {
     (void)screen_id;  // screen_id may be used for customization
 
@@ -224,6 +241,12 @@ lv_obj_t *create_screen_base(int screen_id) {
 // SCREEN FINALIZATION
 // ============================================================================
 
+/**
+ * Finalizes screen creation by adding it to the screen stack and loading it.
+ * 
+ * @param screen The LVGL screen object to finalize
+ * @param screen_id The screen ID for stack management
+ */
 void finalize_screen(lv_obj_t *screen, int screen_id) {
     // Add to screen stack
     if (screen_stack_top + 1 < MAX_SCREENS) {
@@ -240,6 +263,12 @@ void finalize_screen(lv_obj_t *screen, int screen_id) {
 // STATUS BAR ICON MANAGEMENT
 // ============================================================================
 
+/**
+ * Adds an icon to the status bar at the specified menu index position.
+ * 
+ * @param menu_index The position index (0-4) for the icon
+ * @param icon_path The file path to the icon image
+ */
 void add_status_bar_icon(int menu_index, const char *icon_path) {
     (void)icon_path;  // Icon path is determined from menu_index in update_status_bar_icons
 
@@ -258,6 +287,11 @@ void add_status_bar_icon(int menu_index, const char *icon_path) {
     update_status_bar_icons();
 }
 
+/**
+ * Removes an icon from the status bar at the specified menu index position.
+ * 
+ * @param menu_index The position index (0-4) of the icon to remove
+ */
 void remove_status_bar_icon(int menu_index) {
     if (menu_index < 0 || menu_index >= MAX_STATUS_ICONS) {
         return;
@@ -270,6 +304,10 @@ void remove_status_bar_icon(int menu_index) {
     update_status_bar_icons();
 }
 
+/**
+ * Updates all status bar icons based on current configuration.
+ * Loads enabled icons from configuration and positions them correctly.
+ */
 void update_status_bar_icons(void) {
     if (!app_state.status_bar) {
         return;
@@ -284,8 +322,8 @@ void update_status_bar_icons(void) {
     }
 
     // Icon configuration
-    int img_btn_size = 40;
-    int spacing = 10;
+    int img_btn_size = ICON_SIZE_SMALL;
+    int spacing = STATUS_ICON_SPACING;
     int start_x = PADDING_HORIZONTAL;
 
     // Count how many icons are selected and create them

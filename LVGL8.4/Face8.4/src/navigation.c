@@ -7,6 +7,12 @@
 // COMMON NAVIGATION CALLBACKS
 // ============================================================================
 
+/**
+ * Handles back button press events.
+ * Navigates to the home screen.
+ * 
+ * @param e The LVGL event object
+ */
 void back_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack_top > 0) {
@@ -15,6 +21,12 @@ void back_btn_callback(lv_event_t *e) {
     }
 }
 
+/**
+ * Handles info button press events.
+ * Navigates to the info screen.
+ * 
+ * @param e The LVGL event object
+ */
 void info_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_INFO) {
@@ -25,6 +37,12 @@ void info_btn_callback(lv_event_t *e) {
     }
 }
 
+/**
+ * Handles admin button press events.
+ * Navigates to the admin settings screen.
+ * 
+ * @param e The LVGL event object
+ */
 void admin_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_ADMIN) {
@@ -35,6 +53,12 @@ void admin_btn_callback(lv_event_t *e) {
     }
 }
 
+/**
+ * Handles network button press events.
+ * Navigates to the network configuration screen.
+ * 
+ * @param e The LVGL event object
+ */
 void network_btn_callback(lv_event_t *e) {
     (void)e;
     if (screen_stack[screen_stack_top].screen_id != SCREEN_NETWORK) {

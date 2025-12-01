@@ -36,6 +36,12 @@ static void circle_hit_test_event_cb(lv_event_t *e) {
     }
 }
 
+/**
+ * Applies standard button styling to an LVGL object.
+ * 
+ * @param btn The button object to style
+ * @param bg_color The background color in hex format
+ */
 void apply_button_style(lv_obj_t *btn, uint32_t bg_color) {
     lv_obj_set_style_bg_color(btn, lv_color_hex(bg_color), 0);
     lv_obj_set_style_border_width(btn, 1, 0);
@@ -60,6 +66,12 @@ void apply_circle_button_style(lv_obj_t *btn, uint32_t bg_color) {
     lv_obj_add_event_cb(btn, circle_hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
 }
 
+/**
+ * Applies standard label styling to an LVGL label object.
+ * Sets font to NotoSansKR and standard text color.
+ * 
+ * @param label The label object to style
+ */
 void apply_label_style(lv_obj_t *label) {
     extern AppState app_state;
     lv_obj_set_style_text_color(label, lv_color_hex(COLOR_TEXT), 0);

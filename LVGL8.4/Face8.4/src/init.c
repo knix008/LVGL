@@ -29,6 +29,12 @@ extern AppState app_state;
 // FONT INITIALIZATION
 // ============================================================================
 
+/**
+ * Initializes custom fonts used by the application.
+ * Loads NotoSansKR font for Korean text support.
+ * 
+ * @return 0 on success, -1 on failure
+ */
 int init_fonts(void) {
     if (!lv_freetype_init(0, 0, 0)) {
         fprintf(stderr, "Warning: FreeType initialization failed\n");
@@ -99,6 +105,12 @@ static void display_flush_cb(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_
 // SDL INITIALIZATION
 // ============================================================================
 
+/**
+ * Initializes the SDL2 subsystem for rendering.
+ * Sets up window, display driver, and input devices.
+ * 
+ * @return 0 on success, -1 on failure
+ */
 int init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
         fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
@@ -151,6 +163,12 @@ int init_sdl(void) {
 // LVGL INITIALIZATION
 // ============================================================================
 
+/**
+ * Initializes the LVGL graphics library.
+ * Sets up display buffer and registers display/input drivers.
+ * 
+ * @return 0 on success, -1 on failure
+ */
 int init_lvgl(void) {
     lv_init();
     lv_extra_init();

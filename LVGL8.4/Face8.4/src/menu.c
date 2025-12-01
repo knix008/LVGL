@@ -43,12 +43,12 @@ static void menu_btn_visual_effect(lv_event_t *e) {
 
     if (code == LV_EVENT_PRESSED) {
         // Scale down and reduce opacity when pressed
-        lv_img_set_zoom(img, 230);  // Scale to 90% (256 = 100%)
-        lv_obj_set_style_img_opa(img, LV_OPA_60, 0);  // Reduce opacity to 60%
+        lv_img_set_zoom(img, ZOOM_PRESSED);
+        lv_obj_set_style_img_opa(img, LV_OPA_60, 0);
     } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
         // Restore normal size and opacity when released
-        lv_img_set_zoom(img, 256);  // Restore to 100%
-        lv_obj_set_style_img_opa(img, LV_OPA_COVER, 0);  // Restore full opacity
+        lv_img_set_zoom(img, ZOOM_NORMAL);
+        lv_obj_set_style_img_opa(img, LV_OPA_COVER, 0);
     }
 }
 
@@ -65,12 +65,12 @@ static void plus_minus_visual_effect(lv_event_t *e) {
 
     if (code == LV_EVENT_PRESSED) {
         // Scale down and reduce opacity when pressed
-        lv_img_set_zoom(img_btn, 230);  // Scale to 90% (256 = 100%)
-        lv_obj_set_style_img_opa(img_btn, LV_OPA_60, 0);  // Reduce opacity to 60%
+        lv_img_set_zoom(img_btn, ZOOM_PRESSED);
+        lv_obj_set_style_img_opa(img_btn, LV_OPA_60, 0);
     } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
         // Restore normal size and opacity when released
-        lv_img_set_zoom(img_btn, 256);  // Restore to 100%
-        lv_obj_set_style_img_opa(img_btn, LV_OPA_COVER, 0);  // Restore full opacity
+        lv_img_set_zoom(img_btn, ZOOM_NORMAL);
+        lv_obj_set_style_img_opa(img_btn, LV_OPA_COVER, 0);
     }
 }
 
@@ -127,18 +127,18 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
         // Create image on the left side of the button
         lv_obj_t *img = lv_img_create(btn);
         lv_img_set_src(img, MENU_ITEMS[i].icon_path);
-        lv_obj_align(img, LV_ALIGN_LEFT_MID, 10, 0);
+        lv_obj_align(img, LV_ALIGN_LEFT_MID, ICON_IMAGE_OFFSET, 0);
 
         // Create label on the right side of the image
         lv_obj_t *label = lv_label_create(btn);
         lv_label_set_text(label, MENU_ITEMS[i].label);
         apply_label_style(label);
-        lv_obj_align(label, LV_ALIGN_LEFT_MID, 60, 0);
+        lv_obj_align(label, LV_ALIGN_LEFT_MID, LABEL_OFFSET_X, 0);
 
         // Create plus image button on the right side of the button
         lv_obj_t *plus_btn = lv_img_create(btn);
         lv_img_set_src(plus_btn, IMG_PLUS);
-        lv_obj_align(plus_btn, LV_ALIGN_RIGHT_MID, -10, 0);
+        lv_obj_align(plus_btn, LV_ALIGN_RIGHT_MID, -ICON_IMAGE_OFFSET, 0);
         lv_obj_add_flag(plus_btn, LV_OBJ_FLAG_CLICKABLE);
         
         // Initialize plus/minus button data
@@ -182,6 +182,10 @@ static lv_obj_t *create_menu_content(lv_obj_t *parent) {
 // MENU SCREEN CREATION
 // ============================================================================
 
+/**
+ * Creates the main menu screen with navigation buttons.
+ * Buttons are configured from the MENU_ITEMS array.
+ */
 void create_menu_screen(void) {
     lv_obj_t *menu_screen = create_screen_base(SCREEN_MENU);
 

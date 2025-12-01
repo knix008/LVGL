@@ -2,6 +2,8 @@
 
 A modern LVGL 8.4 application featuring a hierarchical menu system with breadcrumb navigation, icon-based status bar, absolute path navigation support, and Chunjiin Korean input method.
 
+> **Note**: For details about recent code quality improvements, see [REFACTORING.md](REFACTORING.md)
+
 ## Features
 
 - **Hierarchical Navigation System**: Breadcrumb-style navigation showing current location path

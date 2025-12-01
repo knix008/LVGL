@@ -1,6 +1,6 @@
 status_bar:
-  admin: true
+  admin: false
   network: false
-  korean_input: false
+  korean_input: true
   info: false
   face: true

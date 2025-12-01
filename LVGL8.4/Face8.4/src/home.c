@@ -31,7 +31,7 @@ static void update_title_bar(void) {
 
     const char *days[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
-    char title_text[256];
+    char title_text[MAX_TITLE_LENGTH];
     snprintf(title_text, sizeof(title_text),
         "%s %02d:%02d:%02d\n%04d-%02d-%02d",
         days[timeinfo->tm_wday],

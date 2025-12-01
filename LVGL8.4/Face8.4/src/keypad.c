@@ -1,4 +1,5 @@
 #include "../include/chunjiin.h"
+#include "../include/config.h"
 #include <string.h>
 #include <wchar.h>
 
@@ -14,9 +15,9 @@ static wchar_t towlower_simple(wchar_t ch) {
 void num_make(ChunjiinState *state, int input) {
     if (state->cursor_pos >= MAX_TEXT_LEN) return;
 
-    if (input == 10) { // Space
+    if (input == CHUNJIIN_SPACE_KEY) { // Space
         wcscpy(state->engnum, L" ");
-    } else if (input == 11) { // Delete
+    } else if (input == CHUNJIIN_DELETE_KEY) { // Delete
         delete_char(state);
     } else {
         swprintf(state->engnum, 16, L"%d", input);
@@ -29,14 +30,14 @@ void num_make(ChunjiinState *state, int input) {
 void special_make(ChunjiinState *state, int input) {
     if (state->cursor_pos >= MAX_TEXT_LEN) return;
 
-    if (input == 10) { // Space
+    if (input == CHUNJIIN_SPACE_KEY) { // Space
         if (wcslen(state->engnum) == 0) {
             wcscpy(state->engnum, L" ");
         } else {
             state->engnum[0] = 0;
         }
         state->flag_initengnum = true;
-    } else if (input == 11) { // Delete
+    } else if (input == CHUNJIIN_DELETE_KEY) { // Delete
         delete_char(state);
         init_engnum(state);
     } else {
@@ -94,14 +95,14 @@ void special_make(ChunjiinState *state, int input) {
 void eng_make(ChunjiinState *state, int input) {
     if (state->cursor_pos >= MAX_TEXT_LEN) return;
 
-    if (input == 10) { // Space
+    if (input == CHUNJIIN_SPACE_KEY) { // Space
         if (wcslen(state->engnum) == 0) {
             wcscpy(state->engnum, L" ");
         } else {
             state->engnum[0] = 0;
         }
         state->flag_initengnum = true;
-    } else if (input == 11) { // Delete
+    } else if (input == CHUNJIIN_DELETE_KEY) { // Delete
         delete_char(state);
         init_engnum(state);
     } else {
@@ -164,13 +165,13 @@ void hangul_make(ChunjiinState *state, int input) {
     wchar_t nowdata[16] = {0};
     wchar_t overdata[16] = {0};
 
-    if (input == 10) { // Space
+    if (input == CHUNJIIN_SPACE_KEY) { // Space
         if (hangul->flag_writing) {
             hangul_init(hangul);
         } else {
             hangul->flag_space = true;
         }
-    } else if (input == 11) { // Delete
+    } else if (input == CHUNJIIN_DELETE_KEY) { // Delete
         if (hangul->step == 0) {
             if (wcslen(hangul->chosung) == 0) {
                 delete_char(state);

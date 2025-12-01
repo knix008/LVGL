@@ -33,6 +33,12 @@ static int ensure_config_directory(void) {
 // SAVE STATUS BAR CONFIGURATION
 // ============================================================================
 
+/**
+ * Saves the current status bar configuration to YAML file.
+ * Persists enabled/disabled state of status bar icons.
+ * 
+ * @return 0 on success, -1 on failure
+ */
 int save_status_bar_config(void) {
     // Ensure config directory exists
     if (ensure_config_directory() != 0) {
@@ -155,6 +161,12 @@ emitter_error:
 // LOAD STATUS BAR CONFIGURATION
 // ============================================================================
 
+/**
+ * Loads the status bar configuration from YAML file.
+ * Restores previously saved enabled/disabled state of status bar icons.
+ * 
+ * @return 0 on success, -1 on failure
+ */
 int load_status_bar_config(void) {
     FILE *file = fopen(STATUS_BAR_CONFIG_FILE, "r");
     if (!file) {
