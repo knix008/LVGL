@@ -1,0 +1,14 @@
+prefix=/home/shkwon/Projects/LVGL/MiniGUI/Qwerty-Custom/./install
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+runmode=standalone-shared
+libsuffix=sa
+
+Name: MiniGUI
+Description: A mature cross-platform windowing and GUI system for embedded systems and IoT smart devices.
+Version: 5.0.16
+Requires:
+Libs: -L${libdir} -lminigui_sa  -ldrm -ljpeg -lpng16 -lz -ldl -linput -lharfbuzz -lfreetype -lpixman-1  -lwebp  -ludev -lm -lpthread
+Libs.private:
+Cflags: -I${includedir}
